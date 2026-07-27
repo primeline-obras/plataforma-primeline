@@ -75,3 +75,8 @@ papel `authenticated`, mantendo `anon` sem acesso.
 O separador Subempreitadas também apresenta pagamentos acumulados e consultas ainda
 por adjudicar. Execute `supabase/rls_subempreitadas_authenticated.sql` para permitir
 essas duas leituras ao papel `authenticated`.
+
+O fluxo de autos de medição, faturação ao cliente e recebimentos é ativado pelo
+conteúdo de `supabase/autos_faturacao_workflow.sql`. A migração cria a relação entre
+autos e faturas, permite associar os PDFs através de `documentos` e mantém o papel
+`anon` sem acesso.

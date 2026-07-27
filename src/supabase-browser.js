@@ -133,6 +133,29 @@ export async function uploadInvoicePdf(file, obraId) {
   return objectPath;
 }
 
+export async function uploadWorkflowPdf(file, obraId, entityType) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  if (file.type !== "application/pdf") throw new Error("Apenas são aceites ficheiros PDF.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("O PDF excede o limite de 10 MB.");
+  const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "documento.pdf";
+  const objectPath = `${obraId}/${entityType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
+  const response = await fetch(storageObjectUrl(objectPath), {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/pdf",
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || payload.error || "Não foi possível enviar o PDF.");
+  return objectPath;
+}
+
 export async function downloadInvoicePdf(objectPath) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");

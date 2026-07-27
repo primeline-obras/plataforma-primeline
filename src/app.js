@@ -1,4 +1,4 @@
-import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadInvoicePdf } from "./supabase-browser.js";
+import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -26,7 +26,7 @@ let localPdfUrl = "";
 let openedPdfUrl = "";
 let activeView = "invoices";
 let selectedWorkId = "";
-let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], error: "", procurementError: "" };
+let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], error: "", procurementError: "", billingError: "" };
 let selectedWorkTab = "summary";
 
 function brand() {
@@ -147,6 +147,12 @@ document.querySelector("#root").innerHTML = `
           <p class="form-error" id="work-form-error"></p>
           <div class="dialog-actions"><button class="outline-action" id="cancel-work" type="button">CANCELAR</button><button class="primary-button" type="submit">CRIAR OBRA <span>→</span></button></div>
         </form>
+      </section>
+    </div>
+    <div class="dialog-backdrop" id="workflow-dialog" hidden>
+      <section class="work-dialog-card workflow-dialog-card" role="dialog" aria-modal="true">
+        <div class="panel-title"><span id="workflow-dialog-title">REGISTO</span><button id="close-workflow-dialog" type="button" aria-label="Fechar">×</button></div>
+        <div id="workflow-dialog-content"></div>
       </section>
     </div>
     <div class="pdf-modal" id="pdf-modal" hidden>
@@ -285,7 +291,7 @@ function workProgress(work) {
 async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
-  workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], error: "", procurementError: "" };
+  workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], error: "", procurementError: "", billingError: "" };
   renderWorks();
   const work = works.find(item => item.id === workId);
   $("#work-detail").innerHTML = `<div class="empty-state">A CARREGAR DADOS DA OBRA…</div>`;
@@ -302,8 +308,12 @@ async function loadWorkDetails(workId) {
         { id: "c-caix", obra_id: work.id, especialidade: "Caixilharia", estado: "em_consulta", fornecedor_id: null },
         { id: "c-gas", obra_id: work.id, especialidade: "Gás", estado: "em_consulta", fornecedor_id: null },
       ],
+      billings: [],
+      billingLinks: [],
+      documents: [],
       error: "",
       procurementError: "",
+      billingError: "",
     };
     renderWorkDetail(work);
     return;
@@ -323,6 +333,24 @@ async function loadWorkDetails(workId) {
     workDetails.contract = contracts[0] || null;
     workDetails.phases = phases;
     workDetails.measurements = measurements;
+  }
+  if (workDetails.measurements.length) {
+    const measurementIds = workDetails.measurements.map(item => item.id);
+    const billingsResult = await supabase(`faturacao?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data_emissao_fatura.desc`);
+    if (billingsResult.ok) {
+      workDetails.billings = await billingsResult.json();
+      const billingIds = workDetails.billings.map(item => item.id);
+      const [linksResult, documentsResult] = await Promise.all([
+        supabase(`faturacao_autos_medicao?select=*&auto_medicao_id=in.(${measurementIds.map(encodeURIComponent).join(",")})`),
+        supabase(`documentos?select=*&entidade_id=in.(${[...measurementIds, ...billingIds].map(encodeURIComponent).join(",")})`),
+      ]);
+      if (linksResult.ok) workDetails.billingLinks = await linksResult.json();
+      else workDetails.billingError = "A relação entre autos e faturas ainda não está disponível.";
+      if (documentsResult.ok) workDetails.documents = await documentsResult.json();
+      else workDetails.billingError ||= "Não foi possível consultar os PDFs dos autos e faturas.";
+    } else {
+      workDetails.billingError = "Não foi possível consultar a faturação desta obra.";
+    }
   }
   const subcontractIds = subcontracts.filter(item => item.obra_id === workId).map(item => item.id);
   const [consultationsResult, paymentsResult] = await Promise.all([
@@ -417,9 +445,79 @@ function renderSubcontractsTab(work) {
     </section>`;
 }
 
+function measurementStatusLabel(status) {
+  return {
+    rascunho: "Rascunho",
+    enviado_cliente: "Auto enviado",
+    aprovado_cliente: "Auto aprovado",
+    recusado_cliente: "Auto recusado",
+  }[status] || workSituationLabel(status);
+}
+
+function documentFor(entityId, type) {
+  return workDetails.documents.find(document => document.entidade_id === entityId && document.tipo_documento === type);
+}
+
+function billingForMeasurement(measurementId) {
+  const link = workDetails.billingLinks.find(item => item.auto_medicao_id === measurementId);
+  return link ? workDetails.billings.find(item => item.id === link.faturacao_id) : null;
+}
+
+function renderMeasurementsTab(work) {
+  const rows = workDetails.measurements;
+  const measured = rows.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
+  const invoiced = workDetails.billings.reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  const received = workDetails.billings.reduce((sum, item) => sum + Number(item.valor_recebido || 0), 0);
+  return `
+    ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.billingError} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
+    <div class="measurement-toolbar">
+      <div class="measurement-kpis">
+        <div><span>A FATURAR</span><strong>${euro.format(measured)}</strong></div>
+        <div><span>FATURADO</span><strong>${euro.format(invoiced)}</strong></div>
+        <div><span>RECEBIDO</span><strong>${euro.format(received)}</strong></div>
+      </div>
+      <button class="outline-action" data-new-measurement type="button">＋ NOVO AUTO</button>
+    </div>
+    <div class="measurements-list">
+      ${rows.length ? rows.map(item => {
+        const billing = billingForMeasurement(item.id);
+        const autoPdf = documentFor(item.id, "auto_medicao_pdf");
+        const invoicePdf = billing && documentFor(billing.id, "fatura_cliente_pdf");
+        const paid = billing && Number(billing.valor_recebido || 0) >= Number(billing.valor || 0);
+        return `<article class="measurement-card">
+          <div class="measurement-head">
+            <div><span>${item.tipo || "contratual"}</span><strong>Auto ${item.numero_auto || "sem número"}</strong><small>${prettyDate.format(new Date(`${item.mes_referencia}T12:00:00`))}</small></div>
+            <span class="measurement-state ${item.estado}">${measurementStatusLabel(item.estado)}</span>
+          </div>
+          <div class="measurement-values">
+            <div><span>BRUTO</span><strong>${euro.format(Number(item.valor_bruto_medido || 0))}</strong></div>
+            <div><span>RETENÇÃO</span><strong>${euro.format(Number(item.valor_retencao_garantia || 0))}</strong></div>
+            <div><span>ADIANTAMENTO</span><strong>${euro.format(Number(item.valor_deduzido_adiantamento || 0))}</strong></div>
+            <div><span>A FATURAR</span><strong>${euro.format(Number(item.valor_a_faturar || 0))}</strong></div>
+          </div>
+          <div class="workflow-line">
+            <span class="${item.estado !== "rascunho" ? "done" : ""}">AUTO ENVIADO</span>
+            <i></i><span class="${["aprovado_cliente"].includes(item.estado) ? "done" : ""}">AUTO APROVADO</span>
+            <i></i><span class="${billing ? "done" : ""}">FATURA EMITIDA</span>
+            <i></i><span class="${paid ? "done" : ""}">PAGO</span>
+          </div>
+          ${billing ? `<div class="billing-summary"><span>FATURA ${billing.numero_fatura}</span><strong>${euro.format(Number(billing.valor))}</strong><small>${paid ? `Recebida em ${formatOptionalDate(billing.data_recebimento)}` : "Pagamento pendente"}</small></div>` : ""}
+          <div class="measurement-actions">
+            ${autoPdf ? `<button data-workflow-pdf="${encodeURIComponent(autoPdf.url_arquivo)}">VER AUTO PDF</button>` : ""}
+            ${invoicePdf ? `<button data-workflow-pdf="${encodeURIComponent(invoicePdf.url_arquivo)}">VER FATURA PDF</button>` : ""}
+            ${item.estado === "rascunho" ? `<button data-measure-action="enviado_cliente" data-id="${item.id}">MARCAR ENVIADO</button>` : ""}
+            ${item.estado === "enviado_cliente" ? `<button data-measure-action="recusado_cliente" data-id="${item.id}">RECUSAR</button><button data-measure-action="aprovado_cliente" data-id="${item.id}">APROVAR</button>` : ""}
+            ${item.estado === "aprovado_cliente" && !billing ? `<button class="dark" data-new-billing="${item.id}">EMITIR FATURA</button>` : ""}
+            ${billing && !paid ? `<button class="dark" data-mark-paid="${billing.id}">MARCAR PAGO</button>` : ""}
+          </div>
+        </article>`;
+      }).join("") : `<div class="empty-state"><strong>SEM AUTOS DE MEDIÇÃO</strong><span>Crie o primeiro auto desta obra.</span></div>`}
+    </div>`;
+}
+
 function renderWorkTab(work) {
   if (selectedWorkTab === "subcontracts") return renderSubcontractsTab(work);
-  if (selectedWorkTab === "measurements") return `<div class="empty-state"><strong>AUTOS DE MEDIÇÃO</strong><span>Este separador será desenvolvido na próxima etapa.</span></div>`;
+  if (selectedWorkTab === "measurements") return renderMeasurementsTab(work);
   if (selectedWorkTab === "phases") return `<div class="empty-state"><strong>FASES</strong><span>Este separador será desenvolvido numa próxima etapa.</span></div>`;
   return renderWorkSummary(work);
 }
@@ -547,11 +645,184 @@ $("#works-list").addEventListener("click", event => {
   const item = event.target.closest("[data-work-id]");
   if (item) loadWorkDetails(item.dataset.workId);
 });
-$("#work-detail").addEventListener("click", event => {
+function closeWorkflowDialog() {
+  $("#workflow-dialog").hidden = true;
+  $("#workflow-dialog-content").innerHTML = "";
+}
+
+function openNewMeasurementDialog() {
+  $("#workflow-dialog-title").textContent = "NOVO AUTO DE MEDIÇÃO";
+  $("#workflow-dialog-content").innerHTML = `<form id="measurement-form">
+    <div class="form-row"><label>N.º DO AUTO<input name="numero_auto" required></label><label>MÊS DE REFERÊNCIA<input name="mes_referencia" type="date" required></label></div>
+    <label>TIPO<div class="select-wrap"><select name="tipo"><option value="contratual">Contratual</option><option value="adicional">Adicional</option></select><b>⌄</b></div></label>
+    <div class="form-row"><label>DATA DE MEDIÇÃO<input name="data_medicao" type="date"></label><label>VALOR BRUTO<input name="valor_bruto_medido" type="number" min="0" step="0.01" required></label></div>
+    <div class="form-row"><label>RETENÇÃO DE GARANTIA<input name="valor_retencao_garantia" type="number" min="0" step="0.01" value="0"></label><label>DEDUÇÃO DO ADIANTAMENTO<input name="valor_deduzido_adiantamento" type="number" min="0" step="0.01" value="0"></label></div>
+    <label>PDF DO AUTO (OPCIONAL)<input name="pdf" type="file" accept="application/pdf,.pdf"></label>
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">CRIAR AUTO <span>→</span></button></div>
+  </form>`;
+  $("#workflow-dialog").hidden = false;
+  $("#measurement-form").addEventListener("submit", submitMeasurement);
+}
+
+async function submitMeasurement(event) {
+  event.preventDefault();
+  const formElement = event.currentTarget;
+  const fields = Object.fromEntries(new FormData(formElement));
+  const errorElement = formElement.querySelector(".form-error");
+  const button = formElement.querySelector('button[type="submit"]');
+  const advance = Number(fields.valor_deduzido_adiantamento || 0);
+  if (fields.tipo === "adicional" && advance > 0) {
+    errorElement.textContent = "A dedução do adiantamento só pode ser aplicada a autos contratuais.";
+    return;
+  }
+  const payload = {
+    obra_id: selectedWorkId, mes_referencia: fields.mes_referencia,
+    numero_auto: fields.numero_auto.trim(), tipo: fields.tipo,
+    data_medicao: fields.data_medicao || null, estado: "rascunho",
+    valor_bruto_medido: Number(fields.valor_bruto_medido),
+    valor_retencao_garantia: Number(fields.valor_retencao_garantia || 0),
+    valor_deduzido_adiantamento: advance,
+  };
+  button.disabled = true;
+  try {
+    let inserted = { ...payload, id: crypto.randomUUID(), valor_a_faturar: payload.valor_bruto_medido - payload.valor_retencao_garantia - advance };
+    if (isSupabaseConfigured) {
+      const response = await supabase("autos_medicao?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível criar o auto.");
+      inserted = (await response.json())[0];
+      if (fields.pdf?.size) {
+        const path = await uploadWorkflowPdf(fields.pdf, selectedWorkId, "autos-medicao");
+        const documentResponse = await supabase("documentos", {
+          method: "POST", body: JSON.stringify({ empresa_id: PRIMELINE_COMPANY_ID, entidade_tipo: "auto_medicao", entidade_id: inserted.id, tipo_documento: "auto_medicao_pdf", nome_arquivo: fields.pdf.name, url_arquivo: path, data_emissao: fields.data_medicao || null }),
+        });
+        if (!documentResponse.ok) throw new Error("O auto foi criado, mas não foi possível associar o PDF.");
+      }
+    }
+    workDetails.measurements.unshift(inserted);
+    closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    toast("Auto de medição criado em rascunho.");
+  } catch (error) { errorElement.textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+function openBillingDialog(measurementId) {
+  const eligible = workDetails.measurements.filter(item => item.estado === "aprovado_cliente" && !billingForMeasurement(item.id));
+  $("#workflow-dialog-title").textContent = "EMITIR FATURA";
+  $("#workflow-dialog-content").innerHTML = `<form id="billing-form">
+    <div class="form-row"><label>N.º DA FATURA<input name="numero_fatura" required></label><label>DATA DE EMISSÃO<input name="data_emissao_fatura" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label></div>
+    <fieldset class="measurement-picker"><legend>AUTOS INCLUÍDOS</legend>${eligible.map(item => `<label><input type="checkbox" name="autos" value="${item.id}" ${item.id === measurementId ? "checked" : ""}><span>${item.numero_auto || "Sem número"} · ${item.tipo} · ${euro.format(Number(item.valor_a_faturar || 0))}</span></label>`).join("")}</fieldset>
+    <label>VALOR DA FATURA<input name="valor" type="number" min="0.01" step="0.01" required value="${Number(eligible.find(item => item.id === measurementId)?.valor_a_faturar || 0).toFixed(2)}"></label>
+    <label>PDF DA FATURA (OPCIONAL)<input name="pdf" type="file" accept="application/pdf,.pdf"></label>
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">REGISTAR FATURA <span>→</span></button></div>
+  </form>`;
+  $("#workflow-dialog").hidden = false;
+  $("#billing-form").addEventListener("submit", submitBilling);
+}
+
+async function submitBilling(event) {
+  event.preventDefault();
+  const formElement = event.currentTarget;
+  const data = new FormData(formElement);
+  const autoIds = data.getAll("autos");
+  const errorElement = formElement.querySelector(".form-error");
+  const button = formElement.querySelector('button[type="submit"]');
+  if (!autoIds.length) { errorElement.textContent = "Selecione pelo menos um auto aprovado."; return; }
+  const selected = workDetails.measurements.filter(item => autoIds.includes(item.id));
+  const payload = {
+    obra_id: selectedWorkId, contrato_id: workDetails.contract?.id || null,
+    numero_fatura: String(data.get("numero_fatura")).trim(),
+    descricao_auto: selected.map(item => item.numero_auto).filter(Boolean).join(" + "),
+    data_emissao_auto: selected.map(item => item.data_medicao).filter(Boolean).sort().at(-1) || null,
+    data_emissao_fatura: data.get("data_emissao_fatura"), valor: Number(data.get("valor")), estado: "emitida",
+  };
+  button.disabled = true;
+  try {
+    let billing = { ...payload, id: crypto.randomUUID(), valor_recebido: null };
+    if (isSupabaseConfigured) {
+      const response = await supabase("faturacao?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível registar a fatura.");
+      billing = (await response.json())[0];
+      const linksResponse = await supabase("faturacao_autos_medicao", { method: "POST", body: JSON.stringify(autoIds.map(autoId => ({ faturacao_id: billing.id, auto_medicao_id: autoId }))) });
+      if (!linksResponse.ok) throw new Error("A fatura foi criada, mas não foi possível associar os autos.");
+      const pdf = data.get("pdf");
+      if (pdf?.size) {
+        const path = await uploadWorkflowPdf(pdf, selectedWorkId, "faturacao-clientes");
+        const documentResponse = await supabase("documentos", { method: "POST", body: JSON.stringify({ empresa_id: PRIMELINE_COMPANY_ID, entidade_tipo: "faturacao", entidade_id: billing.id, tipo_documento: "fatura_cliente_pdf", nome_arquivo: pdf.name, url_arquivo: path, data_emissao: payload.data_emissao_fatura }) });
+        if (!documentResponse.ok) throw new Error("A fatura foi criada, mas não foi possível associar o PDF.");
+      }
+    }
+    workDetails.billings.unshift(billing);
+    workDetails.billingLinks.push(...autoIds.map(autoId => ({ faturacao_id: billing.id, auto_medicao_id: autoId })));
+    closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    toast("Fatura emitida e associada aos autos.");
+  } catch (error) { errorElement.textContent = error.message; }
+  finally { button.disabled = false; }
+}
+
+function openPaymentDialog(billingId) {
+  const billing = workDetails.billings.find(item => item.id === billingId);
+  $("#workflow-dialog-title").textContent = "REGISTAR PAGAMENTO";
+  $("#workflow-dialog-content").innerHTML = `<form id="payment-form">
+    <p class="dialog-copy">Fatura <strong>${billing.numero_fatura}</strong> · ${euro.format(Number(billing.valor))}</p>
+    <div class="form-row"><label>DATA DE RECEBIMENTO<input name="data_recebimento" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label><label>VALOR RECEBIDO<input name="valor_recebido" type="number" min="0.01" step="0.01" required value="${Number(billing.valor).toFixed(2)}"></label></div>
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">CONFIRMAR PAGAMENTO <span>→</span></button></div>
+  </form>`;
+  $("#workflow-dialog").hidden = false;
+  $("#payment-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const data = Object.fromEntries(new FormData(formElement));
+    const button = formElement.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+      if (isSupabaseConfigured) {
+        const response = await supabase(`faturacao?id=eq.${billingId}`, { method: "PATCH", body: JSON.stringify({ data_recebimento: data.data_recebimento, valor_recebido: Number(data.valor_recebido) }) });
+        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível registar o pagamento.");
+      }
+      billing.data_recebimento = data.data_recebimento; billing.valor_recebido = Number(data.valor_recebido);
+      closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId)); toast("Pagamento registado.");
+    } catch (error) { formElement.querySelector(".form-error").textContent = error.message; }
+    finally { button.disabled = false; }
+  });
+}
+
+$("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
+$("#workflow-dialog").addEventListener("click", event => { if (event.target === $("#workflow-dialog") || event.target.closest("[data-close-workflow]")) closeWorkflowDialog(); });
+$("#work-detail").addEventListener("click", async event => {
   const tabButton = event.target.closest("[data-work-tab]");
-  if (!tabButton) return;
-  selectedWorkTab = tabButton.dataset.workTab;
-  renderWorkDetail(works.find(item => item.id === selectedWorkId));
+  if (tabButton) {
+    selectedWorkTab = tabButton.dataset.workTab;
+    renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    return;
+  }
+  if (event.target.closest("[data-new-measurement]")) return openNewMeasurementDialog();
+  const billingButton = event.target.closest("[data-new-billing]");
+  if (billingButton) return openBillingDialog(billingButton.dataset.newBilling);
+  const paidButton = event.target.closest("[data-mark-paid]");
+  if (paidButton) return openPaymentDialog(paidButton.dataset.markPaid);
+  const pdfButton = event.target.closest("[data-workflow-pdf]");
+  if (pdfButton) {
+    try {
+      const blob = await downloadInvoicePdf(decodeURIComponent(pdfButton.dataset.workflowPdf));
+      openedPdfUrl = URL.createObjectURL(blob); openPdfModal(openedPdfUrl, "DOCUMENTO");
+    } catch (error) { toast(error.message, "error"); }
+    return;
+  }
+  const actionButton = event.target.closest("[data-measure-action]");
+  if (actionButton) {
+    const measurement = workDetails.measurements.find(item => item.id === actionButton.dataset.id);
+    const state = actionButton.dataset.measureAction;
+    const today = new Date().toISOString().slice(0, 10);
+    const update = { estado: state };
+    if (state === "enviado_cliente") update.data_envio_cliente = today;
+    if (state === "aprovado_cliente") update.data_aprovacao_cliente = today;
+    if (isSupabaseConfigured) {
+      const response = await supabase(`autos_medicao?id=eq.${measurement.id}`, { method: "PATCH", body: JSON.stringify(update) });
+      if (!response.ok) return toast(`Não foi possível atualizar o auto: ${await response.text()}`, "error");
+    }
+    Object.assign(measurement, update); renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    toast(`Estado atualizado para ${measurementStatusLabel(state)}.`);
+  }
 });
 $("#menu").addEventListener("click", () => $(".sidebar").classList.add("open"));
 $("#scrim").addEventListener("click", () => $(".sidebar").classList.remove("open"));
