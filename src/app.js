@@ -23,6 +23,9 @@ let session = getSession();
 let selectedPdf = null;
 let localPdfUrl = "";
 let openedPdfUrl = "";
+let activeView = "invoices";
+let selectedWorkId = "";
+let workDetails = { contract: null, phases: [], measurements: [], error: "" };
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -57,8 +60,8 @@ document.querySelector("#root").innerHTML = `
     <button class="scrim" id="scrim" aria-label="Fechar menu"></button>
     <aside class="sidebar">${brand()}
       <nav><p>GESTÃO</p>
-        <button>▦ <span>Visão geral</span></button><button>▥ <span>Obras</span></button>
-        <button class="active">▤ <span>Faturas</span></button><button>□ <span>Documentos</span></button><button>♙ <span>Equipa</span></button>
+        <button data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button class="active" data-view="invoices">▤ <span>Faturas</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button>⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -67,7 +70,7 @@ document.querySelector("#root").innerHTML = `
       <header class="topbar"><button class="mobile-menu" id="menu">${icon("menu")}</button><div class="mobile-brand">${brand()}</div>
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="icon-button">${icon("bell")}<i>3</i></button></div>
       </header>
-      <div class="page">
+      <div class="page" id="invoice-view">
         <div class="page-heading"><div><p class="eyebrow">GESTÃO FINANCEIRA</p><h1>FATURAS</h1><p>Registo e aprovação de despesas das obras.</p></div><div class="heading-stat"><span>PENDENTES</span><strong id="count">00</strong></div></div>
         <section class="invoice-grid">
           <div class="panel new-invoice">
@@ -103,6 +106,28 @@ document.querySelector("#root").innerHTML = `
             <div class="invoice-list" id="invoice-list"><div class="empty-state">A CARREGAR FATURAS…</div></div>
           </div>
         </section>
+      </div>
+      <div class="page works-view" id="works-view" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">GESTÃO DE OBRA</p><h1>OBRAS</h1><p>Acompanhamento operacional e financeiro.</p></div>
+          <div class="heading-stat"><span>ATIVAS</span><strong id="active-works-count">00</strong></div>
+        </div>
+        <div class="works-toolbar">
+          <div class="search-box">${icon("search")}<input id="work-search" placeholder="Pesquisar número, nome ou cliente…"></div>
+          <div class="select-wrap"><select id="work-status-filter"><option value="all">Todas as situações</option></select><b>⌄</b></div>
+        </div>
+        <div class="works-layout">
+          <section class="works-list-panel panel">
+            <div class="works-list-head"><span>PORTFÓLIO</span><small id="works-result-count">0 OBRAS</small></div>
+            <div id="works-list" class="works-list"></div>
+          </section>
+          <section class="work-detail panel" id="work-detail">
+            <div class="empty-state"><strong>SELECIONE UMA OBRA</strong><span>Consulte os principais dados e indicadores.</span></div>
+          </section>
+        </div>
+      </div>
+      <div class="page placeholder-view" id="placeholder-view" hidden>
+        <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
     </main>
     <div id="toast"></div>
@@ -175,9 +200,9 @@ async function loadData() {
     [works, suppliers, subcontracts, invoices] = [demoWorks, demoSuppliers, demoSubcontracts, demoInvoices];
   } else {
     const results = await Promise.all([
-      supabase("obras?select=id,numero,nome&order=numero.desc"),
+      supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id&order=numero.desc"),
       supabase("fornecedores?select=id,nome&estado_confianca=neq.inativo&order=nome"),
-      supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade&order=especialidade"),
+      supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
     ]);
     const failed = results.find(result => !result.ok);
@@ -185,6 +210,141 @@ async function loadData() {
     [works, suppliers, subcontracts, invoices] = await Promise.all(results.map(result => result.json()));
   }
   renderSelectors(); renderInvoices();
+  renderWorks();
+}
+
+function workSituationLabel(value) {
+  if (!value) return "Não definida";
+  return value.replace(/_/g, " ").replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function renderWorks() {
+  const search = ($("#work-search")?.value || "").toLocaleLowerCase("pt-PT");
+  const status = $("#work-status-filter")?.value || "all";
+  const situations = [...new Set(works.map(work => work.situacao).filter(Boolean))].sort();
+  const statusSelect = $("#work-status-filter");
+  if (statusSelect && statusSelect.options.length === 1) {
+    statusSelect.innerHTML += situations.map(item => `<option value="${item}">${workSituationLabel(item)}</option>`).join("");
+  }
+  const filtered = works.filter(work => {
+    const haystack = `${work.numero || ""} ${work.nome || ""} ${work.cliente || ""}`.toLocaleLowerCase("pt-PT");
+    return (!search || haystack.includes(search)) && (status === "all" || work.situacao === status);
+  });
+  const active = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
+  if ($("#active-works-count")) $("#active-works-count").textContent = String(active.length).padStart(2, "0");
+  if ($("#works-result-count")) $("#works-result-count").textContent = `${filtered.length} ${filtered.length === 1 ? "OBRA" : "OBRAS"}`;
+  if (!$("#works-list")) return;
+  $("#works-list").innerHTML = filtered.length ? filtered.map(work => `
+    <button class="work-list-item ${work.id === selectedWorkId ? "selected" : ""}" data-work-id="${work.id}">
+      <span class="work-number">${String(work.numero || "—").padStart(3, "0")}</span>
+      <span class="work-list-copy"><strong>${work.nome || "Obra sem designação"}</strong><small>${work.cliente || "Cliente não indicado"}</small></span>
+      <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
+      <span class="work-arrow">→</span>
+    </button>`).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa ou os filtros.</span></div>`;
+}
+
+function formatOptionalDate(value) {
+  return value ? prettyDate.format(new Date(`${value}T12:00:00`)) : "—";
+}
+
+function workProgress(work) {
+  if (!work.data_inicio || !work.data_fim_prevista) return null;
+  const start = new Date(`${work.data_inicio}T12:00:00`).getTime();
+  const end = new Date(`${work.data_fim_prevista}T12:00:00`).getTime();
+  if (end <= start) return null;
+  return Math.max(0, Math.min(100, Math.round(((Date.now() - start) / (end - start)) * 100)));
+}
+
+async function loadWorkDetails(workId) {
+  selectedWorkId = workId;
+  workDetails = { contract: null, phases: [], measurements: [], error: "" };
+  renderWorks();
+  const work = works.find(item => item.id === workId);
+  $("#work-detail").innerHTML = `<div class="empty-state">A CARREGAR DADOS DA OBRA…</div>`;
+  if (!isSupabaseConfigured) {
+    workDetails = {
+      contract: { venda_inicial: 553619.19, venda_efetiva: 472179.26, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
+      phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, nome: `Fase ${index + 1}` })),
+      measurements: [],
+      error: "",
+    };
+    renderWorkDetail(work);
+    return;
+  }
+  const [contractResult, phasesResult, measurementsResult] = await Promise.all([
+    supabase(`contratos?select=*&obra_id=eq.${encodeURIComponent(workId)}&limit=1`),
+    supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
+    supabase(`autos_medicao?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
+  ]);
+  const results = [contractResult, phasesResult, measurementsResult];
+  const failed = results.find(result => !result.ok);
+  if (failed) {
+    const detail = await failed.json().catch(() => ({}));
+    workDetails.error = detail.message || "Não foi possível consultar os detalhes desta obra.";
+  } else {
+    const [contracts, phases, measurements] = await Promise.all(results.map(result => result.json()));
+    workDetails.contract = contracts[0] || null;
+    workDetails.phases = phases;
+    workDetails.measurements = measurements;
+  }
+  renderWorkDetail(work);
+}
+
+function renderWorkDetail(work) {
+  if (!work) return;
+  const contract = workDetails.contract;
+  const subcontractRows = subcontracts.filter(item => item.obra_id === work.id);
+  const subcontractTotal = subcontractRows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
+  const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
+  const progress = workProgress(work);
+  const sale = Number(contract?.venda_efetiva || contract?.venda_inicial || 0);
+  $("#work-detail").innerHTML = `
+    <div class="work-detail-head">
+      <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
+      <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
+    </div>
+    <div class="work-location">${work.morada || "Morada não indicada"}</div>
+    ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
+    <div class="work-kpis">
+      <div><span>VENDA CONTRATADA</span><strong>${sale ? euro.format(sale) : "—"}</strong></div>
+      <div><span>AUTOS A FATURAR</span><strong>${measuredTotal ? euro.format(measuredTotal) : euro.format(0)}</strong></div>
+      <div><span>SUBEMPREITADAS</span><strong>${euro.format(subcontractTotal)}</strong><small>${subcontractRows.length} adjudicadas</small></div>
+    </div>
+    <div class="work-timeline">
+      <div><span>INÍCIO</span><strong>${formatOptionalDate(work.data_inicio)}</strong></div>
+      <div class="timeline-progress"><span>PRAZO DECORRIDO</span><div><i style="width:${progress ?? 0}%"></i></div><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
+      <div><span>FIM PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
+    </div>
+    <div class="work-detail-grid">
+      <section><div class="detail-section-title"><span>CONTRATO</span></div>
+        <dl>
+          <div><dt>Venda inicial</dt><dd>${contract?.venda_inicial != null ? euro.format(Number(contract.venda_inicial)) : "—"}</dd></div>
+          <div><dt>Venda efetiva</dt><dd>${contract?.venda_efetiva != null ? euro.format(Number(contract.venda_efetiva)) : "—"}</dd></div>
+          <div><dt>Adiantamento</dt><dd>${contract?.valor_adiantamento != null ? euro.format(Number(contract.valor_adiantamento)) : "—"}</dd></div>
+          <div><dt>Assinatura</dt><dd>${formatOptionalDate(contract?.data_assinatura)}</dd></div>
+        </dl>
+      </section>
+      <section><div class="detail-section-title"><span>FASES</span><small>${workDetails.phases.length}</small></div>
+        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.nome || phase.designacao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
+      </section>
+    </div>`;
+}
+
+function switchView(view) {
+  activeView = view;
+  document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
+  $("#invoice-view").hidden = view !== "invoices";
+  $("#works-view").hidden = view !== "works";
+  $("#placeholder-view").hidden = ["invoices", "works"].includes(view);
+  if (!["invoices", "works"].includes(view)) {
+    const labels = { overview: "VISÃO GERAL", documents: "DOCUMENTOS", team: "EQUIPA" };
+    $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
+  }
+  if (view === "works") {
+    renderWorks();
+    if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
+  }
+  $(".sidebar").classList.remove("open");
 }
 
 document.querySelectorAll("[data-type]").forEach(button => button.addEventListener("click", () => {
@@ -197,6 +357,13 @@ form.obra_id.addEventListener("change", renderSubcontracts);
 form.fornecedor_id.addEventListener("change", renderSubcontracts);
 $("#search").addEventListener("input", renderInvoices);
 $("#work-filter").addEventListener("change", e => { currentFilter = e.target.value; renderInvoices(); });
+document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
+$("#work-search").addEventListener("input", renderWorks);
+$("#work-status-filter").addEventListener("change", renderWorks);
+$("#works-list").addEventListener("click", event => {
+  const item = event.target.closest("[data-work-id]");
+  if (item) loadWorkDetails(item.dataset.workId);
+});
 $("#menu").addEventListener("click", () => $(".sidebar").classList.add("open"));
 $("#scrim").addEventListener("click", () => $(".sidebar").classList.remove("open"));
 $("#choose-pdf").addEventListener("click", () => $("#pdf-input").click());

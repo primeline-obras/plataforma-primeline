@@ -64,3 +64,10 @@ Ao anexar um PDF com texto pesquisável, o navegador tenta extrair número do
 documento, data, valor e fornecedor. O fornecedor só é preenchido quando o nome
 corresponde exatamente a um registo já existente; nunca são criados fornecedores
 automaticamente. A subempreitada nunca é pré-selecionada.
+
+## Módulo Obras
+
+A aba Obras apresenta a lista de obras e um detalhe com contrato, fases,
+subempreitadas e autos de medição. Antes de usar os detalhes em produção, execute
+`supabase/rls_obras_authenticated.sql` no SQL Editor para permitir as leituras ao
+papel `authenticated`, mantendo `anon` sem acesso.
