@@ -155,8 +155,17 @@ input::placeholder { color: #acb0b1; }
 .toast > span { width: 25px; height: 25px; border: 1px solid #737a7d; display: grid; place-items: center; }.toast svg { width: 14px; }.toast.error { background: #704848; }
 @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
 .scrim { display: none; }
-.works-toolbar { display: grid; grid-template-columns: 1fr 190px; gap: 13px; margin-bottom: 18px; }
+.works-toolbar { display: grid; grid-template-columns: 1fr 190px auto; gap: 13px; margin-bottom: 18px; }
 .works-toolbar .search-box { margin: 0; }.works-toolbar .select-wrap { margin: 0; }.works-toolbar select { height: 41px; }
+.outline-action { height: 41px; padding: 0 16px; border: 1px solid #555c5f; background: transparent; color: #343a3d; font: 700 8px "Manrope"; letter-spacing: .8px; white-space: nowrap; }
+.outline-action:hover { background: #f8f8f5; border-color: #292e31; }
+.dialog-backdrop { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 24px; background: rgba(22,26,28,.7); }
+.work-dialog-card { width: min(690px, 100%); max-height: calc(100vh - 48px); overflow: auto; background: var(--paper); border: 1px solid #555b5e; box-shadow: 0 22px 70px rgba(0,0,0,.28); }
+.work-dialog-card .panel-title button { border: 0; background: none; color: white; font-size: 24px; font-weight: 300; }
+.work-dialog-card form { padding: 25px; }
+.form-error { min-height: 16px; color: #985353; font-size: 10px; margin: -4px 0 12px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.dialog-actions .primary-button { flex: 0 0 190px; height: 41px; }
 .works-layout { display: grid; grid-template-columns: minmax(300px,.72fr) minmax(520px,1.55fr); gap: 22px; align-items: start; }
 .works-list-panel { overflow: hidden; }
 .works-list-head { height: 49px; padding: 0 16px; background: var(--charcoal); color: white; display: flex; align-items: center; justify-content: space-between; }
@@ -222,6 +231,7 @@ input::placeholder { color: #acb0b1; }
   .mobile-brand .brand { color: var(--charcoal); }.mobile-brand .brand-mark span { background: var(--charcoal); }.mobile-brand .brand small { color: #6f7578; }
   .page { padding: 28px 16px 45px; }.heading-stat { display: none; }.invoice-grid { display: block; }.pending-panel { margin-top: 18px; padding: 18px; }
   .works-toolbar { grid-template-columns: 1fr; }.works-layout { display: block; }.work-detail { margin-top: 16px; padding: 18px; }.work-kpis { grid-template-columns: 1fr; }.work-kpis > div { border-right: 0; border-bottom: 1px solid #e0e1de; }.work-detail-grid { grid-template-columns: 1fr; }.work-timeline { grid-template-columns: 1fr; }.phase-tags { grid-template-columns: 1fr; }
+  .works-toolbar .outline-action { width: 100%; }.dialog-backdrop { padding: 12px; }.work-dialog-card .form-row { grid-template-columns: 1fr; }.dialog-actions { flex-direction: column-reverse; }.dialog-actions .primary-button { flex-basis: 41px; }
   .work-tabs { margin-left: -18px; margin-right: -18px; padding: 0 12px; }.procurement-summary { grid-template-columns: repeat(2,1fr); }.procurement-summary > div:nth-child(2) { border-right: 0; }.procurement-summary > div:nth-child(-n+2) { border-bottom: 1px solid #e0e1de; }.subcontract-card { grid-template-columns: 1fr 1fr; }.approval-badge { justify-self: start; }.consultation-grid { grid-template-columns: 1fr; }
   .pending-head { align-items: end; }.pending-head h2 { font-size: 17px; }.pending-head .select-wrap { width: 130px; }
   .invoice-card { padding: 13px; }.invoice-icon { display: none; }.form-row { grid-template-columns: 1fr; gap: 0; }.form-actions { flex-direction: column; }

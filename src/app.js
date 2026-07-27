@@ -17,7 +17,8 @@ const icon = (name) => {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
 
-let works = [], suppliers = [], subcontracts = [], invoices = [];
+let works = [], suppliers = [], subcontracts = [], invoices = [], collaborators = [];
+const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let currentFilter = "all";
 let session = getSession();
 let selectedPdf = null;
@@ -116,6 +117,7 @@ document.querySelector("#root").innerHTML = `
         <div class="works-toolbar">
           <div class="search-box">${icon("search")}<input id="work-search" placeholder="Pesquisar número, nome ou cliente…"></div>
           <div class="select-wrap"><select id="work-status-filter"><option value="all">Todas as situações</option></select><b>⌄</b></div>
+          <button class="outline-action" id="new-work" type="button">＋ NOVA OBRA</button>
         </div>
         <div class="works-layout">
           <section class="works-list-panel panel">
@@ -132,6 +134,21 @@ document.querySelector("#root").innerHTML = `
       </div>
     </main>
     <div id="toast"></div>
+    <div class="dialog-backdrop" id="work-dialog" hidden>
+      <section class="work-dialog-card" role="dialog" aria-modal="true" aria-labelledby="work-dialog-title">
+        <div class="panel-title"><span id="work-dialog-title">＋ NOVA OBRA</span><button id="close-work-dialog" type="button" aria-label="Fechar">×</button></div>
+        <form id="work-form">
+          <div class="form-row"><label>N.º DA OBRA<input name="numero" required maxlength="30" placeholder="Ex. 121"></label><label>SITUAÇÃO<div class="select-wrap"><select name="situacao"><option value="em_curso">Em curso</option><option value="planeamento">Planeamento</option><option value="suspensa">Suspensa</option></select><b>⌄</b></div></label></div>
+          <label>DESIGNAÇÃO<input name="nome" required maxlength="160" placeholder="Ex. Moradia Unifamiliar — Cascais"></label>
+          <div class="form-row"><label>CLIENTE<input name="cliente" maxlength="160"></label><label>DIRETOR DE OBRA<div class="select-wrap"><select name="diretor_obra_id"><option value="">Não definido</option></select><b>⌄</b></div></label></div>
+          <label>MORADA<input name="morada" maxlength="240"></label>
+          <div class="form-row"><label>TIPO<input name="tipo" maxlength="80" placeholder="Ex. Construção nova"></label><label>MODALIDADE<input name="modalidade" maxlength="80" placeholder="Ex. Empreitada geral"></label></div>
+          <div class="form-row"><label>DATA DE INÍCIO<input name="data_inicio" type="date"></label><label>FIM PREVISTO<input name="data_fim_prevista" type="date"></label></div>
+          <p class="form-error" id="work-form-error"></p>
+          <div class="dialog-actions"><button class="outline-action" id="cancel-work" type="button">CANCELAR</button><button class="primary-button" type="submit">CRIAR OBRA <span>→</span></button></div>
+        </form>
+      </section>
+    </div>
     <div class="pdf-modal" id="pdf-modal" hidden>
       <div class="pdf-modal-bar"><strong id="pdf-modal-title">DOCUMENTO</strong><button id="close-pdf" aria-label="Fechar">×</button></div>
       <div class="pdf-modal-body"><iframe id="pdf-frame" title="Pré-visualização do PDF"></iframe></div>
@@ -209,9 +226,18 @@ async function loadData() {
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
     [works, suppliers, subcontracts, invoices] = await Promise.all(results.map(result => result.json()));
+    const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel&data_saida=is.null&order=nome");
+    collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
   }
   renderSelectors(); renderInvoices();
   renderWorks();
+  renderWorkDirectors();
+}
+
+function renderWorkDirectors() {
+  const select = $("#work-form")?.diretor_obra_id;
+  if (!select) return;
+  select.innerHTML = `<option value="">Não definido</option>${collaborators.map(person => `<option value="${person.id}">${person.nome}${person.funcao ? ` — ${person.funcao}` : ""}</option>`).join("")}`;
 }
 
 function workSituationLabel(value) {
@@ -446,6 +472,77 @@ $("#work-filter").addEventListener("change", e => { currentFilter = e.target.val
 document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#work-search").addEventListener("input", renderWorks);
 $("#work-status-filter").addEventListener("change", renderWorks);
+function closeWorkDialog() {
+  $("#work-dialog").hidden = true;
+  $("#work-form-error").textContent = "";
+}
+$("#new-work").addEventListener("click", () => {
+  renderWorkDirectors();
+  $("#work-dialog").hidden = false;
+  $("#work-form").numero.focus();
+});
+$("#close-work-dialog").addEventListener("click", closeWorkDialog);
+$("#cancel-work").addEventListener("click", closeWorkDialog);
+$("#work-dialog").addEventListener("click", event => {
+  if (event.target === $("#work-dialog")) closeWorkDialog();
+});
+$("#work-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const workForm = event.currentTarget;
+  const button = workForm.querySelector('button[type="submit"]');
+  const fields = Object.fromEntries(new FormData(workForm));
+  $("#work-form-error").textContent = "";
+  if (fields.data_inicio && fields.data_fim_prevista && fields.data_fim_prevista < fields.data_inicio) {
+    $("#work-form-error").textContent = "A data de fim prevista não pode ser anterior à data de início.";
+    return;
+  }
+  const duplicate = works.some(work => String(work.numero).trim().toLocaleLowerCase("pt-PT") === fields.numero.trim().toLocaleLowerCase("pt-PT"));
+  if (duplicate) {
+    $("#work-form-error").textContent = "Já existe uma obra com este número.";
+    return;
+  }
+  const payload = {
+    empresa_id: PRIMELINE_COMPANY_ID,
+    numero: fields.numero.trim(),
+    nome: fields.nome.trim(),
+    cliente: fields.cliente.trim() || null,
+    morada: fields.morada.trim() || null,
+    tipo: fields.tipo.trim() || null,
+    modalidade: fields.modalidade.trim() || null,
+    diretor_obra_id: fields.diretor_obra_id || null,
+    situacao: fields.situacao || "em_curso",
+    data_inicio: fields.data_inicio || null,
+    data_fim_prevista: fields.data_fim_prevista || null,
+  };
+  button.disabled = true;
+  try {
+    if (!isSupabaseConfigured) {
+      payload.id = crypto.randomUUID();
+    } else {
+      const response = await supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.message || detail.details || "Não foi possível criar a obra.");
+      }
+      Object.assign(payload, (await response.json())[0]);
+    }
+    works.unshift(payload);
+    renderSelectors();
+    renderWorks();
+    workForm.reset();
+    closeWorkDialog();
+    toast(`Obra ${payload.numero} criada com sucesso.`);
+    await loadWorkDetails(payload.id);
+  } catch (error) {
+    $("#work-form-error").textContent = error.message || "Não foi possível criar a obra.";
+  } finally {
+    button.disabled = false;
+  }
+});
 $("#works-list").addEventListener("click", event => {
   const item = event.target.closest("[data-work-id]");
   if (item) loadWorkDetails(item.dataset.workId);
