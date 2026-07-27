@@ -1,0 +1,50 @@
+# PRIMELINE — Frontend de Faturas
+
+Primeiro módulo da plataforma de gestão de obras. É uma aplicação web sem processo
+de compilação e funciona em modo de demonstração enquanto não existirem credenciais.
+
+## Configurar o Supabase
+
+Editar `config.js` e preencher apenas:
+
+```js
+window.PRIMELINE_CONFIG = {
+  supabaseUrl: "https://SEU-PROJETO.supabase.co",
+  supabaseAnonKey: "SUA-ANON-PUBLIC-KEY",
+};
+```
+
+Nunca colocar a `service_role key` no frontend.
+
+## Executar localmente
+
+Na pasta do projeto:
+
+```powershell
+python -m http.server 4173 --bind 127.0.0.1
+```
+
+Abrir `http://127.0.0.1:4173`.
+
+## Autenticação e RLS
+
+O frontend autentica por email e palavra-passe através do Supabase Auth. A sessão é
+guardada localmente e o `access_token` do utilizador é enviado nas chamadas REST.
+
+Antes de utilizar a aplicação com dados reais, executar
+`supabase/rls_authenticated.sql` no SQL Editor do Supabase com uma conta owner. O
+script:
+
+- não concede qualquer acesso ao papel `anon`;
+- permite ao papel `authenticated` ler as quatro tabelas usadas;
+- permite inserir faturas pendentes;
+- permite aprovar ou recusar faturas que ainda estejam pendentes.
+
+## Operações utilizadas
+
+- Leitura: `obras`, `fornecedores`, `subempreitadas` e `faturas`.
+- Inserção: `faturas`.
+- Atualização: `faturas.estado_aprovacao` e `faturas.data_aprovacao`.
+- Não executa operações de schema.
+
+É necessário criar os utilizadores no Supabase Auth antes do primeiro login.
