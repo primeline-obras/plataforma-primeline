@@ -171,6 +171,12 @@ function renderUser() {
   $("#user-initials").textContent = label.split(/[ ._-]+/).slice(0, 2).map(part => part[0]).join("").toUpperCase();
 }
 
+window.addEventListener("primeline:session-expired", () => {
+  session = null;
+  $("#auth-screen").hidden = false;
+  $("#auth-error").textContent = "A sua sessão expirou. Inicie sessão novamente.";
+});
+
 function toast(message, kind = "success") {
   $("#toast").innerHTML = `<div class="toast ${kind}"><span>${icon(kind === "error" ? "x" : "check")}</span>${message}</div>`;
   setTimeout(() => { $("#toast").innerHTML = ""; }, 4200);

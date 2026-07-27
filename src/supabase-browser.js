@@ -3,6 +3,7 @@ const anonKey = window.PRIMELINE_CONFIG?.supabaseAnonKey || "";
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
 const SESSION_KEY = "primeline_supabase_session";
+let refreshPromise = null;
 
 export function getSession() {
   try {
@@ -39,6 +40,32 @@ export async function signOut() {
     }).catch(() => {});
   }
   clearSession();
+}
+
+export async function refreshSession() {
+  const current = getSession();
+  if (!current?.refresh_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { apikey: anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: current.refresh_token }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.access_token) {
+      clearSession();
+      window.dispatchEvent(new CustomEvent("primeline:session-expired"));
+      throw new Error("A sessão expirou. Inicie sessão novamente.");
+    }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    return payload;
+  })();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
 }
 
 export async function requestPasswordReset(email) {
@@ -172,15 +199,32 @@ export async function downloadInvoicePdf(objectPath) {
   return response.blob();
 }
 
-export const supabase = (path, options = {}) => {
-  const session = getSession();
-  return fetch(`${url}/rest/v1/${path}`, {
-  ...options,
-  headers: {
-    apikey: anonKey,
-    Authorization: `Bearer ${session?.access_token || anonKey}`,
-    "Content-Type": "application/json",
-    ...options.headers,
-  },
-});
+export const supabase = async (path, options = {}) => {
+  let tokenUsed = "";
+  const request = () => {
+    const session = getSession();
+    tokenUsed = session?.access_token || anonKey;
+    return fetch(`${url}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${tokenUsed}`,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+  };
+  let response = await request();
+  if (response.status === 401 && getSession()?.refresh_token) {
+    const detail = await response.clone().json().catch(() => ({}));
+    if (detail.code === "PGRST303" || /jwt.*expired/i.test(detail.message || "")) {
+      try {
+        if (getSession()?.access_token === tokenUsed) await refreshSession();
+        response = await request();
+      } catch {
+        return response;
+      }
+    }
+  }
+  return response;
 };
