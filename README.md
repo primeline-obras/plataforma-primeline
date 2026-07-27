@@ -48,3 +48,7 @@ script:
 - Não executa operações de schema.
 
 É necessário criar os utilizadores no Supabase Auth antes do primeiro login.
+
+O login inclui recuperação de palavra-passe. No Supabase, adicione
+`https://plataforma-primeline.pages.dev/reset-password` à lista de Redirect URLs em
+Authentication → URL Configuration.

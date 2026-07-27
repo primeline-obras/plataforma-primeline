@@ -30,6 +30,11 @@ svg { width: 19px; height: 19px; display: block; }
 .auth-card > small { display: block; margin-top: 30px; color: #969b9d; font-size: 8px; letter-spacing: 1.5px; }
 .login-button { width: 100%; height: 46px; font: 700 9px "Manrope"; letter-spacing: .9px; padding: 0 15px; }
 .auth-error { color: #9b4d4d; font-size: 11px; min-height: 16px; margin: -5px 0 12px; }
+.auth-success { color: #46704e; background: #eef6ef; border-left: 2px solid #6e9a76; font-size: 11px; line-height: 1.5; margin: 0 0 15px; padding: 11px 12px; }
+.auth-success:empty { display: none; }
+.forgot-link, .back-link { width: 100%; border: 0; background: none; color: #62696c; font: 700 8px "Manrope"; letter-spacing: .9px; padding: 15px 0 3px; text-decoration: underline; text-underline-offset: 3px; }
+.back-link { width: auto; padding: 0 0 22px; text-decoration: none; }
+.recovery-copy { color: var(--muted); font-size: 12px; line-height: 1.55; margin: 0 0 22px; }
 
 .sidebar {
   width: 252px; min-height: 100vh; background: var(--charcoal); color: #fff;
@@ -139,4 +144,23 @@ input::placeholder { color: #acb0b1; }
 @media (max-width: 430px) {
   .segmented { grid-template-columns: 1fr; }.segmented button { border-right: 0; border-bottom: 1px solid #d4d6d4; }.segmented button:last-child { border-bottom: 0; }
   .pending-head { display: block; }.pending-head .select-wrap { width: 100%; margin-top: 14px; }
+}
+
+.reset-screen { min-height: 100vh; display: grid; grid-template-columns: .85fr 1.15fr; margin: 0; width: 100%; }
+.reset-brand { background: var(--charcoal); color: white; padding: 54px; }
+.reset-brand .brand { transform: scale(1.1); transform-origin: top left; }
+.reset-content { display: grid; place-items: center; padding: 45px 25px; }
+.reset-card { width: min(430px, 100%); }
+.reset-card h1 { font-size: 35px; }
+.reset-intro { color: var(--muted); font-size: 13px; margin: 8px 0 30px; }
+.password-hint { color: #858b8d; font-size: 10px; line-height: 1.5; margin: -7px 0 18px; }
+.reset-message { border: 1px solid #d8dad7; padding: 22px; display: flex; flex-direction: column; gap: 9px; color: #555b5e; font-size: 12px; line-height: 1.5; }
+.reset-message strong { font: 700 11px "Manrope"; letter-spacing: 1px; color: var(--ink); }
+.reset-message a { margin-top: 8px; color: white; background: var(--charcoal); padding: 13px 15px; text-decoration: none; font: 700 8px "Manrope"; letter-spacing: .8px; text-align: center; }
+.reset-message.error { border-left: 3px solid #9b5959; background: #fbf5f4; }
+.reset-message.success { border-left: 3px solid #65906c; background: #f1f7f2; }
+@media (max-width: 760px) {
+  .reset-screen { grid-template-columns: 1fr; }
+  .reset-brand { min-height: 95px; padding: 27px; }
+  .reset-brand .brand { transform: scale(.88); }
 }

@@ -41,6 +41,59 @@ export async function signOut() {
   clearSession();
 }
 
+export async function requestPasswordReset(email) {
+  const redirectTo = "https://plataforma-primeline.pages.dev/reset-password";
+  const response = await fetch(`${url}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+    method: "POST",
+    headers: { apikey: anonKey, "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error_description || payload.msg || payload.message || "Não foi possível enviar o email.");
+    error.code = payload.code || payload.error_code;
+    throw error;
+  }
+  return payload;
+}
+
+export function readRecoverySession() {
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const errorDescription = params.get("error_description");
+  if (errorDescription) {
+    const error = new Error(errorDescription);
+    error.code = params.get("error_code") || params.get("error");
+    throw error;
+  }
+  if (params.get("type") !== "recovery" || !params.get("access_token")) return null;
+  return {
+    access_token: params.get("access_token"),
+    refresh_token: params.get("refresh_token"),
+    expires_in: Number(params.get("expires_in") || 0),
+    token_type: params.get("token_type") || "bearer",
+    type: "recovery",
+  };
+}
+
+export async function updateRecoveryPassword(accessToken, password) {
+  const response = await fetch(`${url}/auth/v1/user`, {
+    method: "PUT",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error_description || payload.msg || payload.message || "Não foi possível alterar a palavra-passe.");
+    error.code = payload.code || payload.error_code;
+    throw error;
+  }
+  return payload;
+}
+
 export const supabase = (path, options = {}) => {
   const session = getSession();
   return fetch(`${url}/rest/v1/${path}`, {

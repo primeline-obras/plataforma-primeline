@@ -1,4 +1,4 @@
-import { clearSession, getSession, isSupabaseConfigured, signIn, signOut, supabase } from "./supabase-browser.js";
+import { clearSession, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -38,6 +38,15 @@ document.querySelector("#root").innerHTML = `
           <label>PALAVRA-PASSE<input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required></label>
           <p class="auth-error" id="auth-error"></p>
           <button class="primary-button login-button" type="submit">INICIAR SESSÃO <span>→</span></button>
+          <button class="forgot-link" id="show-recovery" type="button">ESQUECI-ME DA PALAVRA-PASSE</button>
+        </form>
+        <form id="recovery-form" hidden>
+          <button class="back-link" id="hide-recovery" type="button">← VOLTAR AO LOGIN</button>
+          <p class="recovery-copy">Indique o email da sua conta. Enviaremos uma ligação segura para definir uma nova palavra-passe.</p>
+          <label>EMAIL<input name="recovery_email" type="text" inputmode="email" autocomplete="email" placeholder="nome@primeline.pt" required></label>
+          <p class="auth-error" id="recovery-error"></p>
+          <p class="auth-success" id="recovery-success"></p>
+          <button class="primary-button login-button" type="submit">ENVIAR LIGAÇÃO <span>→</span></button>
         </form>
         <small>PRIMELINE · ENGENHARIA E CONSTRUÇÃO</small>
       </div>
@@ -194,6 +203,47 @@ $("#login-form").addEventListener("submit", async event => {
     $("#auth-error").textContent = error.message;
   } finally {
     button.disabled = false; button.firstChild.textContent = "INICIAR SESSÃO ";
+  }
+});
+
+$("#show-recovery").addEventListener("click", () => {
+  $("#login-form").hidden = true;
+  $("#recovery-form").hidden = false;
+  $("#auth-error").textContent = "";
+  $(".auth-card h1").textContent = "RECUPERAR ACESSO";
+  $(".auth-card > p:not(.eyebrow)").textContent = "Receba uma ligação segura no seu email.";
+});
+
+$("#hide-recovery").addEventListener("click", () => {
+  $("#recovery-form").hidden = true;
+  $("#login-form").hidden = false;
+  $("#recovery-error").textContent = "";
+  $("#recovery-success").textContent = "";
+  $(".auth-card h1").textContent = "ENTRAR";
+  $(".auth-card > p:not(.eyebrow)").textContent = "Utilize as credenciais da sua conta PRIMELINE.";
+});
+
+$("#recovery-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector(".primary-button");
+  const email = event.currentTarget.recovery_email.value.trim();
+  button.disabled = true;
+  button.firstChild.textContent = "A ENVIAR… ";
+  $("#recovery-error").textContent = "";
+  $("#recovery-success").textContent = "";
+  try {
+    await requestPasswordReset(email);
+    $("#recovery-success").textContent = "Email enviado. Consulte também a pasta de spam. A ligação é válida por tempo limitado.";
+    event.currentTarget.recovery_email.value = "";
+  } catch (error) {
+    const messages = {
+      over_email_send_rate_limit: "Foram pedidos demasiados emails. Aguarde alguns minutos e tente novamente.",
+      email_address_invalid: "O endereço de email não é válido.",
+    };
+    $("#recovery-error").textContent = messages[error.code] || error.message || "Não foi possível enviar o email de recuperação.";
+  } finally {
+    button.disabled = false;
+    button.firstChild.textContent = "ENVIAR LIGAÇÃO ";
   }
 });
 
