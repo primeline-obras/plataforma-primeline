@@ -71,3 +71,7 @@ A aba Obras apresenta a lista de obras e um detalhe com contrato, fases,
 subempreitadas e autos de medição. Antes de usar os detalhes em produção, execute
 `supabase/rls_obras_authenticated.sql` no SQL Editor para permitir as leituras ao
 papel `authenticated`, mantendo `anon` sem acesso.
+
+O separador Subempreitadas também apresenta pagamentos acumulados e consultas ainda
+por adjudicar. Execute `supabase/rls_subempreitadas_authenticated.sql` para permitir
+essas duas leituras ao papel `authenticated`.

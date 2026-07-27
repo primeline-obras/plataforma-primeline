@@ -25,7 +25,8 @@ let localPdfUrl = "";
 let openedPdfUrl = "";
 let activeView = "invoices";
 let selectedWorkId = "";
-let workDetails = { contract: null, phases: [], measurements: [], error: "" };
+let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], error: "", procurementError: "" };
+let selectedWorkTab = "summary";
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -257,7 +258,8 @@ function workProgress(work) {
 
 async function loadWorkDetails(workId) {
   selectedWorkId = workId;
-  workDetails = { contract: null, phases: [], measurements: [], error: "" };
+  selectedWorkTab = "summary";
+  workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], error: "", procurementError: "" };
   renderWorks();
   const work = works.find(item => item.id === workId);
   $("#work-detail").innerHTML = `<div class="empty-state">A CARREGAR DADOS DA OBRA…</div>`;
@@ -266,7 +268,16 @@ async function loadWorkDetails(workId) {
       contract: { venda_inicial: 553619.19, venda_efetiva: 472179.26, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
       phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, nome: `Fase ${index + 1}` })),
       measurements: [],
+      payments: [
+        { subempreitada_id: "sub-elec", valor: 8500 },
+        { subempreitada_id: "sub-ac", valor: 1350 },
+      ],
+      consultations: [
+        { id: "c-caix", obra_id: work.id, especialidade: "Caixilharia", estado: "em_consulta", fornecedor_id: null },
+        { id: "c-gas", obra_id: work.id, especialidade: "Gás", estado: "em_consulta", fornecedor_id: null },
+      ],
       error: "",
+      procurementError: "",
     };
     renderWorkDetail(work);
     return;
@@ -287,24 +298,32 @@ async function loadWorkDetails(workId) {
     workDetails.phases = phases;
     workDetails.measurements = measurements;
   }
+  const subcontractIds = subcontracts.filter(item => item.obra_id === workId).map(item => item.id);
+  const [consultationsResult, paymentsResult] = await Promise.all([
+    supabase(`consultas_subempreitada?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
+    subcontractIds.length
+      ? supabase(`pagamentos_subempreitada?select=subempreitada_id,valor,estado_aprovacao&subempreitada_id=in.(${subcontractIds.map(encodeURIComponent).join(",")})`)
+      : Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })),
+  ]);
+  if (!consultationsResult.ok || !paymentsResult.ok) {
+    const failedProcurement = !consultationsResult.ok ? consultationsResult : paymentsResult;
+    const detail = await failedProcurement.json().catch(() => ({}));
+    workDetails.procurementError = detail.message || "Não foi possível consultar pagamentos e consultas.";
+  } else {
+    workDetails.consultations = await consultationsResult.json();
+    workDetails.payments = await paymentsResult.json();
+  }
   renderWorkDetail(work);
 }
 
-function renderWorkDetail(work) {
-  if (!work) return;
+function renderWorkSummary(work) {
   const contract = workDetails.contract;
   const subcontractRows = subcontracts.filter(item => item.obra_id === work.id);
   const subcontractTotal = subcontractRows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
   const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
   const progress = workProgress(work);
   const sale = Number(contract?.venda_efetiva || contract?.venda_inicial || 0);
-  $("#work-detail").innerHTML = `
-    <div class="work-detail-head">
-      <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
-      <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
-    </div>
-    <div class="work-location">${work.morada || "Morada não indicada"}</div>
-    ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
+  return `
     <div class="work-kpis">
       <div><span>VENDA CONTRATADA</span><strong>${sale ? euro.format(sale) : "—"}</strong></div>
       <div><span>AUTOS A FATURAR</span><strong>${measuredTotal ? euro.format(measuredTotal) : euro.format(0)}</strong></div>
@@ -328,6 +347,73 @@ function renderWorkDetail(work) {
         <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.nome || phase.designacao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
       </section>
     </div>`;
+}
+
+function supplierName(id) {
+  return suppliers.find(item => item.id === id)?.nome || "Fornecedor não identificado";
+}
+
+function renderSubcontractsTab(work) {
+  const rows = subcontracts.filter(item => item.obra_id === work.id);
+  const paidBySubcontract = new Map();
+  workDetails.payments.forEach(payment => {
+    paidBySubcontract.set(payment.subempreitada_id, (paidBySubcontract.get(payment.subempreitada_id) || 0) + Number(payment.valor || 0));
+  });
+  const openConsultations = workDetails.consultations.filter(item => !item.fornecedor_id && (item.estado === "em_consulta" || !item.estado));
+  const adjudicatedTotal = rows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
+  const paidTotal = rows.reduce((sum, item) => sum + (paidBySubcontract.get(item.id) || 0), 0);
+  const overallPercent = adjudicatedTotal > 0 ? Math.min(100, Math.round((paidTotal / adjudicatedTotal) * 100)) : 0;
+  return `
+    ${workDetails.procurementError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.procurementError} Execute o script RLS do separador Subempreitadas.</span></div>` : ""}
+    <div class="procurement-summary">
+      <div><span>ADJUDICADO</span><strong>${euro.format(adjudicatedTotal)}</strong></div>
+      <div><span>PAGO</span><strong>${euro.format(paidTotal)}</strong></div>
+      <div><span>EXECUÇÃO FINANCEIRA</span><strong>${overallPercent}%</strong><div class="mini-progress"><i style="width:${overallPercent}%"></i></div></div>
+      <div><span>POR ADJUDICAR</span><strong>${openConsultations.length}</strong></div>
+    </div>
+    <div class="subcontracts-list">
+      ${rows.length ? rows.map(row => {
+        const adjudicated = Number(row.valor_adjudicado || 0);
+        const paid = paidBySubcontract.get(row.id) || 0;
+        const percent = adjudicated > 0 ? Math.min(100, Math.round((paid / adjudicated) * 100)) : 0;
+        const approval = row.estado_aprovacao_gerencia || (row.aprovado_por_gerencia ? "aprovado" : "pendente");
+        return `<article class="subcontract-card">
+          <div class="subcontract-main"><span class="subcontract-specialty">${row.especialidade || "Sem especialidade"}</span><strong>${supplierName(row.fornecedor_id)}</strong><small>${workSituationLabel(row.estado)}</small></div>
+          <div class="subcontract-value"><span>ADJUDICADO</span><strong>${euro.format(adjudicated)}</strong></div>
+          <div class="subcontract-paid"><div><span>PAGO</span><strong>${euro.format(paid)}</strong><em>${percent}%</em></div><div class="payment-progress"><i style="width:${percent}%"></i></div></div>
+          <span class="approval-badge ${approval}">${workSituationLabel(approval)}</span>
+        </article>`;
+      }).join("") : `<div class="empty-state"><strong>SEM SUBEMPREITADAS</strong><span>Ainda não existem adjudicações nesta obra.</span></div>`}
+    </div>
+    <section class="open-consultations">
+      <div class="detail-section-title"><span>POR ADJUDICAR</span><small>${openConsultations.length}</small></div>
+      ${openConsultations.length ? `<div class="consultation-grid">${openConsultations.map(item => `<div><span>${item.especialidade || item.designacao || "Especialidade não indicada"}</span><strong>EM CONSULTA</strong><small>Fornecedor por definir</small></div>`).join("")}</div>` : `<p>Não existem especialidades em consulta sem fornecedor definido.</p>`}
+    </section>`;
+}
+
+function renderWorkTab(work) {
+  if (selectedWorkTab === "subcontracts") return renderSubcontractsTab(work);
+  if (selectedWorkTab === "measurements") return `<div class="empty-state"><strong>AUTOS DE MEDIÇÃO</strong><span>Este separador será desenvolvido na próxima etapa.</span></div>`;
+  if (selectedWorkTab === "phases") return `<div class="empty-state"><strong>FASES</strong><span>Este separador será desenvolvido numa próxima etapa.</span></div>`;
+  return renderWorkSummary(work);
+}
+
+function renderWorkDetail(work) {
+  if (!work) return;
+  $("#work-detail").innerHTML = `
+    <div class="work-detail-head">
+      <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
+      <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
+    </div>
+    <div class="work-location">${work.morada || "Morada não indicada"}</div>
+    ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
+    <nav class="work-tabs">
+      <button data-work-tab="summary" class="${selectedWorkTab === "summary" ? "active" : ""}">RESUMO</button>
+      <button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
+      <button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
+      <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
+    </nav>
+    <div class="work-tab-content">${renderWorkTab(work)}</div>`;
 }
 
 function switchView(view) {
@@ -363,6 +449,12 @@ $("#work-status-filter").addEventListener("change", renderWorks);
 $("#works-list").addEventListener("click", event => {
   const item = event.target.closest("[data-work-id]");
   if (item) loadWorkDetails(item.dataset.workId);
+});
+$("#work-detail").addEventListener("click", event => {
+  const tabButton = event.target.closest("[data-work-tab]");
+  if (!tabButton) return;
+  selectedWorkTab = tabButton.dataset.workTab;
+  renderWorkDetail(works.find(item => item.id === selectedWorkId));
 });
 $("#menu").addEventListener("click", () => $(".sidebar").classList.add("open"));
 $("#scrim").addEventListener("click", () => $(".sidebar").classList.remove("open"));

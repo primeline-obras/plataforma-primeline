@@ -9,10 +9,10 @@ export const demoSuppliers = [
   { id: "sanitop", nome: "Sanitop Portugal" },
 ];
 export const demoSubcontracts = [
-  { id: "sub-elec", obra_id: demoWorks[0].id, fornecedor_id: "fluxion", especialidade: "Eletricidade" },
-  { id: "sub-ac", obra_id: demoWorks[0].id, fornecedor_id: "fluxion", especialidade: "AC Pré-instalação" },
-  { id: "sub-hid", obra_id: demoWorks[0].id, fornecedor_id: "sergio", especialidade: "Hidráulica" },
-  { id: "sub-vala", obra_id: demoWorks[0].id, fornecedor_id: "panorama", especialidade: "Vala" },
+  { id: "sub-elec", obra_id: demoWorks[0].id, fornecedor_id: "fluxion", especialidade: "Eletricidade", valor_adjudicado: 17000, estado: "adjudicada", estado_aprovacao_gerencia: "aprovado" },
+  { id: "sub-ac", obra_id: demoWorks[0].id, fornecedor_id: "fluxion", especialidade: "AC Pré-instalação", valor_adjudicado: 2700, estado: "adjudicada", estado_aprovacao_gerencia: "aprovado" },
+  { id: "sub-hid", obra_id: demoWorks[0].id, fornecedor_id: "sergio", especialidade: "Hidráulica", valor_adjudicado: 7500, estado: "adjudicada", estado_aprovacao_gerencia: "pendente" },
+  { id: "sub-vala", obra_id: demoWorks[0].id, fornecedor_id: "panorama", especialidade: "Vala", valor_adjudicado: 7280, estado: "adjudicada", estado_aprovacao_gerencia: "aprovado" },
 ];
 export const demoInvoices = [
   { id: "demo-1", obra_id: demoWorks[0].id, tipo_origem: "subempreitada", fornecedor_id: "fluxion", subempreitada_id: "sub-elec", numero_doc: "FT 2026/041", data_fatura: "2026-07-18", valor: 4250, estado_aprovacao: "pendente" },
