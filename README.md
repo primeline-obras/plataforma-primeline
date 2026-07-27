@@ -52,3 +52,10 @@ script:
 O login inclui recuperação de palavra-passe. No Supabase, adicione
 `https://plataforma-primeline.pages.dev/reset-password` à lista de Redirect URLs em
 Authentication → URL Configuration.
+
+## PDFs de faturas
+
+O formulário permite anexar e pré-visualizar PDFs até 10 MB. Os documentos são
+guardados no bucket privado `faturas` e `faturas.arquivo_url` recebe apenas o caminho
+interno do objeto. O bucket deve aceitar `application/pdf` e ter políticas de
+`insert` e `select` para `authenticated`.

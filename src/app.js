@@ -1,4 +1,4 @@
-import { clearSession, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase } from "./supabase-browser.js";
+import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadInvoicePdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -20,6 +20,9 @@ const icon = (name) => {
 let works = [], suppliers = [], subcontracts = [], invoices = [];
 let currentFilter = "all";
 let session = getSession();
+let selectedPdf = null;
+let localPdfUrl = "";
+let openedPdfUrl = "";
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -79,7 +82,14 @@ document.querySelector("#root").innerHTML = `
               <label class="conditional" id="subcontract-field">SUBEMPREITADA<div class="select-wrap"><select name="subempreitada_id" required></select><b>⌄</b></div><em id="subcontract-hint"></em></label>
               <div class="form-row"><label>N.º DOCUMENTO<input name="numero_doc" placeholder="Ex. FT 2026/001" required></label><label>DATA<input name="data_fatura" type="date" required></label></div>
               <label>VALOR (EUR)<div class="money-input"><input name="valor" type="number" min="0.01" step="0.01" placeholder="0,00" required><span>€</span></div></label>
-              <div class="form-actions"><button type="button" class="upload-button" disabled>${icon("upload")} IMPORTAR PDF</button><button class="primary-button" type="submit">REGISTAR FATURA <span>→</span></button></div>
+              <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden>
+              <div class="pdf-attachment" id="pdf-attachment" hidden>
+                <div class="pdf-attachment-head">
+                  <span>${icon("invoice")}<strong id="pdf-name"></strong><small id="pdf-size"></small></span>
+                  <div><button type="button" id="preview-pdf">PRÉ-VISUALIZAR</button><button type="button" id="remove-pdf" aria-label="Remover PDF">×</button></div>
+                </div>
+              </div>
+              <div class="form-actions"><button type="button" class="upload-button" id="choose-pdf">${icon("upload")} ANEXAR PDF</button><button class="primary-button" type="submit">REGISTAR FATURA <span>→</span></button></div>
             </form>
           </div>
           <div class="panel pending-panel">
@@ -91,6 +101,10 @@ document.querySelector("#root").innerHTML = `
       </div>
     </main>
     <div id="toast"></div>
+    <div class="pdf-modal" id="pdf-modal" hidden>
+      <div class="pdf-modal-bar"><strong id="pdf-modal-title">DOCUMENTO</strong><button id="close-pdf" aria-label="Fechar">×</button></div>
+      <div class="pdf-modal-body"><iframe id="pdf-frame" title="Pré-visualização do PDF"></iframe></div>
+    </div>
   </div>`;
 
 const form = $("#invoice-form");
@@ -144,7 +158,7 @@ function renderInvoices() {
     return `<article class="invoice-card">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
-        <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span></div>
+        <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
         <div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}">${icon("check")} APROVAR</button></div>
       </div></article>`;
   }).join("");
@@ -180,6 +194,62 @@ $("#search").addEventListener("input", renderInvoices);
 $("#work-filter").addEventListener("change", e => { currentFilter = e.target.value; renderInvoices(); });
 $("#menu").addEventListener("click", () => $(".sidebar").classList.add("open"));
 $("#scrim").addEventListener("click", () => $(".sidebar").classList.remove("open"));
+$("#choose-pdf").addEventListener("click", () => $("#pdf-input").click());
+$("#pdf-input").addEventListener("change", event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    toast("Apenas são aceites ficheiros PDF.", "error");
+    event.target.value = "";
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    toast("O PDF excede o limite de 10 MB.", "error");
+    event.target.value = "";
+    return;
+  }
+  if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
+  selectedPdf = file;
+  localPdfUrl = URL.createObjectURL(file);
+  $("#pdf-name").textContent = file.name;
+  $("#pdf-size").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+  $("#pdf-attachment").hidden = false;
+  $("#choose-pdf").innerHTML = `${icon("upload")} SUBSTITUIR PDF`;
+});
+
+function openPdfModal(url, title) {
+  $("#pdf-frame").src = url;
+  $("#pdf-modal-title").textContent = title || "DOCUMENTO";
+  $("#pdf-modal").hidden = false;
+}
+
+function closePdfModal() {
+  $("#pdf-modal").hidden = true;
+  $("#pdf-frame").src = "about:blank";
+  if (openedPdfUrl) {
+    URL.revokeObjectURL(openedPdfUrl);
+    openedPdfUrl = "";
+  }
+}
+
+$("#preview-pdf").addEventListener("click", () => {
+  if (localPdfUrl) openPdfModal(localPdfUrl, selectedPdf?.name);
+});
+$("#remove-pdf").addEventListener("click", () => {
+  if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
+  selectedPdf = null;
+  localPdfUrl = "";
+  $("#pdf-input").value = "";
+  $("#pdf-attachment").hidden = true;
+  $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
+});
+$("#close-pdf").addEventListener("click", closePdfModal);
+$("#pdf-modal").addEventListener("click", event => {
+  if (event.target === $("#pdf-modal")) closePdfModal();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !$("#pdf-modal").hidden) closePdfModal();
+});
 $("#logout").addEventListener("click", async () => {
   await signOut(); session = null;
   $("#auth-screen").hidden = false;
@@ -256,16 +326,55 @@ form.addEventListener("submit", async event => {
     invoices.unshift({ ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() });
     toast("Fatura adicionada em modo de demonstração.");
   } else {
+    if (selectedPdf) {
+      submit.firstChild.textContent = "A ENVIAR PDF… ";
+      try {
+        payload.arquivo_url = await uploadInvoicePdf(selectedPdf, payload.obra_id);
+      } catch (error) {
+        toast(error.message || "Não foi possível enviar o PDF.", "error");
+        submit.disabled = false;
+        submit.firstChild.textContent = "REGISTAR FATURA ";
+        return;
+      }
+    }
+    submit.firstChild.textContent = "A REGISTAR… ";
     const result = await supabase("faturas", { method: "POST", body: JSON.stringify(payload), headers: { Prefer: "return=representation" } });
-    if (!result.ok) toast(`Erro ao registar: ${await result.text()}`, "error");
+    if (!result.ok) {
+      const detail = await result.text();
+      toast(
+        payload.arquivo_url
+          ? `O PDF foi enviado, mas a fatura não foi registada. Contacte o administrador para remover o ficheiro órfão. ${detail}`
+          : `Erro ao registar: ${detail}`,
+        "error",
+      );
+    }
     else { const [inserted] = await result.json(); invoices.unshift(inserted); toast("Fatura registada e enviada para aprovação."); }
   }
   const keepWork = form.obra_id.value, keepType = form.tipo_origem.value;
   form.reset(); form.obra_id.value = keepWork; form.tipo_origem.value = keepType; form.data_fatura.value = new Date().toISOString().slice(0, 10);
+  if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
+  selectedPdf = null; localPdfUrl = "";
+  $("#pdf-attachment").hidden = true;
+  $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
   renderSubcontracts(); renderInvoices(); submit.disabled = false; submit.firstChild.textContent = "REGISTAR FATURA ";
 });
 
 $("#invoice-list").addEventListener("click", async event => {
+  const pdfButton = event.target.closest("[data-pdf]");
+  if (pdfButton) {
+    pdfButton.disabled = true;
+    try {
+      const objectPath = decodeURIComponent(pdfButton.dataset.pdf);
+      const blob = await downloadInvoicePdf(objectPath);
+      openedPdfUrl = URL.createObjectURL(blob);
+      openPdfModal(openedPdfUrl, "FATURA");
+    } catch (error) {
+      toast(error.message || "Não foi possível abrir o PDF.", "error");
+    } finally {
+      pdfButton.disabled = false;
+    }
+    return;
+  }
   const button = event.target.closest("[data-action]"); if (!button) return;
   const invoice = invoices.find(item => String(item.id) === button.dataset.id); if (!invoice) return;
   const decision = button.dataset.action;

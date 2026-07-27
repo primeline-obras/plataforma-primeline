@@ -94,6 +94,61 @@ export async function updateRecoveryPassword(accessToken, password) {
   return payload;
 }
 
+function storageObjectUrl(path, mode = "object") {
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  return `${url}/storage/v1/${mode}/faturas/${encodedPath}`;
+}
+
+export async function uploadInvoicePdf(file, obraId) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  if (file.type !== "application/pdf") throw new Error("Apenas são aceites ficheiros PDF.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("O PDF excede o limite de 10 MB.");
+
+  const safeName = file.name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(-100) || "fatura.pdf";
+  const now = new Date();
+  const folder = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const objectPath = `${obraId}/${folder}/${crypto.randomUUID()}-${safeName}`;
+  const response = await fetch(storageObjectUrl(objectPath), {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/pdf",
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.message || payload.error || "Não foi possível enviar o PDF.");
+    error.code = payload.statusCode;
+    throw error;
+  }
+  return objectPath;
+}
+
+export async function downloadInvoicePdf(objectPath) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  const response = await fetch(storageObjectUrl(objectPath, "object/authenticated"), {
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.message || payload.error || "Não foi possível abrir o PDF.");
+  }
+  return response.blob();
+}
+
 export const supabase = (path, options = {}) => {
   const session = getSession();
   return fetch(`${url}/rest/v1/${path}`, {
