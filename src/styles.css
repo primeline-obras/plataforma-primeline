@@ -129,6 +129,18 @@ input::placeholder { color: #acb0b1; }
 .pdf-attachment-head > div { display: flex; align-items: center; }
 .pdf-attachment-head button { border: 0; background: none; color: #555d60; font: 700 8px "Manrope"; letter-spacing: .6px; padding: 6px; }
 #remove-pdf { font-size: 18px; font-weight: 400; }
+.extraction-panel { border: 1px solid #d7d9d6; border-top: 2px solid var(--accent); background: white; margin: -7px 0 17px; padding: 13px; }
+.extraction-title { display: flex; justify-content: space-between; align-items: center; padding-bottom: 9px; border-bottom: 1px solid #e9eae8; }
+.extraction-title span { font: 700 9px "Manrope"; letter-spacing: 1px; color: #444a4d; }
+.extraction-title small { font: 700 7px "Manrope"; letter-spacing: .8px; color: #7f8587; }
+.extraction-row { display: grid; grid-template-columns: 72px 1fr auto; gap: 7px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f1ef; }
+.extraction-row > span { font: 700 7px "Manrope"; letter-spacing: .7px; text-transform: uppercase; color: #858b8d; }
+.extraction-row strong { font-size: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.extraction-row em { font: 700 6px "Manrope"; font-style: normal; letter-spacing: .5px; padding: 3px 5px; border: 1px solid; }
+.extraction-row em.alta { color: #4d7454; background: #f0f7f1; border-color: #c7dacb; }
+.extraction-row em.provavel { color: #80642f; background: #fbf7ed; border-color: #e3d4b3; }
+.extraction-row em.manual { color: #805858; background: #fbf3f3; border-color: #dfc9c9; }
+#extraction-note { color: #767c7e; font-size: 9px; line-height: 1.45; margin: 10px 0 0; }
 .pdf-modal { position: fixed; inset: 0; z-index: 120; background: rgba(22,26,28,.76); padding: 28px; display: grid; grid-template-rows: 48px minmax(0,1fr); }
 .pdf-modal-bar { background: var(--charcoal); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
 .pdf-modal-bar strong { font: 700 10px "Manrope"; letter-spacing: 1px; }

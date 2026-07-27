@@ -59,3 +59,8 @@ O formulário permite anexar e pré-visualizar PDFs até 10 MB. Os documentos s�
 guardados no bucket privado `faturas` e `faturas.arquivo_url` recebe apenas o caminho
 interno do objeto. O bucket deve aceitar `application/pdf` e ter políticas de
 `insert` e `select` para `authenticated`.
+
+Ao anexar um PDF com texto pesquisável, o navegador tenta extrair número do
+documento, data, valor e fornecedor. O fornecedor só é preenchido quando o nome
+corresponde exatamente a um registo já existente; nunca são criados fornecedores
+automaticamente. A subempreitada nunca é pré-selecionada.

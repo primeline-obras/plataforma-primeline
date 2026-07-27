@@ -1,6 +1,7 @@
 node_modules/
 work/
 outputs/
+tmp/
 .env
 .env.*
 !.env.example

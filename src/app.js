@@ -89,6 +89,11 @@ document.querySelector("#root").innerHTML = `
                   <div><button type="button" id="preview-pdf">PRÉ-VISUALIZAR</button><button type="button" id="remove-pdf" aria-label="Remover PDF">×</button></div>
                 </div>
               </div>
+              <div class="extraction-panel" id="extraction-panel" hidden>
+                <div class="extraction-title"><span>LEITURA AUTOMÁTICA</span><small id="extraction-status">A ANALISAR…</small></div>
+                <div id="extraction-results"></div>
+                <p id="extraction-note"></p>
+              </div>
               <div class="form-actions"><button type="button" class="upload-button" id="choose-pdf">${icon("upload")} ANEXAR PDF</button><button class="primary-button" type="submit">REGISTAR FATURA <span>→</span></button></div>
             </form>
           </div>
@@ -195,6 +200,134 @@ $("#work-filter").addEventListener("change", e => { currentFilter = e.target.val
 $("#menu").addEventListener("click", () => $(".sidebar").classList.add("open"));
 $("#scrim").addEventListener("click", () => $(".sidebar").classList.remove("open"));
 $("#choose-pdf").addEventListener("click", () => $("#pdf-input").click());
+
+function normalizeExactName(value) {
+  return value.toLocaleLowerCase("pt-PT").replace(/\s+/g, " ").trim();
+}
+
+function parsePortugueseMoney(value) {
+  const clean = value.replace(/[€\s]/g, "");
+  if (!clean) return null;
+  let normalized = clean;
+  if (clean.includes(",")) normalized = clean.replace(/\./g, "").replace(",", ".");
+  else if ((clean.match(/\./g) || []).length > 1) normalized = clean.replace(/\./g, "");
+  const number = Number(normalized);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function toIsoDate(value) {
+  const parts = value.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (parts) return `${parts[3]}-${parts[2].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return iso ? iso[0] : null;
+}
+
+function extractionRow(label, value, confidence) {
+  const labels = { alta: "ALTA", provavel: "PROVÁVEL", manual: "MANUAL" };
+  return `<div class="extraction-row"><span>${label}</span><strong>${value || "Não identificado"}</strong><em class="${confidence}">${labels[confidence]}</em></div>`;
+}
+
+async function extractPdfData(file) {
+  $("#extraction-panel").hidden = false;
+  $("#extraction-status").textContent = "A ANALISAR…";
+  $("#extraction-results").innerHTML = "";
+  $("#extraction-note").textContent = "Os dados encontrados continuam editáveis e devem ser confirmados.";
+  try {
+    const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs");
+    pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+    const lines = [];
+    for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 12); pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      let line = "";
+      for (const item of content.items) {
+        line += `${item.str || ""} `;
+        if (item.hasEOL) {
+          if (line.trim()) lines.push(line.replace(/\s+/g, " ").trim());
+          line = "";
+        }
+      }
+      if (line.trim()) lines.push(line.replace(/\s+/g, " ").trim());
+    }
+    const meaningfulLines = lines.filter(Boolean);
+    const fullText = meaningfulLines.join("\n");
+    if (fullText.replace(/\s/g, "").length < 20) {
+      $("#extraction-status").textContent = "SEM TEXTO";
+      $("#extraction-note").textContent = "Este PDF parece ser uma digitalização sem texto pesquisável. Preencha os campos manualmente; será necessário OCR para automatizar este documento.";
+      $("#extraction-results").innerHTML = extractionRow("Documento", "", "manual") + extractionRow("Fornecedor", "", "manual") + extractionRow("Data", "", "manual") + extractionRow("Valor", "", "manual");
+      return;
+    }
+
+    const documentPatterns = [
+      /(?:^|\b)(FT|FS|FR|FATURA|INVOICE)\s*(?:N[.ºO]*\s*)?[:#-]?\s*([A-Z0-9][A-Z0-9/._-]{2,})/im,
+      /(?:DOCUMENTO|DOC\.?)\s*(?:N[.ºO]*\s*)?[:#-]?\s*([A-Z0-9][A-Z0-9/._-]{2,})/im,
+    ];
+    let documentNumber = "";
+    for (const pattern of documentPatterns) {
+      const match = fullText.match(pattern);
+      if (match) {
+        documentNumber = match[2] ? `${match[1].toUpperCase()} ${match[2]}` : match[1];
+        break;
+      }
+    }
+
+    let invoiceDate = "";
+    const dateLine = meaningfulLines.find(line => /\b(data|date|emiss[aã]o)\b/i.test(line) && /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(line));
+    const dateMatch = (dateLine || fullText).match(/\b(?:\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})\b/);
+    if (dateMatch) invoiceDate = toIsoDate(dateMatch[0]) || "";
+
+    const totalLabels = [
+      /total\s+(?:a\s+)?pagar/i,
+      /total\s+(?:do\s+)?documento/i,
+      /valor\s+total/i,
+      /\btotal\b/i,
+    ];
+    let invoiceValue = null;
+    for (const label of totalLabels) {
+      const candidates = meaningfulLines.filter(line => label.test(line) && !/subtotal|iva/i.test(line));
+      for (const candidate of candidates.reverse()) {
+        const values = candidate.match(/\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})|\d+(?:[.,]\d{2})/g);
+        if (values?.length) {
+          invoiceValue = parsePortugueseMoney(values.at(-1));
+          if (invoiceValue) break;
+        }
+      }
+      if (invoiceValue) break;
+    }
+
+    const normalizedLines = new Set(meaningfulLines.map(normalizeExactName));
+    const exactSupplier = suppliers.find(supplier => normalizedLines.has(normalizeExactName(supplier.nome)));
+
+    if (documentNumber) form.numero_doc.value = documentNumber;
+    if (invoiceDate) form.data_fatura.value = invoiceDate;
+    if (invoiceValue) form.valor.value = invoiceValue.toFixed(2);
+    if (exactSupplier) {
+      form.fornecedor_id.value = exactSupplier.id;
+      renderSubcontracts();
+      form.subempreitada_id.value = "";
+    } else {
+      form.fornecedor_id.value = "";
+      renderSubcontracts();
+    }
+
+    $("#extraction-status").textContent = "CONCLUÍDA";
+    $("#extraction-results").innerHTML =
+      extractionRow("Documento", documentNumber, documentNumber ? "alta" : "manual") +
+      extractionRow("Fornecedor", exactSupplier?.nome, exactSupplier ? "alta" : "manual") +
+      extractionRow("Data", invoiceDate ? prettyDate.format(new Date(`${invoiceDate}T12:00:00`)) : "", invoiceDate ? "provavel" : "manual") +
+      extractionRow("Valor", invoiceValue ? euro.format(invoiceValue) : "", invoiceValue ? "provavel" : "manual");
+    $("#extraction-note").textContent = exactSupplier
+      ? "Fornecedor encontrado por correspondência exata. Confirme os restantes campos e escolha manualmente a subempreitada, quando aplicável."
+      : "O fornecedor não corresponde exatamente a nenhum registo existente. Selecione-o manualmente na lista; nenhum fornecedor foi criado.";
+  } catch (error) {
+    $("#extraction-status").textContent = "FALHOU";
+    $("#extraction-results").innerHTML = "";
+    $("#extraction-note").textContent = `Não foi possível ler este PDF: ${error.message || "erro desconhecido"}. Preencha os campos manualmente.`;
+  }
+}
+
 $("#pdf-input").addEventListener("change", event => {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -215,6 +348,7 @@ $("#pdf-input").addEventListener("change", event => {
   $("#pdf-size").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
   $("#pdf-attachment").hidden = false;
   $("#choose-pdf").innerHTML = `${icon("upload")} SUBSTITUIR PDF`;
+  extractPdfData(file);
 });
 
 function openPdfModal(url, title) {
@@ -241,6 +375,8 @@ $("#remove-pdf").addEventListener("click", () => {
   localPdfUrl = "";
   $("#pdf-input").value = "";
   $("#pdf-attachment").hidden = true;
+  $("#extraction-panel").hidden = true;
+  $("#extraction-results").innerHTML = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
 });
 $("#close-pdf").addEventListener("click", closePdfModal);
@@ -355,6 +491,8 @@ form.addEventListener("submit", async event => {
   if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
   selectedPdf = null; localPdfUrl = "";
   $("#pdf-attachment").hidden = true;
+  $("#extraction-panel").hidden = true;
+  $("#extraction-results").innerHTML = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
   renderSubcontracts(); renderInvoices(); submit.disabled = false; submit.firstChild.textContent = "REGISTAR FATURA ";
 });
