@@ -560,7 +560,17 @@ function switchView(view) {
     renderWorks();
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
+  closeSidebar();
+}
+
+function openSidebar() {
+  $(".sidebar").classList.add("open");
+  $("#scrim").classList.add("open");
+}
+
+function closeSidebar() {
   $(".sidebar").classList.remove("open");
+  $("#scrim").classList.remove("open");
 }
 
 document.querySelectorAll("[data-type]").forEach(button => button.addEventListener("click", () => {
@@ -830,8 +840,8 @@ $("#work-detail").addEventListener("click", async event => {
     toast(`Estado atualizado para ${measurementStatusLabel(state)}.`);
   }
 });
-$("#menu").addEventListener("click", () => $(".sidebar").classList.add("open"));
-$("#scrim").addEventListener("click", () => $(".sidebar").classList.remove("open"));
+$("#menu").addEventListener("click", openSidebar);
+$("#scrim").addEventListener("click", closeSidebar);
 $("#choose-pdf").addEventListener("click", () => $("#pdf-input").click());
 
 function normalizeExactName(value) {
