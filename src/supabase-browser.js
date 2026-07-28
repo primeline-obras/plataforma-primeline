@@ -160,6 +160,30 @@ export async function uploadInvoicePdf(file, obraId) {
   return objectPath;
 }
 
+export async function uploadDeliveryNote(file, obraId, invoiceId) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(file.type)) throw new Error("A guia deve ser PDF, JPG, PNG ou WEBP.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("A guia excede o limite de 10 MB.");
+  const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "guia";
+  const objectPath = `${obraId}/guias-remessa/${invoiceId}/${crypto.randomUUID()}-${safeName}`;
+  const response = await fetch(storageObjectUrl(objectPath), {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": file.type,
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || payload.error || "Não foi possível enviar a guia.");
+  return objectPath;
+}
+
 export async function uploadWorkflowPdf(file, obraId, entityType) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
