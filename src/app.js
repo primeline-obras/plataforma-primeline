@@ -1,4 +1,4 @@
-import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
+import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -17,7 +17,7 @@ const icon = (name) => {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
 
-let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], collaborators = [];
+let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], collaborators = [];
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let currentFilter = "all";
 let session = getSession();
@@ -87,6 +87,7 @@ document.querySelector("#root").innerHTML = `
               <label class="conditional" id="subcontract-field">SUBEMPREITADA<div class="select-wrap"><select name="subempreitada_id" required></select><b>⌄</b></div><em id="subcontract-hint"></em></label>
               <div class="form-row"><label>N.º DOCUMENTO<input name="numero_doc" placeholder="Ex. FT 2026/001" required></label><label>DATA<input name="data_fatura" type="date" required></label></div>
               <label>VALOR (EUR)<div class="money-input"><input name="valor" type="number" min="0.01" step="0.01" placeholder="0,00" required><span>€</span></div></label>
+              <label>CONDIÇÃO DE PAGAMENTO<div class="select-wrap"><select name="condicao_pagamento" required><option value="">Selecionar condição</option><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option></select><b>⌄</b></div><em id="payment-condition-suggestion"></em></label>
               <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden>
               <div class="pdf-attachment" id="pdf-attachment" hidden>
                 <div class="pdf-attachment-head">
@@ -226,47 +227,48 @@ function renderInvoices() {
   $("#invoice-list").innerHTML = visible.map(invoice => {
     const supplier = suppliers.find(s => s.id === invoice.fornecedor_id)?.nome || "Fornecedor";
     const work = works.find(w => w.id === invoice.obra_id);
-    const hasGuide = Boolean(invoice.guia_url);
+    const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+    const hasGuide = guides.length > 0;
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
         <div class="approval-fields">
           <label class="guide-picker ${hasGuide ? "ready" : ""}">
-            ${icon("upload")}<span>${hasGuide ? "GUIA ANEXADA" : "ANEXAR GUIA (PDF)"}</span>
-            <input type="file" accept="application/pdf,.pdf" data-guide-input="${invoice.id}">
+            ${icon("upload")}<span>${hasGuide ? `${guides.length} GUIA(S) ANEXADA(S)` : "ANEXAR GUIAS"}</span>
+            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" multiple data-guide-input="${invoice.id}">
           </label>
-          <label class="payment-term">PAGAMENTO
-            <select data-payment-term="${invoice.id}"><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option></select>
-          </label>
+          <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
         <div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>
       </div></article>`;
   }).join("");
 }
 
-function invoiceSortDate(invoice) {
-  return new Date(invoice.data_aprovacao || invoice.data_fatura || 0).getTime();
-}
+function invoiceSortDate(invoice) { return new Date(`${invoice.data_fatura || "1970-01-01"}T12:00:00`).getTime(); }
 
 function financeCard(invoice) {
   const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
   const work = works.find(item => item.id === invoice.obra_id);
+  const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+  const today = new Date().toISOString().slice(0, 10);
   return `<article class="finance-card">
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
+    <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
+    <label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
     <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>
   </article>`;
 }
 
 function renderFinance() {
-  const unpaid = financeInvoices.filter(invoice => !invoice.data_pagamento);
-  const paid = financeInvoices.filter(invoice => invoice.data_pagamento).sort((a, b) => new Date(b.data_pagamento) - new Date(a.data_pagamento));
+  const unpaid = financeInvoices.filter(invoice => invoice.estado_pagamento === "por_pagar");
+  const paid = financeInvoices.filter(invoice => invoice.estado_pagamento === "pago").sort((a, b) => new Date(b.data_pagamento) - new Date(a.data_pagamento));
   const columns = [["imediato", "IMEDIATO"], ["15_dias", "15 DIAS"], ["30_dias", "30 DIAS"]];
   $("#finance-count").textContent = String(unpaid.length).padStart(2, "0");
   $("#finance-board").innerHTML = columns.map(([term, label]) => {
-    const rows = unpaid.filter(invoice => invoice.prazo_pagamento === term).sort((a, b) => invoiceSortDate(b) - invoiceSortDate(a));
+    const rows = unpaid.filter(invoice => invoice.condicao_pagamento === term).sort((a, b) => invoiceSortDate(b) - invoiceSortDate(a));
     return `<div class="finance-column"><div class="finance-column-head"><h2>${label}</h2><span>${rows.length}</span></div>
       <div class="finance-column-list">${rows.length ? rows.map(financeCard).join("") : `<div class="finance-empty">SEM FATURAS</div>`}</div>
     </div>`;
@@ -284,7 +286,9 @@ async function loadData() {
   if (!isSupabaseConfigured) {
     works = demoWorks; suppliers = demoSuppliers; subcontracts = demoSubcontracts;
     invoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "pendente");
-    financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado");
+    financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado")
+      .map(invoice => ({ ...invoice, condicao_pagamento: invoice.condicao_pagamento || "imediato", estado_pagamento: invoice.estado_pagamento || (invoice.data_pagamento ? "pago" : "por_pagar") }));
+    invoiceGuides = [];
   } else {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id&order=numero.desc"),
@@ -292,10 +296,11 @@ async function loadData() {
       supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
       supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
+      supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
     ]);
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
-    [works, suppliers, subcontracts, invoices, financeInvoices] = await Promise.all(results.map(result => result.json()));
+    [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides] = await Promise.all(results.map(result => result.json()));
     const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel&data_saida=is.null&order=nome");
     collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
   }
@@ -975,6 +980,12 @@ function findSupplierCandidate(firstPageRows) {
   const documentPattern = /\b(fatura|invoice|recibo|nota\s+de|original|duplicado|data|p[áa]gina)\b/i;
   return headerRows.find(row => { const text = row.text.trim(); return text.length >= 2 && /[A-Za-zÀ-ÿ]/.test(text) && !addressPattern.test(text) && !documentPattern.test(text); })?.text || "";
 }
+function findPaymentConditionSuggestion(rows) {
+  const row = rows.find(item => /\b(cond(?:ição|\.)?\s*(?:de\s*)?pagamento|payment\s*terms?|termos?\s+de\s+pagamento)\b/i.test(item.text));
+  if (!row) return "";
+  const match = row.text.match(/\b(?:cond(?:ição|\.)?\s*(?:de\s*)?pagamento|payment\s*terms?|termos?\s+de\s+pagamento)\b\s*[:.-]?\s*(.*)$/i);
+  return (match?.[1] || row.text).replace(/^[.: -]+/, "").trim();
+}
 async function extractPdfData(file) {
   $("#extraction-panel").hidden = false;
   $("#extraction-status").textContent = "A ANALISAR…";
@@ -1008,6 +1019,7 @@ async function extractPdfData(file) {
     if (dateMatch) invoiceDate = toIsoDate(dateMatch[0]) || "";
 
     const invoiceValue = findFinalTotal(rows);
+    const paymentConditionSuggestion = findPaymentConditionSuggestion(rows);
 
     const supplierCandidate = findSupplierCandidate(rows.filter(row => row.pageNumber === 1));
     const exactSupplier = suppliers.find(supplier => normalizeExactName(supplier.nome) === normalizeExactName(supplierCandidate));
@@ -1029,7 +1041,11 @@ async function extractPdfData(file) {
       extractionRow("Documento", documentNumber, documentNumber ? "alta" : "manual") +
       extractionRow("Fornecedor", supplierCandidate, exactSupplier ? "alta" : supplierCandidate ? "provavel" : "manual") +
       extractionRow("Data", invoiceDate ? prettyDate.format(new Date(`${invoiceDate}T12:00:00`)) : "", invoiceDate ? "provavel" : "manual") +
-      extractionRow("Valor", invoiceValue ? euro.format(invoiceValue) : "", invoiceValue ? "provavel" : "manual");
+      extractionRow("Valor", invoiceValue ? euro.format(invoiceValue) : "", invoiceValue ? "provavel" : "manual") +
+      extractionRow("Cond. pagamento (sugestão)", paymentConditionSuggestion, "manual");
+    $("#payment-condition-suggestion").textContent = paymentConditionSuggestion
+      ? `Sugestão lida no PDF: ${paymentConditionSuggestion}. Confirme manualmente uma das opções.`
+      : "Selecione manualmente; este campo nunca é preenchido automaticamente.";
     $("#extraction-note").textContent = exactSupplier
       ? "Fornecedor encontrado por correspondência exata. Confirme os restantes campos e escolha manualmente a subempreitada, quando aplicável."
       : "O fornecedor não corresponde exatamente a nenhum registo existente. Selecione-o manualmente na lista; nenhum fornecedor foi criado.";
@@ -1089,6 +1105,7 @@ $("#remove-pdf").addEventListener("click", () => {
   $("#pdf-attachment").hidden = true;
   $("#extraction-panel").hidden = true;
   $("#extraction-results").innerHTML = "";
+  $("#payment-condition-suggestion").textContent = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
 });
 $("#close-pdf").addEventListener("click", closePdfModal);
@@ -1205,19 +1222,20 @@ form.addEventListener("submit", async event => {
   $("#pdf-attachment").hidden = true;
   $("#extraction-panel").hidden = true;
   $("#extraction-results").innerHTML = "";
+  $("#payment-condition-suggestion").textContent = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
   renderSubcontracts(); renderInvoices(); submit.disabled = false; submit.firstChild.textContent = "REGISTAR FATURA ";
 });
 
 $("#invoice-list").addEventListener("click", async event => {
-  const pdfButton = event.target.closest("[data-pdf]");
+  const pdfButton = event.target.closest("[data-pdf], [data-guide]");
   if (pdfButton) {
     pdfButton.disabled = true;
     try {
-      const objectPath = decodeURIComponent(pdfButton.dataset.pdf);
+      const objectPath = decodeURIComponent(pdfButton.dataset.pdf || pdfButton.dataset.guide);
       const blob = await downloadInvoicePdf(objectPath);
       openedPdfUrl = URL.createObjectURL(blob);
-      openPdfModal(openedPdfUrl, "FATURA");
+      openPdfModal(openedPdfUrl, pdfButton.dataset.guide ? "GUIA DE REMESSA" : "FATURA");
     } catch (error) {
       toast(error.message || "Não foi possível abrir o PDF.", "error");
     } finally {
@@ -1230,19 +1248,29 @@ $("#invoice-list").addEventListener("click", async event => {
   const decision = button.dataset.action;
   const card = button.closest("[data-invoice-card]");
   const guideInput = card?.querySelector("[data-guide-input]");
-  const paymentTerm = card?.querySelector("[data-payment-term]")?.value || "imediato";
-  if (decision === "aprovado" && !invoice.guia_url && !guideInput?.files?.[0]) {
-    toast("Anexe a guia em PDF antes de aprovar a fatura.", "error");
+  const existingGuides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+  const selectedGuides = [...(guideInput?.files || [])];
+  if (decision === "aprovado" && !existingGuides.length && !selectedGuides.length) {
+    toast("Anexe pelo menos uma guia antes de aprovar a fatura.", "error");
     return;
   }
   button.disabled = true;
-  let guideUrl = invoice.guia_url || "";
-  if (decision === "aprovado" && !guideUrl && isSupabaseConfigured) {
+  const createdGuides = [];
+  if (decision === "aprovado" && selectedGuides.length && isSupabaseConfigured) {
     try {
-      button.innerHTML = `${icon("upload")} A ENVIAR GUIA…`;
-      guideUrl = await uploadWorkflowPdf(guideInput.files[0], invoice.obra_id, "guias");
+      button.innerHTML = `${icon("upload")} A ENVIAR GUIAS…`;
+      for (const file of selectedGuides) {
+        const arquivoUrl = await uploadDeliveryNote(file, invoice.obra_id, invoice.id);
+        const response = await supabase("faturas_guias?select=*", {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: arquivoUrl, nome_arquivo: file.name, mime_type: file.type }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        createdGuides.push((await response.json())[0]);
+      }
     } catch (error) {
-      toast(error.message || "Não foi possível enviar a guia.", "error");
+      toast(error.message || "Não foi possível enviar as guias.", "error");
       button.disabled = false;
       button.innerHTML = `${icon("check")} APROVAR`;
       return;
@@ -1252,14 +1280,16 @@ $("#invoice-list").addEventListener("click", async event => {
     const result = await supabase(`faturas?id=eq.${invoice.id}&estado_aprovacao=eq.pendente`, {
       method: "PATCH", body: JSON.stringify({
         estado_aprovacao: decision,
+        aprovado_por: session?.user?.id || null,
         data_aprovacao: new Date().toISOString(),
-        ...(decision === "aprovado" ? { guia_url: guideUrl, prazo_pagamento: paymentTerm } : {}),
       }),
     });
     if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); button.disabled = false; return; }
   }
   if (decision === "aprovado") {
-    financeInvoices.unshift({ ...invoice, guia_url: guideUrl || "demo/guia.pdf", prazo_pagamento: paymentTerm, estado_aprovacao: "aprovado", data_aprovacao: new Date().toISOString() });
+    if (isSupabaseConfigured) invoiceGuides.push(...createdGuides);
+    else if (!existingGuides.length) invoiceGuides.push(...selectedGuides.map((file, index) => ({ id: `demo-guide-${Date.now()}-${index}`, fatura_id: invoice.id, arquivo_url: URL.createObjectURL(file), nome_arquivo: file.name, mime_type: file.type })));
+    financeInvoices.unshift({ ...invoice, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", data_aprovacao: new Date().toISOString() });
     renderFinance();
   }
   invoices = invoices.filter(item => item.id !== invoice.id); renderInvoices();
@@ -1269,37 +1299,51 @@ $("#invoice-list").addEventListener("click", async event => {
 $("#invoice-list").addEventListener("change", event => {
   const input = event.target.closest("[data-guide-input]");
   if (!input) return;
-  const file = input.files?.[0];
+  const files = [...(input.files || [])];
   const picker = input.closest(".guide-picker");
   const approve = input.closest("[data-invoice-card]")?.querySelector('[data-action="aprovado"]');
-  if (!file) {
+  if (!files.length) {
     picker.classList.remove("ready");
-    picker.querySelector("span").textContent = "ANEXAR GUIA (PDF)";
-    approve.disabled = true;
+    picker.querySelector("span").textContent = "ANEXAR GUIAS";
+    approve.disabled = !invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput);
     return;
   }
-  if (file.type !== "application/pdf" || file.size > 10 * 1024 * 1024) {
+  const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+  const invalid = files.find(file => !allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024);
+  if (invalid) {
     input.value = "";
-    toast(file.type !== "application/pdf" ? "A guia tem de ser um ficheiro PDF." : "A guia excede o limite de 10 MB.", "error");
+    toast(!allowedTypes.includes(invalid.type) ? "As guias devem ser PDF, JPG, PNG ou WEBP." : `${invalid.name} excede o limite de 10 MB.`, "error");
     return;
   }
   picker.classList.add("ready");
-  picker.querySelector("span").textContent = file.name;
+  picker.querySelector("span").textContent = `${files.length} GUIA(S) SELECIONADA(S)`;
   approve.disabled = false;
   approve.title = "Aprovar fatura";
 });
 
 $("#finance-board").addEventListener("click", async event => {
+  const guideButton = event.target.closest("[data-guide]");
+  if (guideButton) {
+    try {
+      const path = decodeURIComponent(guideButton.dataset.guide);
+      if (path.startsWith("blob:")) return openPdfModal(path, "GUIA DE REMESSA");
+      const blob = await downloadInvoicePdf(path);
+      openedPdfUrl = URL.createObjectURL(blob);
+      openPdfModal(openedPdfUrl, "GUIA DE REMESSA");
+    } catch (error) { toast(error.message || "Não foi possível abrir a guia.", "error"); }
+    return;
+  }
   const button = event.target.closest("[data-mark-paid]");
   if (!button) return;
   const invoice = financeInvoices.find(item => String(item.id) === button.dataset.markPaid);
   if (!invoice) return;
   button.disabled = true;
-  const paidAt = new Date().toISOString();
+  const paymentDate = button.closest(".finance-card")?.querySelector("[data-payment-date]")?.value || new Date().toISOString().slice(0, 10);
+  const paidAt = `${paymentDate}T12:00:00`;
   if (isSupabaseConfigured) {
     const result = await supabase(`faturas?id=eq.${invoice.id}&estado_aprovacao=eq.aprovado`, {
       method: "PATCH",
-      body: JSON.stringify({ data_pagamento: paidAt }),
+      body: JSON.stringify({ estado_pagamento: "pago", pago_por: session?.user?.id || null, data_pagamento: paymentDate }),
     });
     if (!result.ok) {
       toast(`Não foi possível marcar a fatura como paga: ${await result.text()}`, "error");
@@ -1308,6 +1352,8 @@ $("#finance-board").addEventListener("click", async event => {
     }
   }
   invoice.data_pagamento = paidAt;
+  invoice.estado_pagamento = "pago";
+  invoice.pago_por = session?.user?.id || null;
   renderFinance();
   toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
 });
