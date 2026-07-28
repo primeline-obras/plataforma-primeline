@@ -860,6 +860,51 @@ function extractionRow(label, value, confidence) {
   return `<div class="extraction-row"><span>${label}</span><strong>${value || "Não identificado"}</strong><em class="${confidence}">${labels[confidence]}</em></div>`;
 }
 
+function pdfRows(items, pageNumber) {
+  const positioned = items.filter(item => String(item.str || "").trim()).map(item => ({ text: String(item.str).replace(/\s+/g, " ").trim(), x: Number(item.transform?.[4] || 0), y: Number(item.transform?.[5] || 0), width: Number(item.width || 0) })).sort((a, b) => Math.abs(b.y - a.y) > 2 ? b.y - a.y : a.x - b.x);
+  const rows = [];
+  for (const item of positioned) { let row = rows.find(candidate => Math.abs(candidate.y - item.y) <= 2); if (!row) { row = { pageNumber, y: item.y, items: [] }; rows.push(row); } row.items.push(item); }
+  return rows.map(row => { row.items.sort((a, b) => a.x - b.x); row.text = row.items.map(item => item.text).join(" ").replace(/\s+/g, " ").trim(); return row; }).sort((a, b) => b.y - a.y);
+}
+function moneyTokens(row) {
+  const tokens = [], pattern = /(?:€\s*)?\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})|(?:€\s*)?\d+(?:[.,]\d{2})/g;
+  for (const item of row.items) for (const match of item.text.matchAll(pattern)) { const value = parsePortugueseMoney(match[0]); if (value) tokens.push({ value, x: item.x }); }
+  return tokens;
+}
+function labelPosition(row, label) {
+  for (let span = 1; span <= row.items.length; span += 1) {
+    for (let start = 0; start + span <= row.items.length; start += 1) {
+      const end = start + span - 1;
+      const text = row.items.slice(start, end + 1).map(item => item.text).join(" ");
+      if (label.test(text)) {
+        const first = row.items[start], last = row.items[end];
+        return { startX: first.x, endX: last.x + last.width, centerX: (first.x + last.x + last.width) / 2 };
+      }
+    }
+  }
+  return null;
+}
+function findFinalTotal(rows) {
+  const labels = [/total\s+do\s+documento/i, /total\s+a\s+pagar/i, /total\s+geral/i, /valor\s+a\s+pagar/i];
+  for (const label of labels) for (let index = rows.length - 1; index >= 0; index -= 1) {
+    const row = rows[index], position = labelPosition(row, label); if (!position) continue;
+    const sameRow = moneyTokens(row).filter(token => token.x >= position.endX - 2); if (sameRow.length) return sameRow[0].value;
+    const below = rows.filter(candidate => candidate.pageNumber === row.pageNumber && candidate.y < row.y && row.y - candidate.y <= 45).sort((a, b) => b.y - a.y);
+    for (const candidate of below) { const aligned = moneyTokens(candidate).map(token => ({ ...token, distance: Math.abs(token.x - position.centerX) })).filter(token => token.distance <= 55).sort((a, b) => a.distance - b.distance); if (aligned.length) return aligned[0].value; }
+  }
+  return null;
+}
+function findDocumentNumber(rows) {
+  for (const row of rows) { if (!/(fatura|invoice|nota|recibo)/i.test(row.text)) continue; const match = row.text.match(/\bN(?:\.?\s*[ºo°])?\.?\s*(?:[:#-]\s*)?(.+?)\s*$/i); if (match?.[1]) return match[1].trim(); }
+  return "";
+}
+function findSupplierCandidate(firstPageRows) {
+  const clientIndex = firstPageRows.findIndex(row => /\bcliente\b/i.test(row.text));
+  const headerRows = firstPageRows.slice(0, clientIndex >= 0 ? clientIndex : Math.min(firstPageRows.length, 12));
+  const addressPattern = /\b(rua|avenida|av\.?|estrada|travessa|largo|praça|praceta|c[oó]digo\s+postal|\d{4}-\d{3}|nif|nipc|telefone|tel\.?|email|www\.)\b/i;
+  const documentPattern = /\b(fatura|invoice|recibo|nota\s+de|original|duplicado|data|p[áa]gina)\b/i;
+  return headerRows.find(row => { const text = row.text.trim(); return text.length >= 2 && /[A-Za-zÀ-ÿ]/.test(text) && !addressPattern.test(text) && !documentPattern.test(text); })?.text || "";
+}
 async function extractPdfData(file) {
   $("#extraction-panel").hidden = false;
   $("#extraction-status").textContent = "A ANALISAR…";
@@ -870,21 +915,13 @@ async function extractPdfData(file) {
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
     const bytes = new Uint8Array(await file.arrayBuffer());
     const pdf = await pdfjs.getDocument({ data: bytes }).promise;
-    const lines = [];
+    const rows = [];
     for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 12); pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent();
-      let line = "";
-      for (const item of content.items) {
-        line += `${item.str || ""} `;
-        if (item.hasEOL) {
-          if (line.trim()) lines.push(line.replace(/\s+/g, " ").trim());
-          line = "";
-        }
-      }
-      if (line.trim()) lines.push(line.replace(/\s+/g, " ").trim());
+      rows.push(...pdfRows(content.items, pageNumber));
     }
-    const meaningfulLines = lines.filter(Boolean);
+    const meaningfulLines = rows.map(row => row.text).filter(Boolean);
     const fullText = meaningfulLines.join("\n");
     if (fullText.replace(/\s/g, "").length < 20) {
       $("#extraction-status").textContent = "SEM TEXTO";
@@ -893,45 +930,17 @@ async function extractPdfData(file) {
       return;
     }
 
-    const documentPatterns = [
-      /(?:^|\b)(FT|FS|FR|FATURA|INVOICE)\s*(?:N[.ºO]*\s*)?[:#-]?\s*([A-Z0-9][A-Z0-9/._-]{2,})/im,
-      /(?:DOCUMENTO|DOC\.?)\s*(?:N[.ºO]*\s*)?[:#-]?\s*([A-Z0-9][A-Z0-9/._-]{2,})/im,
-    ];
-    let documentNumber = "";
-    for (const pattern of documentPatterns) {
-      const match = fullText.match(pattern);
-      if (match) {
-        documentNumber = match[2] ? `${match[1].toUpperCase()} ${match[2]}` : match[1];
-        break;
-      }
-    }
+    const documentNumber = findDocumentNumber(rows);
 
     let invoiceDate = "";
     const dateLine = meaningfulLines.find(line => /\b(data|date|emiss[aã]o)\b/i.test(line) && /\d{1,4}[./-]\d{1,2}[./-]\d{2,4}/.test(line));
     const dateMatch = (dateLine || fullText).match(/\b(?:\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})\b/);
     if (dateMatch) invoiceDate = toIsoDate(dateMatch[0]) || "";
 
-    const totalLabels = [
-      /total\s+(?:a\s+)?pagar/i,
-      /total\s+(?:do\s+)?documento/i,
-      /valor\s+total/i,
-      /\btotal\b/i,
-    ];
-    let invoiceValue = null;
-    for (const label of totalLabels) {
-      const candidates = meaningfulLines.filter(line => label.test(line) && !/subtotal|iva/i.test(line));
-      for (const candidate of candidates.reverse()) {
-        const values = candidate.match(/\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})|\d+(?:[.,]\d{2})/g);
-        if (values?.length) {
-          invoiceValue = parsePortugueseMoney(values.at(-1));
-          if (invoiceValue) break;
-        }
-      }
-      if (invoiceValue) break;
-    }
+    const invoiceValue = findFinalTotal(rows);
 
-    const normalizedLines = new Set(meaningfulLines.map(normalizeExactName));
-    const exactSupplier = suppliers.find(supplier => normalizedLines.has(normalizeExactName(supplier.nome)));
+    const supplierCandidate = findSupplierCandidate(rows.filter(row => row.pageNumber === 1));
+    const exactSupplier = suppliers.find(supplier => normalizeExactName(supplier.nome) === normalizeExactName(supplierCandidate));
 
     if (documentNumber) form.numero_doc.value = documentNumber;
     if (invoiceDate) form.data_fatura.value = invoiceDate;
@@ -948,7 +957,7 @@ async function extractPdfData(file) {
     $("#extraction-status").textContent = "CONCLUÍDA";
     $("#extraction-results").innerHTML =
       extractionRow("Documento", documentNumber, documentNumber ? "alta" : "manual") +
-      extractionRow("Fornecedor", exactSupplier?.nome, exactSupplier ? "alta" : "manual") +
+      extractionRow("Fornecedor", supplierCandidate, exactSupplier ? "alta" : supplierCandidate ? "provavel" : "manual") +
       extractionRow("Data", invoiceDate ? prettyDate.format(new Date(`${invoiceDate}T12:00:00`)) : "", invoiceDate ? "provavel" : "manual") +
       extractionRow("Valor", invoiceValue ? euro.format(invoiceValue) : "", invoiceValue ? "provavel" : "manual");
     $("#extraction-note").textContent = exactSupplier
