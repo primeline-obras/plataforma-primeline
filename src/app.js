@@ -17,7 +17,7 @@ const icon = (name) => {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
 
-let works = [], suppliers = [], subcontracts = [], invoices = [], collaborators = [];
+let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], collaborators = [];
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let currentFilter = "all";
 let session = getSession();
@@ -63,7 +63,7 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <nav><p>GESTÃO</p>
         <button data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button class="active" data-view="invoices">▤ <span>Faturas</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button class="active" data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button>⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -128,6 +128,17 @@ document.querySelector("#root").innerHTML = `
             <div class="empty-state"><strong>SELECIONE UMA OBRA</strong><span>Consulte os principais dados e indicadores.</span></div>
           </section>
         </div>
+      </div>
+      <div class="page finance-view" id="finance-view" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">TESOURARIA</p><h1>FINANCEIRO</h1><p>Faturas aprovadas a aguardar pagamento.</p></div>
+          <div class="heading-stat"><span>POR PAGAR</span><strong id="finance-count">00</strong></div>
+        </div>
+        <section class="finance-board" id="finance-board"></section>
+        <section class="panel paid-history">
+          <div class="paid-history-head"><div><p class="eyebrow">ARQUIVO</p><h2>HISTÓRICO DE FATURAS PAGAS</h2></div><span id="paid-count">0 FATURAS</span></div>
+          <div class="paid-list" id="paid-list"></div>
+        </section>
       </div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
@@ -215,33 +226,80 @@ function renderInvoices() {
   $("#invoice-list").innerHTML = visible.map(invoice => {
     const supplier = suppliers.find(s => s.id === invoice.fornecedor_id)?.nome || "Fornecedor";
     const work = works.find(w => w.id === invoice.obra_id);
-    return `<article class="invoice-card">
+    const hasGuide = Boolean(invoice.guia_url);
+    return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
-        <div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}">${icon("check")} APROVAR</button></div>
+        <div class="approval-fields">
+          <label class="guide-picker ${hasGuide ? "ready" : ""}">
+            ${icon("upload")}<span>${hasGuide ? "GUIA ANEXADA" : "ANEXAR GUIA (PDF)"}</span>
+            <input type="file" accept="application/pdf,.pdf" data-guide-input="${invoice.id}">
+          </label>
+          <label class="payment-term">PAGAMENTO
+            <select data-payment-term="${invoice.id}"><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option></select>
+          </label>
+        </div>
+        <div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>
       </div></article>`;
   }).join("");
+}
+
+function invoiceSortDate(invoice) {
+  return new Date(invoice.data_aprovacao || invoice.data_fatura || 0).getTime();
+}
+
+function financeCard(invoice) {
+  const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
+  const work = works.find(item => item.id === invoice.obra_id);
+  return `<article class="finance-card">
+    <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
+    <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
+    <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
+    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>
+  </article>`;
+}
+
+function renderFinance() {
+  const unpaid = financeInvoices.filter(invoice => !invoice.data_pagamento);
+  const paid = financeInvoices.filter(invoice => invoice.data_pagamento).sort((a, b) => new Date(b.data_pagamento) - new Date(a.data_pagamento));
+  const columns = [["imediato", "IMEDIATO"], ["15_dias", "15 DIAS"], ["30_dias", "30 DIAS"]];
+  $("#finance-count").textContent = String(unpaid.length).padStart(2, "0");
+  $("#finance-board").innerHTML = columns.map(([term, label]) => {
+    const rows = unpaid.filter(invoice => invoice.prazo_pagamento === term).sort((a, b) => invoiceSortDate(b) - invoiceSortDate(a));
+    return `<div class="finance-column"><div class="finance-column-head"><h2>${label}</h2><span>${rows.length}</span></div>
+      <div class="finance-column-list">${rows.length ? rows.map(financeCard).join("") : `<div class="finance-empty">SEM FATURAS</div>`}</div>
+    </div>`;
+  }).join("");
+  $("#paid-count").textContent = `${paid.length} ${paid.length === 1 ? "FATURA" : "FATURAS"}`;
+  $("#paid-list").innerHTML = paid.length ? paid.map(invoice => {
+    const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
+    const work = works.find(item => item.id === invoice.obra_id);
+    return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span></div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
+  }).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
 }
 
 async function loadData() {
   if (isSupabaseConfigured && !getSession()) return;
   if (!isSupabaseConfigured) {
-    [works, suppliers, subcontracts, invoices] = [demoWorks, demoSuppliers, demoSubcontracts, demoInvoices];
+    works = demoWorks; suppliers = demoSuppliers; subcontracts = demoSubcontracts;
+    invoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "pendente");
+    financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado");
   } else {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id&order=numero.desc"),
       supabase("fornecedores?select=id,nome&estado_confianca=neq.inativo&order=nome"),
       supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
+      supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
     ]);
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
-    [works, suppliers, subcontracts, invoices] = await Promise.all(results.map(result => result.json()));
+    [works, suppliers, subcontracts, invoices, financeInvoices] = await Promise.all(results.map(result => result.json()));
     const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel&data_saida=is.null&order=nome");
     collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
   }
-  renderSelectors(); renderInvoices();
+  renderSelectors(); renderInvoices(); renderFinance();
   renderWorks();
   renderWorkDirectors();
 }
@@ -551,8 +609,9 @@ function switchView(view) {
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#invoice-view").hidden = view !== "invoices";
   $("#works-view").hidden = view !== "works";
-  $("#placeholder-view").hidden = ["invoices", "works"].includes(view);
-  if (!["invoices", "works"].includes(view)) {
+  $("#finance-view").hidden = view !== "finance";
+  $("#placeholder-view").hidden = ["invoices", "works", "finance"].includes(view);
+  if (!["invoices", "works", "finance"].includes(view)) {
     const labels = { overview: "VISÃO GERAL", documents: "DOCUMENTOS", team: "EQUIPA" };
     $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
   }
@@ -560,6 +619,7 @@ function switchView(view) {
     renderWorks();
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
+  if (view === "finance") renderFinance();
   closeSidebar();
 }
 
@@ -1168,14 +1228,88 @@ $("#invoice-list").addEventListener("click", async event => {
   const button = event.target.closest("[data-action]"); if (!button) return;
   const invoice = invoices.find(item => String(item.id) === button.dataset.id); if (!invoice) return;
   const decision = button.dataset.action;
+  const card = button.closest("[data-invoice-card]");
+  const guideInput = card?.querySelector("[data-guide-input]");
+  const paymentTerm = card?.querySelector("[data-payment-term]")?.value || "imediato";
+  if (decision === "aprovado" && !invoice.guia_url && !guideInput?.files?.[0]) {
+    toast("Anexe a guia em PDF antes de aprovar a fatura.", "error");
+    return;
+  }
+  button.disabled = true;
+  let guideUrl = invoice.guia_url || "";
+  if (decision === "aprovado" && !guideUrl && isSupabaseConfigured) {
+    try {
+      button.innerHTML = `${icon("upload")} A ENVIAR GUIA…`;
+      guideUrl = await uploadWorkflowPdf(guideInput.files[0], invoice.obra_id, "guias");
+    } catch (error) {
+      toast(error.message || "Não foi possível enviar a guia.", "error");
+      button.disabled = false;
+      button.innerHTML = `${icon("check")} APROVAR`;
+      return;
+    }
+  }
   if (isSupabaseConfigured) {
     const result = await supabase(`faturas?id=eq.${invoice.id}&estado_aprovacao=eq.pendente`, {
-      method: "PATCH", body: JSON.stringify({ estado_aprovacao: decision, data_aprovacao: new Date().toISOString() }),
+      method: "PATCH", body: JSON.stringify({
+        estado_aprovacao: decision,
+        data_aprovacao: new Date().toISOString(),
+        ...(decision === "aprovado" ? { guia_url: guideUrl, prazo_pagamento: paymentTerm } : {}),
+      }),
     });
-    if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); return; }
+    if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); button.disabled = false; return; }
+  }
+  if (decision === "aprovado") {
+    financeInvoices.unshift({ ...invoice, guia_url: guideUrl || "demo/guia.pdf", prazo_pagamento: paymentTerm, estado_aprovacao: "aprovado", data_aprovacao: new Date().toISOString() });
+    renderFinance();
   }
   invoices = invoices.filter(item => item.id !== invoice.id); renderInvoices();
   toast(`Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
+});
+
+$("#invoice-list").addEventListener("change", event => {
+  const input = event.target.closest("[data-guide-input]");
+  if (!input) return;
+  const file = input.files?.[0];
+  const picker = input.closest(".guide-picker");
+  const approve = input.closest("[data-invoice-card]")?.querySelector('[data-action="aprovado"]');
+  if (!file) {
+    picker.classList.remove("ready");
+    picker.querySelector("span").textContent = "ANEXAR GUIA (PDF)";
+    approve.disabled = true;
+    return;
+  }
+  if (file.type !== "application/pdf" || file.size > 10 * 1024 * 1024) {
+    input.value = "";
+    toast(file.type !== "application/pdf" ? "A guia tem de ser um ficheiro PDF." : "A guia excede o limite de 10 MB.", "error");
+    return;
+  }
+  picker.classList.add("ready");
+  picker.querySelector("span").textContent = file.name;
+  approve.disabled = false;
+  approve.title = "Aprovar fatura";
+});
+
+$("#finance-board").addEventListener("click", async event => {
+  const button = event.target.closest("[data-mark-paid]");
+  if (!button) return;
+  const invoice = financeInvoices.find(item => String(item.id) === button.dataset.markPaid);
+  if (!invoice) return;
+  button.disabled = true;
+  const paidAt = new Date().toISOString();
+  if (isSupabaseConfigured) {
+    const result = await supabase(`faturas?id=eq.${invoice.id}&estado_aprovacao=eq.aprovado`, {
+      method: "PATCH",
+      body: JSON.stringify({ data_pagamento: paidAt }),
+    });
+    if (!result.ok) {
+      toast(`Não foi possível marcar a fatura como paga: ${await result.text()}`, "error");
+      button.disabled = false;
+      return;
+    }
+  }
+  invoice.data_pagamento = paidAt;
+  renderFinance();
+  toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
 });
 
 renderUser();

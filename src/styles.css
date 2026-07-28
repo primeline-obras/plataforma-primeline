@@ -241,10 +241,34 @@ input::placeholder { color: #acb0b1; }
 .dialog-copy { color: #656c6f; font-size: 11px; margin: 0 0 18px; }
 .placeholder-view { min-height: calc(100vh - 70px); display: grid; place-items: center; }
 
+.approval-fields { display: grid; grid-template-columns: minmax(0,1fr) 132px; gap: 8px; margin-top: 13px; }
+.guide-picker { min-width: 0; height: 38px; border: 1px dashed #c9cdca; background: #f8f8f6; display: flex; align-items: center; gap: 7px; padding: 0 10px; color: #747b7d; cursor: pointer; font: 700 7px "Manrope"; letter-spacing: .55px; }
+.guide-picker svg { width: 14px; flex: 0 0 auto; }.guide-picker span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.guide-picker input { display: none; }
+.guide-picker.ready { border-style: solid; border-color: #b8ceb9; color: #4f7255; background: #f0f6f1; }
+.payment-term { margin: 0; color: #858b8d; font: 700 6px "Manrope"; letter-spacing: .55px; }
+.payment-term select { height: 27px; margin-top: 3px; border: 1px solid #d4d6d4; background: white; width: 100%; color: #4d5457; font: 600 9px "DM Sans"; padding: 0 6px; }
+.card-actions .approve:disabled { opacity: .38; cursor: not-allowed; }
+
+.finance-board { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 15px; align-items: start; }
+.finance-column { border: 1px solid #dfe1de; background: #f4f4f1; min-height: 210px; }
+.finance-column-head { height: 50px; padding: 0 15px; background: var(--charcoal); color: white; display: flex; align-items: center; justify-content: space-between; }
+.finance-column-head h2 { font: 700 10px "Manrope"; letter-spacing: 1px; }.finance-column-head span { min-width: 22px; height: 22px; border: 1px solid #656b6d; display: grid; place-items: center; font: 700 8px "Manrope"; }
+.finance-column-list { padding: 10px; display: flex; flex-direction: column; gap: 9px; }
+.finance-card { background: white; border: 1px solid #dcdfdc; padding: 14px; }
+.finance-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }.finance-card-top span { color: #9a7a46; font: 700 7px "Manrope"; letter-spacing: .65px; }.finance-card-top strong { font: 700 12px "Manrope"; }
+.finance-card h3 { margin: 13px 0 2px; font-size: 11px; }.finance-card > p { color: #858b8d; font-size: 9px; margin: 0; }
+.finance-date { border-top: 1px solid #ebedea; margin-top: 12px; padding-top: 9px; display: flex; justify-content: space-between; align-items: center; }.finance-date span { color: #929799; font: 700 6px "Manrope"; letter-spacing: .55px; }.finance-date strong { font-size: 8px; }
+.mark-paid { width: 100%; height: 32px; margin-top: 11px; border: 1px solid #b7cbb9; background: #eff6f0; color: #4f7255; display: flex; justify-content: center; align-items: center; gap: 6px; font: 700 7px "Manrope"; letter-spacing: .6px; cursor: pointer; }.mark-paid svg { width: 13px; }.mark-paid:disabled { opacity: .5; cursor: wait; }
+.finance-empty { min-height: 75px; display: grid; place-items: center; color: #a0a5a6; font: 700 7px "Manrope"; letter-spacing: .7px; text-align: center; }
+.paid-history { margin-top: 22px; padding: 20px; }.paid-history-head { display: flex; justify-content: space-between; align-items: end; border-bottom: 1px solid #dfe1de; padding-bottom: 15px; }.paid-history-head h2 { font-size: 17px; margin: 3px 0 0; }.paid-history-head > span { color: #858b8d; font: 700 7px "Manrope"; letter-spacing: .7px; }
+.paid-list article { min-height: 57px; display: grid; grid-template-columns: 1fr auto 135px; gap: 20px; align-items: center; border-bottom: 1px solid #e5e7e4; }.paid-list article:last-child { border-bottom: 0; }
+.paid-list article div strong { display: block; font-size: 10px; }.paid-list article div span { color: #858b8d; font-size: 8px; }.paid-list article > strong { font: 700 11px "Manrope"; }.paid-list time { color: #55715a; font: 700 7px "Manrope"; letter-spacing: .55px; text-align: right; }
+
 @media (max-width: 1100px) {
   .invoice-grid { grid-template-columns: 1fr; }
   .invoice-list { max-height: none; }
   .works-layout { grid-template-columns: 1fr; }.works-list { max-height: 330px; }
+  .finance-board { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
   .auth-screen { grid-template-columns: 1fr; }.auth-brand { padding: 25px; min-height: 92px; }.auth-brand .brand { transform: scale(.9); }.auth-card { padding: 35px 0 50px; }
@@ -260,6 +284,7 @@ input::placeholder { color: #acb0b1; }
   .measurement-toolbar { flex-direction: column; }.measurement-kpis { grid-template-columns: 1fr; }.measurement-kpis > div { border-right: 0; border-bottom: 1px solid #e0e1de; }.measurement-values { grid-template-columns: repeat(2,1fr); }.workflow-line { grid-template-columns: 1fr; }.workflow-line i { display: none; }.billing-summary { flex-wrap: wrap; }
   .pending-head { align-items: end; }.pending-head h2 { font-size: 17px; }.pending-head .select-wrap { width: 130px; }
   .invoice-card { padding: 13px; }.invoice-icon { display: none; }.form-row { grid-template-columns: 1fr; gap: 0; }.form-actions { flex-direction: column; }
+  .approval-fields { grid-template-columns: 1fr; }.paid-list article { grid-template-columns: 1fr auto; padding: 10px 0; }.paid-list time { grid-column: 1 / -1; text-align: left; }
   .demo-badge { display: none; }.toast { left: 15px; right: 15px; bottom: 15px; min-width: 0; }
 }
 @media (max-width: 430px) {
