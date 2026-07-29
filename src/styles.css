@@ -570,3 +570,64 @@ main { transition: margin-left .2s ease, width .2s ease; }
   :root.sidebar-collapsed .sidebar > .brand { justify-content: flex-start; }
   :root.sidebar-collapsed .sidebar .brand-mark { transform: skew(-18deg); }
 }
+
+/* Softer component geometry, following the visual prototype. */
+button, input, select, textarea,
+.select-wrap, .search-box, .money-input, .pdf-attachment, .extraction-panel,
+.guide-picker, .billing-summary, .overview-warning, .work-warning {
+  border-radius: 10px;
+}
+.panel, .work-detail, .works-list, .finance-column, .finance-card,
+.overview-kpis article, .meeting-kpis article, .work-kpis, .measurement-kpis,
+.overview-work-metrics, .overview-work-detail, .overview-panel,
+.cash-month-details article, .subcontract-card, .measurement-card,
+.dialog-card, .work-dialog-card, .workflow-dialog-card, .auth-card,
+.invoice-card, .paid-history, table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.work-list-item, .overview-work-list button,
+.overview-actions > button, .overview-actions > div:not(.overview-empty),
+.meeting-table > div, .meeting-detail-list > div, .phase-timeline-row {
+  border-radius: 10px;
+}
+.work-status, .approval-badge, .demo-badge, .extraction-row em,
+.overview-alerts em, .overview-section-head > span, .finance-column-head span,
+.overview-subcontract-counts span, .cash-state {
+  border-radius: 999px;
+}
+.display-toggle {
+  min-height: 30px; padding: 0 11px; border-radius: 10px;
+  background: var(--card); border: 1px solid var(--card-border);
+  color: var(--text-secondary); font-size: 7px; box-shadow: none;
+}
+.display-toggle[aria-pressed="true"] {
+  background: var(--info-bg); border-color: var(--info-border); color: var(--info-text);
+}
+.overview-kpis article, .meeting-kpis article { padding: 23px 24px; }
+.work-kpis > div, .measurement-kpis > div { padding: 19px 20px; }
+.panel, .work-detail, .works-list, .finance-card,
+.overview-kpis article, .meeting-kpis article, .work-kpis, .measurement-kpis,
+.overview-work-detail, .cash-month-details article, .subcontract-card,
+.measurement-card, .dialog-card, .work-dialog-card, .workflow-dialog-card,
+.invoice-card, .paid-history, .finance-column {
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+:root[data-theme="dark"] .panel, :root[data-theme="dark"] .work-detail,
+:root[data-theme="dark"] .works-list, :root[data-theme="dark"] .finance-card,
+:root[data-theme="dark"] .overview-kpis article, :root[data-theme="dark"] .meeting-kpis article,
+:root[data-theme="dark"] .work-kpis, :root[data-theme="dark"] .measurement-kpis,
+:root[data-theme="dark"] .overview-work-detail, :root[data-theme="dark"] .cash-month-details article,
+:root[data-theme="dark"] .subcontract-card, :root[data-theme="dark"] .measurement-card,
+:root[data-theme="dark"] .dialog-card, :root[data-theme="dark"] .work-dialog-card,
+:root[data-theme="dark"] .workflow-dialog-card, :root[data-theme="dark"] .invoice-card,
+:root[data-theme="dark"] .paid-history, :root[data-theme="dark"] .finance-column {
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.overview-alerts > div { border-radius: 10px; margin: 4px 0; }
+.finance-column-head { border-radius: 11px 11px 0 0; }
+.sidebar nav button, .sidebar-collapse { border-radius: 10px; }
+
+@media (max-width: 760px) {
+  .overview-kpis article, .meeting-kpis article { padding: 20px; }
+}
