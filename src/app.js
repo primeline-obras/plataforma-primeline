@@ -359,7 +359,8 @@ function renderWorks() {
   if ($("#active-works-count")) $("#active-works-count").textContent = String(active.length).padStart(2, "0");
   if ($("#works-result-count")) $("#works-result-count").textContent = `${filtered.length} ${filtered.length === 1 ? "OBRA" : "OBRAS"}`;
   if (!$("#works-list")) return;
-  $("#works-list").innerHTML = filtered.length ? filtered.map(work => `
+  const orderedWorks = [...filtered].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
+  $("#works-list").innerHTML = orderedWorks.length ? orderedWorks.map(work => `
     <button class="work-list-item ${work.id === selectedWorkId ? "selected" : ""}" data-work-id="${work.id}">
       <span class="work-number">${String(work.numero || "—").padStart(3, "0")}</span>
       <span class="work-list-copy"><strong>${work.nome || "Obra sem designação"}</strong><small>${work.cliente || "Cliente não indicado"}</small></span>
