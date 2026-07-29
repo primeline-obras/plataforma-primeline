@@ -674,6 +674,38 @@ button, input, select, textarea,
 .team-person-main strong { font-size: 11px !important; text-transform: none !important; }
 .team-person-main span { color: var(--text-secondary); font-size: 9px; }
 .team-directory-row .text-alert { color: var(--neg-text); }
+.directory-toolbar { justify-content: flex-end; }
+.team-alert-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 0 0 18px; }
+.team-alert-summary article { min-height: 70px; padding: 15px 18px; border: 1px solid var(--card-border); border-left-width: 3px; border-radius: 10px; background: var(--card); display: flex; align-items: center; gap: 12px; }
+.team-alert-summary article strong { font-size: 20px; }
+.team-alert-summary article span { font-size: 7px; font-weight: 800; letter-spacing: .8px; line-height: 1.5; }
+.team-alert-summary .attention { border-left-color: var(--warn-text); background: var(--warn-bg); color: var(--warn-text); }
+.team-alert-summary .pending { border-left-color: var(--neg-text); background: var(--neg-bg); color: var(--neg-text); }
+.team-alert-summary .info { border-left-color: var(--info-text); background: var(--info-bg); color: var(--info-text); }
+.team-alert-summary .ok { border-left-color: var(--pos-text); background: var(--pos-bg); color: var(--pos-text); }
+.team-tabs { display: flex; gap: 4px; margin-bottom: 10px; overflow-x: auto; }
+.team-tabs button { min-height: 42px; padding: 0 18px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
+.team-tabs button.active { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
+.team-tab-panel { margin-bottom: 18px; }
+.team-detail-row { min-height: 72px; padding: 14px 22px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(120px, .7fr)) 90px; align-items: center; gap: 14px; }
+.team-detail-row:last-child { border-bottom: 0; }
+.team-detail-row > div { display: grid; gap: 5px; }
+.team-detail-row span { color: var(--text-secondary); font-size: 8px; }
+.team-detail-row > div:not(:first-child) > span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
+.team-detail-row strong { font-size: 10px; }
+.team-detail-row em { padding: 6px 8px; border: 1px solid var(--warn-border); border-radius: 999px; color: var(--warn-text); background: var(--warn-bg); font-size: 6px; font-style: normal; font-weight: 800; text-align: center; }
+.workforce-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
+.workforce-legend span { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.workforce-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; background: var(--card); }
+.workforce-legend .foreman, .team-person-chip.foreman { border-color: #5f8f67; }
+.workforce-legend .mason, .team-person-chip.mason { border-color: #c54b45; }
+.workforce-legend .helper, .team-person-chip.helper { border-color: #20242b; }
+:root[data-theme="dark"] .workforce-legend .helper, :root[data-theme="dark"] .team-person-chip.helper { border-color: #eef0f3; }
+.fixed-work-team { display: grid; gap: 5px; margin-top: 7px; }
+.fixed-work-team small { display: grid; grid-template-columns: 62px 1fr; gap: 5px; color: var(--text-secondary); font-size: 7px; line-height: 1.25; }
+.fixed-work-team small b { color: var(--text-muted); font-size: 6px; letter-spacing: .6px; }
+.team-person-chip > span { display: grid; gap: 2px; }
+.team-person-chip > span small { color: var(--text-muted); font-size: 6px; font-weight: 700; text-transform: uppercase; }
 
 @media (max-width: 1050px) {
   .team-layout { grid-template-columns: 1fr; }
@@ -692,4 +724,6 @@ button, input, select, textarea,
   .team-directory-row { grid-template-columns: 32px 1fr; }
   .team-directory-row > div:not(.team-person-main) { grid-column: 2; }
   .team-directory-row > div:last-child { display: grid; }
+  .team-detail-row { grid-template-columns: 1fr 1fr; }
+  .team-detail-row > div:first-child { grid-column: 1 / -1; }
 }
