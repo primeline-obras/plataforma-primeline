@@ -631,3 +631,65 @@ button, input, select, textarea,
 @media (max-width: 760px) {
   .overview-kpis article, .meeting-kpis article { padding: 20px; }
 }
+
+/* Equipa e quadro de pessoal. */
+.team-toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin: 26px 0 18px; }
+.team-toolbar .search-box { width: min(420px, 100%); }
+.week-navigation { display: flex; align-items: flex-end; gap: 8px; }
+.week-navigation label { display: grid; gap: 7px; font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
+.week-navigation input { min-height: 42px; padding: 0 13px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-primary); }
+.week-navigation .outline-action { min-height: 42px; }
+.team-kpis { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 18px; border: 1px solid var(--card-border); background: var(--card); }
+.team-kpis article { min-height: 92px; padding: 20px; border-right: 1px solid var(--card-border); display: flex; flex-direction: column; justify-content: space-between; }
+.team-kpis article:last-child { border-right: 0; }
+.team-kpis span, .team-directory-row > div > span { font-size: 7px; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); }
+.team-kpis strong { font-size: 24px; color: var(--info-text); }
+.team-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(270px, .8fr); gap: 18px; margin-bottom: 18px; }
+.team-board-panel, .team-absence-panel, .team-directory-panel { padding: 0; }
+.team-section-head { min-height: 84px; padding: 20px 24px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.team-section-head h2 { margin: 6px 0 0; font-size: 18px; }
+.team-section-head > span { color: var(--text-secondary); font-size: 8px; font-weight: 700; letter-spacing: .7px; }
+.team-work-row { display: grid; grid-template-columns: 210px minmax(0, 1fr); min-height: 88px; border-bottom: 1px solid var(--card-border); }
+.team-work-row:last-child { border-bottom: 0; }
+.team-work-name { padding: 18px 20px; border-right: 1px solid var(--card-border); display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.team-work-name span { color: var(--brand-amber); font-size: 7px; font-weight: 800; letter-spacing: 1px; }
+.team-work-name strong { font-size: 12px; }
+.team-person-chips { padding: 15px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.team-person-chips > small { color: var(--text-muted); }
+.team-person-chip { min-height: 34px; padding: 5px 10px 5px 5px; border: 1px solid var(--card-border); border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; font-size: 9px; font-weight: 700; }
+.team-person-chip b, .team-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--info-bg); color: var(--info-text); display: grid; place-items: center; font-size: 7px; }
+.team-person-chip em { color: var(--neg-text); font-size: 6px; font-style: normal; letter-spacing: .7px; }
+.team-person-chip.absent { border-color: var(--neg-border); background: var(--neg-bg); }
+.unallocated-row { background: color-mix(in srgb, var(--warn-bg) 45%, transparent); }
+.absence-card { padding: 16px 20px; border-bottom: 1px solid var(--card-border); display: grid; gap: 4px; }
+.absence-card:last-child { border-bottom: 0; }
+.absence-card time { color: var(--brand-amber); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
+.absence-card strong { font-size: 11px; }
+.absence-card span { color: var(--neg-text); font-size: 8px; font-weight: 800; text-transform: uppercase; }
+.team-directory-row { min-height: 76px; padding: 13px 22px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 36px minmax(210px, 1.4fr) repeat(3, minmax(130px, 1fr)); align-items: center; gap: 14px; }
+.team-directory-row:last-child { border-bottom: 0; }
+.team-avatar { width: 32px; height: 32px; font-size: 8px; }
+.team-directory-row > div { display: grid; gap: 5px; }
+.team-directory-row > div > strong { font-size: 10px; text-transform: capitalize; }
+.team-person-main strong { font-size: 11px !important; text-transform: none !important; }
+.team-person-main span { color: var(--text-secondary); font-size: 9px; }
+.team-directory-row .text-alert { color: var(--neg-text); }
+
+@media (max-width: 1050px) {
+  .team-layout { grid-template-columns: 1fr; }
+  .team-kpis { grid-template-columns: repeat(2, 1fr); }
+  .team-kpis article:nth-child(2) { border-right: 0; }
+  .team-kpis article:nth-child(-n+2) { border-bottom: 1px solid var(--card-border); }
+  .team-directory-row { grid-template-columns: 36px minmax(180px, 1.4fr) repeat(2, minmax(115px, 1fr)); }
+  .team-directory-row > div:last-child { display: none; }
+}
+@media (max-width: 760px) {
+  .team-toolbar, .week-navigation { align-items: stretch; flex-wrap: wrap; }
+  .team-toolbar { flex-direction: column; }
+  .team-toolbar .search-box { width: 100%; }
+  .team-work-row { grid-template-columns: 1fr; }
+  .team-work-name { border-right: 0; border-bottom: 1px solid var(--card-border); }
+  .team-directory-row { grid-template-columns: 32px 1fr; }
+  .team-directory-row > div:not(.team-person-main) { grid-column: 2; }
+  .team-directory-row > div:last-child { display: grid; }
+}

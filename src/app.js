@@ -36,6 +36,8 @@ let activeView = "overview";
 let selectedWorkId = "";
 let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], error: "", procurementError: "", billingError: "" };
 let selectedWorkTab = "summary";
+let selectedTeamWeek = mondayIso(new Date());
+let teamData = { allocations: [], absences: [], contracts: [], overtime: [], loadedWeek: "", error: "" };
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -150,6 +152,36 @@ document.querySelector("#root").innerHTML = `
         <section class="panel paid-history">
           <div class="paid-history-head"><div><p class="eyebrow">ARQUIVO</p><h2>HISTÓRICO DE FATURAS PAGAS</h2></div><span id="paid-count">0 FATURAS</span></div>
           <div class="paid-list" id="paid-list"></div>
+        </section>
+      </div>
+      <div class="page team-view" id="team-view" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">GESTÃO DE PESSOAS</p><h1>EQUIPA</h1><p>Quadro semanal, ausências e situação da equipa.</p></div>
+          <div class="heading-stat"><span>ATIVOS</span><strong id="team-active-count">00</strong></div>
+        </div>
+        <div class="team-toolbar">
+          <div class="week-navigation">
+            <button class="outline-action" id="team-previous-week" type="button" aria-label="Semana anterior">←</button>
+            <label>SEMANA DE<input id="team-week" type="date"></label>
+            <button class="outline-action" id="team-next-week" type="button" aria-label="Semana seguinte">→</button>
+            <button class="outline-action" id="team-current-week" type="button">SEMANA ATUAL</button>
+          </div>
+          <div class="search-box">${icon("search")}<input id="team-search" placeholder="Pesquisar colaborador, função ou obra…"></div>
+        </div>
+        <section class="team-kpis" id="team-kpis"></section>
+        <section class="team-layout">
+          <div class="panel team-board-panel">
+            <div class="team-section-head"><div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h2>QUADRO DE PESSOAL</h2></div><span id="team-week-label"></span></div>
+            <div id="team-board"></div>
+          </div>
+          <div class="panel team-absence-panel">
+            <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>AUSÊNCIAS</h2></div></div>
+            <div id="team-absences"></div>
+          </div>
+        </section>
+        <section class="panel team-directory-panel">
+          <div class="team-section-head"><div><p class="eyebrow">ESTRUTURA</p><h2>COLABORADORES</h2></div><span id="team-result-count"></span></div>
+          <div id="team-directory"></div>
         </section>
       </div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
@@ -374,6 +406,110 @@ function renderWorks() {
 
 function formatOptionalDate(value) {
   return value ? prettyDate.format(new Date(`${value}T12:00:00`)) : "—";
+}
+
+function mondayIso(value) {
+  const date = value instanceof Date ? new Date(value) : new Date(`${value}T12:00:00`);
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() - day + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function addDaysIso(value, days) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function personInitials(name = "") {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "—";
+}
+
+function renderTeam() {
+  const search = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
+  const workById = new Map(works.map(work => [work.id, work]));
+  const personById = new Map(collaborators.map(person => [person.id, person]));
+  const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id));
+  const allocatedIds = new Set(allocations.map(item => item.colaborador_id));
+  const absentIds = new Set(teamData.absences.map(item => item.colaborador_id));
+  const activeWorks = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
+  const unallocated = collaborators.filter(person => !allocatedIds.has(person.id));
+  const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
+
+  $("#team-active-count").textContent = String(collaborators.length).padStart(2, "0");
+  $("#team-week").value = selectedTeamWeek;
+  $("#team-week-label").textContent = `${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(selectedTeamWeek, 6)}T12:00:00`))}`;
+  $("#team-kpis").innerHTML = [
+    ["COLABORADORES ATIVOS", collaborators.length],
+    ["ALOCADOS", allocatedIds.size],
+    ["SEM ALOCAÇÃO", unallocated.length],
+    ["AUSENTES NA SEMANA", absentIds.size],
+  ].map(([label, value]) => `<article><span>${label}</span><strong>${String(value).padStart(2, "0")}</strong></article>`).join("");
+
+  if (teamData.error) {
+    $("#team-board").innerHTML = `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${teamData.error}</span></div>`;
+  } else {
+    const rows = activeWorks.map(work => {
+      const people = allocations.map(item => item.obra_id === work.id ? personById.get(item.colaborador_id) : null).filter(Boolean)
+        .filter(person => !search || `${person.nome} ${person.funcao || ""} ${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(search));
+      if (search && !people.length && !`${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(search)) return "";
+      return `<article class="team-work-row">
+        <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong></div>
+        <div class="team-person-chips">${people.length ? people.map(person => `<span class="team-person-chip ${absentIds.has(person.id) ? "absent" : ""}"><b>${personInitials(person.nome)}</b>${person.nome}${absentIds.has(person.id) ? "<em>AUSENTE</em>" : ""}</span>`).join("") : "<small>Sem colaboradores alocados nesta semana</small>"}</div>
+      </article>`;
+    }).join("");
+    const freePeople = unallocated.filter(person => !search || `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(search));
+    $("#team-board").innerHTML = `${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}
+      <article class="team-work-row unallocated-row"><div class="team-work-name"><span>DISPONÍVEIS</span><strong>Sem obra atribuída</strong></div><div class="team-person-chips">${freePeople.length ? freePeople.map(person => `<span class="team-person-chip ${absentIds.has(person.id) ? "absent" : ""}"><b>${personInitials(person.nome)}</b>${person.nome}</span>`).join("") : "<small>Todos os colaboradores estão alocados.</small>"}</div></article>`;
+  }
+
+  const absences = [...teamData.absences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  $("#team-absences").innerHTML = absences.length ? absences.map(item => {
+    const person = personById.get(item.colaborador_id);
+    return `<article class="absence-card"><time>${formatOptionalDate(item.data)}</time><strong>${person?.nome || "Colaborador"}</strong><span>${String(item.tipo || "Ausência").replace(/_/g, " ")}</span></article>`;
+  }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
+
+  const contractByPerson = new Map(teamData.contracts.map(item => [item.colaborador_id, item]));
+  const hoursByPerson = new Map();
+  teamData.overtime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
+  const visiblePeople = collaborators.filter(person => {
+    const work = workById.get(allocations.find(item => item.colaborador_id === person.id)?.obra_id);
+    return !search || `${person.nome} ${person.funcao || ""} ${person.nivel || ""} ${work?.numero || ""} ${work?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(search);
+  });
+  $("#team-result-count").textContent = `${visiblePeople.length} COLABORADOR${visiblePeople.length === 1 ? "" : "ES"} · ${pendingHours.toLocaleString("pt-PT")} H EXTRA POR PAGAR`;
+  $("#team-directory").innerHTML = visiblePeople.length ? visiblePeople.map(person => {
+    const allocation = allocations.find(item => item.colaborador_id === person.id);
+    const work = workById.get(allocation?.obra_id);
+    const contract = contractByPerson.get(person.id);
+    const absence = teamData.absences.find(item => item.colaborador_id === person.id);
+    return `<article class="team-directory-row">
+      <span class="team-avatar">${personInitials(person.nome)}</span>
+      <div class="team-person-main"><strong>${person.nome}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
+      <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : work ? `Obra ${work.numero || "—"}` : "Sem alocação"}</strong></div>
+      <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
+      <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
+    </article>`;
+  }).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`;
+}
+
+async function loadTeamData(force = false) {
+  if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
+  teamData = { allocations: [], absences: [], contracts: [], overtime: [], loadedWeek: selectedTeamWeek, error: "" };
+  $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
+  if (!isSupabaseConfigured) return renderTeam();
+  const weekEnd = addDaysIso(selectedTeamWeek, 6);
+  const results = await Promise.all([
+    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,semana_inicio&semana_inicio=eq.${selectedTeamWeek}`),
+    supabase(`ausencias?select=id,colaborador_id,data,tipo&data=gte.${selectedTeamWeek}&data=lte.${weekEnd}&order=data`),
+    supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo"),
+    supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
+  ]);
+  const names = ["alocações", "ausências", "contratos", "horas extraordinárias"];
+  const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
+  const failures = payloads.filter(payload => payload?.failed);
+  [teamData.allocations, teamData.absences, teamData.contracts, teamData.overtime] = payloads.map(payload => Array.isArray(payload) ? payload : []);
+  if (failures.length) teamData.error = `Não foi possível ler ${failures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
+  renderTeam();
 }
 
 function selectCurrentContract(contracts = []) {
@@ -660,9 +796,10 @@ function switchView(view) {
   $("#invoice-view").hidden = view !== "invoices";
   $("#works-view").hidden = view !== "works";
   $("#finance-view").hidden = view !== "finance";
-  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "finance"].includes(view);
-  if (!["overview", "meeting", "invoices", "works", "finance"].includes(view)) {
-    const labels = { documents: "DOCUMENTOS", team: "EQUIPA" };
+  $("#team-view").hidden = view !== "team";
+  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "finance", "team"].includes(view);
+  if (!["overview", "meeting", "invoices", "works", "finance", "team"].includes(view)) {
+    const labels = { documents: "DOCUMENTOS" };
     $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -670,6 +807,7 @@ function switchView(view) {
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
   if (view === "finance") renderFinance();
+  if (view === "team") loadTeamData();
   if (view === "overview") productionDashboard.refreshOverview();
   closeSidebar();
 }
@@ -697,6 +835,23 @@ $("#work-filter").addEventListener("change", e => { currentFilter = e.target.val
 document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#work-search").addEventListener("input", renderWorks);
 $("#work-status-filter").addEventListener("change", renderWorks);
+$("#team-search").addEventListener("input", renderTeam);
+$("#team-week").addEventListener("change", event => {
+  selectedTeamWeek = mondayIso(event.target.value);
+  loadTeamData(true);
+});
+$("#team-previous-week").addEventListener("click", () => {
+  selectedTeamWeek = addDaysIso(selectedTeamWeek, -7);
+  loadTeamData(true);
+});
+$("#team-next-week").addEventListener("click", () => {
+  selectedTeamWeek = addDaysIso(selectedTeamWeek, 7);
+  loadTeamData(true);
+});
+$("#team-current-week").addEventListener("click", () => {
+  selectedTeamWeek = mondayIso(new Date());
+  loadTeamData(true);
+});
 function closeWorkDialog() {
   $("#work-dialog").hidden = true;
   $("#work-form-error").textContent = "";
