@@ -485,7 +485,7 @@ function renderWorkSummary(work) {
         </dl>
       </section>
       <section><div class="detail-section-title"><span>FASES</span><small>${workDetails.phases.length}</small></div>
-        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.nome || phase.designacao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
+        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.descricao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
       </section>
     </div>`;
 }

@@ -122,7 +122,7 @@ export function createProductionDashboard(options) {
     const [alerts, profiles, phases, planning, budget] = await Promise.all([
       query("alertas?select=*&estado=eq.pendente&order=data_gatilho.asc", "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
-      query("fases?select=id,obra_id,nome,codigo", "Fases"),
+      query("fases?select=id,obra_id,descricao,codigo", "Fases"),
       query("planeamento_fases_resumo?select=*", "Planeamento"),
       query("itens_orcamento?select=id,fase_id,venda_prevista", "Orçamento"),
     ]);
@@ -237,7 +237,7 @@ export function createProductionDashboard(options) {
             return `<div><span><strong>${escapeHtml(row.especialidade || "Especialidade")}</strong><small>${escapeHtml(getSuppliers().find(item => item.id === row.fornecedor_id)?.nome || "Fornecedor")}</small></span><b>${euro.format(number(row.valor_adjudicado))}</b><em>PAGO ${euro.format(paid)}</em><em>POR PAGAR ${euro.format(number(row.valor_adjudicado) - paid)}</em><i>${escapeHtml(row.estado || "—")}</i></div>`;
           }).join("") || `<div class="overview-empty">SEM ADJUDICAÇÕES</div>`}</div></details>
           <details><summary>EM CONSULTA <b>${data.consultations.filter(row => row.estado === "em_consulta").length}</b></summary><div class="meeting-detail-list">${data.consultations.filter(row => row.estado === "em_consulta").map(row => `<div><span><strong>${escapeHtml(row.especialidade || row.designacao || "Consulta")}</strong></span><b>EM CONSULTA</b></div>`).join("") || `<div class="overview-empty">SEM CONSULTAS</div>`}</div></details>
-          <details><summary>NÃO CONSULTADAS <b>${notConsulted.length}</b></summary><div class="meeting-detail-list">${notConsulted.map(phase => `<div><span><strong>${escapeHtml(phase.codigo || "")} · ${escapeHtml(phase.nome || "Fase")}</strong></span><b>NÃO CONSULTADA</b></div>`).join("") || `<div class="overview-empty">TODAS AS FASES FORAM TRATADAS</div>`}</div></details>
+          <details><summary>NÃO CONSULTADAS <b>${notConsulted.length}</b></summary><div class="meeting-detail-list">${notConsulted.map(phase => `<div><span><strong>${escapeHtml(phase.codigo || "")} · ${escapeHtml(phase.descricao || "Fase")}</strong></span><b>NÃO CONSULTADA</b></div>`).join("") || `<div class="overview-empty">TODAS AS FASES FORAM TRATADAS</div>`}</div></details>
         </div>
       </section>
       <section class="panel meeting-card"><div class="meeting-title"><span>CASH FLOW MENSAL · REAL</span><small>Entradas, saídas e saldo acumulado</small></div>${renderCashFlow(work, data)}</section>
@@ -245,7 +245,7 @@ export function createProductionDashboard(options) {
         <div class="phase-plan">${data.phases.sort((a, b) => String(a.codigo || a.numero).localeCompare(String(b.codigo || b.numero), "pt", { numeric: true })).map(phase => {
           const plan = data.planning.find(row => row.fase_id === phase.id) || {};
           const progress = clampPercent(number(plan.percentual_executado));
-          return `<div><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><span><b>${escapeHtml(phase.nome || "Fase")}</b><small>${plan.data_inicio_prevista ? prettyDate.format(safeDate(plan.data_inicio_prevista)) : "—"} → ${plan.data_fim_prevista ? prettyDate.format(safeDate(plan.data_fim_prevista)) : "—"}</small></span><div><i style="width:${progress}%"></i></div><em>${Math.round(progress)}%</em></div>`;
+          return `<div><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><span><b>${escapeHtml(phase.descricao || "Fase")}</b><small>${plan.data_inicio_prevista ? prettyDate.format(safeDate(plan.data_inicio_prevista)) : "—"} → ${plan.data_fim_prevista ? prettyDate.format(safeDate(plan.data_fim_prevista)) : "—"}</small></span><div><i style="width:${progress}%"></i></div><em>${Math.round(progress)}%</em></div>`;
         }).join("") || `<div class="overview-empty">SEM PLANEAMENTO DISPONÍVEL</div>`}</div>
       </section>`;
     document.querySelector("#meeting-back").addEventListener("click", () => showView("overview"));
