@@ -448,6 +448,16 @@ function personInitials(name = "") {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase() || "—";
 }
 
+function shortPersonName(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : (parts[0] || "Colaborador");
+}
+
+function workforceInitials(name = "") {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}`.toUpperCase() : (parts[0]?.slice(0, 2).toUpperCase() || "—");
+}
+
 function workforceRoleClass(person) {
   const role = `${person?.funcao || ""} ${person?.nivel || ""}`.toLocaleLowerCase("pt-PT");
   if (role.includes("encarreg")) return "foreman";
@@ -475,19 +485,22 @@ function renderTeam() {
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
   const personById = new Map(collaborators.map(person => [person.id, person]));
+  const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
   const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id));
-  const allocatedIds = new Set(allocations.map(item => item.colaborador_id));
-  const absentIds = new Set(teamData.absences.map(item => item.colaborador_id));
+  const currentAllocations = allocations.filter(item => item.semana_inicio === selectedTeamWeek);
+  const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
+  const currentAbsences = teamData.absences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
+  const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
-  const unallocated = collaborators.filter(person => !allocatedIds.has(person.id));
+  const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
 
   $("#team-active-count").textContent = String(collaborators.length).padStart(2, "0");
   $("#team-week").value = selectedTeamWeek;
-  $("#team-week-label").textContent = `${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(selectedTeamWeek, 6)}T12:00:00`))}`;
+  $("#team-week-label").textContent = `SEMANA ATUAL · ${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))}`;
   $("#team-kpis").innerHTML = [
     ["COLABORADORES ATIVOS", collaborators.length],
-    ["ALOCADOS", allocatedIds.size],
+    ["ALOCADOS", currentAllocatedIds.size],
     ["SEM ALOCAÇÃO", unallocated.length],
     ["AUSENTES NA SEMANA", absentIds.size],
   ].map(([label, value]) => `<article><span>${label}</span><strong>${String(value).padStart(2, "0")}</strong></article>`).join("");
@@ -495,22 +508,31 @@ function renderTeam() {
   if (teamData.error) {
     $("#team-board").innerHTML = `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${teamData.error}</span></div>`;
   } else {
+    const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
+    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span></div>`).join("")}</div>`;
     const rows = activeWorks.map(work => {
-      const people = allocations.map(item => item.obra_id === work.id ? personById.get(item.colaborador_id) : null).filter(Boolean)
-        .filter(person => !workforceSearch || `${person.nome} ${person.funcao || ""} ${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch));
-      if (workforceSearch && !people.length && !`${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch)) return "";
+      const weeklyPeople = boardWeeks.map(week => allocations.filter(item => item.obra_id === work.id && item.semana_inicio === week).map(item => personById.get(item.colaborador_id)).filter(Boolean));
+      const matchesSearch = weeklyPeople.flat().some(person => `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch))
+        || `${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch);
+      if (workforceSearch && !matchesSearch) return "";
       const fixed = fixedWorkTeam(work);
-      return `<article class="team-work-row">
-        <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${person.name}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
-        <div class="team-person-chips">${people.length ? people.map(person => `<span class="team-person-chip ${workforceRoleClass(person)} ${absentIds.has(person.id) ? "absent" : ""}"><b>${personInitials(person.nome)}</b><span>${person.nome}<small>${person.funcao || "Função não definida"}</small></span>${absentIds.has(person.id) ? "<em>AUSENTE</em>" : ""}</span>`).join("") : "<small>Sem equipa operacional alocada nesta semana</small>"}</div>
+      return `<article class="workforce-grid team-work-row">
+        <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
+        ${weeklyPeople.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${people.length ? people.map(person => {
+          const weekAbsent = teamData.absences.some(item => item.colaborador_id === person.id && item.data >= boardWeeks[weekIndex] && item.data <= addDaysIso(boardWeeks[weekIndex], 6));
+          return `<span class="workforce-magnet ${workforceRoleClass(person)} ${weekAbsent ? "absent" : ""}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b>${weekAbsent ? "<em>F</em>" : ""}</span>`;
+        }).join("") : "<small>—</small>"}</div>`).join("")}
       </article>`;
     }).join("");
-    const freePeople = unallocated.filter(person => !workforceSearch || `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch));
-    $("#team-board").innerHTML = `${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}
-      <article class="team-work-row unallocated-row"><div class="team-work-name"><span>DISPONÍVEIS</span><strong>Sem obra atribuída</strong></div><div class="team-person-chips">${freePeople.length ? freePeople.map(person => `<span class="team-person-chip ${workforceRoleClass(person)} ${absentIds.has(person.id) ? "absent" : ""}"><b>${personInitials(person.nome)}</b><span>${person.nome}<small>${person.funcao || "Função não definida"}</small></span></span>`).join("") : "<small>Todos os colaboradores estão alocados.</small>"}</div></article>`;
+    const weeklyFree = boardWeeks.map(week => {
+      const weekIds = new Set(allocations.filter(item => item.semana_inicio === week).map(item => item.colaborador_id));
+      return collaborators.filter(person => !weekIds.has(person.id) && (!workforceSearch || `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch)));
+    });
+    $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}
+      <article class="workforce-grid team-work-row unallocated-row"><div class="team-work-name"><span>DISPONÍVEIS</span><strong>Sem obra atribuída</strong></div>${weeklyFree.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${people.length ? people.map(person => `<span class="workforce-magnet ${workforceRoleClass(person)}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b></span>`).join("") : "<small>—</small>"}</div>`).join("")}</article>`;
   }
 
-  const absences = [...teamData.absences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
   $("#team-absences").innerHTML = absences.length ? absences.map(item => {
     const person = personById.get(item.colaborador_id);
     return `<article class="absence-card"><time>${formatOptionalDate(item.data)}</time><strong>${person?.nome || "Colaborador"}</strong><span>${String(item.tipo || "Ausência").replace(/_/g, " ")}</span></article>`;
@@ -520,15 +542,15 @@ function renderTeam() {
   const hoursByPerson = new Map();
   teamData.overtime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
   const visiblePeople = collaborators.filter(person => {
-    const work = workById.get(allocations.find(item => item.colaborador_id === person.id)?.obra_id);
+    const work = workById.get(currentAllocations.find(item => item.colaborador_id === person.id)?.obra_id);
     return !directorySearch || `${person.nome} ${person.funcao || ""} ${person.nivel || ""} ${work?.numero || ""} ${work?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(directorySearch);
   });
   $("#team-result-count").textContent = `${visiblePeople.length} COLABORADOR${visiblePeople.length === 1 ? "" : "ES"} · ${pendingHours.toLocaleString("pt-PT")} H EXTRA POR PAGAR`;
   $("#team-directory").innerHTML = visiblePeople.length ? visiblePeople.map(person => {
-    const allocation = allocations.find(item => item.colaborador_id === person.id);
+    const allocation = currentAllocations.find(item => item.colaborador_id === person.id);
     const work = workById.get(allocation?.obra_id);
     const contract = contractByPerson.get(person.id);
-    const absence = teamData.absences.find(item => item.colaborador_id === person.id);
+    const absence = currentAbsences.find(item => item.colaborador_id === person.id);
     return `<article class="team-directory-row">
       <span class="team-avatar">${personInitials(person.nome)}</span>
       <div class="team-person-main"><strong>${person.nome}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
@@ -566,10 +588,11 @@ async function loadTeamData(force = false) {
   teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
-  const weekEnd = addDaysIso(selectedTeamWeek, 6);
+  const boardStart = addDaysIso(selectedTeamWeek, -7);
+  const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const results = await Promise.all([
-    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,semana_inicio&semana_inicio=eq.${selectedTeamWeek}`),
-    supabase(`ausencias?select=id,colaborador_id,data,tipo&data=gte.${selectedTeamWeek}&data=lte.${weekEnd}&order=data`),
+    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,semana_inicio&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=semana_inicio`),
+    supabase(`ausencias?select=id,colaborador_id,data,tipo&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo"),
     supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
