@@ -43,6 +43,7 @@ let workforceEditing = false;
 let selectedWorkforcePersonId = "";
 let selectedWorkforceSourceDate = "";
 let selectedWorkforceSourcePeriod = "";
+let selectedWorkforcePeriod = "dia_inteiro";
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -197,7 +198,7 @@ document.querySelector("#root").innerHTML = `
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
           <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div>
         </div>
-        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><label>PERÍODO<select id="workforce-period"><option value="dia_inteiro">Dia inteiro</option><option value="manha">Manhã</option><option value="tarde">Tarde</option></select></label><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
+        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
         <div class="workforce-roster" id="workforce-roster" hidden></div>
         <div class="team-toolbar">
           <div class="week-navigation">
@@ -478,6 +479,12 @@ function workforceRoleClass(person) {
   return roster[key] || "";
 }
 
+function compareWorkforcePeople(a, b) {
+  const order = { foreman: 0, mason: 1, helper: 2 };
+  return (order[workforceRoleClass(a)] ?? 9) - (order[workforceRoleClass(b)] ?? 9)
+    || String(a?.nome || "").localeCompare(String(b?.nome || ""), "pt-PT");
+}
+
 function fixedWorkTeam(work) {
   const userById = new Map(teamData.users.map(user => [user.id, user]));
   const fixed = [];
@@ -537,12 +544,16 @@ function workforceStateSignature(items) {
   return items.map(item => `${item.person.id}:${item.slots.slice().sort().join("+")}`).sort().join("|");
 }
 
+function isVacation(absence) {
+  return String(absence?.tipo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT").includes("ferias");
+}
+
 function renderTeam() {
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
   const personById = new Map(collaborators.map(person => [person.id, person]));
-  const operationalPeople = collaborators.filter(person => workforceRoleClass(person));
+  const operationalPeople = collaborators.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
   const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id) && workforceRoleClass(personById.get(item.colaborador_id)));
   const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
@@ -568,7 +579,10 @@ function renderTeam() {
   } else {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
-    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`).join("")}</div>`;
+    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
+      const vacationPeople = operationalPeople.filter(person => teamData.absences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
+      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
+    }).join("")}</div>`;
     const rows = activeWorks.map(work => {
       const workAllocations = allocations.filter(item => item.obra_id === work.id);
       const matchesSearch = workAllocations.some(item => `${personById.get(item.colaborador_id)?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch))
@@ -597,14 +611,14 @@ function renderTeam() {
               ? '<span class="no-workforce" title="Sem equipa nesta obra"></span>'
               : unchanged
                 ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
-                : effective.map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
+                : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
             return `<div class="workforce-day-cell ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" data-workforce-cell data-work-id="${work.id}" data-date="${date}">${content}</div>`;
           }).join("")}</div>`;
         }).join("")}
       </article>`;
     }).join("");
     $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}`;
-    $("#workforce-roster").innerHTML = `<div><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div>${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div>${selectedWorkforceSourceDate ? '<button class="roster-remove" type="button" data-remove-workforce>RETIRAR ALOCAÇÃO</button>' : ""}`;
+    $("#workforce-roster").innerHTML = `<div><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div>${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div><label class="roster-period">PERÍODO<select data-workforce-period><option value="dia_inteiro" ${selectedWorkforcePeriod === "dia_inteiro" ? "selected" : ""}>Dia inteiro</option><option value="manha" ${selectedWorkforcePeriod === "manha" ? "selected" : ""}>Manhã</option><option value="tarde" ${selectedWorkforcePeriod === "tarde" ? "selected" : ""}>Tarde</option></select></label>${selectedWorkforceSourceDate ? '<button class="roster-remove" type="button" data-remove-workforce>RETIRAR ALOCAÇÃO</button>' : ""}`;
   }
 
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
@@ -676,7 +690,12 @@ function setWorkforceEditing(enabled) {
 async function saveWorkforceAllocation(personId, date, workId) {
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
-  const period = $("#workforce-period").value;
+  const period = selectedWorkforcePeriod;
+  const vacation = teamData.absences.find(item => item.colaborador_id === personId && item.data === date && isVacation(item));
+  if (vacation) {
+    toast(`${shortPersonName(person.nome)} está de férias em ${formatOptionalDate(date)} e não pode ser colocado no quadro.`, "error");
+    return;
+  }
   const dayAllocations = teamData.allocations.filter(item => item.colaborador_id === personId && item.data === date);
   const conflicting = dayAllocations.filter(item => period === "dia_inteiro" || item.periodo === "dia_inteiro" || item.periodo === period);
   const alreadyThere = conflicting.length === 1 && conflicting[0].obra_id === workId && conflicting[0].periodo === period;
@@ -1135,6 +1154,10 @@ $("#workforce-roster").addEventListener("click", event => {
   const person = collaborators.find(item => item.id === selectedWorkforcePersonId);
   $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Escolha o período e clique no dia/obra.`;
   renderTeam();
+});
+$("#workforce-roster").addEventListener("change", event => {
+  const select = event.target.closest("[data-workforce-period]");
+  if (select) selectedWorkforcePeriod = select.value;
 });
 document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventListener("click", () => {
   selectedTeamTab = button.dataset.teamTab;

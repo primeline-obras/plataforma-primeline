@@ -711,6 +711,9 @@ button, input, select, textarea,
 .workforce-roster > div:first-child span { color: var(--text-secondary); font-size: 7px; }
 .workforce-roster > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
 .workforce-roster .roster-remove { margin-left: auto; padding: 9px 11px; border: 1px solid var(--neg-border); background: var(--neg-bg); color: var(--neg-text); font-size: 7px; font-weight: 800; white-space: nowrap; }
+.workforce-roster .roster-period { margin-left: auto; display: grid; gap: 5px; color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.workforce-roster .roster-period select { min-height: 34px; padding: 0 28px 0 10px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-primary); font-size: 8px; }
+.workforce-roster .roster-period + .roster-remove { margin-left: 0; }
 .workforce-legend span { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
 .workforce-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; background: var(--card); }
 .workforce-legend .foreman, .team-person-chip.foreman { border-color: #c9cdd1; background: #fff; }
@@ -727,6 +730,10 @@ button, input, select, textarea,
 .workforce-grid-head > div { padding: 13px 14px; border-right: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; justify-content: center; gap: 5px; font-size: 7px; font-weight: 800; letter-spacing: .8px; }
 .workforce-grid-head > div:last-child { border-right: 0; }
 .workforce-grid-head span { color: #aeb5bd; font-size: 6px; letter-spacing: .4px; }
+.workforce-vacation-box { min-height: 33px; margin-top: 6px; padding: 5px 7px; border: 1px solid rgba(255,255,255,.22); border-radius: 5px; background: rgba(255,255,255,.07); display: flex; align-items: center; gap: 7px; }
+.workforce-vacation-box > b { color: #f3c6c3; font-size: 6px; letter-spacing: .7px; }
+.workforce-vacation-box > span { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: #aeb5bd; }
+.workforce-vacation-box i { width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #b53e39; display: grid; place-items: center; font-size: 6px; font-style: normal; font-weight: 900; }
 .workforce-day-labels { display: grid; grid-template-columns: repeat(5, 1fr); margin: 5px -8px -7px; }
 .workforce-day-labels b { padding: 5px 2px 0; border-left: 1px solid rgba(255,255,255,.1); display: grid; justify-items: center; gap: 2px; font-size: 6px; }
 .workforce-day-labels b small { color: #8f98a2; font-size: 6px; }
