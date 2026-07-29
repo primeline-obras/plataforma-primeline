@@ -1,6 +1,6 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js";
+import { createProductionDashboard } from "./production-dashboard.js?v=2";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -367,6 +367,22 @@ function formatOptionalDate(value) {
   return value ? prettyDate.format(new Date(`${value}T12:00:00`)) : "—";
 }
 
+function selectCurrentContract(contracts = []) {
+  return [...contracts].sort((a, b) => {
+    const completeness = contract => ["venda_inicial", "venda_efetiva", "valor_adiantamento"]
+      .reduce((score, field) => score + (contract?.[field] != null ? 1 : 0), 0);
+    return completeness(b) - completeness(a)
+      || Number(b.venda_inicial || 0) - Number(a.venda_inicial || 0)
+      || Number(b.venda_efetiva || 0) - Number(a.venda_efetiva || 0);
+  })[0] || null;
+}
+
+function measurementBilledValue(measurement) {
+  if (measurement?.valor_bruto_medido != null) return Number(measurement.valor_bruto_medido || 0);
+  return Number(measurement?.valor_a_faturar || 0)
+    + Number(measurement?.valor_deduzido_adiantamento || 0);
+}
+
 function workProgress(work) {
   if (!work.data_inicio || !work.data_fim_prevista) return null;
   const start = new Date(`${work.data_inicio}T12:00:00`).getTime();
@@ -406,21 +422,18 @@ async function loadWorkDetails(workId) {
     return;
   }
   const [contractResult, phasesResult, measurementsResult] = await Promise.all([
-    supabase(`contratos?select=*&obra_id=eq.${encodeURIComponent(workId)}&limit=1`),
+    supabase(`contratos?select=id,obra_id,venda_inicial,venda_efetiva,valor_adiantamento,percentual_retencao_garantia,data_assinatura&obra_id=eq.${encodeURIComponent(workId)}`),
     supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
-    supabase(`autos_medicao?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
+    supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
   ]);
-  const results = [contractResult, phasesResult, measurementsResult];
-  const failed = results.find(result => !result.ok);
-  if (failed) {
-    const detail = await failed.json().catch(() => ({}));
-    workDetails.error = detail.message || "Não foi possível consultar os detalhes desta obra.";
-  } else {
-    const [contracts, phases, measurements] = await Promise.all(results.map(result => result.json()));
-    workDetails.contract = contracts[0] || null;
-    workDetails.phases = phases;
-    workDetails.measurements = measurements;
-  }
+  const detailErrors = [];
+  if (contractResult.ok) workDetails.contract = selectCurrentContract(await contractResult.json());
+  else detailErrors.push((await contractResult.json().catch(() => ({}))).message || "Contrato indisponível");
+  if (phasesResult.ok) workDetails.phases = await phasesResult.json();
+  else detailErrors.push((await phasesResult.json().catch(() => ({}))).message || "Fases indisponíveis");
+  if (measurementsResult.ok) workDetails.measurements = await measurementsResult.json();
+  else detailErrors.push((await measurementsResult.json().catch(() => ({}))).message || "Autos de medição indisponíveis");
+  workDetails.error = detailErrors.join(" · ");
   if (workDetails.measurements.length) {
     const measurementIds = workDetails.measurements.map(item => item.id);
     const billingsResult = await supabase(`faturacao?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data_emissao_fatura.desc`);
@@ -461,7 +474,7 @@ function renderWorkSummary(work) {
   const contract = workDetails.contract;
   const subcontractRows = subcontracts.filter(item => item.obra_id === work.id);
   const subcontractTotal = subcontractRows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
-  const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
+  const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + measurementBilledValue(item), 0);
   const progress = workProgress(work);
   const sale = Number(contract?.venda_efetiva || contract?.venda_inicial || 0);
   return `
@@ -552,14 +565,14 @@ function billingForMeasurement(measurementId) {
 
 function renderMeasurementsTab(work) {
   const rows = workDetails.measurements;
-  const measured = rows.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
+  const measured = rows.reduce((sum, item) => sum + measurementBilledValue(item), 0);
   const invoiced = workDetails.billings.reduce((sum, item) => sum + Number(item.valor || 0), 0);
   const received = workDetails.billings.reduce((sum, item) => sum + Number(item.valor_recebido || 0), 0);
   return `
     ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.billingError} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
     <div class="measurement-toolbar">
       <div class="measurement-kpis">
-        <div><span>A FATURAR</span><strong>${euro.format(measured)}</strong></div>
+        <div><span>VALOR MEDIDO</span><strong>${euro.format(measured)}</strong></div>
         <div><span>FATURADO</span><strong>${euro.format(invoiced)}</strong></div>
         <div><span>RECEBIDO</span><strong>${euro.format(received)}</strong></div>
       </div>
