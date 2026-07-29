@@ -581,7 +581,7 @@ function renderTeam() {
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
     const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
       const vacationPeople = operationalPeople.filter(person => teamData.absences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
-      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
+      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para marcar férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
     }).join("")}</div>`;
     const rows = activeWorks.map(work => {
       const workAllocations = allocations.filter(item => item.obra_id === work.id);
@@ -763,6 +763,30 @@ async function removeWorkforceAllocation() {
     await loadTeamData(true);
     toast("Alocação retirada.");
   }
+}
+
+async function saveVacationWeek(personId, week) {
+  const person = collaborators.find(item => item.id === personId);
+  if (!person) return;
+  const dates = Array.from({ length: 5 }, (_, index) => addDaysIso(week, index));
+  const existing = new Set(teamData.absences.filter(item => item.colaborador_id === personId && isVacation(item)).map(item => item.data));
+  const missing = dates.filter(date => !existing.has(date));
+  if (!missing.length) {
+    toast(`${shortPersonName(person.nome)} já está de férias nessa semana.`);
+    return;
+  }
+  const response = await supabase("ausencias", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify(missing.map(data => ({ colaborador_id: personId, data, tipo: "ferias" }))),
+  });
+  if (!response.ok) {
+    toast(`Não foi possível marcar as férias: ${await response.text()}`, "error");
+    return;
+  }
+  await loadTeamData(true);
+  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} marcado de férias. O íman continua selecionado.`;
+  toast("Férias registadas de segunda a sexta-feira.");
 }
 
 async function loadTeamData(force = false) {
@@ -1120,6 +1144,15 @@ $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(
 $("#remove-workforce-allocation").addEventListener("click", removeWorkforceAllocation);
 $("#team-board").addEventListener("click", async event => {
   if (!workforceEditing) return;
+  const vacationBox = event.target.closest("[data-vacation-week]");
+  if (vacationBox) {
+    if (!selectedWorkforcePersonId) {
+      toast("Selecione primeiro um íman.", "error");
+      return;
+    }
+    await saveVacationWeek(selectedWorkforcePersonId, vacationBox.dataset.vacationWeek);
+    return;
+  }
   const magnet = event.target.closest("[data-workforce-person]");
   if (magnet) {
     selectedWorkforcePersonId = magnet.dataset.workforcePerson;

@@ -734,6 +734,8 @@ button, input, select, textarea,
 .workforce-vacation-box > b { color: #f3c6c3; font-size: 6px; letter-spacing: .7px; }
 .workforce-vacation-box > span { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; color: #aeb5bd; }
 .workforce-vacation-box i { width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #b53e39; display: grid; place-items: center; font-size: 6px; font-style: normal; font-weight: 900; }
+.workforce-view.editing .workforce-vacation-box { cursor: pointer; }
+.workforce-view.editing .workforce-vacation-box:hover { border-color: #f3c6c3; background: rgba(212,74,67,.2); box-shadow: inset 0 0 0 1px #f3c6c3; }
 .workforce-day-labels { display: grid; grid-template-columns: repeat(5, 1fr); margin: 5px -8px -7px; }
 .workforce-day-labels b { padding: 5px 2px 0; border-left: 1px solid rgba(255,255,255,.1); display: grid; justify-items: center; gap: 2px; font-size: 6px; }
 .workforce-day-labels b small { color: #8f98a2; font-size: 6px; }
