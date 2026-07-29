@@ -25,8 +25,15 @@ alter table public.quadro_pessoal_alocacao
   add constraint quadro_pessoal_alocacao_periodo_check
   check (periodo in ('manha', 'tarde', 'dia_inteiro'));
 
+-- A antiga unicidade semanal impedia que a mesma pessoa trabalhasse em dias diferentes.
+alter table public.quadro_pessoal_alocacao
+  drop constraint if exists quadro_pessoal_alocacao_colaborador_id_semana_inicio_key;
+
 create index if not exists quadro_pessoal_alocacao_data_idx
   on public.quadro_pessoal_alocacao (data);
 
 create index if not exists quadro_pessoal_alocacao_colaborador_data_idx
   on public.quadro_pessoal_alocacao (colaborador_id, data);
+
+create unique index if not exists quadro_pessoal_alocacao_colaborador_data_periodo_key
+  on public.quadro_pessoal_alocacao (colaborador_id, data, periodo);

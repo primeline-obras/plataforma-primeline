@@ -461,19 +461,20 @@ function shortPersonName(name = "") {
 
 function workforceInitials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
+  const firstName = (parts[0] || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
+  if (firstName === "regivaldo") return "RR";
   return parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}`.toUpperCase() : (parts[0]?.slice(0, 2).toUpperCase() || "—");
 }
 
 function workforceRoleClass(person) {
   const roster = {
-    "manuel costa": "foreman", "paulo natividade": "foreman", "regivaldo oliveira": "foreman",
-    "vitor lopes": "foreman", "wanderson oliveira": "foreman", "william coimbra": "foreman",
-    "adilson semedo": "mason", "bonifacio te": "mason", "fernando silva": "mason",
-    "helder goncalves": "mason", "joao afonso": "mason", "mateus hebreus": "mason",
-    "gilson lima": "helper", "joao borges": "helper", "clayton oliveira": "helper",
-    "genito nanque": "helper", "mauro dias": "helper",
+    manuel: "foreman", paulo: "foreman", regivaldo: "foreman", vitor: "foreman", wanderson: "foreman", william: "foreman",
+    adilson: "mason", bonifacio: "mason", fernando: "mason", helder: "mason", joao_afonso: "mason", mateus: "mason",
+    gilson: "helper", joao_borges: "helper", clayton: "helper", genito: "helper", mauro: "helper",
   };
-  const key = shortPersonName(person?.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
+  const normalized = shortPersonName(person?.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
+  const [first, last] = normalized.split(/\s+/);
+  const key = first === "joao" ? `joao_${last}` : first;
   return roster[key] || "";
 }
 
@@ -494,9 +495,10 @@ function fixedWorkTeam(work) {
 function renderWorkforceMagnet(person, allocation = null) {
   const period = allocation?.periodo || "";
   const periodLabel = period === "manha" ? "M" : period === "tarde" ? "T" : "";
-  const selected = selectedWorkforcePersonId === person.id
+  const samePerson = selectedWorkforcePersonId === person.id;
+  const selected = samePerson
     && (!allocation || (selectedWorkforceSourceDate === allocation.data && selectedWorkforceSourcePeriod === period));
-  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
+  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
 }
 
 function renderTeam() {
@@ -646,11 +648,12 @@ async function saveWorkforceAllocation(personId, date, workId) {
       body: JSON.stringify({ obra_id: workId, criado_por: currentUser?.id || null }),
     });
     if (response.ok) {
-      selectedWorkforcePersonId = "";
       selectedWorkforceSourceDate = "";
       selectedWorkforceSourcePeriod = "";
       await loadTeamData(true);
-      toast("Quadro de pessoal atualizado.");
+      $("#remove-workforce-allocation").hidden = true;
+      $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
+      toast("Alocação adicionada. O íman continua selecionado.");
       return;
     }
   }
@@ -666,12 +669,12 @@ async function saveWorkforceAllocation(personId, date, workId) {
     $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões e tente novamente.";
     return;
   }
-  selectedWorkforcePersonId = "";
   selectedWorkforceSourceDate = "";
   selectedWorkforceSourcePeriod = "";
   await loadTeamData(true);
-  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} atualizado. Selecione outro íman para continuar.`;
-  toast("Quadro de pessoal atualizado.");
+  $("#remove-workforce-allocation").hidden = true;
+  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
+  toast("Alocação adicionada. O íman continua selecionado.");
 }
 
 async function removeWorkforceAllocation() {
@@ -680,7 +683,6 @@ async function removeWorkforceAllocation() {
   if (!response.ok) {
     toast(`Não foi possível retirar a alocação: ${await response.text()}`, "error");
   } else {
-    selectedWorkforcePersonId = "";
     selectedWorkforceSourceDate = "";
     selectedWorkforceSourcePeriod = "";
     $("#remove-workforce-allocation").hidden = true;
