@@ -1,7 +1,7 @@
 export const demoWorks = [
-  { id: "7c2a0c29-5eca-40d9-aff0-3e1b00d8e973", numero: "120", nome: "Moradia Unifamiliar — Cascais" },
-  { id: "demo-118", numero: "118", nome: "Reabilitação — Lisboa" },
-  { id: "demo-117", numero: "117", nome: "Escritórios — Oeiras" },
+  { id: "7c2a0c29-5eca-40d9-aff0-3e1b00d8e973", numero: "120", nome: "Moradia Unifamiliar — Cascais", situacao: "em_curso", data_inicio: "2026-01-15", data_fim_prevista: "2026-12-18" },
+  { id: "demo-118", numero: "118", nome: "Reabilitação — Lisboa", situacao: "em_curso", data_inicio: "2025-11-03", data_fim_prevista: "2026-09-30" },
+  { id: "demo-117", numero: "117", nome: "Escritórios — Oeiras", situacao: "em_curso", data_inicio: "2026-03-02", data_fim_prevista: "2027-01-29" },
 ];
 export const demoSuppliers = [
   { id: "fluxion", nome: "Fluxion" }, { id: "sergio", nome: "Sergio" },
