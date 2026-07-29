@@ -697,19 +697,20 @@ button, input, select, textarea,
 .workforce-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
 .workforce-heading-actions { display: grid; justify-items: end; gap: 14px; }
 .workforce-heading-actions .outline-action.active { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
-.workforce-edit-banner { position: sticky; top: 74px; z-index: 13; margin: 20px 0 -8px; padding: 12px 16px; border: 1px solid var(--info-border); border-left: 3px solid var(--info-text); border-radius: 10px; background: var(--info-bg); color: var(--info-text); display: flex; align-items: center; gap: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.12); }
+.workforce-edit-banner { margin: 20px 0 -8px; padding: 12px 16px; border: 1px solid var(--info-border); border-left: 3px solid var(--info-text); border-radius: 10px; background: var(--info-bg); color: var(--info-text); display: flex; align-items: center; gap: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.12); }
 .workforce-edit-banner[hidden] { display: none; }
 .workforce-edit-banner strong { font-size: 8px; letter-spacing: .8px; }
 .workforce-edit-banner span { flex: 1; font-size: 9px; }
 .workforce-edit-banner button { padding: 7px 11px; border: 1px solid var(--info-border); background: transparent; color: var(--info-text); font-size: 7px; font-weight: 800; }
 .workforce-edit-banner label { display: flex; align-items: center; gap: 7px; font-size: 7px; font-weight: 800; letter-spacing: .7px; }
 .workforce-edit-banner select { min-height: 32px; padding: 0 28px 0 9px; border: 1px solid var(--info-border); background: var(--card); color: var(--text-primary); font-size: 8px; }
-.workforce-roster { position: sticky; top: 128px; z-index: 12; margin: 16px 0 -8px; padding: 14px 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); display: flex; align-items: center; gap: 18px; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+.workforce-roster { position: sticky; top: 74px; z-index: 12; margin: 16px 0 -8px; padding: 14px 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); display: flex; align-items: center; gap: 18px; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
 .workforce-roster[hidden] { display: none; }
 .workforce-roster > div:first-child { min-width: 150px; display: grid; gap: 4px; }
 .workforce-roster > div:first-child strong { font-size: 8px; letter-spacing: .7px; }
 .workforce-roster > div:first-child span { color: var(--text-secondary); font-size: 7px; }
 .workforce-roster > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+.workforce-roster .roster-remove { margin-left: auto; padding: 9px 11px; border: 1px solid var(--neg-border); background: var(--neg-bg); color: var(--neg-text); font-size: 7px; font-weight: 800; white-space: nowrap; }
 .workforce-legend span { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
 .workforce-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; background: var(--card); }
 .workforce-legend .foreman, .team-person-chip.foreman { border-color: #c9cdd1; background: #fff; }
@@ -735,6 +736,11 @@ button, input, select, textarea,
 .workforce-week-cell.current { background: color-mix(in srgb, var(--info-bg) 38%, transparent); }
 .workforce-day-cell { min-width: 0; padding: 8px 3px; border-right: 1px solid var(--card-border); display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4px; }
 .workforce-day-cell:last-child { border-right: 0; }
+.workforce-arrow { color: var(--text-secondary); font-size: 22px; font-weight: 300; }
+.no-workforce { width: 100%; height: 52px; position: relative; display: block; }
+.no-workforce::after { content: ""; position: absolute; left: 8%; top: 50%; width: 84%; height: 2px; background: #d44a43; transform: rotate(-35deg); transform-origin: center; }
+.unchanged-day { background: color-mix(in srgb, var(--card) 86%, var(--info-bg)); }
+.changed-day { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--brand-amber) 55%, transparent); }
 .workforce-magnet { position: relative; width: 38px; height: 38px; border: 3px solid var(--card-border); border-radius: 50%; background: var(--card); color: var(--text-primary); display: grid; place-items: center; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,.16); }
 .workforce-view.editing .workforce-magnet { cursor: pointer; }
 .workforce-view.editing .workforce-day-cell { cursor: cell; transition: background .15s ease, outline .15s ease; }

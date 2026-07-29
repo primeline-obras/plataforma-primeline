@@ -501,6 +501,46 @@ function renderWorkforceMagnet(person, allocation = null) {
   return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
 }
 
+function effectiveWorkforceForDate(events, date, personById) {
+  const week = mondayIso(date);
+  const result = [];
+  [...new Set(events.map(item => item.colaborador_id))].forEach(personId => {
+    const person = personById.get(personId);
+    if (!person || !workforceRoleClass(person)) return;
+    const personEvents = events.filter(item => item.colaborador_id === personId && item.semana_inicio === week && item.data <= date);
+    const slots = {};
+    ["manha", "tarde"].forEach(slot => {
+      const applicable = personEvents.filter(item => item.periodo === "dia_inteiro" || item.periodo === slot)
+        .sort((a, b) => String(b.data).localeCompare(String(a.data)) || (a.periodo === slot ? -1 : 1));
+      if (applicable[0]) slots[slot] = applicable[0];
+    });
+    const grouped = new Map();
+    Object.entries(slots).forEach(([slot, event]) => {
+      const entry = grouped.get(event.obra_id) || { person, slots: [], sourceEvents: [] };
+      entry.slots.push(slot);
+      entry.sourceEvents.push(event);
+      grouped.set(event.obra_id, entry);
+    });
+    grouped.forEach((entry, obraId) => {
+      const sameSource = entry.sourceEvents.length === 2 && entry.sourceEvents[0].id === entry.sourceEvents[1].id;
+      result.push({
+        obra_id: obraId,
+        person: entry.person,
+        slots: entry.slots,
+        allocation: {
+          data: sameSource || entry.sourceEvents.length === 1 ? entry.sourceEvents[0].data : "",
+          periodo: entry.slots.length === 2 ? "dia_inteiro" : entry.slots[0],
+        },
+      });
+    });
+  });
+  return result;
+}
+
+function workforceStateSignature(items) {
+  return items.map(item => `${item.person.id}:${item.slots.slice().sort().join("+")}`).sort().join("|");
+}
+
 function renderTeam() {
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
@@ -541,15 +581,26 @@ function renderTeam() {
       const fixed = fixedWorkTeam(work);
       return `<article class="workforce-grid team-work-row">
         <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
-        ${boardWeeks.map((week, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${weekdays.map((day, dayIndex) => {
-          const date = addDaysIso(week, dayIndex);
-          const dayAllocations = workAllocations.filter(item => item.data === date);
-          return `<div class="workforce-day-cell" data-workforce-cell data-work-id="${work.id}" data-date="${date}">${dayAllocations.map(item => renderWorkforceMagnet(personById.get(item.colaborador_id), item)).join("") || "<small>—</small>"}</div>`;
-        }).join("")}</div>`).join("")}
+        ${boardWeeks.map((week, weekIndex) => {
+          let previousSignature = "";
+          return `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${weekdays.map((day, dayIndex) => {
+            const date = addDaysIso(week, dayIndex);
+            const effective = effectiveWorkforceForDate(allocations, date, personById).filter(item => item.obra_id === work.id);
+            const signature = workforceStateSignature(effective);
+            const unchanged = dayIndex > 0 && signature && signature === previousSignature;
+            previousSignature = signature;
+            const content = !effective.length
+              ? '<span class="no-workforce" title="Sem equipa nesta obra"></span>'
+              : unchanged
+                ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
+                : effective.map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
+            return `<div class="workforce-day-cell ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" data-workforce-cell data-work-id="${work.id}" data-date="${date}">${content}</div>`;
+          }).join("")}</div>`;
+        }).join("")}
       </article>`;
     }).join("");
     $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}`;
-    $("#workforce-roster").innerHTML = `<div><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div>${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div>`;
+    $("#workforce-roster").innerHTML = `<div><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div>${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div>${selectedWorkforceSourceDate ? '<button class="roster-remove" type="button" data-remove-workforce>RETIRAR ALOCAÇÃO</button>' : ""}`;
   }
 
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
@@ -1067,6 +1118,10 @@ $("#team-board").addEventListener("click", async event => {
 });
 $("#workforce-roster").addEventListener("click", event => {
   if (!workforceEditing) return;
+  if (event.target.closest("[data-remove-workforce]")) {
+    removeWorkforceAllocation();
+    return;
+  }
   const magnet = event.target.closest("[data-workforce-person]");
   if (!magnet) return;
   selectedWorkforcePersonId = magnet.dataset.workforcePerson;
