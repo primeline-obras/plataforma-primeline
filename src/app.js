@@ -460,6 +460,16 @@ function shortPersonName(name = "") {
   return parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : (parts[0] || "Colaborador");
 }
 
+function compactWorkName(name = "") {
+  return name
+    .replace(/Quinta da Marinha/gi, "Qt. Marinha")
+    .replace(/Av(?:enida)?\.?\s+Bombeiros Voluntários/gi, "Av. Bombeiros")
+    .replace(/Tavira Primeline/gi, "Tavira")
+    .replace(/Quinta Patino/gi, "Qt. Patino")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function workforceInitials(name = "") {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   const firstName = (parts[0] || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
@@ -560,7 +570,9 @@ function renderTeam() {
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
   const currentAbsences = teamData.absences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
-  const activeWorks = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
+  const activeWorks = works
+    .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
+    .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
 
@@ -590,7 +602,7 @@ function renderTeam() {
       if (workforceSearch && !matchesSearch) return "";
       const fixed = fixedWorkTeam(work);
       return `<article class="workforce-grid team-work-row">
-        <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
+        <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong title="${work.nome || "Sem designação"}">${compactWorkName(work.nome || "Sem designação")}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
         ${boardWeeks.map((week, weekIndex) => {
           let previousSignature = "";
           let previousEffective = [];
