@@ -468,7 +468,7 @@ function workforceInitials(name = "") {
 
 function workforceRoleClass(person) {
   const roster = {
-    manuel: "foreman", paulo: "foreman", regivaldo: "foreman", vitor: "foreman", wanderson: "foreman", william: "foreman",
+    manuel: "foreman", paulo: "foreman", regivaldo: "foreman", vitor: "foreman", wanderson: "foreman", william: "foreman", alessandro: "foreman",
     adilson: "mason", bonifacio: "mason", fernando: "mason", helder: "mason", joao_afonso: "mason", mateus: "mason",
     gilson: "helper", joao_borges: "helper", clayton: "helper", genito: "helper", mauro: "helper",
   };
@@ -502,24 +502,20 @@ function renderWorkforceMagnet(person, allocation = null) {
 }
 
 function effectiveWorkforceForDate(events, date, personById) {
-  const week = mondayIso(date);
   const result = [];
-  [...new Set(events.map(item => item.colaborador_id))].forEach(personId => {
+  const dayEvents = events.filter(item => item.data === date);
+  [...new Set(dayEvents.map(item => item.colaborador_id))].forEach(personId => {
     const person = personById.get(personId);
     if (!person || !workforceRoleClass(person)) return;
-    const personEvents = events.filter(item => item.colaborador_id === personId && item.semana_inicio === week && item.data <= date);
-    const slots = {};
-    ["manha", "tarde"].forEach(slot => {
-      const applicable = personEvents.filter(item => item.periodo === "dia_inteiro" || item.periodo === slot)
-        .sort((a, b) => String(b.data).localeCompare(String(a.data)) || (a.periodo === slot ? -1 : 1));
-      if (applicable[0]) slots[slot] = applicable[0];
-    });
     const grouped = new Map();
-    Object.entries(slots).forEach(([slot, event]) => {
+    dayEvents.filter(item => item.colaborador_id === personId).forEach(event => {
+      const eventSlots = event.periodo === "dia_inteiro" ? ["manha", "tarde"] : [event.periodo];
+      eventSlots.forEach(slot => {
       const entry = grouped.get(event.obra_id) || { person, slots: [], sourceEvents: [] };
       entry.slots.push(slot);
       entry.sourceEvents.push(event);
       grouped.set(event.obra_id, entry);
+      });
     });
     grouped.forEach((entry, obraId) => {
       const sameSource = entry.sourceEvents.length === 2 && entry.sourceEvents[0].id === entry.sourceEvents[1].id;
@@ -583,12 +579,20 @@ function renderTeam() {
         <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
         ${boardWeeks.map((week, weekIndex) => {
           let previousSignature = "";
+          let previousEffective = [];
           return `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${weekdays.map((day, dayIndex) => {
             const date = addDaysIso(week, dayIndex);
-            const effective = effectiveWorkforceForDate(allocations, date, personById).filter(item => item.obra_id === work.id);
+            const allExact = effectiveWorkforceForDate(allocations, date, personById);
+            const exact = allExact.filter(item => item.obra_id === work.id);
+            const carried = previousEffective.map(previous => {
+              const reassignedSlots = allExact.filter(item => item.person.id === previous.person.id && item.obra_id !== work.id).flatMap(item => item.slots);
+              return { ...previous, slots: previous.slots.filter(slot => !reassignedSlots.includes(slot)) };
+            }).filter(item => item.slots.length);
+            const effective = exact.length ? exact : carried;
             const signature = workforceStateSignature(effective);
-            const unchanged = dayIndex > 0 && signature && signature === previousSignature;
+            const unchanged = dayIndex > 0 && !exact.length && signature && signature === previousSignature;
             previousSignature = signature;
+            previousEffective = effective;
             const content = !effective.length
               ? '<span class="no-workforce" title="Sem equipa nesta obra"></span>'
               : unchanged
