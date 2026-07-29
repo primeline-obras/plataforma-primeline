@@ -41,6 +41,8 @@ let teamData = { allocations: [], absences: [], contracts: [], overtime: [], res
 let selectedTeamTab = "collaborators";
 let workforceEditing = false;
 let selectedWorkforcePersonId = "";
+let selectedWorkforceSourceDate = "";
+let selectedWorkforceSourcePeriod = "";
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -195,7 +197,8 @@ document.querySelector("#root").innerHTML = `
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
           <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div>
         </div>
-        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique na obra e semana de destino.</span><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
+        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><label>PERÍODO<select id="workforce-period"><option value="dia_inteiro">Dia inteiro</option><option value="manha">Manhã</option><option value="tarde">Tarde</option></select></label><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
+        <div class="workforce-roster" id="workforce-roster" hidden></div>
         <div class="team-toolbar">
           <div class="week-navigation">
             <button class="outline-action" id="team-previous-week" type="button" aria-label="Semana anterior">←</button>
@@ -462,11 +465,16 @@ function workforceInitials(name = "") {
 }
 
 function workforceRoleClass(person) {
-  const role = `${person?.funcao || ""} ${person?.nivel || ""}`.toLocaleLowerCase("pt-PT");
-  if (role.includes("encarreg")) return "foreman";
-  if (role.includes("pedreir")) return "mason";
-  if (role.includes("servente") || role.includes("ajudante")) return "helper";
-  return "other";
+  const roster = {
+    "manuel costa": "foreman", "paulo natividade": "foreman", "regivaldo oliveira": "foreman",
+    "vitor lopes": "foreman", "wanderson oliveira": "foreman", "william coimbra": "foreman",
+    "adilson semedo": "mason", "bonifacio te": "mason", "fernando silva": "mason",
+    "helder goncalves": "mason", "joao afonso": "mason", "mateus hebreus": "mason",
+    "gilson lima": "helper", "joao borges": "helper", "clayton oliveira": "helper",
+    "genito nanque": "helper", "mauro dias": "helper",
+  };
+  const key = shortPersonName(person?.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
+  return roster[key] || "";
 }
 
 function fixedWorkTeam(work) {
@@ -483,14 +491,23 @@ function fixedWorkTeam(work) {
   return fixed;
 }
 
+function renderWorkforceMagnet(person, allocation = null) {
+  const period = allocation?.periodo || "";
+  const periodLabel = period === "manha" ? "M" : period === "tarde" ? "T" : "";
+  const selected = selectedWorkforcePersonId === person.id
+    && (!allocation || (selectedWorkforceSourceDate === allocation.data && selectedWorkforceSourcePeriod === period));
+  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
+}
+
 function renderTeam() {
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
   const personById = new Map(collaborators.map(person => [person.id, person]));
+  const operationalPeople = collaborators.filter(person => workforceRoleClass(person));
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
-  const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id));
-  const currentAllocations = allocations.filter(item => item.semana_inicio === selectedTeamWeek);
+  const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id) && workforceRoleClass(personById.get(item.colaborador_id)));
+  const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
   const currentAbsences = teamData.absences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
@@ -512,27 +529,25 @@ function renderTeam() {
     $("#team-board").innerHTML = `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${teamData.error}</span></div>`;
   } else {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
-    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span></div>`).join("")}</div>`;
+    const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
+    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`).join("")}</div>`;
     const rows = activeWorks.map(work => {
-      const weeklyPeople = boardWeeks.map(week => allocations.filter(item => item.obra_id === work.id && item.semana_inicio === week).map(item => personById.get(item.colaborador_id)).filter(Boolean));
-      const matchesSearch = weeklyPeople.flat().some(person => `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch))
+      const workAllocations = allocations.filter(item => item.obra_id === work.id);
+      const matchesSearch = workAllocations.some(item => `${personById.get(item.colaborador_id)?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch))
         || `${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch);
       if (workforceSearch && !matchesSearch) return "";
       const fixed = fixedWorkTeam(work);
       return `<article class="workforce-grid team-work-row">
         <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
-        ${weeklyPeople.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}" data-workforce-cell data-work-id="${work.id}" data-week="${boardWeeks[weekIndex]}">${people.length ? people.map(person => {
-          const weekAbsent = teamData.absences.some(item => item.colaborador_id === person.id && item.data >= boardWeeks[weekIndex] && item.data <= addDaysIso(boardWeeks[weekIndex], 6));
-          return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${weekAbsent ? "absent" : ""} ${selectedWorkforcePersonId === person.id ? "selected" : ""}" data-workforce-person="${person.id}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b>${weekAbsent ? "<em>F</em>" : ""}</button>`;
-        }).join("") : "<small>—</small>"}</div>`).join("")}
+        ${boardWeeks.map((week, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${weekdays.map((day, dayIndex) => {
+          const date = addDaysIso(week, dayIndex);
+          const dayAllocations = workAllocations.filter(item => item.data === date);
+          return `<div class="workforce-day-cell" data-workforce-cell data-work-id="${work.id}" data-date="${date}">${dayAllocations.map(item => renderWorkforceMagnet(personById.get(item.colaborador_id), item)).join("") || "<small>—</small>"}</div>`;
+        }).join("")}</div>`).join("")}
       </article>`;
     }).join("");
-    const weeklyFree = boardWeeks.map(week => {
-      const weekIds = new Set(allocations.filter(item => item.semana_inicio === week).map(item => item.colaborador_id));
-      return collaborators.filter(person => !weekIds.has(person.id) && (!workforceSearch || `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch)));
-    });
-    $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}
-      <article class="workforce-grid team-work-row unallocated-row"><div class="team-work-name"><span>DISPONÍVEIS</span><strong>Sem obra atribuída</strong></div>${weeklyFree.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}" data-workforce-cell data-work-id="" data-week="${boardWeeks[weekIndex]}">${people.length ? people.map(person => `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${selectedWorkforcePersonId === person.id ? "selected" : ""}" data-workforce-person="${person.id}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b></button>`).join("") : "<small>—</small>"}</div>`).join("")}</article>`;
+    $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}`;
+    $("#workforce-roster").innerHTML = `<div><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div>${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div>`;
   }
 
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
@@ -589,48 +604,89 @@ function renderTeam() {
 function setWorkforceEditing(enabled) {
   workforceEditing = enabled;
   selectedWorkforcePersonId = "";
+  selectedWorkforceSourceDate = "";
+  selectedWorkforceSourcePeriod = "";
   $("#workforce-edit-banner").hidden = !enabled;
+  $("#workforce-roster").hidden = !enabled;
+  $("#remove-workforce-allocation").hidden = true;
   $("#edit-workforce").textContent = enabled ? "A EDITAR…" : "EDITAR QUADRO";
   $("#edit-workforce").classList.toggle("active", enabled);
   $("#workforce-view").classList.toggle("editing", enabled);
-  $("#workforce-edit-message").textContent = "Selecione um íman e depois clique na obra e semana de destino.";
+  $("#workforce-edit-message").textContent = "Selecione um íman e depois clique no dia e obra de destino.";
   renderTeam();
 }
 
-async function saveWorkforceAllocation(personId, week, workId) {
+async function saveWorkforceAllocation(personId, date, workId) {
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
-  const existing = teamData.allocations.filter(item => item.colaborador_id === personId && item.semana_inicio === week);
-  const alreadyThere = workId && existing.length === 1 && existing[0].obra_id === workId;
-  if (alreadyThere || (!workId && !existing.length)) {
+  const period = $("#workforce-period").value;
+  const dayAllocations = teamData.allocations.filter(item => item.colaborador_id === personId && item.data === date);
+  const conflicting = dayAllocations.filter(item => period === "dia_inteiro" || item.periodo === "dia_inteiro" || item.periodo === period);
+  const alreadyThere = conflicting.length === 1 && conflicting[0].obra_id === workId && conflicting[0].periodo === period;
+  if (alreadyThere) {
     toast("O colaborador já se encontra nessa posição.");
+    return;
+  }
+  if (period !== "dia_inteiro" && dayAllocations.some(item => item.periodo === "dia_inteiro")) {
+    toast("Retire primeiro a alocação de dia inteiro antes de dividir o dia.", "error");
     return;
   }
   const currentUser = teamData.users.find(user => user.auth_user_id === session?.user?.id);
   $("#workforce-edit-message").textContent = `A guardar ${shortPersonName(person.nome)}…`;
-  let response;
-  if (existing.length) {
-    const query = `quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&semana_inicio=eq.${week}`;
-    response = workId
-      ? await supabase(query, { method: "PATCH", body: JSON.stringify({ obra_id: workId, criado_por: currentUser?.id || null }) })
-      : await supabase(query, { method: "DELETE" });
-  } else {
+  let response = null;
+  if (period === "dia_inteiro" && dayAllocations.length) {
+    response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}`, { method: "DELETE" });
+    if (!response.ok) {
+      toast(`Não foi possível alterar o quadro: ${await response.text()}`, "error");
+      return;
+    }
+  } else if (conflicting.length) {
+    response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}&periodo=eq.${period}`, {
+      method: "PATCH",
+      body: JSON.stringify({ obra_id: workId, criado_por: currentUser?.id || null }),
+    });
+    if (response.ok) {
+      selectedWorkforcePersonId = "";
+      selectedWorkforceSourceDate = "";
+      selectedWorkforceSourcePeriod = "";
+      await loadTeamData(true);
+      toast("Quadro de pessoal atualizado.");
+      return;
+    }
+  }
+  if (!response || response.ok) {
     response = await supabase("quadro_pessoal_alocacao", {
       method: "POST",
       headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, semana_inicio: week, criado_por: currentUser?.id || null }),
+      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, semana_inicio: mondayIso(date), data: date, periodo: period, criado_por: currentUser?.id || null }),
     });
   }
   if (!response.ok) {
     toast(`Não foi possível alterar o quadro: ${await response.text()}`, "error");
-    $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões RLS e tente novamente.";
+    $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões e tente novamente.";
     return;
   }
   selectedWorkforcePersonId = "";
-  teamData.loadedWeek = "";
+  selectedWorkforceSourceDate = "";
+  selectedWorkforceSourcePeriod = "";
   await loadTeamData(true);
   $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} atualizado. Selecione outro íman para continuar.`;
   toast("Quadro de pessoal atualizado.");
+}
+
+async function removeWorkforceAllocation() {
+  if (!selectedWorkforcePersonId || !selectedWorkforceSourceDate || !selectedWorkforceSourcePeriod) return;
+  const response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(selectedWorkforcePersonId)}&data=eq.${selectedWorkforceSourceDate}&periodo=eq.${selectedWorkforceSourcePeriod}`, { method: "DELETE" });
+  if (!response.ok) {
+    toast(`Não foi possível retirar a alocação: ${await response.text()}`, "error");
+  } else {
+    selectedWorkforcePersonId = "";
+    selectedWorkforceSourceDate = "";
+    selectedWorkforceSourcePeriod = "";
+    $("#remove-workforce-allocation").hidden = true;
+    await loadTeamData(true);
+    toast("Alocação retirada.");
+  }
 }
 
 async function loadTeamData(force = false) {
@@ -641,7 +697,7 @@ async function loadTeamData(force = false) {
   const boardStart = addDaysIso(selectedTeamWeek, -7);
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const results = await Promise.all([
-    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,semana_inicio&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=semana_inicio`),
+    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
     supabase(`ausencias?select=id,colaborador_id,data,tipo&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo"),
     supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
@@ -985,13 +1041,17 @@ $("#team-search").addEventListener("input", renderTeam);
 $("#team-directory-search").addEventListener("input", renderTeam);
 $("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
 $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
+$("#remove-workforce-allocation").addEventListener("click", removeWorkforceAllocation);
 $("#team-board").addEventListener("click", async event => {
   if (!workforceEditing) return;
   const magnet = event.target.closest("[data-workforce-person]");
   if (magnet) {
     selectedWorkforcePersonId = magnet.dataset.workforcePerson;
+    selectedWorkforceSourceDate = magnet.dataset.sourceDate || "";
+    selectedWorkforceSourcePeriod = magnet.dataset.sourcePeriod || "";
+    $("#remove-workforce-allocation").hidden = !selectedWorkforceSourceDate;
     const person = collaborators.find(item => item.id === selectedWorkforcePersonId);
-    $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Clique na obra e semana de destino.`;
+    $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Clique no dia e obra de destino.`;
     renderTeam();
     return;
   }
@@ -1001,7 +1061,19 @@ $("#team-board").addEventListener("click", async event => {
     return;
   }
   cell.classList.add("saving");
-  await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.week, cell.dataset.workId || "");
+  await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.date, cell.dataset.workId);
+});
+$("#workforce-roster").addEventListener("click", event => {
+  if (!workforceEditing) return;
+  const magnet = event.target.closest("[data-workforce-person]");
+  if (!magnet) return;
+  selectedWorkforcePersonId = magnet.dataset.workforcePerson;
+  selectedWorkforceSourceDate = "";
+  selectedWorkforceSourcePeriod = "";
+  $("#remove-workforce-allocation").hidden = true;
+  const person = collaborators.find(item => item.id === selectedWorkforcePersonId);
+  $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Escolha o período e clique no dia/obra.`;
+  renderTeam();
 });
 document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventListener("click", () => {
   selectedTeamTab = button.dataset.teamTab;
