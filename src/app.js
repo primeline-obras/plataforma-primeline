@@ -7,9 +7,11 @@ const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR"
 const prettyDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
 const UI_THEME_KEY = "primeline_theme";
 const UI_TV_KEY = "primeline_tv_mode";
+const UI_SIDEBAR_KEY = "primeline_sidebar_collapsed";
 const savedTheme = localStorage.getItem(UI_THEME_KEY);
 document.documentElement.dataset.theme = savedTheme === "dark" ? "dark" : "light";
 document.documentElement.classList.toggle("tv-mode", localStorage.getItem(UI_TV_KEY) === "true");
+document.documentElement.classList.toggle("sidebar-collapsed", localStorage.getItem(UI_SIDEBAR_KEY) === "true");
 const icon = (name) => {
   const paths = {
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -67,6 +69,7 @@ document.querySelector("#root").innerHTML = `
     </section>
     <button class="scrim" id="scrim" aria-label="Fechar menu"></button>
     <aside class="sidebar">${brand()}
+      <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
         <button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
         <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="team">♙ <span>Equipa</span></button>
@@ -955,12 +958,17 @@ $("#scrim").addEventListener("click", closeSidebar);
 function syncDisplayToggles() {
   const dark = document.documentElement.dataset.theme === "dark";
   const tv = document.documentElement.classList.contains("tv-mode");
+  const sidebarCollapsed = document.documentElement.classList.contains("sidebar-collapsed");
   $("#theme-toggle").textContent = dark ? "☀ CLARO" : "☾ ESCURO";
   $("#theme-toggle").setAttribute("aria-pressed", String(dark));
   $("#theme-toggle").title = dark ? "Ativar tema claro" : "Ativar tema escuro";
   $("#tv-toggle").textContent = tv ? "TV ATIVO" : "MODO TV";
   $("#tv-toggle").setAttribute("aria-pressed", String(tv));
   $("#tv-toggle").title = tv ? "Desativar modo de apresentação" : "Ativar modo de apresentação";
+  $("#sidebar-collapse").setAttribute("aria-pressed", String(sidebarCollapsed));
+  $("#sidebar-collapse").querySelector("span").textContent = sidebarCollapsed ? "⟶" : "⟵";
+  $("#sidebar-collapse").querySelector("b").textContent = sidebarCollapsed ? "EXPANDIR" : "RECOLHER";
+  $("#sidebar-collapse").title = sidebarCollapsed ? "Expandir menu" : "Recolher menu";
 }
 $("#theme-toggle").addEventListener("click", () => {
   const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
@@ -972,6 +980,12 @@ $("#tv-toggle").addEventListener("click", () => {
   const enabled = !document.documentElement.classList.contains("tv-mode");
   document.documentElement.classList.toggle("tv-mode", enabled);
   localStorage.setItem(UI_TV_KEY, String(enabled));
+  syncDisplayToggles();
+});
+$("#sidebar-collapse").addEventListener("click", () => {
+  const collapsed = !document.documentElement.classList.contains("sidebar-collapsed");
+  document.documentElement.classList.toggle("sidebar-collapsed", collapsed);
+  localStorage.setItem(UI_SIDEBAR_KEY, String(collapsed));
   syncDisplayToggles();
 });
 syncDisplayToggles();
