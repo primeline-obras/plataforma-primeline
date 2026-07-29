@@ -1,5 +1,6 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js";
+import { createProductionDashboard } from "./production-dashboard.js";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -24,7 +25,7 @@ let session = getSession();
 let selectedPdf = null;
 let localPdfUrl = "";
 let openedPdfUrl = "";
-let activeView = "invoices";
+let activeView = "overview";
 let selectedWorkId = "";
 let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], error: "", procurementError: "", billingError: "" };
 let selectedWorkTab = "summary";
@@ -62,8 +63,8 @@ document.querySelector("#root").innerHTML = `
     <button class="scrim" id="scrim" aria-label="Fechar menu"></button>
     <aside class="sidebar">${brand()}
       <nav><p>GESTÃO</p>
-        <button data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button class="active" data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button>⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -72,7 +73,9 @@ document.querySelector("#root").innerHTML = `
       <header class="topbar"><button class="mobile-menu" id="menu">${icon("menu")}</button><div class="mobile-brand">${brand()}</div>
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="icon-button">${icon("bell")}<i>3</i></button></div>
       </header>
-      <div class="page" id="invoice-view">
+      <div class="page overview-view" id="overview-view"></div>
+      <div class="page meeting-view" id="meeting-view" hidden></div>
+      <div class="page" id="invoice-view" hidden>
         <div class="page-heading"><div><p class="eyebrow">GESTÃO FINANCEIRA</p><h1>FATURAS</h1><p>Registo e aprovação de despesas das obras.</p></div><div class="heading-stat"><span>PENDENTES</span><strong id="count">00</strong></div></div>
         <section class="invoice-grid">
           <div class="panel new-invoice">
@@ -175,6 +178,20 @@ document.querySelector("#root").innerHTML = `
 
 const form = $("#invoice-form");
 form.data_fatura.value = new Date().toISOString().slice(0, 10);
+const productionDashboard = createProductionDashboard({
+  supabase,
+  isSupabaseConfigured,
+  getSession,
+  getWorks: () => works,
+  getPendingInvoices: () => invoices,
+  getFinanceInvoices: () => financeInvoices,
+  getSuppliers: () => suppliers,
+  euro,
+  prettyDate,
+  toast,
+  showView: view => switchView(view),
+});
+productionDashboard.bind();
 
 function renderUser() {
   const email = session?.user?.email || "utilizador";
@@ -307,6 +324,7 @@ async function loadData() {
   renderSelectors(); renderInvoices(); renderFinance();
   renderWorks();
   renderWorkDirectors();
+  await productionDashboard.refreshOverview();
 }
 
 function renderWorkDirectors() {
@@ -612,12 +630,14 @@ function renderWorkDetail(work) {
 function switchView(view) {
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
+  $("#overview-view").hidden = view !== "overview";
+  $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
   $("#works-view").hidden = view !== "works";
   $("#finance-view").hidden = view !== "finance";
-  $("#placeholder-view").hidden = ["invoices", "works", "finance"].includes(view);
-  if (!["invoices", "works", "finance"].includes(view)) {
-    const labels = { overview: "VISÃO GERAL", documents: "DOCUMENTOS", team: "EQUIPA" };
+  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "finance"].includes(view);
+  if (!["overview", "meeting", "invoices", "works", "finance"].includes(view)) {
+    const labels = { documents: "DOCUMENTOS", team: "EQUIPA" };
     $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -625,6 +645,7 @@ function switchView(view) {
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
   if (view === "finance") renderFinance();
+  if (view === "overview") productionDashboard.refreshOverview();
   closeSidebar();
 }
 
