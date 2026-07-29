@@ -378,10 +378,50 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
 .cash-month-details header span { font: 700 9px "Manrope"; }
 .cash-month-details .positive, .cash-month-details .incoming { color: #477b51; }
 .cash-month-details .negative, .cash-month-details .outgoing { color: #a44b47; }
+.cash-bars .forecast-in, .cash-legend .forecast-in { background: #8cb4df; }
+.cash-bars .forecast-out, .cash-legend .forecast-out { background: #d7b983; }
+.cash-month.current { background: rgba(78,126,190,.08); outline: 1px solid #4e7ebe; }
+.cash-month-details article.current { border-color: #4e7ebe; background: #f1f6fd; }
+.cash-month-details .forecast { color: #9b6a20; }
+.cash-state { display: block; margin-top: 9px; color: #71808a; font: 700 7px "Manrope"; letter-spacing: .55px; }
 .cash-month-details dl { margin: 7px 0 0; }
 .cash-month-details dl > div { display: flex; justify-content: space-between; gap: 10px; padding-top: 6px; }
 .cash-month-details dt { color: var(--muted); font-size: 8px; }
 .cash-month-details dd { margin: 0; font: 700 9px "Manrope"; }
+
+/* Phase programme with a common calendar and a vertical today marker. */
+.phase-timeline { overflow-x: auto; min-width: 780px; }
+.phase-timeline-head, .phase-timeline-row { display: grid; grid-template-columns: 205px minmax(520px,1fr) 48px; align-items: stretch; }
+.phase-timeline-head { min-height: 35px; color: var(--muted); font: 700 7px "Manrope"; letter-spacing: .6px; }
+.phase-timeline-head > span, .phase-timeline-head > em { display: flex; align-items: center; font-style: normal; }
+.phase-timeline-head > em { justify-content: flex-end; }
+.phase-timeline-head > div { position: relative; display: grid; grid-template-columns: repeat(var(--months,12),1fr); }
+.phase-timeline-head > div b { display: flex; align-items: center; justify-content: center; font-size: 7px; border-left: 1px solid #e3e6e8; }
+.phase-timeline-head > div i { position: absolute; top: 0; bottom: -1000px; z-index: 3; width: 2px; background: #2468c7; pointer-events: none; }
+.phase-timeline-row { min-height: 64px; border-top: 1px solid var(--line); }
+.phase-timeline-row > span { padding: 10px 13px 9px 0; align-self: center; }
+.phase-timeline-row > span strong, .phase-timeline-row > span small, .phase-timeline-row > span i { display: block; }
+.phase-timeline-row > span strong { font: 800 9px "Manrope"; }
+.phase-timeline-row > span small { color: var(--muted); font-size: 8px; margin-top: 2px; }
+.phase-timeline-row > span i { width: max-content; margin-top: 5px; padding: 2px 5px; font: 700 6px "Manrope"; font-style: normal; letter-spacing: .4px; }
+.phase-timeline-row.late > span i { color: #9b3f3f; background: #fde8e6; }
+.phase-timeline-row.on-time > span i { color: #886019; background: #fff0cf; }
+.phase-timeline-row.ahead > span i { color: #397145; background: #e8f5ea; }
+.phase-timeline-row > div { position: relative; margin: 10px 0; background: repeating-linear-gradient(90deg,transparent 0,transparent calc((100% / var(--months)) - 1px),#e5e7e7 calc((100% / var(--months)) - 1px),#e5e7e7 calc(100% / var(--months))); }
+.phase-timeline-row .today-line { position: absolute; top: -10px; bottom: -10px; z-index: 3; width: 2px; background: #2468c7; }
+.phase-window { position: absolute; top: 7px; height: 25px; overflow: visible; border: 1px solid currentColor; background: rgba(87,120,159,.15); color: #57789f; }
+.phase-window > span { display: block; height: 100%; background: currentColor; opacity: .72; }
+.phase-window > small { position: absolute; left: 5px; top: 6px; z-index: 2; white-space: nowrap; color: var(--ink); font: 700 6px "Manrope"; }
+.phase-timeline-row.late .phase-window { color: #b45454; background: rgba(180,84,84,.13); }
+.phase-timeline-row.on-time .phase-window { color: #d09a3f; background: rgba(208,154,63,.13); }
+.phase-timeline-row.ahead .phase-window { color: #55a66b; background: rgba(85,166,107,.13); }
+.phase-timeline-row > em { display: flex; align-items: center; justify-content: flex-end; font: 800 9px "Manrope"; font-style: normal; }
+.phase-timeline-row.no-dates > div { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 8px; }
+.phase-timeline-legend { display: flex; gap: 16px; align-items: center; padding-top: 12px; color: var(--muted); font: 700 7px "Manrope"; }
+.phase-timeline-legend span { display: flex; align-items: center; gap: 5px; }
+.phase-timeline-legend i { width: 9px; height: 9px; }
+.phase-timeline-legend i.late { background: #b45454; }.phase-timeline-legend i.on-time { background: #d09a3f; }.phase-timeline-legend i.ahead { background: #55a66b; }
+.phase-timeline-legend strong { margin-left: auto; color: #2468c7; }
 
 /* Persistent presentation mode for meeting-room TVs. */
 :root.tv-mode .page { max-width: 1800px; padding-left: 55px; padding-right: 55px; }
@@ -432,6 +472,7 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
 :root[data-theme="dark"] .overview-alerts > div.alert-urgent { background: #432b2b; }
 :root[data-theme="dark"] .overview-alerts > div.alert-attention { background: #403625; }
 :root[data-theme="dark"] .overview-alerts > div.alert-pending { background: #263744; }
+:root[data-theme="dark"] .cash-month-details article.current { background: #24364b; }
 :root[data-theme="dark"] .display-toggle { color: #d8dcda; border-color: #596165; }
 :root[data-theme="dark"] .icon-button, :root[data-theme="dark"] .mobile-menu { color: #e6e9e7; }
 
