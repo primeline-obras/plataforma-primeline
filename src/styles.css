@@ -706,12 +706,12 @@ button, input, select, textarea,
 .workforce-edit-banner select { min-height: 32px; padding: 0 28px 0 9px; border: 1px solid var(--info-border); background: var(--card); color: var(--text-primary); font-size: 8px; }
 .workforce-roster { position: sticky; top: 74px; z-index: 12; margin: 16px 0 -8px; padding: 14px 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); display: flex; align-items: center; gap: 18px; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
 .workforce-roster[hidden] { display: none; }
-.workforce-roster > div:first-child { min-width: 150px; display: grid; gap: 4px; }
-.workforce-roster > div:first-child strong { font-size: 8px; letter-spacing: .7px; }
-.workforce-roster > div:first-child span { color: var(--text-secondary); font-size: 7px; }
-.workforce-roster > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; }
+.workforce-roster .roster-intro { flex: 0 0 150px; display: grid; gap: 4px; }
+.workforce-roster .roster-intro strong { font-size: 8px; letter-spacing: .7px; }
+.workforce-roster .roster-intro span { color: var(--text-secondary); font-size: 7px; }
+.workforce-roster .roster-magnets { flex: 1 1 auto; min-width: 0; display: flex; flex-flow: row wrap; align-items: center; gap: 8px; }
 .workforce-roster .roster-remove { margin-left: auto; padding: 9px 11px; border: 1px solid var(--neg-border); background: var(--neg-bg); color: var(--neg-text); font-size: 7px; font-weight: 800; white-space: nowrap; }
-.workforce-roster .roster-period { margin-left: auto; display: grid; gap: 5px; color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.workforce-roster .roster-period { flex: 0 0 auto; margin-left: auto; display: grid; gap: 5px; color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
 .workforce-roster .roster-period select { min-height: 34px; padding: 0 28px 0 10px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-primary); font-size: 8px; }
 .workforce-roster .roster-period + .roster-remove { margin-left: 0; }
 .workforce-legend span { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
@@ -786,4 +786,7 @@ button, input, select, textarea,
   .team-detail-row > div:first-child { grid-column: 1 / -1; }
   .workforce-heading-actions { justify-items: start; }
   .workforce-edit-banner { align-items: flex-start; flex-wrap: wrap; }
+  .workforce-roster { align-items: flex-start; flex-wrap: wrap; }
+  .workforce-roster .roster-intro { flex-basis: 100%; }
+  .workforce-roster .roster-period { margin-left: 0; }
 }
