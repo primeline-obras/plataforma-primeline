@@ -349,3 +349,95 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
   .reset-brand { min-height: 95px; padding: 27px; }
   .reset-brand .brand { transform: scale(.88); }
 }
+
+/* Global display controls */
+.display-toggle {
+  min-height: 32px; border: 1px solid #cfd2cf; background: transparent; color: #596064;
+  padding: 0 10px; font: 700 8px "Manrope"; letter-spacing: .65px;
+}
+.display-toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); background: rgba(198,164,106,.14); }
+.work-detail-actions { display: flex; align-items: center; gap: 10px; }
+.work-detail-actions > button { min-height: 31px; border: 1px solid var(--charcoal); background: var(--charcoal); color: white; padding: 0 11px; font: 700 7px "Manrope"; letter-spacing: .65px; }
+
+/* Alert severity: overdue/urgent, attention, and pending/informative. */
+.overview-alerts > div { border-left: 3px solid transparent; padding: 0 9px; }
+.overview-alerts > div.alert-urgent { border-left-color: #c64d4d; background: #fff5f4; }
+.overview-alerts > div.alert-urgent em { color: #913b3b; background: #fde9e7; border-color: #e7b9b5; }
+.overview-alerts > div.alert-attention { border-left-color: #d99a32; background: #fffaf0; }
+.overview-alerts > div.alert-attention em { color: #8a611e; background: #fff1d5; border-color: #ebcf94; }
+.overview-alerts > div.alert-pending { border-left-color: #4f83ad; background: #f3f8fc; }
+.overview-alerts > div.alert-pending em { color: #3d6d94; background: #e7f2fa; border-color: #b8d3e7; }
+
+/* Month-by-month cash-flow detail */
+.cash-detail-heading { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; border-bottom: 1px solid var(--line); padding-bottom: 9px; font: 700 8px "Manrope"; letter-spacing: .8px; }
+.cash-detail-heading small { color: var(--muted); font-size: 7px; }
+.cash-month-details { display: grid; grid-template-columns: repeat(auto-fit,minmax(185px,1fr)); gap: 9px; padding-top: 11px; }
+.cash-month-details article { border: 1px solid var(--line); background: #f8f8f6; padding: 12px; }
+.cash-month-details header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.cash-month-details header strong { font: 800 9px "Manrope"; }
+.cash-month-details header span { font: 700 9px "Manrope"; }
+.cash-month-details .positive, .cash-month-details .incoming { color: #477b51; }
+.cash-month-details .negative, .cash-month-details .outgoing { color: #a44b47; }
+.cash-month-details dl { margin: 7px 0 0; }
+.cash-month-details dl > div { display: flex; justify-content: space-between; gap: 10px; padding-top: 6px; }
+.cash-month-details dt { color: var(--muted); font-size: 8px; }
+.cash-month-details dd { margin: 0; font: 700 9px "Manrope"; }
+
+/* Persistent presentation mode for meeting-room TVs. */
+:root.tv-mode .page { max-width: 1800px; padding-left: 55px; padding-right: 55px; }
+:root.tv-mode .sidebar nav button { font-size: 16px; padding-top: 16px; padding-bottom: 16px; }
+:root.tv-mode .page-heading > div > p:last-child, :root.tv-mode .meeting-heading > div > span { font-size: 16px; }
+:root.tv-mode .eyebrow { font-size: 11px; }
+:root.tv-mode h1 { font-size: clamp(38px,3.3vw,52px); }
+:root.tv-mode h2 { font-size: 25px; }
+:root.tv-mode .overview-kpis span, :root.tv-mode .meeting-kpis span, :root.tv-mode .meeting-title span { font-size: 10px; }
+:root.tv-mode .overview-kpis strong, :root.tv-mode .meeting-kpis strong { font-size: 24px; }
+:root.tv-mode .overview-kpis small, :root.tv-mode .meeting-kpis small,
+:root.tv-mode .overview-alerts time, :root.tv-mode .overview-alerts span small,
+:root.tv-mode .cash-month > strong, :root.tv-mode .cash-month > small { font-size: 10px; }
+:root.tv-mode .overview-alerts span strong, :root.tv-mode .meeting-dl,
+:root.tv-mode .phase-plan span b, :root.tv-mode .meeting-progress span { font-size: 13px; }
+:root.tv-mode .phase-plan span small, :root.tv-mode .meeting-progress small,
+:root.tv-mode .cash-legend, :root.tv-mode .cash-month-details dt,
+:root.tv-mode .cash-month-details dd { font-size: 11px; }
+:root.tv-mode .phase-plan > div { min-height: 72px; }
+
+/* Global dark theme. */
+:root[data-theme="dark"] {
+  color-scheme: dark; color: #edf0ef; background: #1f2427;
+  --ink: #f3f5f4; --muted: #aab0b2; --line: #454c4f; --paper: #2b3033;
+}
+:root[data-theme="dark"] body, :root[data-theme="dark"] main { background: #1f2427; color: #edf0ef; }
+:root[data-theme="dark"] .topbar { background: rgba(36,41,44,.94); }
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .overview-kpis article,
+:root[data-theme="dark"] .meeting-kpis article,
+:root[data-theme="dark"] .work-detail,
+:root[data-theme="dark"] .works-list,
+:root[data-theme="dark"] .finance-card,
+:root[data-theme="dark"] .dialog-card,
+:root[data-theme="dark"] .auth-card { background: #2b3033; border-color: var(--line); color: #edf0ef; }
+:root[data-theme="dark"] input, :root[data-theme="dark"] select, :root[data-theme="dark"] textarea,
+:root[data-theme="dark"] .search-box, :root[data-theme="dark"] .select-wrap,
+:root[data-theme="dark"] .attached-guides button, :root[data-theme="dark"] .finance-guides button {
+  background: #24292c; color: #edf0ef; border-color: var(--line);
+}
+:root[data-theme="dark"] .work-list-item, :root[data-theme="dark"] .overview-work-list button,
+:root[data-theme="dark"] .overview-actions > button, :root[data-theme="dark"] .overview-actions > div,
+:root[data-theme="dark"] .overview-work-metrics, :root[data-theme="dark"] .cash-month-details article {
+  background: #292f32; color: #edf0ef; border-color: var(--line);
+}
+:root[data-theme="dark"] .work-list-item.selected { background: #343a3d; }
+:root[data-theme="dark"] .finance-column, :root[data-theme="dark"] .guide-picker { background: #252a2d; border-color: var(--line); }
+:root[data-theme="dark"] .overview-alerts > div.alert-urgent { background: #432b2b; }
+:root[data-theme="dark"] .overview-alerts > div.alert-attention { background: #403625; }
+:root[data-theme="dark"] .overview-alerts > div.alert-pending { background: #263744; }
+:root[data-theme="dark"] .display-toggle { color: #d8dcda; border-color: #596165; }
+:root[data-theme="dark"] .icon-button, :root[data-theme="dark"] .mobile-menu { color: #e6e9e7; }
+
+@media (max-width: 760px) {
+  .top-actions { gap: 5px; }
+  .display-toggle { min-height: 29px; padding: 0 7px; font-size: 7px; }
+  .work-detail-actions { align-items: flex-end; flex-direction: column-reverse; }
+  :root.tv-mode .page { padding-left: 20px; padding-right: 20px; }
+}

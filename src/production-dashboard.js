@@ -36,6 +36,19 @@ export function createProductionDashboard(options) {
   });
   let overviewState = emptyOverviewState();
   let meetingState = null;
+  let meetingReturnView = "overview";
+
+  function alertSeverity(alert) {
+    const text = `${alert.tipo || ""} ${alert.titulo || ""} ${alert.descricao || ""}`.toLocaleLowerCase("pt-PT");
+    const trigger = safeDate(alert.data_gatilho);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (/(urgente|atrasad|vencid|crític|critic|bloque)/.test(text) || (trigger && trigger < today)) return "urgent";
+    const attentionLimit = new Date(today);
+    attentionLimit.setDate(attentionLimit.getDate() + 7);
+    if (/(atenção|atencao|aviso|alerta|priorit)/.test(text) || (trigger && trigger <= attentionLimit)) return "attention";
+    return "pending";
+  }
 
   async function query(path, warningLabel) {
     if (!isSupabaseConfigured) return [];
@@ -180,7 +193,7 @@ export function createProductionDashboard(options) {
         <article class="panel overview-panel">
           <div class="overview-section-head"><div><p class="eyebrow">PRIORIDADES</p><h2>ALERTAS PENDENTES</h2></div><span>${overviewState.alerts.length}</span></div>
           <div class="overview-alerts">${overviewState.alerts.length ? overviewState.alerts.map(alert => `
-            <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
+            <div class="alert-${alertSeverity(alert)}"><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
               <span><strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong><small>${escapeHtml(alert.descricao || "")}</small></span>
               <em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em>
             </div>`).join("") : `<div class="overview-empty">SEM ALERTAS PENDENTES</div>`}</div>
@@ -295,7 +308,17 @@ export function createProductionDashboard(options) {
         <div class="cash-bars"><i class="in" style="height:${Math.max(2, row.incoming / ceiling * 100)}%"></i><i class="out" style="height:${Math.max(2, row.outgoing / ceiling * 100)}%"></i></div>
         <strong>${monthLabel(row.month)}</strong><small>${euro.format(row.balance)}</small>
       </div>`).join("")}</div>
-      <div class="cash-legend"><span><i class="in"></i>ENTRADAS</span><span><i class="out"></i>SAÍDAS</span><strong>SALDO ACUMULADO: ${euro.format(balance)}</strong></div>`;
+      <div class="cash-legend"><span><i class="in"></i>ENTRADAS</span><span><i class="out"></i>SAÍDAS</span><strong>SALDO ACUMULADO: ${euro.format(balance)}</strong></div>
+      <div class="cash-detail-heading"><span>DETALHE MÊS A MÊS</span><small>${values.length} MESES</small></div>
+      <div class="cash-month-details">${values.map(row => `
+        <article>
+          <header><strong>${monthLabel(row.month)}</strong><span class="${row.incoming - row.outgoing < 0 ? "negative" : "positive"}">${euro.format(row.incoming - row.outgoing)}</span></header>
+          <dl>
+            <div><dt>Entradas</dt><dd class="incoming">${euro.format(row.incoming)}</dd></div>
+            <div><dt>Saídas</dt><dd class="outgoing">${euro.format(row.outgoing)}</dd></div>
+            <div><dt>Saldo acumulado</dt><dd>${euro.format(row.balance)}</dd></div>
+          </dl>
+        </article>`).join("")}</div>`;
   }
 
   function teeList(rows) {
@@ -328,7 +351,7 @@ export function createProductionDashboard(options) {
     const notConsulted = data.phases.filter(phase => budgetPhaseIds.has(phase.id) && !consultationPhaseIds.has(phase.id) && !subcontractPhaseIds.has(phase.id));
 
     document.querySelector("#meeting-view").innerHTML = `
-      <div class="meeting-heading"><button id="meeting-back">← VISÃO GERAL</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · OBRA ${escapeHtml(work.numero)}</p><h1>${escapeHtml(work.nome)}</h1><span>${escapeHtml(work.cliente || "")}</span></div><em class="work-status ${escapeHtml(work.situacao)}">${escapeHtml(String(work.situacao || "").replace(/_/g, " "))}</em></div>
+      <div class="meeting-heading"><button id="meeting-back">← ${meetingReturnView === "works" ? "OBRA" : "VISÃO GERAL"}</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · OBRA ${escapeHtml(work.numero)}</p><h1>${escapeHtml(work.nome)}</h1><span>${escapeHtml(work.cliente || "")}</span></div><em class="work-status ${escapeHtml(work.situacao)}">${escapeHtml(String(work.situacao || "").replace(/_/g, " "))}</em></div>
       ${warnings.length ? `<div class="overview-warning">Dados parciais: ${escapeHtml(warnings.join(" · "))}</div>` : ""}
       <section class="meeting-kpis">
         <article><span>VENDA ATUALIZADA</span><strong>${euro.format(totalSale)}</strong><small>venda efetiva + TEEs aprovados</small></article>
@@ -366,12 +389,13 @@ export function createProductionDashboard(options) {
           return `<div><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><span><b>${escapeHtml(phase.descricao || "Fase")}</b><small>${plan.data_inicio_prevista ? prettyDate.format(safeDate(plan.data_inicio_prevista)) : "—"} → ${plan.data_fim_prevista ? prettyDate.format(safeDate(plan.data_fim_prevista)) : "—"}</small></span><div><i style="width:${progress}%"></i></div><em>${Math.round(progress)}%</em></div>`;
         }).join("") || `<div class="overview-empty">SEM PLANEAMENTO DISPONÍVEL</div>`}</div>
       </section>`;
-    document.querySelector("#meeting-back").addEventListener("click", () => showView("overview"));
+    document.querySelector("#meeting-back").addEventListener("click", () => showView(meetingReturnView));
   }
 
-  async function openMeeting(workId) {
+  async function openMeeting(workId, returnView = "overview") {
     const work = getWorks().find(item => item.id === workId);
     if (!work) return;
+    meetingReturnView = returnView;
     showView("meeting");
     document.querySelector("#meeting-view").innerHTML = `<div class="meeting-loading">A CARREGAR REUNIÃO DA OBRA ${escapeHtml(work.numero)}…</div>`;
     const encoded = encodeURIComponent(workId);

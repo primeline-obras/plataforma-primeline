@@ -1,10 +1,15 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=3";
+import { createProductionDashboard } from "./production-dashboard.js?v=4";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 const prettyDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
+const UI_THEME_KEY = "primeline_theme";
+const UI_TV_KEY = "primeline_tv_mode";
+const savedTheme = localStorage.getItem(UI_THEME_KEY);
+document.documentElement.dataset.theme = savedTheme === "dark" ? "dark" : "light";
+document.documentElement.classList.toggle("tv-mode", localStorage.getItem(UI_TV_KEY) === "true");
 const icon = (name) => {
   const paths = {
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -71,7 +76,7 @@ document.querySelector("#root").innerHTML = `
     </aside>
     <main>
       <header class="topbar"><button class="mobile-menu" id="menu">${icon("menu")}</button><div class="mobile-brand">${brand()}</div>
-        <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="icon-button">${icon("bell")}<i>3</i></button></div>
+        <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button">${icon("bell")}<i>3</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
@@ -630,7 +635,7 @@ function renderWorkDetail(work) {
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
       <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
-      <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
+      <div class="work-detail-actions"><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span></div>
     </div>
     <div class="work-location">${work.morada || "Morada não indicada"}</div>
     ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
@@ -907,6 +912,8 @@ function openPaymentDialog(billingId) {
 $("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
 $("#workflow-dialog").addEventListener("click", event => { if (event.target === $("#workflow-dialog") || event.target.closest("[data-close-workflow]")) closeWorkflowDialog(); });
 $("#work-detail").addEventListener("click", async event => {
+  const meetingButton = event.target.closest("[data-open-meeting]");
+  if (meetingButton) return productionDashboard.openMeeting(meetingButton.dataset.openMeeting, "works");
   const tabButton = event.target.closest("[data-work-tab]");
   if (tabButton) {
     selectedWorkTab = tabButton.dataset.workTab;
@@ -944,6 +951,29 @@ $("#work-detail").addEventListener("click", async event => {
 });
 $("#menu").addEventListener("click", openSidebar);
 $("#scrim").addEventListener("click", closeSidebar);
+function syncDisplayToggles() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  const tv = document.documentElement.classList.contains("tv-mode");
+  $("#theme-toggle").textContent = dark ? "☀ CLARO" : "☾ ESCURO";
+  $("#theme-toggle").setAttribute("aria-pressed", String(dark));
+  $("#theme-toggle").title = dark ? "Ativar tema claro" : "Ativar tema escuro";
+  $("#tv-toggle").textContent = tv ? "TV ATIVO" : "MODO TV";
+  $("#tv-toggle").setAttribute("aria-pressed", String(tv));
+  $("#tv-toggle").title = tv ? "Desativar modo de apresentação" : "Ativar modo de apresentação";
+}
+$("#theme-toggle").addEventListener("click", () => {
+  const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem(UI_THEME_KEY, theme);
+  syncDisplayToggles();
+});
+$("#tv-toggle").addEventListener("click", () => {
+  const enabled = !document.documentElement.classList.contains("tv-mode");
+  document.documentElement.classList.toggle("tv-mode", enabled);
+  localStorage.setItem(UI_TV_KEY, String(enabled));
+  syncDisplayToggles();
+});
+syncDisplayToggles();
 $("#choose-pdf").addEventListener("click", () => $("#pdf-input").click());
 
 function normalizeExactName(value) {
