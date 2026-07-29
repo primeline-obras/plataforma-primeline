@@ -223,12 +223,21 @@ export async function downloadInvoicePdf(objectPath) {
   return response.blob();
 }
 
+function enforceActiveCollaborators(path) {
+  const [resource, query = ""] = String(path).split("?", 2);
+  if (resource !== "colaboradores") return path;
+  const params = new URLSearchParams(query);
+  params.set("data_saida", "is.null");
+  return `${resource}?${params.toString()}`;
+}
+
 export const supabase = async (path, options = {}) => {
+  const filteredPath = enforceActiveCollaborators(path);
   let tokenUsed = "";
   const request = () => {
     const session = getSession();
     tokenUsed = session?.access_token || anonKey;
-    return fetch(`${url}/rest/v1/${path}`, {
+    return fetch(`${url}/rest/v1/${filteredPath}`, {
       ...options,
       headers: {
         apikey: anonKey,

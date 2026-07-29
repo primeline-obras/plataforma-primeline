@@ -11,7 +11,11 @@ export function createProductionDashboard(options) {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
     getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView,
   } = options;
-  let overviewState = { alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [], warnings: [] };
+  const emptyOverviewState = () => ({
+    alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
+    contracts: [], tees: [], measurements: [], subcontracts: [], consultations: [], warnings: [],
+  });
+  let overviewState = emptyOverviewState();
   let meetingState = null;
 
   async function query(path, warningLabel) {
@@ -44,35 +48,115 @@ export function createProductionDashboard(options) {
     return clampPercent(((Date.now() - start) / (end - start)) * 100);
   }
 
+  function workFinancialSummary(workId) {
+    const contract = overviewState.contracts.find(row => row.obra_id === workId) || {};
+    const approvedTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "aprovado");
+    const pendingTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "pendente");
+    const sale = number(contract.venda_efetiva || contract.venda_inicial);
+    const approvedTeeSale = sum(approvedTees, "valor");
+    const approvedTeeCost = sum(approvedTees, "preco_custo");
+    const phaseIds = new Set(overviewState.phases.filter(phase => phase.obra_id === workId).map(phase => phase.id));
+    const budgetCost = overviewState.budget.filter(item => phaseIds.has(item.fase_id))
+      .reduce((total, item) => total + number(item.custo_direto || item.custo_previsto || item.compra_prevista), 0);
+    const directCost = number(contract.custo_direto || contract.custo_direto_contratual) || budgetCost;
+    const billed = overviewState.measurements.filter(row => row.obra_id === workId)
+      .reduce((total, row) => total + number(row.valor_a_faturar), 0);
+    const totalSale = sale + approvedTeeSale;
+    return {
+      sale, directCost, margin: totalSale - directCost - approvedTeeCost,
+      billed, unbilled: totalSale - billed, approvedTees, pendingTees,
+      subcontracts: overviewState.subcontracts.filter(row => row.obra_id === workId),
+      consultations: overviewState.consultations.filter(row => row.obra_id === workId && row.estado === "em_consulta"),
+    };
+  }
+
+  function overviewWorkSection(work, pendingInvoices, readOnly) {
+    const summary = workFinancialSummary(work.id);
+    const workInvoices = pendingInvoices.filter(invoice => invoice.obra_id === work.id);
+    const progress = workExecution(work.id);
+    const deadline = deadlinePercent(work);
+    const subcontractStates = summary.subcontracts.reduce((counts, row) => {
+      const state = row.estado || "sem_estado";
+      counts[state] = (counts[state] || 0) + 1;
+      return counts;
+    }, {});
+    const stateCounters = Object.entries(subcontractStates)
+      .map(([state, count]) => `<span>${escapeHtml(state.replace(/_/g, " "))} <b>${count}</b></span>`).join("");
+    const invoiceRows = workInvoices.map(invoice => `
+      <${readOnly ? "div" : "button"} ${readOnly ? "" : 'data-action-view="invoices"'}>
+        <span><strong>${escapeHtml(invoice.numero_doc || "Fatura")}</strong><small>${invoice.data_fatura ? prettyDate.format(safeDate(invoice.data_fatura)) : "SEM DATA"}</small></span>
+        <b>${euro.format(number(invoice.valor))}</b><em>${readOnly ? "PENDENTE" : "REVER"}</em>
+      </${readOnly ? "div" : "button"}>`).join("");
+    return `<article class="panel overview-work-detail">
+      <header><div><p class="eyebrow">OBRA ${escapeHtml(work.numero || "—")}</p><h2>${escapeHtml(work.nome || "Obra sem designação")}</h2></div><button data-meeting-work="${work.id}">REUNIÃO SEMANAL →</button></header>
+      <div class="overview-work-metrics">
+        <div><span>VENDA</span><strong>${euro.format(summary.sale)}</strong></div>
+        <div><span>CUSTO DIRETO</span><strong>${euro.format(summary.directCost)}</strong></div>
+        <div><span>MARGEM</span><strong>${euro.format(summary.margin)}</strong></div>
+        <div><span>FATURADO</span><strong>${euro.format(summary.billed)}</strong><small>POR FATURAR ${euro.format(summary.unbilled)}</small></div>
+      </div>
+      <div class="overview-work-status">
+        <div><span>OBRA EXECUTADA <b>${Math.round(progress)}%</b></span><i><em style="width:${progress}%"></em></i></div>
+        <div><span>PRAZO CONSUMIDO <b>${Math.round(deadline)}%</b></span><i><em style="width:${deadline}%"></em></i></div>
+      </div>
+      <div class="overview-work-columns">
+        <section><h3>A MINHA FILA <b>${workInvoices.length}</b></h3><div class="overview-actions compact">${invoiceRows || '<div class="overview-empty">SEM FATURAS PENDENTES</div>'}</div></section>
+        <section><h3>TEEs</h3>
+          <details><summary>APROVADOS <b>${summary.approvedTees.length}</b><em>${euro.format(sum(summary.approvedTees, "valor"))}</em></summary>${teeList(summary.approvedTees)}</details>
+          <details><summary>EM ELABORAÇÃO <b>${summary.pendingTees.length}</b><em>${euro.format(sum(summary.pendingTees, "valor"))}</em></summary>${teeList(summary.pendingTees)}</details>
+        </section>
+        <section><h3>SUBEMPREITADAS <b>${summary.subcontracts.length + summary.consultations.length}</b></h3>
+          <div class="overview-subcontract-counts"><span>ADJUDICADAS <b>${summary.subcontracts.length}</b></span><span>EM CONSULTA <b>${summary.consultations.length}</b></span>${stateCounters}</div>
+        </section>
+      </div>
+    </article>`;
+  }
+
   function renderOverview() {
     const works = getWorks();
     const pendingInvoices = getPendingInvoices();
     const financeInvoices = getFinanceInvoices();
     const activeWorks = works.filter(work => work.situacao === "em_curso");
     const unpaid = financeInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado" && invoice.estado_pagamento === "por_pagar");
-    const role = overviewState.profile?.funcao;
-    const responsibleWorkIds = new Set(overviewState.responsibilities
-      .filter(row => ["diretor_obra", "diretor", "adjunto", "adjunto_obra"].includes(String(row.papel || "").toLowerCase()))
-      .map(row => row.obra_id));
-    const approvalActions = pendingInvoices.filter(invoice => responsibleWorkIds.has(invoice.obra_id));
-    const paymentActions = role === "financeiro" ? unpaid : [];
+    const role = overviewState.profile?.funcao || (isSupabaseConfigured ? "administrativo" : "gerencia");
+    document.body.dataset.userRole = role;
+    const responsibleWorkIds = new Set(overviewState.responsibilities.map(row => row.obra_id));
+    const isProductionRole = ["diretor_obra", "preparador"].includes(role);
+    const readOnly = role === "administrativo";
+    const canApprove = ["diretor_obra", "preparador", "gerencia"].includes(role);
+    const canPay = ["financeiro", "gerencia"].includes(role);
+    const scopedWorks = isProductionRole ? activeWorks.filter(work => responsibleWorkIds.has(work.id)) : activeWorks;
+    const approvalActions = role === "gerencia" || readOnly
+      ? pendingInvoices
+      : isProductionRole ? pendingInvoices.filter(invoice => responsibleWorkIds.has(invoice.obra_id)) : [];
+    const paymentActions = ["financeiro", "administrativo", "gerencia"].includes(role) ? unpaid : [];
     const actions = [...approvalActions.map(invoice => ({ ...invoice, action: "APROVAR" })), ...paymentActions.map(invoice => ({ ...invoice, action: "PAGAR" }))];
     const suppliers = getSuppliers();
+    const consolidated = scopedWorks.reduce((total, work) => {
+      const summary = workFinancialSummary(work.id);
+      total.sale += summary.sale; total.cost += summary.directCost; total.margin += summary.margin;
+      total.billed += summary.billed; total.unbilled += summary.unbilled;
+      return total;
+    }, { sale: 0, cost: 0, margin: 0, billed: 0, unbilled: 0 });
     const warning = overviewState.warnings.length
       ? `<div class="overview-warning">Alguns dados estão indisponíveis: ${escapeHtml(overviewState.warnings.join(" · "))}</div>` : "";
 
     document.querySelector("#overview-view").innerHTML = `
       <div class="page-heading">
-        <div><p class="eyebrow">PAINEL OPERACIONAL</p><h1>VISÃO GERAL</h1><p>Resumo diário de produção, aprovações e tesouraria.</p></div>
+        <div><p class="eyebrow">PAINEL OPERACIONAL · ${escapeHtml(role.replace(/_/g, " "))}</p><h1>VISÃO GERAL</h1><p>Resumo diário de produção, aprovações e tesouraria.</p></div>
         <div class="overview-today"><span>HOJE</span><strong>${prettyDate.format(new Date())}</strong></div>
       </div>
       ${warning}
       <section class="overview-kpis">
-        <article><span>OBRAS EM CURSO</span><strong>${activeWorks.length}</strong><small>produção ativa</small></article>
-        <article><span>FATURAS PENDENTES</span><strong>${pendingInvoices.length}</strong><small>por aprovar</small></article>
+        <article><span>OBRAS EM CURSO</span><strong>${scopedWorks.length}</strong><small>produção ativa</small></article>
+        <article><span>FATURAS PENDENTES</span><strong>${actions.length}</strong><small>à espera de ação</small></article>
         <article><span>ALERTAS PENDENTES</span><strong>${overviewState.alerts.length}</strong><small>por resolver</small></article>
         <article class="money"><span>POR PAGAR ESTA SEMANA</span><strong>${euro.format(sum(unpaid, "valor"))}</strong><small>faturas aprovadas</small></article>
       </section>
+      ${["financeiro", "administrativo", "gerencia"].includes(role) ? `<section class="panel overview-consolidated">
+        <div class="overview-section-head"><div><p class="eyebrow">TODAS AS OBRAS EM CURSO</p><h2>RESUMO FINANCEIRO CONSOLIDADO</h2></div><span>${scopedWorks.length}</span></div>
+        <div class="overview-work-metrics"><div><span>VENDA</span><strong>${euro.format(consolidated.sale)}</strong></div><div><span>CUSTO DIRETO</span><strong>${euro.format(consolidated.cost)}</strong></div><div><span>MARGEM</span><strong>${euro.format(consolidated.margin)}</strong></div><div><span>FATURADO</span><strong>${euro.format(consolidated.billed)}</strong><small>POR FATURAR ${euro.format(consolidated.unbilled)}</small></div></div>
+      </section>` : ""}
       <section class="overview-grid">
         <article class="panel overview-panel">
           <div class="overview-section-head"><div><p class="eyebrow">PRIORIDADES</p><h2>ALERTAS PENDENTES</h2></div><span>${overviewState.alerts.length}</span></div>
@@ -87,16 +171,17 @@ export function createProductionDashboard(options) {
           <div class="overview-actions">${actions.length ? actions.map(invoice => {
             const work = works.find(item => item.id === invoice.obra_id);
             const supplier = suppliers.find(item => item.id === invoice.fornecedor_id);
-            return `<button data-action-view="${invoice.action === "PAGAR" ? "finance" : "invoices"}">
+            const actionable = !readOnly && ((invoice.action === "PAGAR" && canPay) || (invoice.action === "APROVAR" && canApprove));
+            return `<${actionable ? "button" : "div"} ${actionable ? `data-action-view="${invoice.action === "PAGAR" ? "finance" : "invoices"}"` : ""}>
               <span><strong>${escapeHtml(supplier?.nome || invoice.numero_doc || "Fatura")}</strong><small>OBRA ${escapeHtml(work?.numero || "—")} · ${escapeHtml(invoice.numero_doc || "")}</small></span>
-              <b>${euro.format(number(invoice.valor))}</b><em>${invoice.action}</em>
-            </button>`;
+              <b>${euro.format(number(invoice.valor))}</b><em>${actionable ? invoice.action : `${invoice.action} · CONSULTA`}</em>
+            </${actionable ? "button" : "div"}>`;
           }).join("") : `<div class="overview-empty">NÃO HÁ AÇÕES PENDENTES</div>`}</div>
         </article>
       </section>
       <section class="panel overview-works">
-        <div class="overview-section-head"><div><p class="eyebrow">PRODUÇÃO</p><h2>OBRAS EM CURSO</h2></div><span>${activeWorks.length}</span></div>
-        <div class="overview-work-list">${activeWorks.length ? activeWorks
+        <div class="overview-section-head"><div><p class="eyebrow">PRODUÇÃO</p><h2>OBRAS EM CURSO</h2></div><span>${scopedWorks.length}</span></div>
+        <div class="overview-work-list">${scopedWorks.length ? scopedWorks
           .sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true }))
           .map(work => {
             const progress = workExecution(work.id);
@@ -106,11 +191,13 @@ export function createProductionDashboard(options) {
               <div><i style="width:${progress}%"></i></div><em>${Math.round(progress)}%</em><b>→</b>
             </button>`;
           }).join("") : `<div class="overview-empty">NÃO EXISTEM OBRAS EM CURSO</div>`}</div>
-      </section>`;
+      </section>
+      ${["diretor_obra", "preparador", "administrativo", "gerencia"].includes(role)
+        ? `<section class="overview-work-sections">${scopedWorks.map(work => overviewWorkSection(work, pendingInvoices, readOnly)).join("")}</section>` : ""}`;
   }
 
   async function refreshOverview() {
-    overviewState = { alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [], warnings: [] };
+    overviewState = emptyOverviewState();
     if (!isSupabaseConfigured) {
       overviewState.phases = getWorks().flatMap(work => Array.from({ length: 3 }, (_, index) => ({ id: `${work.id}-p${index}`, obra_id: work.id })));
       overviewState.planning = overviewState.phases.map((phase, index) => ({ fase_id: phase.id, percentual_executado: 25 + index * 15 }));
@@ -119,18 +206,28 @@ export function createProductionDashboard(options) {
       return;
     }
     const authId = getSession()?.user?.id;
-    const [alerts, profiles, phases, planning, budget] = await Promise.all([
+    const [alerts, profiles, phases, planning, budget, contracts, tees, measurements, subcontracts, consultations] = await Promise.all([
       query("alertas?select=*&estado=eq.pendente&order=data_gatilho.asc", "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
       query("fases?select=id,obra_id,descricao,codigo", "Fases"),
       query("planeamento_fases_resumo?select=*", "Planeamento"),
-      query("itens_orcamento?select=id,fase_id,venda_prevista", "Orçamento"),
+      query("itens_orcamento?select=*", "Orçamento"),
+      query("contratos?select=*", "Contratos"),
+      query("alteracoes_tee?select=*", "TEEs"),
+      query("autos_medicao?select=*", "Autos"),
+      query("subempreitadas?select=id,obra_id,estado", "Subempreitadas"),
+      query("consultas_subempreitada?select=id,obra_id,fase_id,estado", "Consultas"),
     ]);
     overviewState.alerts = alerts;
     overviewState.profile = profiles[0] || null;
     overviewState.phases = phases;
     overviewState.planning = planning;
     overviewState.budget = budget;
+    overviewState.contracts = contracts;
+    overviewState.tees = tees;
+    overviewState.measurements = measurements;
+    overviewState.subcontracts = subcontracts;
+    overviewState.consultations = consultations;
     overviewState.responsibilities = overviewState.profile
       ? await query(`obra_responsaveis?select=obra_id,utilizador_id,papel&utilizador_id=eq.${encodeURIComponent(overviewState.profile.id)}`, "Responsabilidades")
       : [];
