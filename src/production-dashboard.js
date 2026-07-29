@@ -5,6 +5,13 @@ const monthKey = value => value ? String(value).slice(0, 7) : "";
 const monthLabel = key => new Intl.DateTimeFormat("pt-PT", { month: "short", year: "2-digit" }).format(new Date(`${key}-01T12:00:00`)).toUpperCase();
 const safeDate = value => value ? new Date(`${String(value).slice(0, 10)}T12:00:00`) : null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+const selectCurrentContract = contracts => [...contracts].sort((a, b) => {
+  const completeness = contract => ["venda_inicial", "venda_efetiva", "valor_adiantamento"]
+    .reduce((score, field) => score + (contract?.[field] != null ? 1 : 0), 0);
+  return completeness(b) - completeness(a)
+    || number(b.venda_inicial) - number(a.venda_inicial)
+    || number(b.venda_efetiva) - number(a.venda_efetiva);
+})[0] || {};
 
 export function createProductionDashboard(options) {
   const {
@@ -49,7 +56,7 @@ export function createProductionDashboard(options) {
   }
 
   function workFinancialSummary(workId) {
-    const contract = overviewState.contracts.find(row => row.obra_id === workId) || {};
+    const contract = selectCurrentContract(overviewState.contracts.filter(row => row.obra_id === workId));
     const approvedTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "aprovado");
     const pendingTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "pendente");
     const sale = number(contract.venda_efetiva || contract.venda_inicial);
@@ -284,7 +291,7 @@ export function createProductionDashboard(options) {
 
   function renderMeeting() {
     const { work, data, warnings } = meetingState;
-    const contract = data.contracts[0] || {};
+    const contract = selectCurrentContract(data.contracts);
     const approvedTees = data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
     const pendingTees = data.tees.filter(row => row.estado_aprovacao_cliente === "pendente");
     const approvedTeeSale = sum(approvedTees, "valor");
@@ -365,7 +372,7 @@ export function createProductionDashboard(options) {
       contracts, tees, measurements, planning, budget, consultations,
       payments, labor, siteExpenses,
     ] = await Promise.all([
-      meetingQuery(`contratos?select=*&obra_id=eq.${encoded}&limit=1`, "Contrato", warnings),
+      meetingQuery(`contratos?select=*&obra_id=eq.${encoded}`, "Contrato", warnings),
       meetingQuery(`alteracoes_tee?select=*&obra_id=eq.${encoded}`, "TEEs", warnings),
       meetingQuery(`autos_medicao?select=*&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
