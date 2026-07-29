@@ -4,6 +4,8 @@ const clampPercent = value => Math.max(0, Math.min(100, Number.isFinite(value) ?
 const monthKey = value => value ? String(value).slice(0, 7) : "";
 const monthLabel = key => new Intl.DateTimeFormat("pt-PT", { month: "short", year: "2-digit" }).format(new Date(`${key}-01T12:00:00`)).toUpperCase();
 const safeDate = value => value instanceof Date ? new Date(value.getTime()) : value ? new Date(`${String(value).slice(0, 10)}T12:00:00`) : null;
+const plannedStart = plan => plan?.data_inicio_prevista || plan?.data_inicio_planeada || plan?.inicio_previsto || plan?.inicio_planeado || plan?.data_inicio || plan?.inicio || null;
+const plannedEnd = plan => plan?.data_fim_prevista || plan?.data_fim_planeada || plan?.fim_previsto || plan?.fim_planeado || plan?.data_fim || plan?.fim || null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const measurementBilledValue = row => number(row?.valor_a_faturar);
 const totalClientBilling = (contract, measurements) =>
@@ -302,9 +304,9 @@ export function createProductionDashboard(options) {
     });
     const weights = new Map(months.map(month => [month, 0]));
     data.phases.forEach(phase => {
-      const plan = data.planning.find(row => row.fase_id === phase.id) || {};
-      const start = plan.data_inicio_prevista || data.workStart;
-      const end = plan.data_fim_prevista || data.workEnd;
+      const plan = { ...phase, ...(data.planning.find(row => row.fase_id === phase.id) || {}) };
+      const start = plannedStart(plan) || data.workStart;
+      const end = plannedEnd(plan) || data.workEnd;
       const monthly = number(phaseItems.get(phase.id)) / monthSpan(start, end);
       months.forEach(month => {
         if (month >= monthKey(start) && month <= monthKey(end)) weights.set(month, weights.get(month) + monthly);
@@ -316,7 +318,12 @@ export function createProductionDashboard(options) {
 
   function renderCashFlow(work, data) {
     const todayMonth = monthKey(new Date().toISOString());
-    const months = buildMonths(work.data_inicio, work.data_fim_prevista || new Date());
+    const scheduleRows = [...data.phases, ...data.planning];
+    const phaseStarts = scheduleRows.map(plannedStart).filter(Boolean).sort();
+    const phaseEnds = scheduleRows.map(plannedEnd).filter(Boolean).sort();
+    const scheduleStart = work.data_inicio || phaseStarts[0] || new Date();
+    const scheduleEnd = work.data_fim_prevista || phaseEnds.at(-1) || new Date();
+    const months = buildMonths(scheduleStart, scheduleEnd);
     const contract = selectCurrentContract(data.contracts);
     const values = months.map(month => {
       const advance = monthKey(contract.data_assinatura) === month ? number(contract.valor_adiantamento) : 0;
@@ -324,7 +331,8 @@ export function createProductionDashboard(options) {
       const subcontract = data.payments.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor), 0);
       const labor = data.labor.filter(row => monthKey(row.data) === month).reduce((total, row) => total + number(row.horas) * number(row.valor_hora), 0);
       const site = data.siteExpenses.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor_total), 0);
-      return { month, incoming, outgoing: subcontract + labor + site, forecastIncoming: 0, forecastOutgoing: 0 };
+      const closed = month < todayMonth;
+      return { month, incoming: closed ? incoming : 0, outgoing: closed ? subcontract + labor + site : 0, forecastIncoming: 0, forecastOutgoing: 0, closed };
     });
     const approvedTees = data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
     const totalSale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial) + sum(approvedTees, "valor");
@@ -332,8 +340,8 @@ export function createProductionDashboard(options) {
       || effectiveDirectCost(data.budget, totalSale);
     const totalCost = directCost + sum(approvedTees, "preco_custo");
     const remainingMonths = months.filter(month => month >= todayMonth);
-    const saleWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: work.data_inicio, workEnd: work.data_fim_prevista }, "sale");
-    const costWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: work.data_inicio, workEnd: work.data_fim_prevista }, "cost");
+    const saleWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: scheduleStart, workEnd: scheduleEnd }, "sale");
+    const costWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: scheduleStart, workEnd: scheduleEnd }, "cost");
     const remainingSale = Math.max(0, totalSale - values.reduce((total, row) => total + row.incoming, 0));
     const remainingCost = Math.max(0, totalCost - values.reduce((total, row) => total + row.outgoing, 0));
     const saleWeightTotal = [...saleWeights.values()].reduce((total, value) => total + value, 0) || 1;
@@ -348,27 +356,26 @@ export function createProductionDashboard(options) {
     values.forEach(row => {
       balance += row.incoming + row.forecastIncoming - row.outgoing - row.forecastOutgoing;
       row.balance = balance;
-      row.closed = row.month < todayMonth;
       row.current = row.month === todayMonth;
     });
     const ceiling = Math.max(1, ...values.flatMap(row => [row.incoming, row.outgoing, row.forecastIncoming, row.forecastOutgoing]));
     return `<div class="cash-chart">${values.map(row => `
       <div class="cash-month ${row.current ? "current" : ""}">
-        <div class="cash-bars"><i class="in" title="Entrada real" style="height:${Math.max(2, row.incoming / ceiling * 100)}%"></i><i class="out" title="Saída real" style="height:${Math.max(2, row.outgoing / ceiling * 100)}%"></i><i class="forecast-in" title="Entrada prevista" style="height:${Math.max(2, row.forecastIncoming / ceiling * 100)}%"></i><i class="forecast-out" title="Saída prevista" style="height:${Math.max(2, row.forecastOutgoing / ceiling * 100)}%"></i></div>
+        <div class="cash-bars"><i class="in" title="Entrada real" style="height:${row.incoming ? Math.max(2, row.incoming / ceiling * 100) : 0}%"></i><i class="out" title="Saída real" style="height:${row.outgoing ? Math.max(2, row.outgoing / ceiling * 100) : 0}%"></i><i class="forecast-in" title="Entrada prevista" style="height:${row.forecastIncoming ? Math.max(2, row.forecastIncoming / ceiling * 100) : 0}%"></i><i class="forecast-out" title="Saída prevista" style="height:${row.forecastOutgoing ? Math.max(2, row.forecastOutgoing / ceiling * 100) : 0}%"></i></div>
         <strong>${monthLabel(row.month)}</strong><small>${euro.format(row.balance)}</small>
       </div>`).join("")}</div>
       <div class="cash-legend"><span><i class="in"></i>ENTRADAS REAIS</span><span><i class="out"></i>SAÍDAS REAIS</span><span><i class="forecast-in"></i>ENTRADAS PREVISTAS</span><span><i class="forecast-out"></i>SAÍDAS PREVISTAS</span><strong>SALDO FINAL PREVISTO: ${euro.format(balance)}</strong></div>
       <div class="cash-detail-heading"><span>DETALHE MÊS A MÊS</span><small>${values.length} MESES</small></div>
       <div class="cash-month-details">${values.map(row => `
         <article class="${row.current ? "current" : ""}">
-          <header><strong>${monthLabel(row.month)}</strong><span class="${row.incoming - row.outgoing < 0 ? "negative" : "positive"}">${euro.format(row.incoming - row.outgoing)}</span></header>
+          <header><strong>${monthLabel(row.month)}</strong><span class="${(row.closed ? row.incoming - row.outgoing : row.forecastIncoming - row.forecastOutgoing) < 0 ? "negative" : "positive"}">${euro.format(row.closed ? row.incoming - row.outgoing : row.forecastIncoming - row.forecastOutgoing)}</span></header>
           <dl>
-            <div><dt>Entradas</dt><dd class="incoming">${euro.format(row.incoming)}</dd></div>
-            <div><dt>Saídas</dt><dd class="outgoing">${euro.format(row.outgoing)}</dd></div>
-            ${row.closed ? "" : `<div><dt>Entradas previstas</dt><dd class="forecast">${euro.format(row.forecastIncoming)}</dd></div><div><dt>Saídas previstas</dt><dd class="forecast">${euro.format(row.forecastOutgoing)}</dd></div>`}
+            ${row.closed
+              ? `<div><dt>Entradas reais</dt><dd class="incoming">${euro.format(row.incoming)}</dd></div><div><dt>Saídas reais</dt><dd class="outgoing">${euro.format(row.outgoing)}</dd></div>`
+              : `<div><dt>Entradas previstas</dt><dd class="forecast">${euro.format(row.forecastIncoming)}</dd></div><div><dt>Saídas previstas</dt><dd class="forecast">${euro.format(row.forecastOutgoing)}</dd></div>`}
             <div><dt>Saldo acumulado</dt><dd>${euro.format(row.balance)}</dd></div>
           </dl>
-          <small class="cash-state">${row.closed ? "✓ REAL" : row.current ? "● ATUAL · REAL + PREVISÃO" : "PREVISÃO"}</small>
+          <small class="cash-state">${row.closed ? "✓ REAL" : row.current ? "● MÊS EM ABERTO · PREVISÃO" : "PREVISÃO"}</small>
         </article>`).join("")}</div>`;
   }
 
@@ -378,9 +385,12 @@ export function createProductionDashboard(options) {
   }
 
   function renderPhaseTimeline(work, data) {
-    const start = safeDate(work.data_inicio);
-    const end = safeDate(work.data_fim_prevista);
-    if (!start || !end || end <= start) return `<div class="overview-empty">DATAS GERAIS DA OBRA NÃO DEFINIDAS</div>`;
+    const scheduleRows = [...data.phases, ...data.planning];
+    const phaseStarts = scheduleRows.map(plannedStart).filter(Boolean).sort();
+    const phaseEnds = scheduleRows.map(plannedEnd).filter(Boolean).sort();
+    const start = safeDate(work.data_inicio || phaseStarts[0]);
+    const end = safeDate(work.data_fim_prevista || phaseEnds.at(-1));
+    if (!start || !end || end <= start) return `<div class="overview-empty">DATAS PREVISTAS DAS FASES NÃO DEFINIDAS</div>`;
     const total = end.getTime() - start.getTime();
     const today = new Date();
     const todayPosition = clampPercent((today.getTime() - start.getTime()) / total * 100);
@@ -389,9 +399,9 @@ export function createProductionDashboard(options) {
     return `<div class="phase-timeline" style="--months:${months.length}">
       <div class="phase-timeline-head"><span>FASE</span><div>${months.map(month => `<b>${monthLabel(month).split(" ")[0]}</b>`).join("")}<i style="left:${todayPosition}%"></i></div><em>%</em></div>
       ${sortedPhases.map(phase => {
-        const plan = data.planning.find(row => row.fase_id === phase.id) || {};
-        const phaseStart = safeDate(plan.data_inicio_prevista);
-        const phaseEnd = safeDate(plan.data_fim_prevista);
+        const plan = { ...phase, ...(data.planning.find(row => row.fase_id === phase.id) || {}) };
+        const phaseStart = safeDate(plannedStart(plan));
+        const phaseEnd = safeDate(plannedEnd(plan));
         const progress = clampPercent(number(plan.percentual_executado));
         if (!phaseStart || !phaseEnd) return `<div class="phase-timeline-row no-dates"><span><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small></span><div><i style="left:${todayPosition}%"></i><small>SEM DATAS PREVISTAS</small></div><em>${Math.round(progress)}%</em></div>`;
         const left = clampPercent((phaseStart.getTime() - start.getTime()) / total * 100);
