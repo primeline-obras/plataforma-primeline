@@ -3,7 +3,7 @@ const sum = (rows, field) => rows.reduce((total, row) => total + number(row[fiel
 const clampPercent = value => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
 const monthKey = value => value ? String(value).slice(0, 7) : "";
 const monthLabel = key => new Intl.DateTimeFormat("pt-PT", { month: "short", year: "2-digit" }).format(new Date(`${key}-01T12:00:00`)).toUpperCase();
-const safeDate = value => value ? new Date(`${String(value).slice(0, 10)}T12:00:00`) : null;
+const safeDate = value => value instanceof Date ? new Date(value.getTime()) : value ? new Date(`${String(value).slice(0, 10)}T12:00:00`) : null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const measurementBilledValue = row => number(row?.valor_a_faturar);
 const totalClientBilling = (contract, measurements) =>
@@ -277,10 +277,11 @@ export function createProductionDashboard(options) {
     return response.json();
   }
 
-  function buildMonths(startValue) {
+  function buildMonths(startValue, endValue = new Date()) {
     const start = safeDate(startValue) || new Date();
     const cursor = new Date(start.getFullYear(), start.getMonth(), 1, 12);
-    const end = new Date();
+    const endDate = safeDate(endValue) || new Date();
+    const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1, 12);
     const result = [];
     while (cursor <= end) {
       result.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
@@ -289,8 +290,33 @@ export function createProductionDashboard(options) {
     return result;
   }
 
+  function monthSpan(startValue, endValue) {
+    return Math.max(1, buildMonths(startValue, endValue).length);
+  }
+
+  function plannedMonthlyWeights(months, data, field) {
+    const phaseItems = new Map();
+    data.budget.forEach(item => {
+      const value = field === "sale" ? number(item.venda_prevista) : budgetItemCost(item);
+      phaseItems.set(item.fase_id, (phaseItems.get(item.fase_id) || 0) + value);
+    });
+    const weights = new Map(months.map(month => [month, 0]));
+    data.phases.forEach(phase => {
+      const plan = data.planning.find(row => row.fase_id === phase.id) || {};
+      const start = plan.data_inicio_prevista || data.workStart;
+      const end = plan.data_fim_prevista || data.workEnd;
+      const monthly = number(phaseItems.get(phase.id)) / monthSpan(start, end);
+      months.forEach(month => {
+        if (month >= monthKey(start) && month <= monthKey(end)) weights.set(month, weights.get(month) + monthly);
+      });
+    });
+    if (![...weights.values()].some(Boolean)) months.forEach(month => weights.set(month, 1));
+    return weights;
+  }
+
   function renderCashFlow(work, data) {
-    const months = buildMonths(work.data_inicio);
+    const todayMonth = monthKey(new Date().toISOString());
+    const months = buildMonths(work.data_inicio, work.data_fim_prevista || new Date());
     const contract = selectCurrentContract(data.contracts);
     const values = months.map(month => {
       const advance = monthKey(contract.data_assinatura) === month ? number(contract.valor_adiantamento) : 0;
@@ -298,32 +324,91 @@ export function createProductionDashboard(options) {
       const subcontract = data.payments.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor), 0);
       const labor = data.labor.filter(row => monthKey(row.data) === month).reduce((total, row) => total + number(row.horas) * number(row.valor_hora), 0);
       const site = data.siteExpenses.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor_total), 0);
-      return { month, incoming, outgoing: subcontract + labor + site };
+      return { month, incoming, outgoing: subcontract + labor + site, forecastIncoming: 0, forecastOutgoing: 0 };
+    });
+    const approvedTees = data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
+    const totalSale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial) + sum(approvedTees, "valor");
+    const directCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
+      || effectiveDirectCost(data.budget, totalSale);
+    const totalCost = directCost + sum(approvedTees, "preco_custo");
+    const remainingMonths = months.filter(month => month >= todayMonth);
+    const saleWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: work.data_inicio, workEnd: work.data_fim_prevista }, "sale");
+    const costWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: work.data_inicio, workEnd: work.data_fim_prevista }, "cost");
+    const remainingSale = Math.max(0, totalSale - values.reduce((total, row) => total + row.incoming, 0));
+    const remainingCost = Math.max(0, totalCost - values.reduce((total, row) => total + row.outgoing, 0));
+    const saleWeightTotal = [...saleWeights.values()].reduce((total, value) => total + value, 0) || 1;
+    const costWeightTotal = [...costWeights.values()].reduce((total, value) => total + value, 0) || 1;
+    values.forEach(row => {
+      if (row.month >= todayMonth) {
+        row.forecastIncoming = remainingSale * (saleWeights.get(row.month) || 0) / saleWeightTotal;
+        row.forecastOutgoing = remainingCost * (costWeights.get(row.month) || 0) / costWeightTotal;
+      }
     });
     let balance = 0;
-    values.forEach(row => { balance += row.incoming - row.outgoing; row.balance = balance; });
-    const ceiling = Math.max(1, ...values.flatMap(row => [row.incoming, row.outgoing]));
+    values.forEach(row => {
+      balance += row.incoming + row.forecastIncoming - row.outgoing - row.forecastOutgoing;
+      row.balance = balance;
+      row.closed = row.month < todayMonth;
+      row.current = row.month === todayMonth;
+    });
+    const ceiling = Math.max(1, ...values.flatMap(row => [row.incoming, row.outgoing, row.forecastIncoming, row.forecastOutgoing]));
     return `<div class="cash-chart">${values.map(row => `
-      <div class="cash-month">
-        <div class="cash-bars"><i class="in" style="height:${Math.max(2, row.incoming / ceiling * 100)}%"></i><i class="out" style="height:${Math.max(2, row.outgoing / ceiling * 100)}%"></i></div>
+      <div class="cash-month ${row.current ? "current" : ""}">
+        <div class="cash-bars"><i class="in" title="Entrada real" style="height:${Math.max(2, row.incoming / ceiling * 100)}%"></i><i class="out" title="Saída real" style="height:${Math.max(2, row.outgoing / ceiling * 100)}%"></i><i class="forecast-in" title="Entrada prevista" style="height:${Math.max(2, row.forecastIncoming / ceiling * 100)}%"></i><i class="forecast-out" title="Saída prevista" style="height:${Math.max(2, row.forecastOutgoing / ceiling * 100)}%"></i></div>
         <strong>${monthLabel(row.month)}</strong><small>${euro.format(row.balance)}</small>
       </div>`).join("")}</div>
-      <div class="cash-legend"><span><i class="in"></i>ENTRADAS</span><span><i class="out"></i>SAÍDAS</span><strong>SALDO ACUMULADO: ${euro.format(balance)}</strong></div>
+      <div class="cash-legend"><span><i class="in"></i>ENTRADAS REAIS</span><span><i class="out"></i>SAÍDAS REAIS</span><span><i class="forecast-in"></i>ENTRADAS PREVISTAS</span><span><i class="forecast-out"></i>SAÍDAS PREVISTAS</span><strong>SALDO FINAL PREVISTO: ${euro.format(balance)}</strong></div>
       <div class="cash-detail-heading"><span>DETALHE MÊS A MÊS</span><small>${values.length} MESES</small></div>
       <div class="cash-month-details">${values.map(row => `
-        <article>
+        <article class="${row.current ? "current" : ""}">
           <header><strong>${monthLabel(row.month)}</strong><span class="${row.incoming - row.outgoing < 0 ? "negative" : "positive"}">${euro.format(row.incoming - row.outgoing)}</span></header>
           <dl>
             <div><dt>Entradas</dt><dd class="incoming">${euro.format(row.incoming)}</dd></div>
             <div><dt>Saídas</dt><dd class="outgoing">${euro.format(row.outgoing)}</dd></div>
+            ${row.closed ? "" : `<div><dt>Entradas previstas</dt><dd class="forecast">${euro.format(row.forecastIncoming)}</dd></div><div><dt>Saídas previstas</dt><dd class="forecast">${euro.format(row.forecastOutgoing)}</dd></div>`}
             <div><dt>Saldo acumulado</dt><dd>${euro.format(row.balance)}</dd></div>
           </dl>
+          <small class="cash-state">${row.closed ? "✓ REAL" : row.current ? "● ATUAL · REAL + PREVISÃO" : "PREVISÃO"}</small>
         </article>`).join("")}</div>`;
   }
 
   function teeList(rows) {
     return rows.length ? `<div class="meeting-detail-list">${rows.map(row => `<div><span><strong>${escapeHtml(row.numero || row.designacao || row.descricao || "TEE")}</strong><small>${escapeHtml(row.descricao || "")}</small></span><b>${euro.format(number(row.valor))}</b></div>`).join("")}</div>`
       : `<div class="overview-empty">SEM REGISTOS</div>`;
+  }
+
+  function renderPhaseTimeline(work, data) {
+    const start = safeDate(work.data_inicio);
+    const end = safeDate(work.data_fim_prevista);
+    if (!start || !end || end <= start) return `<div class="overview-empty">DATAS GERAIS DA OBRA NÃO DEFINIDAS</div>`;
+    const total = end.getTime() - start.getTime();
+    const today = new Date();
+    const todayPosition = clampPercent((today.getTime() - start.getTime()) / total * 100);
+    const months = buildMonths(work.data_inicio, work.data_fim_prevista);
+    const sortedPhases = [...data.phases].sort((a, b) => String(a.codigo || a.numero).localeCompare(String(b.codigo || b.numero), "pt", { numeric: true }));
+    return `<div class="phase-timeline" style="--months:${months.length}">
+      <div class="phase-timeline-head"><span>FASE</span><div>${months.map(month => `<b>${monthLabel(month).split(" ")[0]}</b>`).join("")}<i style="left:${todayPosition}%"></i></div><em>%</em></div>
+      ${sortedPhases.map(phase => {
+        const plan = data.planning.find(row => row.fase_id === phase.id) || {};
+        const phaseStart = safeDate(plan.data_inicio_prevista);
+        const phaseEnd = safeDate(plan.data_fim_prevista);
+        const progress = clampPercent(number(plan.percentual_executado));
+        if (!phaseStart || !phaseEnd) return `<div class="phase-timeline-row no-dates"><span><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small></span><div><i style="left:${todayPosition}%"></i><small>SEM DATAS PREVISTAS</small></div><em>${Math.round(progress)}%</em></div>`;
+        const left = clampPercent((phaseStart.getTime() - start.getTime()) / total * 100);
+        const right = clampPercent((phaseEnd.getTime() - start.getTime()) / total * 100);
+        const width = Math.max(1, right - left);
+        const expected = today <= phaseStart ? 0 : today >= phaseEnd ? 100 : clampPercent((today.getTime() - phaseStart.getTime()) / (phaseEnd.getTime() - phaseStart.getTime()) * 100);
+        const delta = progress - expected;
+        const state = delta < -10 ? "late" : delta > 10 ? "ahead" : "on-time";
+        const stateLabel = state === "late" ? "ATRASADA" : state === "ahead" ? "ADIANTADA" : "DENTRO DO PRAZO";
+        return `<div class="phase-timeline-row ${state}">
+          <span><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small><i>${stateLabel}</i></span>
+          <div><i class="today-line" style="left:${todayPosition}%"></i><b class="phase-window" style="left:${left}%;width:${width}%"><span style="width:${progress}%"></span><small>${prettyDate.format(phaseStart)} → ${prettyDate.format(phaseEnd)}</small></b></div>
+          <em>${Math.round(progress)}%</em>
+        </div>`;
+      }).join("") || `<div class="overview-empty">SEM PLANEAMENTO DISPONÍVEL</div>`}
+      <div class="phase-timeline-legend"><span><i class="late"></i>ATRASADA</span><span><i class="on-time"></i>DENTRO DO PRAZO</span><span><i class="ahead"></i>ADIANTADA</span><strong>A LINHA VERTICAL MARCA HOJE</strong></div>
+    </div>`;
   }
 
   function renderMeeting() {
@@ -381,14 +466,8 @@ export function createProductionDashboard(options) {
           <details><summary>NÃO CONSULTADAS <b>${notConsulted.length}</b></summary><div class="meeting-detail-list">${notConsulted.map(phase => `<div><span><strong>${escapeHtml(phase.codigo || "")} · ${escapeHtml(phase.descricao || "Fase")}</strong></span><b>NÃO CONSULTADA</b></div>`).join("") || `<div class="overview-empty">TODAS AS FASES FORAM TRATADAS</div>`}</div></details>
         </div>
       </section>
-      <section class="panel meeting-card"><div class="meeting-title"><span>CASH FLOW MENSAL · REAL</span><small>Entradas, saídas e saldo acumulado</small></div>${renderCashFlow(work, data)}</section>
-      <section class="panel meeting-card"><div class="meeting-title"><span>PLANEAMENTO DE FASES</span><small>${data.phases.length} fases</small></div>
-        <div class="phase-plan">${data.phases.sort((a, b) => String(a.codigo || a.numero).localeCompare(String(b.codigo || b.numero), "pt", { numeric: true })).map(phase => {
-          const plan = data.planning.find(row => row.fase_id === phase.id) || {};
-          const progress = clampPercent(number(plan.percentual_executado));
-          return `<div><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><span><b>${escapeHtml(phase.descricao || "Fase")}</b><small>${plan.data_inicio_prevista ? prettyDate.format(safeDate(plan.data_inicio_prevista)) : "—"} → ${plan.data_fim_prevista ? prettyDate.format(safeDate(plan.data_fim_prevista)) : "—"}</small></span><div><i style="width:${progress}%"></i></div><em>${Math.round(progress)}%</em></div>`;
-        }).join("") || `<div class="overview-empty">SEM PLANEAMENTO DISPONÍVEL</div>`}</div>
-      </section>`;
+      <section class="panel meeting-card"><div class="meeting-title"><span>CASH FLOW MENSAL · REAL E PREVISTO</span><small>Meses encerrados com valores reais; período atual e futuro com previsão</small></div>${renderCashFlow(work, data)}</section>
+      <section class="panel meeting-card"><div class="meeting-title"><span>PLANEAMENTO DE FASES</span><small>${data.phases.length} fases · posição atual e cumprimento do prazo</small></div>${renderPhaseTimeline(work, data)}</section>`;
     document.querySelector("#meeting-back").addEventListener("click", () => showView(meetingReturnView));
   }
 

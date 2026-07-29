@@ -1,6 +1,6 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=4";
+import { createProductionDashboard } from "./production-dashboard.js?v=5";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
