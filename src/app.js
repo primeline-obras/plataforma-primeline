@@ -39,6 +39,8 @@ let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
 let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
+let workforceEditing = false;
+let selectedWorkforcePersonId = "";
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -191,8 +193,9 @@ document.querySelector("#root").innerHTML = `
       <div class="page workforce-view" id="workforce-view" hidden>
         <div class="page-heading">
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
-          <div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div>
+          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div>
         </div>
+        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique na obra e semana de destino.</span><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
         <div class="team-toolbar">
           <div class="week-navigation">
             <button class="outline-action" id="team-previous-week" type="button" aria-label="Semana anterior">←</button>
@@ -518,9 +521,9 @@ function renderTeam() {
       const fixed = fixedWorkTeam(work);
       return `<article class="workforce-grid team-work-row">
         <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong>${work.nome || "Sem designação"}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
-        ${weeklyPeople.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${people.length ? people.map(person => {
+        ${weeklyPeople.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}" data-workforce-cell data-work-id="${work.id}" data-week="${boardWeeks[weekIndex]}">${people.length ? people.map(person => {
           const weekAbsent = teamData.absences.some(item => item.colaborador_id === person.id && item.data >= boardWeeks[weekIndex] && item.data <= addDaysIso(boardWeeks[weekIndex], 6));
-          return `<span class="workforce-magnet ${workforceRoleClass(person)} ${weekAbsent ? "absent" : ""}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b>${weekAbsent ? "<em>F</em>" : ""}</span>`;
+          return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${weekAbsent ? "absent" : ""} ${selectedWorkforcePersonId === person.id ? "selected" : ""}" data-workforce-person="${person.id}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b>${weekAbsent ? "<em>F</em>" : ""}</button>`;
         }).join("") : "<small>—</small>"}</div>`).join("")}
       </article>`;
     }).join("");
@@ -529,7 +532,7 @@ function renderTeam() {
       return collaborators.filter(person => !weekIds.has(person.id) && (!workforceSearch || `${person.nome} ${person.funcao || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch)));
     });
     $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}
-      <article class="workforce-grid team-work-row unallocated-row"><div class="team-work-name"><span>DISPONÍVEIS</span><strong>Sem obra atribuída</strong></div>${weeklyFree.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${people.length ? people.map(person => `<span class="workforce-magnet ${workforceRoleClass(person)}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b></span>`).join("") : "<small>—</small>"}</div>`).join("")}</article>`;
+      <article class="workforce-grid team-work-row unallocated-row"><div class="team-work-name"><span>DISPONÍVEIS</span><strong>Sem obra atribuída</strong></div>${weeklyFree.map((people, weekIndex) => `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}" data-workforce-cell data-work-id="" data-week="${boardWeeks[weekIndex]}">${people.length ? people.map(person => `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${selectedWorkforcePersonId === person.id ? "selected" : ""}" data-workforce-person="${person.id}" title="${shortPersonName(person.nome)} · ${person.funcao || "Função não definida"}"><b>${workforceInitials(person.nome)}</b></button>`).join("") : "<small>—</small>"}</div>`).join("")}</article>`;
   }
 
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
@@ -583,6 +586,53 @@ function renderTeam() {
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
 }
 
+function setWorkforceEditing(enabled) {
+  workforceEditing = enabled;
+  selectedWorkforcePersonId = "";
+  $("#workforce-edit-banner").hidden = !enabled;
+  $("#edit-workforce").textContent = enabled ? "A EDITAR…" : "EDITAR QUADRO";
+  $("#edit-workforce").classList.toggle("active", enabled);
+  $("#workforce-view").classList.toggle("editing", enabled);
+  $("#workforce-edit-message").textContent = "Selecione um íman e depois clique na obra e semana de destino.";
+  renderTeam();
+}
+
+async function saveWorkforceAllocation(personId, week, workId) {
+  const person = collaborators.find(item => item.id === personId);
+  if (!person) return;
+  const existing = teamData.allocations.filter(item => item.colaborador_id === personId && item.semana_inicio === week);
+  const alreadyThere = workId && existing.length === 1 && existing[0].obra_id === workId;
+  if (alreadyThere || (!workId && !existing.length)) {
+    toast("O colaborador já se encontra nessa posição.");
+    return;
+  }
+  const currentUser = teamData.users.find(user => user.auth_user_id === session?.user?.id);
+  $("#workforce-edit-message").textContent = `A guardar ${shortPersonName(person.nome)}…`;
+  let response;
+  if (existing.length) {
+    const query = `quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&semana_inicio=eq.${week}`;
+    response = workId
+      ? await supabase(query, { method: "PATCH", body: JSON.stringify({ obra_id: workId, criado_por: currentUser?.id || null }) })
+      : await supabase(query, { method: "DELETE" });
+  } else {
+    response = await supabase("quadro_pessoal_alocacao", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, semana_inicio: week, criado_por: currentUser?.id || null }),
+    });
+  }
+  if (!response.ok) {
+    toast(`Não foi possível alterar o quadro: ${await response.text()}`, "error");
+    $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões RLS e tente novamente.";
+    return;
+  }
+  selectedWorkforcePersonId = "";
+  teamData.loadedWeek = "";
+  await loadTeamData(true);
+  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} atualizado. Selecione outro íman para continuar.`;
+  toast("Quadro de pessoal atualizado.");
+}
+
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
   teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], loadedWeek: selectedTeamWeek, error: "" };
@@ -596,7 +646,7 @@ async function loadTeamData(force = false) {
     supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo"),
     supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
-    supabase("utilizadores?select=id,nome,funcao"),
+    supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
   ]);
   const names = ["alocações", "ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
@@ -933,6 +983,26 @@ $("#work-search").addEventListener("input", renderWorks);
 $("#work-status-filter").addEventListener("change", renderWorks);
 $("#team-search").addEventListener("input", renderTeam);
 $("#team-directory-search").addEventListener("input", renderTeam);
+$("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
+$("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
+$("#team-board").addEventListener("click", async event => {
+  if (!workforceEditing) return;
+  const magnet = event.target.closest("[data-workforce-person]");
+  if (magnet) {
+    selectedWorkforcePersonId = magnet.dataset.workforcePerson;
+    const person = collaborators.find(item => item.id === selectedWorkforcePersonId);
+    $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Clique na obra e semana de destino.`;
+    renderTeam();
+    return;
+  }
+  const cell = event.target.closest("[data-workforce-cell]");
+  if (!cell || !selectedWorkforcePersonId) {
+    if (cell) toast("Selecione primeiro um íman.", "error");
+    return;
+  }
+  cell.classList.add("saving");
+  await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.week, cell.dataset.workId || "");
+});
 document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventListener("click", () => {
   selectedTeamTab = button.dataset.teamTab;
   document.querySelectorAll("[data-team-tab]").forEach(item => item.classList.toggle("active", item.dataset.teamTab === selectedTeamTab));

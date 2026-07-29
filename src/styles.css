@@ -695,6 +695,13 @@ button, input, select, textarea,
 .team-detail-row strong { font-size: 10px; }
 .team-detail-row em { padding: 6px 8px; border: 1px solid var(--warn-border); border-radius: 999px; color: var(--warn-text); background: var(--warn-bg); font-size: 6px; font-style: normal; font-weight: 800; text-align: center; }
 .workforce-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
+.workforce-heading-actions { display: grid; justify-items: end; gap: 14px; }
+.workforce-heading-actions .outline-action.active { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
+.workforce-edit-banner { margin: 20px 0 -8px; padding: 12px 16px; border: 1px solid var(--info-border); border-left: 3px solid var(--info-text); border-radius: 10px; background: var(--info-bg); color: var(--info-text); display: flex; align-items: center; gap: 14px; }
+.workforce-edit-banner[hidden] { display: none; }
+.workforce-edit-banner strong { font-size: 8px; letter-spacing: .8px; }
+.workforce-edit-banner span { flex: 1; font-size: 9px; }
+.workforce-edit-banner button { padding: 7px 11px; border: 1px solid var(--info-border); background: transparent; color: var(--info-text); font-size: 7px; font-weight: 800; }
 .workforce-legend span { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
 .workforce-legend i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; background: var(--card); }
 .workforce-legend .foreman, .team-person-chip.foreman { border-color: #5f8f67; }
@@ -716,6 +723,11 @@ button, input, select, textarea,
 .workforce-week-cell:last-child { border-right: 0; }
 .workforce-week-cell.current { background: color-mix(in srgb, var(--info-bg) 38%, transparent); }
 .workforce-magnet { position: relative; width: 38px; height: 38px; border: 3px solid var(--card-border); border-radius: 50%; background: var(--card); color: var(--text-primary); display: grid; place-items: center; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,.16); }
+.workforce-view.editing .workforce-magnet { cursor: pointer; }
+.workforce-view.editing .workforce-week-cell { cursor: cell; transition: background .15s ease, outline .15s ease; }
+.workforce-view.editing .workforce-week-cell:hover { outline: 2px solid var(--info-text); outline-offset: -3px; background: var(--info-bg); }
+.workforce-magnet.selected { outline: 3px solid var(--brand-amber); outline-offset: 3px; transform: scale(1.08); }
+.workforce-week-cell.saving { opacity: .55; pointer-events: none; }
 .workforce-magnet b { font-size: 9px; letter-spacing: .3px; }
 .workforce-magnet.foreman { border-color: #5f8f67; }
 .workforce-magnet.mason { border-color: #c54b45; }
@@ -745,4 +757,6 @@ button, input, select, textarea,
   .team-directory-row > div:last-child { display: grid; }
   .team-detail-row { grid-template-columns: 1fr 1fr; }
   .team-detail-row > div:first-child { grid-column: 1 / -1; }
+  .workforce-heading-actions { justify-items: start; }
+  .workforce-edit-banner { align-items: flex-start; flex-wrap: wrap; }
 }
