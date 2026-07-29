@@ -1,6 +1,6 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js";
+import { createProductionDashboard } from "./production-dashboard.js?v=2";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -377,6 +377,12 @@ function selectCurrentContract(contracts = []) {
   })[0] || null;
 }
 
+function measurementBilledValue(measurement) {
+  if (measurement?.valor_bruto_medido != null) return Number(measurement.valor_bruto_medido || 0);
+  return Number(measurement?.valor_a_faturar || 0)
+    + Number(measurement?.valor_deduzido_adiantamento || 0);
+}
+
 function workProgress(work) {
   if (!work.data_inicio || !work.data_fim_prevista) return null;
   const start = new Date(`${work.data_inicio}T12:00:00`).getTime();
@@ -416,9 +422,9 @@ async function loadWorkDetails(workId) {
     return;
   }
   const [contractResult, phasesResult, measurementsResult] = await Promise.all([
-    supabase(`contratos?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
+    supabase(`contratos?select=id,obra_id,venda_inicial,venda_efetiva,valor_adiantamento,percentual_retencao_garantia,data_assinatura&obra_id=eq.${encodeURIComponent(workId)}`),
     supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
-    supabase(`autos_medicao?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
+    supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
   ]);
   const detailErrors = [];
   if (contractResult.ok) workDetails.contract = selectCurrentContract(await contractResult.json());
@@ -468,7 +474,7 @@ function renderWorkSummary(work) {
   const contract = workDetails.contract;
   const subcontractRows = subcontracts.filter(item => item.obra_id === work.id);
   const subcontractTotal = subcontractRows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
-  const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
+  const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + measurementBilledValue(item), 0);
   const progress = workProgress(work);
   const sale = Number(contract?.venda_efetiva || contract?.venda_inicial || 0);
   return `
@@ -559,14 +565,14 @@ function billingForMeasurement(measurementId) {
 
 function renderMeasurementsTab(work) {
   const rows = workDetails.measurements;
-  const measured = rows.reduce((sum, item) => sum + Number(item.valor_a_faturar || 0), 0);
+  const measured = rows.reduce((sum, item) => sum + measurementBilledValue(item), 0);
   const invoiced = workDetails.billings.reduce((sum, item) => sum + Number(item.valor || 0), 0);
   const received = workDetails.billings.reduce((sum, item) => sum + Number(item.valor_recebido || 0), 0);
   return `
     ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.billingError} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
     <div class="measurement-toolbar">
       <div class="measurement-kpis">
-        <div><span>A FATURAR</span><strong>${euro.format(measured)}</strong></div>
+        <div><span>VALOR MEDIDO</span><strong>${euro.format(measured)}</strong></div>
         <div><span>FATURADO</span><strong>${euro.format(invoiced)}</strong></div>
         <div><span>RECEBIDO</span><strong>${euro.format(received)}</strong></div>
       </div>

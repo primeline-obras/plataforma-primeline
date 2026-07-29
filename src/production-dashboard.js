@@ -5,6 +5,18 @@ const monthKey = value => value ? String(value).slice(0, 7) : "";
 const monthLabel = key => new Intl.DateTimeFormat("pt-PT", { month: "short", year: "2-digit" }).format(new Date(`${key}-01T12:00:00`)).toUpperCase();
 const safeDate = value => value ? new Date(`${String(value).slice(0, 10)}T12:00:00`) : null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+const measurementBilledValue = row => row?.valor_bruto_medido != null
+  ? number(row.valor_bruto_medido)
+  : number(row?.valor_a_faturar) + number(row?.valor_deduzido_adiantamento);
+const budgetItemCost = row => number(
+  row?.custo_direto ?? row?.custo_previsto ?? row?.compra_prevista
+  ?? row?.preco_custo ?? row?.valor_custo ?? row?.custo_total
+);
+const effectiveDirectCost = (items, effectiveSale) => {
+  const budgetSale = sum(items, "venda_prevista");
+  const budgetCost = items.reduce((total, item) => total + budgetItemCost(item), 0);
+  return budgetSale && effectiveSale ? budgetCost * effectiveSale / budgetSale : budgetCost;
+};
 const selectCurrentContract = contracts => [...contracts].sort((a, b) => {
   const completeness = contract => ["venda_inicial", "venda_efetiva", "valor_adiantamento"]
     .reduce((score, field) => score + (contract?.[field] != null ? 1 : 0), 0);
@@ -63,14 +75,15 @@ export function createProductionDashboard(options) {
     const approvedTeeSale = sum(approvedTees, "valor");
     const approvedTeeCost = sum(approvedTees, "preco_custo");
     const phaseIds = new Set(overviewState.phases.filter(phase => phase.obra_id === workId).map(phase => phase.id));
-    const budgetCost = overviewState.budget.filter(item => phaseIds.has(item.fase_id))
-      .reduce((total, item) => total + number(item.custo_direto || item.custo_previsto || item.compra_prevista), 0);
-    const directCost = number(contract.custo_direto || contract.custo_direto_contratual) || budgetCost;
+    const workBudget = overviewState.budget.filter(item => phaseIds.has(item.fase_id));
+    const directCost = number(contract.custo_direto || contract.custo_direto_contratual)
+      || effectiveDirectCost(workBudget, sale);
     const billed = overviewState.measurements.filter(row => row.obra_id === workId)
-      .reduce((total, row) => total + number(row.valor_a_faturar), 0);
+      .reduce((total, row) => total + measurementBilledValue(row), 0);
     const totalSale = sale + approvedTeeSale;
+    const updatedDirectCost = directCost + approvedTeeCost;
     return {
-      sale, directCost, margin: totalSale - directCost - approvedTeeCost,
+      sale: totalSale, directCost: updatedDirectCost, margin: totalSale - updatedDirectCost,
       billed, unbilled: totalSale - billed, approvedTees, pendingTees,
       subcontracts: overviewState.subcontracts.filter(row => row.obra_id === workId),
       consultations: overviewState.consultations.filter(row => row.obra_id === workId && row.estado === "em_consulta"),
@@ -219,9 +232,9 @@ export function createProductionDashboard(options) {
       query("fases?select=id,obra_id,descricao,codigo", "Fases"),
       query("planeamento_fases_resumo?select=*", "Planeamento"),
       query("itens_orcamento?select=*", "Orçamento"),
-      query("contratos?select=*", "Contratos"),
+      query("contratos?select=id,obra_id,venda_inicial,venda_efetiva,valor_adiantamento,percentual_retencao_garantia,data_assinatura", "Contratos"),
       query("alteracoes_tee?select=*", "TEEs"),
-      query("autos_medicao?select=*", "Autos"),
+      query("autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar", "Autos"),
       query("subempreitadas?select=id,obra_id,estado", "Subempreitadas"),
       query("consultas_subempreitada?select=id,obra_id,fase_id,estado", "Consultas"),
     ]);
@@ -267,7 +280,7 @@ export function createProductionDashboard(options) {
   function renderCashFlow(work, data) {
     const months = buildMonths(work.data_inicio);
     const values = months.map(month => {
-      const incoming = data.measurements.filter(row => monthKey(row.mes_referencia) === month).reduce((total, row) => total + number(row.valor_a_faturar), 0);
+      const incoming = data.measurements.filter(row => monthKey(row.mes_referencia) === month).reduce((total, row) => total + measurementBilledValue(row), 0);
       const subcontract = data.payments.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor), 0);
       const labor = data.labor.filter(row => monthKey(row.data) === month).reduce((total, row) => total + number(row.horas) * number(row.valor_hora), 0);
       const site = data.siteExpenses.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor_total), 0);
@@ -298,10 +311,10 @@ export function createProductionDashboard(options) {
     const approvedTeeCost = sum(approvedTees, "preco_custo");
     const pendingTeeSale = sum(pendingTees, "valor");
     const sale = number(contract.venda_efetiva || contract.venda_inicial);
-    const budgetCost = data.budget.reduce((total, row) => total + number(row.custo_direto || row.custo_previsto || row.compra_prevista), 0);
-    const directCost = number(contract.custo_direto || contract.custo_direto_contratual) || budgetCost;
+    const directCost = number(contract.custo_direto || contract.custo_direto_contratual)
+      || effectiveDirectCost(data.budget, sale);
     const expectedMargin = sale + approvedTeeSale - directCost - approvedTeeCost;
-    const billed = sum(data.measurements, "valor_a_faturar");
+    const billed = data.measurements.reduce((total, row) => total + measurementBilledValue(row), 0);
     const totalSale = sale + approvedTeeSale;
     const billingPercent = totalSale ? clampPercent(billed / totalSale * 100) : 0;
     const execution = workExecution(work.id, data.phases, data.planning, data.budget);
@@ -317,14 +330,14 @@ export function createProductionDashboard(options) {
       <div class="meeting-heading"><button id="meeting-back">← VISÃO GERAL</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · OBRA ${escapeHtml(work.numero)}</p><h1>${escapeHtml(work.nome)}</h1><span>${escapeHtml(work.cliente || "")}</span></div><em class="work-status ${escapeHtml(work.situacao)}">${escapeHtml(String(work.situacao || "").replace(/_/g, " "))}</em></div>
       ${warnings.length ? `<div class="overview-warning">Dados parciais: ${escapeHtml(warnings.join(" · "))}</div>` : ""}
       <section class="meeting-kpis">
-        <article><span>VENDA EFETIVA</span><strong>${euro.format(sale)}</strong><small>contrato atual</small></article>
-        <article><span>CUSTO DIRETO CONTRATUAL</span><strong>${directCost ? euro.format(directCost) : "—"}</strong><small>sem duplicar mão de obra própria</small></article>
+        <article><span>VENDA ATUALIZADA</span><strong>${euro.format(totalSale)}</strong><small>venda efetiva + TEEs aprovados</small></article>
+        <article><span>CUSTO DIRETO ATUALIZADO</span><strong>${directCost ? euro.format(directCost + approvedTeeCost) : "—"}</strong><small>contratual + TEEs aprovados</small></article>
         <article><span>MARGEM PREVISTA</span><strong>${directCost ? euro.format(expectedMargin) : "—"}</strong><small>inclui TEEs aprovados</small></article>
         <article><span>POR FATURAR</span><strong>${euro.format(totalSale - billed)}</strong><small>${Math.round(billingPercent)}% faturado</small></article>
       </section>
       <section class="meeting-two">
         <article class="panel meeting-card"><div class="meeting-title"><span>RESUMO CONTRATUAL</span></div>
-          <dl class="meeting-dl"><div><dt>Venda inicial</dt><dd>${euro.format(number(contract.venda_inicial))}</dd></div><div><dt>Venda efetiva</dt><dd>${euro.format(sale)}</dd></div><div><dt>TEEs aprovados</dt><dd>${euro.format(approvedTeeSale)}</dd></div><div><dt>Custo TEEs aprovados</dt><dd>${euro.format(approvedTeeCost)}</dd></div></dl>
+          <dl class="meeting-dl"><div><dt>Venda inicial</dt><dd>${euro.format(number(contract.venda_inicial))}</dd></div><div><dt>Venda efetiva</dt><dd>${euro.format(sale)}</dd></div><div><dt>Adiantamento</dt><dd>${euro.format(number(contract.valor_adiantamento))}</dd></div><div><dt>Custo direto efetivo</dt><dd>${euro.format(directCost)}</dd></div><div><dt>TEEs aprovados</dt><dd>${euro.format(approvedTeeSale)}</dd></div><div><dt>Custo TEEs aprovados</dt><dd>${euro.format(approvedTeeCost)}</dd></div></dl>
           <details><summary>TEEs APROVADOS <b>${approvedTees.length}</b><em>${euro.format(approvedTeeSale)}</em></summary>${teeList(approvedTees)}</details>
           <details><summary>EM ELABORAÇÃO / AGUARDA RESPOSTA <b>${pendingTees.length}</b><em>${euro.format(pendingTeeSale)}</em></summary>${teeList(pendingTees)}</details>
         </article>
@@ -372,9 +385,9 @@ export function createProductionDashboard(options) {
       contracts, tees, measurements, planning, budget, consultations,
       payments, labor, siteExpenses,
     ] = await Promise.all([
-      meetingQuery(`contratos?select=*&obra_id=eq.${encoded}`, "Contrato", warnings),
+      meetingQuery(`contratos?select=id,obra_id,venda_inicial,venda_efetiva,valor_adiantamento,percentual_retencao_garantia,data_assinatura&obra_id=eq.${encoded}`, "Contrato", warnings),
       meetingQuery(`alteracoes_tee?select=*&obra_id=eq.${encoded}`, "TEEs", warnings),
-      meetingQuery(`autos_medicao?select=*&obra_id=eq.${encoded}`, "Autos", warnings),
+      meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
       phaseIds.length ? meetingQuery(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Orçamento", warnings) : [],
       meetingQuery(`consultas_subempreitada?select=*&obra_id=eq.${encoded}`, "Consultas", warnings),
