@@ -1,6 +1,6 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=2";
+import { createProductionDashboard } from "./production-dashboard.js?v=3";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -369,18 +369,21 @@ function formatOptionalDate(value) {
 
 function selectCurrentContract(contracts = []) {
   return [...contracts].sort((a, b) => {
-    const completeness = contract => ["venda_inicial", "venda_efetiva", "valor_adiantamento"]
+    const completeness = contract => ["venda_contratual_inicial", "venda_contratual_efetiva", "valor_adiantamento"]
       .reduce((score, field) => score + (contract?.[field] != null ? 1 : 0), 0);
     return completeness(b) - completeness(a)
-      || Number(b.venda_inicial || 0) - Number(a.venda_inicial || 0)
-      || Number(b.venda_efetiva || 0) - Number(a.venda_efetiva || 0);
+      || Number(b.venda_contratual_inicial || 0) - Number(a.venda_contratual_inicial || 0)
+      || Number(b.venda_contratual_efetiva || 0) - Number(a.venda_contratual_efetiva || 0);
   })[0] || null;
 }
 
 function measurementBilledValue(measurement) {
-  if (measurement?.valor_bruto_medido != null) return Number(measurement.valor_bruto_medido || 0);
-  return Number(measurement?.valor_a_faturar || 0)
-    + Number(measurement?.valor_deduzido_adiantamento || 0);
+  return Number(measurement?.valor_a_faturar || 0);
+}
+
+function totalClientBilling(contract, measurements = []) {
+  return Number(contract?.valor_adiantamento || 0)
+    + measurements.reduce((total, measurement) => total + measurementBilledValue(measurement), 0);
 }
 
 function workProgress(work) {
@@ -400,7 +403,7 @@ async function loadWorkDetails(workId) {
   $("#work-detail").innerHTML = `<div class="empty-state">A CARREGAR DADOS DA OBRA…</div>`;
   if (!isSupabaseConfigured) {
     workDetails = {
-      contract: { venda_inicial: 553619.19, venda_efetiva: 472179.26, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
+      contract: { venda_contratual_inicial: 553619.19, venda_contratual_efetiva: 472179.26, custo_direto_efetivo: 355023.64, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
       phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, nome: `Fase ${index + 1}` })),
       measurements: [],
       payments: [
@@ -422,7 +425,7 @@ async function loadWorkDetails(workId) {
     return;
   }
   const [contractResult, phasesResult, measurementsResult] = await Promise.all([
-    supabase(`contratos?select=id,obra_id,venda_inicial,venda_efetiva,valor_adiantamento,percentual_retencao_garantia,data_assinatura&obra_id=eq.${encodeURIComponent(workId)}`),
+    supabase(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encodeURIComponent(workId)}`),
     supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
     supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
   ]);
@@ -474,9 +477,9 @@ function renderWorkSummary(work) {
   const contract = workDetails.contract;
   const subcontractRows = subcontracts.filter(item => item.obra_id === work.id);
   const subcontractTotal = subcontractRows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
-  const measuredTotal = workDetails.measurements.reduce((sum, item) => sum + measurementBilledValue(item), 0);
+  const measuredTotal = totalClientBilling(contract, workDetails.measurements);
   const progress = workProgress(work);
-  const sale = Number(contract?.venda_efetiva || contract?.venda_inicial || 0);
+  const sale = Number(contract?.venda_contratual_efetiva || contract?.venda_contratual_inicial || 0);
   return `
     <div class="work-kpis">
       <div><span>VENDA CONTRATADA</span><strong>${sale ? euro.format(sale) : "—"}</strong></div>
@@ -491,8 +494,8 @@ function renderWorkSummary(work) {
     <div class="work-detail-grid">
       <section><div class="detail-section-title"><span>CONTRATO</span></div>
         <dl>
-          <div><dt>Venda inicial</dt><dd>${contract?.venda_inicial != null ? euro.format(Number(contract.venda_inicial)) : "—"}</dd></div>
-          <div><dt>Venda efetiva</dt><dd>${contract?.venda_efetiva != null ? euro.format(Number(contract.venda_efetiva)) : "—"}</dd></div>
+          <div><dt>Venda inicial</dt><dd>${contract?.venda_contratual_inicial != null ? euro.format(Number(contract.venda_contratual_inicial)) : "—"}</dd></div>
+          <div><dt>Venda efetiva</dt><dd>${contract?.venda_contratual_efetiva != null ? euro.format(Number(contract.venda_contratual_efetiva)) : "—"}</dd></div>
           <div><dt>Adiantamento</dt><dd>${contract?.valor_adiantamento != null ? euro.format(Number(contract.valor_adiantamento)) : "—"}</dd></div>
           <div><dt>Assinatura</dt><dd>${formatOptionalDate(contract?.data_assinatura)}</dd></div>
         </dl>
@@ -565,14 +568,14 @@ function billingForMeasurement(measurementId) {
 
 function renderMeasurementsTab(work) {
   const rows = workDetails.measurements;
-  const measured = rows.reduce((sum, item) => sum + measurementBilledValue(item), 0);
+  const measured = totalClientBilling(workDetails.contract, rows);
   const invoiced = workDetails.billings.reduce((sum, item) => sum + Number(item.valor || 0), 0);
   const received = workDetails.billings.reduce((sum, item) => sum + Number(item.valor_recebido || 0), 0);
   return `
     ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.billingError} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
     <div class="measurement-toolbar">
       <div class="measurement-kpis">
-        <div><span>VALOR MEDIDO</span><strong>${euro.format(measured)}</strong></div>
+        <div><span>FATURADO ACUMULADO</span><strong>${euro.format(measured)}</strong></div>
         <div><span>FATURADO</span><strong>${euro.format(invoiced)}</strong></div>
         <div><span>RECEBIDO</span><strong>${euro.format(received)}</strong></div>
       </div>
