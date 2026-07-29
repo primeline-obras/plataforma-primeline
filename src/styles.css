@@ -646,7 +646,7 @@ button, input, select, textarea,
 .team-kpis strong { font-size: 24px; color: var(--info-text); }
 .team-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(270px, .8fr); gap: 18px; margin-bottom: 18px; }
 .team-board-panel, .team-absence-panel, .team-directory-panel { padding: 0; }
-.team-board-panel { overflow-x: auto; overflow-y: hidden; scrollbar-gutter: stable; }
+.team-board-panel { overflow: hidden; }
 .team-section-head { min-height: 84px; padding: 20px 24px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .team-section-head h2 { margin: 6px 0 0; font-size: 18px; }
 .team-section-head > span { color: var(--text-secondary); font-size: 8px; font-weight: 700; letter-spacing: .7px; }
@@ -726,7 +726,7 @@ button, input, select, textarea,
 .fixed-work-team small b { color: var(--text-muted); font-size: 6px; letter-spacing: .6px; }
 .team-person-chip > span { display: grid; gap: 2px; }
 .team-person-chip > span small { color: var(--text-muted); font-size: 6px; font-weight: 700; text-transform: uppercase; }
-.workforce-grid { min-width: 1465px; display: grid; grid-template-columns: minmax(145px, .75fr) repeat(4, minmax(330px, 1fr)); }
+.workforce-grid { width: 100%; display: grid; grid-template-columns: minmax(120px, .6fr) repeat(4, minmax(0, 1fr)); }
 .workforce-grid-head { min-height: 62px; border-bottom: 1px solid var(--card-border); background: var(--sidebar-bg); color: #fff; }
 .workforce-grid-head > div { padding: 13px 14px; border-right: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; justify-content: center; gap: 5px; font-size: 7px; font-weight: 800; letter-spacing: .8px; }
 .workforce-grid-head > div:last-child { border-right: 0; }
@@ -737,21 +737,22 @@ button, input, select, textarea,
 .workforce-vacation-box i { width: 20px; height: 20px; border-radius: 50%; background: #fff; color: #b53e39; display: grid; place-items: center; font-size: 6px; font-style: normal; font-weight: 900; }
 .workforce-view.editing .workforce-vacation-box { cursor: pointer; }
 .workforce-view.editing .workforce-vacation-box:hover { border-color: #f3c6c3; background: rgba(212,74,67,.2); box-shadow: inset 0 0 0 1px #f3c6c3; }
-.workforce-day-labels { display: grid; grid-template-columns: repeat(5, 1fr); margin: 5px -8px -7px; }
+.workforce-day-labels { display: grid; grid-template-columns: 1.55fr repeat(4, 1fr); margin: 5px -8px -7px; }
 .workforce-day-labels b { padding: 5px 2px 0; border-left: 1px solid rgba(255,255,255,.1); display: grid; justify-items: center; gap: 2px; font-size: 6px; }
 .workforce-day-labels b small { color: #8f98a2; font-size: 6px; }
-.workforce-grid.team-work-row { min-width: 1465px; grid-template-columns: minmax(145px, .75fr) repeat(4, minmax(330px, 1fr)); }
-.workforce-week-cell { min-height: 94px; padding: 0; border-right: 1px solid var(--card-border); display: grid; grid-template-columns: repeat(5, 1fr); }
+.workforce-grid.team-work-row { width: 100%; grid-template-columns: minmax(120px, .6fr) repeat(4, minmax(0, 1fr)); }
+.workforce-week-cell { min-height: 94px; padding: 0; border-right: 1px solid var(--card-border); display: grid; grid-template-columns: 1.55fr repeat(4, 1fr); }
 .workforce-week-cell:last-child { border-right: 0; }
 .workforce-week-cell.current { background: color-mix(in srgb, var(--info-bg) 38%, transparent); }
-.workforce-day-cell { min-width: 0; padding: 6px 2px; border-right: 1px solid var(--card-border); display: grid; grid-template-columns: repeat(2, 30px); grid-auto-rows: 30px; align-content: center; justify-content: center; gap: 4px; }
+.workforce-day-cell { min-width: 0; padding: 6px 1px; border-right: 1px solid var(--card-border); display: grid; grid-template-columns: 27px; grid-auto-rows: 27px; align-content: center; justify-content: center; gap: 3px; }
+.workforce-day-cell:first-child { grid-template-columns: repeat(2, 27px); }
 .workforce-day-cell:last-child { border-right: 0; }
 .workforce-arrow { color: var(--text-secondary); font-size: 22px; font-weight: 300; }
 .no-workforce { width: 100%; height: 52px; position: relative; display: block; }
 .no-workforce::after { content: ""; position: absolute; left: 8%; top: 50%; width: 84%; height: 2px; background: #d44a43; transform: rotate(-35deg); transform-origin: center; }
 .unchanged-day { background: color-mix(in srgb, var(--card) 86%, var(--info-bg)); }
 .changed-day { box-shadow: inset 0 2px 0 color-mix(in srgb, var(--brand-amber) 55%, transparent); }
-.workforce-magnet { position: relative; width: 30px; height: 30px; border: 2px solid var(--card-border); border-radius: 50%; background: var(--card); color: var(--text-primary); display: grid; place-items: center; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,.16); }
+.workforce-magnet { position: relative; width: 27px; height: 27px; border: 2px solid var(--card-border); border-radius: 50%; background: var(--card); color: var(--text-primary); display: grid; place-items: center; cursor: help; box-shadow: 0 2px 4px rgba(0,0,0,.16); }
 .workforce-view.editing .workforce-magnet { cursor: pointer; }
 .workforce-view.editing .workforce-day-cell { cursor: cell; transition: background .15s ease, outline .15s ease; }
 .workforce-view.editing .workforce-day-cell:hover { outline: 2px solid var(--info-text); outline-offset: -3px; background: var(--info-bg); }
@@ -773,7 +774,7 @@ button, input, select, textarea,
   .team-kpis article:nth-child(-n+2) { border-bottom: 1px solid var(--card-border); }
   .team-directory-row { grid-template-columns: 36px minmax(180px, 1.4fr) repeat(2, minmax(115px, 1fr)); }
   .team-directory-row > div:last-child { display: none; }
-  .team-board-panel { overflow-x: auto; }
+  .team-board-panel { overflow: hidden; }
 }
 @media (max-width: 760px) {
   .team-toolbar, .week-navigation { align-items: stretch; flex-wrap: wrap; }
