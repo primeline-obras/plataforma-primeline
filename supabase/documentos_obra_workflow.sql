@@ -65,6 +65,10 @@ begin
     'contrato',
     'orcamento',
     'plantas_projeto',
+    'desenhos_preparacao',
+    'atas_reuniao',
+    'pdes_rfis',
+    'pames',
     'licencas',
     'planeamento_detalhado',
     'outro'
