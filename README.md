@@ -107,3 +107,16 @@ quando a auditoria devolver zero linhas:
 ```sql
 alter table public.planeamento_itens enable trigger trg_recalcular_planeamento;
 ```
+
+## Mapas comparativos e subempreiteiros
+
+Executar `supabase/subempreitadas_mapa_comparativo_workflow.sql` no SQL Editor para
+ativar a adjudicação de candidatos, as permissões de escrita por obra, a sincronização
+com o planeamento detalhado e a conclusão com avaliação obrigatória. O limite de
+contrato está centralizado em `fn_limite_contrato_subempreitada()` e é atualmente
+5.000 €.
+
+Depois da migração, executar
+`supabase/teste_bloqueio_conclusao_sem_avaliacao.sql`. O teste tenta concluir, sem
+avaliação, uma subempreitada elegível e reverte qualquer alteração. O resultado
+esperado é o aviso `TESTE PASSOU` e os dois triggers apresentados como ativos.
