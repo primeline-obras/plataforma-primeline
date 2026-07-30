@@ -767,6 +767,25 @@ button, input, select, textarea,
 .workforce-magnet.absent { opacity: .45; background: var(--neg-bg); }
 .workforce-magnet em { position: absolute; right: -4px; top: -5px; width: 13px; height: 13px; border-radius: 50%; background: var(--neg-text); color: #fff; display: grid; place-items: center; font-size: 5px; font-style: normal; font-weight: 900; }
 
+/* Quadro de pessoal: informação legível à distância sem aumentar a grelha. */
+.workforce-grid-head > div { font-size: 8.5px; line-height: 1.25; }
+.workforce-grid-head > div > strong { font-size: 9px; letter-spacing: .9px; }
+.workforce-grid-head > div > span { font-size: 7.5px; line-height: 1.35; }
+.workforce-grid-head > div:first-child { font-size: 9px; }
+.workforce-vacation-box > b { font-size: 7px; }
+.workforce-vacation-box > span { font-size: 7px; }
+.workforce-vacation-box i { font-size: 7px; }
+.workforce-day-labels b { font-size: 8px; line-height: 1.2; }
+.workforce-day-labels b small { font-size: 7px; }
+.team-work-name { padding: 13px 11px; gap: 5px; }
+.team-work-name > span { font-size: 8.5px; }
+.team-work-name > strong { font-size: 12px; line-height: 1.3; }
+.fixed-work-team { gap: 4px; margin-top: 5px; }
+.fixed-work-team small { grid-template-columns: 53px 1fr; gap: 5px; font-size: 7.5px; line-height: 1.35; }
+.fixed-work-team small b { font-size: 7px; line-height: 1.35; }
+.workforce-legend span { font-size: 8px; }
+.workforce-magnet b { font-size: 8px; }
+
 @media (max-width: 1050px) {
   .team-layout { grid-template-columns: 1fr; }
   .team-kpis { grid-template-columns: repeat(2, 1fr); }
