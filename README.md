@@ -150,3 +150,11 @@ funções `fn_decidir_fatura` e `fn_marcar_fatura_paga`.
 Depois, executar `supabase/auditoria_rls_permissoes_finais.sql`. A auditoria é apenas
 de leitura e confirma funções, políticas, grants e a existência de contas para a
 validação manual de cada papel.
+
+## Linhas especiais no Quadro de Pessoal
+
+No modo de edição do Quadro de Pessoal, o botão `Nova linha` permite acrescentar
+uma obra existente ou uma linha livre dos tipos Garantia e Pontual. As linhas
+livres usam `quadro_pessoal_alocacao.tipo_alocacao` e `descricao_livre`, podem ser
+renomeadas diretamente no quadro e ficam persistidas quando recebem a primeira
+alocação. Não representam uma obra nem apresentam informação financeira.
