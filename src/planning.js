@@ -101,6 +101,50 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     </div>`;
   }
 
+  function phaseProgress(items) {
+    if (!items.length) return null;
+    const weightedItems = items.filter(item =>
+      item.peso_percentual !== null && item.peso_percentual !== "" &&
+      Number.isFinite(Number(item.peso_percentual)));
+    const totalWeight = weightedItems.reduce(
+      (sum, item) => sum + Number(item.peso_percentual), 0);
+    if (weightedItems.length === items.length && totalWeight > 0) {
+      return Math.round(weightedItems.reduce(
+        (sum, item) => sum +
+          Number(item.peso_percentual) * Number(item.percentual_executado || 0),
+        0,
+      ) / totalWeight);
+    }
+    return Math.round(items.reduce(
+      (sum, item) => sum + Number(item.percentual_executado || 0), 0,
+    ) / items.length);
+  }
+
+  function phaseBar(items, scale, todayPosition) {
+    if (!items.length) return `<span class="planning-no-dates">SEM TAREFAS</span>`;
+    const starts = items.map(item => dateValue(item.data_inicio_prevista)).filter(Boolean);
+    const allCompleted = items.every(item =>
+      item.estado === "concluido" || Number(item.percentual_executado || 0) >= 100);
+    const allHaveActualEnd = allCompleted && items.every(item => dateValue(item.data_fim_real));
+    const ends = items.map(item => dateValue(
+      allHaveActualEnd ? item.data_fim_real : item.data_fim_prevista,
+    )).filter(Boolean);
+    if (!starts.length || !ends.length) {
+      return `<span class="planning-no-dates">DATAS NÃO DEFINIDAS</span>`;
+    }
+    const start = new Date(Math.min(...starts));
+    const end = new Date(Math.max(...ends));
+    const left = Math.min(100, daysBetween(scale.start, start) / scale.totalDays * 100);
+    const width = Math.max(1.4, daysBetween(start, end) / scale.totalDays * 100);
+    const progress = phaseProgress(items);
+    const phaseState = progress >= 100 ? "concluido" : progress > 0 ? "em_execucao" : "por_iniciar";
+    return `
+      ${todayPosition === null ? "" : `<i class="planning-today" style="left:${todayPosition}%"></i>`}
+      <div class="planning-phase-bar ${phaseState}" style="left:${left}%;width:${Math.min(width, 100 - left)}%">
+        <i style="width:${progress}%"></i>
+      </div>`;
+  }
+
   function render() {
     if (!state.loaded) {
       content.innerHTML = `<div class="empty-state"><strong>A CARREGAR PLANEAMENTO…</strong></div>`;
@@ -128,12 +172,15 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       ${state.phases.map(phase => {
         const items = state.items.filter(item => item.fase_id === phase.id);
         const expanded = state.expanded.has(phase.id);
+        const progress = phaseProgress(items);
         return `<section class="planning-phase ${expanded ? "expanded" : ""}">
           <button class="planning-grid planning-phase-row" type="button" data-planning-phase="${phase.id}" aria-expanded="${expanded}">
             <div><b>${expanded ? "−" : "+"}</b><span><strong>${escapeHtml(phase.codigo || "")}</strong>${escapeHtml(phase.descricao || "Fase")}</span></div>
             <div>${items.length} ${items.length === 1 ? "TAREFA" : "TAREFAS"}</div>
-            <div class="planning-phase-line"></div>
-            <div><em>${items.length ? `${Math.round(items.reduce((sum, item) => sum + Number(item.percentual_executado || 0), 0) / items.length)}%` : "—"}</em></div>
+            <div class="planning-phase-track" style="--months:${scale.months.length}">
+              ${phaseBar(items, scale, todayPosition)}
+            </div>
+            <div><em>${progress === null ? "—" : `${progress}%`}</em></div>
           </button>
           <div class="planning-tasks" ${expanded ? "" : "hidden"}>
             ${items.length ? items.map(item => `<article class="planning-grid planning-task-row">
@@ -143,7 +190,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
                 ${item.recalculado_automaticamente ? `<small title="${item.recalculado_em ? `Em ${escapeHtml(item.recalculado_em)}` : ""}">↻ RECALCULADO AUTOMATICAMENTE</small>` : ""}
               </div>
               <div>${escapeHtml(item.responsavel || "Não definido")}<small>${predecessorCount[item.id] || 0} PREDECESSORAS</small></div>
-              <div class="planning-track">
+              <div class="planning-track" style="--months:${scale.months.length}">
                 ${todayPosition === null ? "" : `<i class="planning-today" style="left:${todayPosition}%"></i>`}
                 ${taskBar(item, scale)}
               </div>

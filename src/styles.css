@@ -812,8 +812,11 @@ button, input, select, textarea,
 .planning-phase-row > div:first-child span { display: grid; gap: 3px; font-size: 11px; }
 .planning-phase-row > div:first-child strong { color: var(--brand-amber); font-size: 8px; letter-spacing: .7px; }
 .planning-phase-row > div:nth-child(2) { color: var(--text-secondary); font-size: 8px; font-weight: 800; }
-.planning-phase-line { position: relative; }
-.planning-phase-line::after { content: ""; width: 100%; height: 4px; border-radius: 999px; background: var(--card-border); }
+.planning-phase-track { position: relative; min-height: 58px; padding: 0 !important; display: block !important; overflow: hidden; background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc((100% / var(--months, 6)) - 1px), color-mix(in srgb, var(--card-border) 60%, transparent) calc((100% / var(--months, 6)) - 1px), color-mix(in srgb, var(--card-border) 60%, transparent) calc(100% / var(--months, 6))); }
+.planning-phase-bar { position: absolute; z-index: 2; top: 19px; height: 20px; min-width: 8px; overflow: hidden; border: 1px solid var(--info-text); border-radius: 6px; background: color-mix(in srgb, var(--info-text) 24%, var(--card)); box-shadow: 0 1px 3px rgba(0,0,0,.16); }
+.planning-phase-bar > i { position: absolute; inset: 0 auto 0 0; background: var(--pos-text); opacity: .82; }
+.planning-phase-bar.concluido { border-color: var(--pos-text); background: var(--pos-bg); }.planning-phase-bar.concluido > i { background: var(--pos-text); }
+.planning-phase-bar.em_execucao { border-color: var(--brand-amber); background: color-mix(in srgb, var(--brand-amber) 20%, var(--card)); }
 .planning-phase-row em { color: var(--info-text); font-size: 11px; font-style: normal; font-weight: 900; }
 .planning-tasks[hidden] { display: none; }
 .planning-task-row { min-height: 76px; background: var(--card); }
@@ -824,7 +827,7 @@ button, input, select, textarea,
 .planning-task-row > div:first-child span { font-size: 11px; font-weight: 750; }
 .planning-task-row small { color: var(--text-muted); font-size: 7px; font-weight: 700; line-height: 1.35; }
 .planning-task-row > div:first-child small { color: var(--info-text); }
-.planning-track { position: relative; min-height: 58px; overflow: hidden; background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc(16.666% - 1px), color-mix(in srgb, var(--card-border) 60%, transparent) calc(16.666% - 1px), color-mix(in srgb, var(--card-border) 60%, transparent) 16.666%); }
+.planning-track { position: relative; min-height: 58px; overflow: hidden; background-image: repeating-linear-gradient(90deg, transparent 0, transparent calc((100% / var(--months, 6)) - 1px), color-mix(in srgb, var(--card-border) 60%, transparent) calc((100% / var(--months, 6)) - 1px), color-mix(in srgb, var(--card-border) 60%, transparent) calc(100% / var(--months, 6))); }
 .planning-today { position: absolute; z-index: 3; top: 0; bottom: 0; width: 2px; background: #d44a43; }
 .planning-bar { position: absolute; z-index: 2; top: 22px; height: 20px; min-width: 8px; overflow: hidden; border: 1px solid var(--info-text); border-radius: 6px; background: color-mix(in srgb, var(--info-text) 24%, var(--card)); }
 .planning-bar i { position: absolute; inset: 0 auto 0 0; background: var(--info-text); opacity: .75; }
