@@ -1,8 +1,9 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=6";
+import { createProductionDashboard } from "./production-dashboard.js?v=7";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=2";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -29,6 +30,7 @@ const icon = (name) => {
 
 let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], collaborators = [];
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
+let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
 let currentFilter = "all";
 let session = getSession();
 let selectedPdf = null;
@@ -281,6 +283,7 @@ const productionDashboard = createProductionDashboard({
   euro,
   prettyDate,
   toast,
+  getAccessContext: () => accessContext,
   showView: view => switchView(view),
 });
 productionDashboard.bind();
@@ -302,9 +305,80 @@ const subcontractorsModule = createSubcontractorsModule({
 
 function renderUser() {
   const email = session?.user?.email || "utilizador";
-  const label = session?.user?.user_metadata?.full_name || email.split("@")[0];
+  const label = accessContext.profile?.nome || session?.user?.user_metadata?.full_name || email.split("@")[0];
   $("#user-name").textContent = label.toUpperCase();
   $("#user-initials").textContent = label.split(/[ ._-]+/).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  $("#user-role").textContent = effectiveRole().replaceAll("_", " ").toUpperCase() || "SESSÃO AUTENTICADA";
+}
+
+function effectiveRole() {
+  return effectiveAccessRole(accessContext);
+}
+
+function hasFullAccess() {
+  return effectiveRole() === "gerencia";
+}
+
+function isAdministrative() {
+  return effectiveRole() === "administrativo";
+}
+
+function isFinancial() {
+  return effectiveRole() === "financeiro";
+}
+
+function canApproveInvoices() {
+  return accessFor(accessContext).approveInvoices;
+}
+
+function canInsertInvoices() {
+  return accessFor(accessContext).insertInvoices;
+}
+
+function canPayInvoices() {
+  return accessFor(accessContext).payInvoices;
+}
+
+function canEditWork() {
+  return accessFor(accessContext).editWork;
+}
+
+function allowedViews() {
+  return new Set(accessFor(accessContext).views);
+}
+
+function applyAccessVisibility() {
+  const permitted = allowedViews();
+  document.querySelectorAll(".sidebar nav [data-view]").forEach(button => {
+    button.hidden = !permitted.has(button.dataset.view);
+  });
+  $(".new-invoice").hidden = !canInsertInvoices();
+  $("#new-work").hidden = !hasFullAccess();
+  document.body.dataset.userRole = effectiveRole() || "sem_perfil";
+  if (!permitted.has(activeView)) switchView("overview");
+  renderUser();
+}
+
+async function loadAccessContext() {
+  if (!isSupabaseConfigured) {
+    accessContext = { role: "gerencia", isAdmin: true, profile: { nome: "Utilizador de demonstração", funcao: "gerencia" } };
+    applyAccessVisibility();
+    return;
+  }
+  const authId = getSession()?.user?.id;
+  if (!authId) return;
+  const [profileResult, adminResult] = await Promise.all([
+    supabase(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`),
+    supabase("rpc/fn_e_admin", { method: "POST", body: "{}" }),
+  ]);
+  const profiles = profileResult.ok ? await profileResult.json() : [];
+  const profile = profiles[0] || null;
+  accessContext = {
+    role: profile?.funcao || "",
+    isAdmin: adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia",
+    profile,
+  };
+  applyAccessVisibility();
 }
 
 window.addEventListener("primeline:session-expired", () => {
@@ -353,18 +427,19 @@ function renderInvoices() {
     const work = works.find(w => w.id === invoice.obra_id);
     const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
     const hasGuide = guides.length > 0;
+    const actionable = canApproveInvoices();
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
-        <div class="approval-fields">
+        <div class="approval-fields ${actionable ? "" : "readonly"}">
           <label class="guide-picker ${hasGuide ? "ready" : ""}">
             ${icon("upload")}<span>${hasGuide ? `${guides.length} GUIA(S) ANEXADA(S)` : "ANEXAR GUIAS"}</span>
-            <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" multiple data-guide-input="${invoice.id}">
+            ${actionable ? `<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" multiple data-guide-input="${invoice.id}">` : ""}
           </label>
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
-        <div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>
+        ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
 }
@@ -381,8 +456,8 @@ function financeCard(invoice) {
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
-    <label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
-    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>
+    ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
+    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
   </article>`;
 }
 
@@ -407,6 +482,7 @@ function renderFinance() {
 
 async function loadData() {
   if (isSupabaseConfigured && !getSession()) return;
+  await loadAccessContext();
   if (!isSupabaseConfigured) {
     works = demoWorks; suppliers = demoSuppliers; subcontracts = demoSubcontracts;
     invoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "pendente");
@@ -425,8 +501,10 @@ async function loadData() {
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
     [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides] = await Promise.all(results.map(result => result.json()));
-    const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel&data_saida=is.null&order=nome");
-    collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
+    if (hasFullAccess() || isAdministrative()) {
+      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel&data_saida=is.null&order=nome");
+      collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
+    } else collaborators = [];
   }
   renderSelectors(); renderInvoices(); renderFinance();
   renderWorks();
@@ -1096,7 +1174,7 @@ function renderMeasurementsTab(work) {
         <div><span>FATURADO</span><strong>${euro.format(invoiced)}</strong></div>
         <div><span>RECEBIDO</span><strong>${euro.format(received)}</strong></div>
       </div>
-      <button class="outline-action" data-new-measurement type="button">＋ NOVO AUTO</button>
+      ${canEditWork() ? `<button class="outline-action" data-new-measurement type="button">＋ NOVO AUTO</button>` : ""}
     </div>
     <div class="measurements-list">
       ${rows.length ? rows.map(item => {
@@ -1125,10 +1203,10 @@ function renderMeasurementsTab(work) {
           <div class="measurement-actions">
             ${autoPdf ? `<button data-workflow-pdf="${encodeURIComponent(autoPdf.url_arquivo)}">VER AUTO PDF</button>` : ""}
             ${invoicePdf ? `<button data-workflow-pdf="${encodeURIComponent(invoicePdf.url_arquivo)}">VER FATURA PDF</button>` : ""}
-            ${item.estado === "rascunho" ? `<button data-measure-action="enviado_cliente" data-id="${item.id}">MARCAR ENVIADO</button>` : ""}
-            ${item.estado === "enviado_cliente" ? `<button data-measure-action="recusado_cliente" data-id="${item.id}">RECUSAR</button><button data-measure-action="aprovado_cliente" data-id="${item.id}">APROVAR</button>` : ""}
-            ${item.estado === "aprovado_cliente" && !billing ? `<button class="dark" data-new-billing="${item.id}">EMITIR FATURA</button>` : ""}
-            ${billing && !paid ? `<button class="dark" data-mark-paid="${billing.id}">MARCAR PAGO</button>` : ""}
+            ${canEditWork() && item.estado === "rascunho" ? `<button data-measure-action="enviado_cliente" data-id="${item.id}">MARCAR ENVIADO</button>` : ""}
+            ${canEditWork() && item.estado === "enviado_cliente" ? `<button data-measure-action="recusado_cliente" data-id="${item.id}">RECUSAR</button><button data-measure-action="aprovado_cliente" data-id="${item.id}">APROVAR</button>` : ""}
+            ${canEditWork() && item.estado === "aprovado_cliente" && !billing ? `<button class="dark" data-new-billing="${item.id}">EMITIR FATURA</button>` : ""}
+            ${canEditWork() && billing && !paid ? `<button class="dark" data-mark-paid="${billing.id}">MARCAR PAGO</button>` : ""}
           </div>
         </article>`;
       }).join("") : `<div class="empty-state"><strong>SEM AUTOS DE MEDIÇÃO</strong><span>Crie o primeiro auto desta obra.</span></div>`}
@@ -1220,8 +1298,29 @@ function renderWorkTab(work) {
   return renderWorkSummary(work);
 }
 
+function renderFinancialWorkSummary(work) {
+  const progress = workProgress(work);
+  return `<div class="work-limited-summary">
+    <div><span>OBRA</span><strong>${safeText(work.numero || "—")} · ${safeText(work.nome || "Sem designação")}</strong></div>
+    <div><span>SITUAÇÃO</span><strong>${safeText(workSituationLabel(work.situacao))}</strong></div>
+    <div><span>INÍCIO</span><strong>${formatOptionalDate(work.data_inicio)}</strong></div>
+    <div><span>FIM PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
+    <div><span>PRAZO CONSUMIDO</span><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
+  </div><div class="readonly-note">RESUMO GERAL · O DETALHE OPERACIONAL DESTA OBRA NÃO ESTÁ DISPONÍVEL AO PAPEL FINANCEIRO</div>`;
+}
+
 function renderWorkDetail(work) {
   if (!work) return;
+  if (isFinancial()) {
+    $("#work-detail").innerHTML = `
+      <div class="work-detail-head">
+        <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
+        <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
+      </div>
+      <div class="work-location">${work.morada || "Morada não indicada"}</div>
+      <div class="work-tab-content">${renderFinancialWorkSummary(work)}</div>`;
+    return;
+  }
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
       <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
@@ -1240,6 +1339,10 @@ function renderWorkDetail(work) {
 }
 
 function switchView(view) {
+  if (!allowedViews().has(view)) {
+    toast("Não tem permissão para aceder a esta área.", "error");
+    view = "overview";
+  }
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
@@ -1372,6 +1475,7 @@ function closeWorkDialog() {
   $("#work-form-error").textContent = "";
 }
 $("#new-work").addEventListener("click", () => {
+  if (!hasFullAccess()) return toast("A criação de obras está reservada à Gerência.", "error");
   renderWorkDirectors();
   $("#work-dialog").hidden = false;
   $("#work-form").numero.focus();
@@ -1383,6 +1487,7 @@ $("#work-dialog").addEventListener("click", event => {
 });
 $("#work-form").addEventListener("submit", async event => {
   event.preventDefault();
+  if (!hasFullAccess()) return toast("A criação de obras está reservada à Gerência.", "error");
   const workForm = event.currentTarget;
   const button = workForm.querySelector('button[type="submit"]');
   const fields = Object.fromEntries(new FormData(workForm));
@@ -2018,6 +2123,7 @@ $("#recovery-form").addEventListener("submit", async event => {
 
 form.addEventListener("submit", async event => {
   event.preventDefault();
+  if (!canInsertInvoices()) return toast("O lançamento de faturas está reservado ao Administrativo e à Gerência.", "error");
   const payload = Object.fromEntries(new FormData(form));
   payload.valor = Number(payload.valor); payload.subempreitada_id ||= null;
   const submit = form.querySelector(".primary-button"); submit.disabled = true; submit.firstChild.textContent = "A GUARDAR… ";
@@ -2078,6 +2184,7 @@ $("#invoice-list").addEventListener("click", async event => {
     return;
   }
   const button = event.target.closest("[data-action]"); if (!button) return;
+  if (!canApproveInvoices()) return toast("Não tem permissão para aprovar ou recusar faturas.", "error");
   const invoice = invoices.find(item => String(item.id) === button.dataset.id); if (!invoice) return;
   const decision = button.dataset.action;
   const card = button.closest("[data-invoice-card]");
@@ -2111,12 +2218,9 @@ $("#invoice-list").addEventListener("click", async event => {
     }
   }
   if (isSupabaseConfigured) {
-    const result = await supabase(`faturas?id=eq.${invoice.id}&estado_aprovacao=eq.pendente`, {
-      method: "PATCH", body: JSON.stringify({
-        estado_aprovacao: decision,
-        aprovado_por: session?.user?.id || null,
-        data_aprovacao: new Date().toISOString(),
-      }),
+    const result = await supabase("rpc/fn_decidir_fatura", {
+      method: "POST",
+      body: JSON.stringify({ p_fatura_id: invoice.id, p_decisao: decision }),
     });
     if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); button.disabled = false; return; }
   }
@@ -2169,15 +2273,16 @@ $("#finance-board").addEventListener("click", async event => {
   }
   const button = event.target.closest("[data-mark-paid]");
   if (!button) return;
+  if (!canPayInvoices()) return toast("O pagamento está reservado ao papel Financeiro.", "error");
   const invoice = financeInvoices.find(item => String(item.id) === button.dataset.markPaid);
   if (!invoice) return;
   button.disabled = true;
   const paymentDate = button.closest(".finance-card")?.querySelector("[data-payment-date]")?.value || new Date().toISOString().slice(0, 10);
   const paidAt = `${paymentDate}T12:00:00`;
   if (isSupabaseConfigured) {
-    const result = await supabase(`faturas?id=eq.${invoice.id}&estado_aprovacao=eq.aprovado`, {
-      method: "PATCH",
-      body: JSON.stringify({ estado_pagamento: "pago", pago_por: session?.user?.id || null, data_pagamento: paymentDate }),
+    const result = await supabase("rpc/fn_marcar_fatura_paga", {
+      method: "POST",
+      body: JSON.stringify({ p_fatura_id: invoice.id, p_data_pagamento: paymentDate }),
     });
     if (!result.ok) {
       toast(`Não foi possível marcar a fatura como paga: ${await result.text()}`, "error");
@@ -2187,7 +2292,7 @@ $("#finance-board").addEventListener("click", async event => {
   }
   invoice.data_pagamento = paidAt;
   invoice.estado_pagamento = "pago";
-  invoice.pago_por = session?.user?.id || null;
+  invoice.pago_por = accessContext.profile?.id || null;
   renderFinance();
   toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
 });

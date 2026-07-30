@@ -30,7 +30,7 @@ const selectCurrentContract = contracts => [...contracts].sort((a, b) => {
 export function createProductionDashboard(options) {
   const {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
-    getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView,
+    getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView, getAccessContext,
   } = options;
   const emptyOverviewState = () => ({
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
@@ -152,7 +152,10 @@ export function createProductionDashboard(options) {
     const financeInvoices = getFinanceInvoices();
     const activeWorks = works.filter(work => work.situacao === "em_curso");
     const unpaid = financeInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado" && invoice.estado_pagamento === "por_pagar");
-    const role = overviewState.profile?.funcao || (isSupabaseConfigured ? "administrativo" : "gerencia");
+    const access = typeof getAccessContext === "function" ? getAccessContext() : {};
+    const role = access.isAdmin || access.role === "gerencia"
+      ? "gerencia"
+      : overviewState.profile?.funcao || access.role || (isSupabaseConfigured ? "administrativo" : "gerencia");
     document.body.dataset.userRole = role;
     const responsibleWorkIds = new Set(overviewState.responsibilities.map(row => row.obra_id));
     const isProductionRole = ["diretor_obra", "preparador"].includes(role);
