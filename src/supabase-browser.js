@@ -121,9 +121,13 @@ export async function updateRecoveryPassword(accessToken, password) {
   return payload;
 }
 
-function storageObjectUrl(path, mode = "object") {
+function storageBucketUrl(bucket, path, mode = "object") {
   const encodedPath = path.split("/").map(encodeURIComponent).join("/");
-  return `${url}/storage/v1/${mode}/faturas/${encodedPath}`;
+  return `${url}/storage/v1/${mode}/${encodeURIComponent(bucket)}/${encodedPath}`;
+}
+
+function storageObjectUrl(path, mode = "object") {
+  return storageBucketUrl("faturas", path, mode);
 }
 
 export async function uploadInvoicePdf(file, obraId) {
@@ -219,6 +223,54 @@ export async function downloadInvoicePdf(objectPath) {
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.message || payload.error || "Não foi possível abrir o PDF.");
+  }
+  return response.blob();
+}
+
+const WORK_DOCUMENT_EXTENSIONS = new Set([
+  "pdf", "jpg", "jpeg", "png", "webp", "heic",
+  "xls", "xlsx", "doc", "docx", "mpp", "dwg", "dxf", "zip", "txt",
+]);
+
+export async function uploadWorkDocument(file, obraId, documentType) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  const extension = file.name.split(".").pop()?.toLowerCase() || "";
+  if (!WORK_DOCUMENT_EXTENSIONS.has(extension)) {
+    throw new Error("Formato não suportado. Use PDF, imagem, Excel, Word, MPP, DWG/DXF, ZIP ou TXT.");
+  }
+  if (file.size > 25 * 1024 * 1024) throw new Error("O documento excede o limite de 25 MB.");
+  const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-140) || `documento.${extension || "bin"}`;
+  const safeType = String(documentType || "outro").replace(/[^a-z0-9_-]/gi, "-");
+  const objectPath = `${obraId}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
+  const response = await fetch(storageBucketUrl("documentos", objectPath), {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": file.type || "application/octet-stream",
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || payload.error || "Não foi possível enviar o documento.");
+  return objectPath;
+}
+
+export async function downloadWorkDocument(objectPath) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  const response = await fetch(storageBucketUrl("documentos", objectPath, "object/authenticated"), {
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.message || payload.error || "Não foi possível abrir o documento.");
   }
   return response.blob();
 }

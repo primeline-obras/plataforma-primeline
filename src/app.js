@@ -1,4 +1,4 @@
-import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
+import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=6";
 import { createPlanningModule } from "./planning.js?v=1";
@@ -36,7 +36,8 @@ let localPdfUrl = "";
 let openedPdfUrl = "";
 let activeView = "overview";
 let selectedWorkId = "";
-let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], error: "", procurementError: "", billingError: "" };
+let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {}, canEditDocuments: false, error: "", procurementError: "", billingError: "", workDocumentsError: "" };
+const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
 let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], loadedWeek: "", error: "" };
@@ -891,7 +892,7 @@ function workProgress(work) {
 async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
-  workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], error: "", procurementError: "", billingError: "" };
+  workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {}, canEditDocuments: false, error: "", procurementError: "", billingError: "", workDocumentsError: "" };
   renderWorks();
   const work = works.find(item => item.id === workId);
   $("#work-detail").innerHTML = `<div class="empty-state">A CARREGAR DADOS DA OBRA…</div>`;
@@ -911,9 +912,13 @@ async function loadWorkDetails(workId) {
       billings: [],
       billingLinks: [],
       documents: [],
+      workDocuments: [],
+      documentUsers: {},
+      canEditDocuments: true,
       error: "",
       procurementError: "",
       billingError: "",
+      workDocumentsError: "",
     };
     renderWorkDetail(work);
     return;
@@ -964,6 +969,24 @@ async function loadWorkDetails(workId) {
     workDetails.consultations = await consultationsResult.json();
     workDetails.payments = await paymentsResult.json();
   }
+  const [workDocumentsResult, editPermissionResult] = await Promise.all([
+    supabase(`documentos_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=criado_em.desc`),
+    supabase("rpc/fn_pode_editar_documentos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: workId }) }),
+  ]);
+  if (workDocumentsResult.ok) {
+    workDetails.workDocuments = await workDocumentsResult.json();
+    const userIds = [...new Set(workDetails.workDocuments.map(item => item.enviado_por).filter(Boolean))];
+    if (userIds.length) {
+      const usersResult = await supabase(`utilizadores?select=id,nome&id=in.(${userIds.map(encodeURIComponent).join(",")})`);
+      if (usersResult.ok) {
+        workDetails.documentUsers = Object.fromEntries((await usersResult.json()).map(user => [user.id, user.nome]));
+      }
+    }
+  } else {
+    const detail = await workDocumentsResult.json().catch(() => ({}));
+    workDetails.workDocumentsError = detail.message || "Não foi possível consultar os documentos desta obra.";
+  }
+  if (editPermissionResult.ok) workDetails.canEditDocuments = Boolean(await editPermissionResult.json());
   renderWorkDetail(work);
 }
 
@@ -1112,10 +1135,84 @@ function renderMeasurementsTab(work) {
     </div>`;
 }
 
+const WORK_DOCUMENT_TYPES = [
+  ["contrato", "Contrato"],
+  ["orcamento", "Orçamento"],
+  ["plantas_projeto", "Plantas / Projeto"],
+  ["licencas", "Licenças"],
+  ["planeamento_detalhado", "Planeamento Detalhado"],
+  ["outro", "Outro"],
+];
+
+function safeText(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
+  })[character]);
+}
+
+function workDocumentLabel(type) {
+  return WORK_DOCUMENT_TYPES.find(([value]) => value === type)?.[1] || type || "Outro";
+}
+
+function workDocumentExtension(name) {
+  return String(name || "").split(".").pop()?.toLowerCase() || "";
+}
+
+function canPreviewWorkDocument(document) {
+  return ["pdf", "jpg", "jpeg", "png", "webp", "heic"].includes(workDocumentExtension(document.nome_arquivo));
+}
+
+function renderWorkDocumentsTab() {
+  const grouped = new Map(WORK_DOCUMENT_TYPES.map(([type]) => [type, []]));
+  workDetails.workDocuments.forEach(document => {
+    const type = grouped.has(document.tipo) ? document.tipo : "outro";
+    grouped.get(type).push(document);
+  });
+  return `
+    ${workDetails.workDocumentsError ? `<div class="work-warning"><strong>DOCUMENTOS INDISPONÍVEIS</strong><span>${safeText(workDetails.workDocumentsError)} Execute a migração de documentos por obra.</span></div>` : ""}
+    ${workDetails.canEditDocuments ? `<form class="work-document-upload" id="work-document-upload">
+      <div>
+        <p class="eyebrow">ARQUIVO DA OBRA</p>
+        <h3>ADICIONAR DOCUMENTO</h3>
+        <span>PDF, imagem, Excel, Word, MS Project, DWG/DXF, ZIP ou TXT · máximo 25 MB</span>
+      </div>
+      <label>TIPO<div class="select-wrap"><select name="tipo" required>${WORK_DOCUMENT_TYPES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select><b>⌄</b></div></label>
+      <label class="work-document-file">FICHEIRO<input name="arquivo" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.doc,.docx,.mpp,.dwg,.dxf,.zip,.txt"></label>
+      <button class="primary-button" type="submit">ENVIAR <span>→</span></button>
+      <p class="form-error"></p>
+    </form>` : `<div class="work-document-readonly"><strong>CONSULTA DE DOCUMENTOS</strong><span>Tem acesso de leitura. O envio está reservado à equipa que pode editar esta obra.</span></div>`}
+    <div class="work-document-groups">
+      ${WORK_DOCUMENT_TYPES.map(([type, label]) => {
+        const documents = grouped.get(type);
+        return `<section class="work-document-group">
+          <header><div><p class="eyebrow">${label}</p><h3>${label.toUpperCase()}</h3></div><span>${documents.length}</span></header>
+          <div class="work-document-list">
+            ${documents.length ? documents.map(document => {
+              const uploader = workDetails.documentUsers[document.enviado_por] || "Utilizador";
+              const createdAt = document.criado_em ? prettyDate.format(new Date(document.criado_em)) : "—";
+              const path = encodeURIComponent(document.arquivo_url || "");
+              return `<article class="work-document-row">
+                <div class="work-document-icon">${safeText(workDocumentExtension(document.nome_arquivo).slice(0, 4).toUpperCase() || "DOC")}</div>
+                <div class="work-document-name"><strong title="${safeText(document.nome_arquivo)}">${safeText(document.nome_arquivo)}</strong><span>${safeText(workDocumentLabel(document.tipo))}</span></div>
+                <div class="work-document-meta"><span>ENVIADO POR</span><strong>${safeText(uploader)}</strong></div>
+                <div class="work-document-meta"><span>DATA</span><strong>${safeText(createdAt)}</strong></div>
+                <div class="work-document-actions">
+                  ${canPreviewWorkDocument(document) ? `<button type="button" data-work-document-preview="${path}" data-document-name="${safeText(document.nome_arquivo)}">PRÉ-VISUALIZAR</button>` : ""}
+                  <button type="button" data-work-document-download="${path}" data-document-name="${safeText(document.nome_arquivo)}">DESCARREGAR</button>
+                </div>
+              </article>`;
+            }).join("") : `<div class="work-document-empty">SEM DOCUMENTOS NESTA CATEGORIA</div>`}
+          </div>
+        </section>`;
+      }).join("")}
+    </div>`;
+}
+
 function renderWorkTab(work) {
   if (selectedWorkTab === "subcontracts") return renderSubcontractsTab(work);
   if (selectedWorkTab === "measurements") return renderMeasurementsTab(work);
   if (selectedWorkTab === "phases") return `<div class="empty-state"><strong>FASES</strong><span>Este separador será desenvolvido numa próxima etapa.</span></div>`;
+  if (selectedWorkTab === "documents") return renderWorkDocumentsTab();
   return renderWorkSummary(work);
 }
 
@@ -1133,6 +1230,7 @@ function renderWorkDetail(work) {
       <button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
       <button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
       <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
+      <button data-work-tab="documents" class="${selectedWorkTab === "documents" ? "active" : ""}">DOCUMENTOS</button>
     </nav>
     <div class="work-tab-content">${renderWorkTab(work)}</div>`;
 }
@@ -1483,6 +1581,60 @@ function openPaymentDialog(billingId) {
 
 $("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
 $("#workflow-dialog").addEventListener("click", event => { if (event.target === $("#workflow-dialog") || event.target.closest("[data-close-workflow]")) closeWorkflowDialog(); });
+$("#work-detail").addEventListener("submit", async event => {
+  if (event.target.id !== "work-document-upload") return;
+  event.preventDefault();
+  const uploadForm = event.target;
+  const file = uploadForm.elements.arquivo.files[0];
+  const type = uploadForm.elements.tipo.value;
+  const submitButton = uploadForm.querySelector('button[type="submit"]');
+  const errorNode = uploadForm.querySelector(".form-error");
+  if (!file) return;
+  submitButton.disabled = true;
+  errorNode.textContent = "";
+  try {
+    let document;
+    if (isSupabaseConfigured) {
+      const objectPath = await uploadWorkDocument(file, selectedWorkId, type);
+      const response = await supabase("rpc/fn_registar_documento_obra", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          p_obra_id: selectedWorkId,
+          p_tipo: type,
+          p_nome_arquivo: file.name,
+          p_arquivo_url: objectPath,
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.message || "O ficheiro foi enviado, mas não foi possível registar o documento.");
+      }
+      document = await response.json();
+      if (Array.isArray(document)) [document] = document;
+    } else {
+      const localPath = `local:${crypto.randomUUID()}`;
+      localWorkDocumentFiles.set(localPath, file);
+      document = {
+        id: crypto.randomUUID(),
+        obra_id: selectedWorkId,
+        tipo: type,
+        nome_arquivo: file.name,
+        arquivo_url: localPath,
+        enviado_por: "demo",
+        criado_em: new Date().toISOString(),
+      };
+      workDetails.documentUsers.demo = "Utilizador de demonstração";
+    }
+    workDetails.workDocuments.unshift(document);
+    renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    toast("Documento adicionado à obra.");
+  } catch (error) {
+    errorNode.textContent = error.message;
+  } finally {
+    submitButton.disabled = false;
+  }
+});
 $("#work-detail").addEventListener("click", async event => {
   const meetingButton = event.target.closest("[data-open-meeting]");
   if (meetingButton) return productionDashboard.openMeeting(meetingButton.dataset.openMeeting, "works");
@@ -1503,6 +1655,34 @@ $("#work-detail").addEventListener("click", async event => {
       const blob = await downloadInvoicePdf(decodeURIComponent(pdfButton.dataset.workflowPdf));
       openedPdfUrl = URL.createObjectURL(blob); openPdfModal(openedPdfUrl, "DOCUMENTO");
     } catch (error) { toast(error.message, "error"); }
+    return;
+  }
+  const workDocumentButton = event.target.closest("[data-work-document-preview], [data-work-document-download]");
+  if (workDocumentButton) {
+    const path = decodeURIComponent(workDocumentButton.dataset.workDocumentPreview || workDocumentButton.dataset.workDocumentDownload);
+    const name = workDocumentButton.dataset.documentName || "documento";
+    const preview = Boolean(workDocumentButton.dataset.workDocumentPreview);
+    workDocumentButton.disabled = true;
+    try {
+      const blob = localWorkDocumentFiles.get(path) || await downloadWorkDocument(path);
+      const objectUrl = URL.createObjectURL(blob);
+      if (preview) {
+        openedPdfUrl = objectUrl;
+        openPdfModal(objectUrl, name);
+      } else {
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      }
+    } catch (error) {
+      toast(error.message, "error");
+    } finally {
+      workDocumentButton.disabled = false;
+    }
     return;
   }
   const actionButton = event.target.closest("[data-measure-action]");

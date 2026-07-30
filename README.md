@@ -126,3 +126,11 @@ qualquer utilizador autenticado, executar também
 `supabase/rls_diretorio_subempreiteiros_authenticated.sql`. Este script concede
 apenas leitura de `subempreitadas` e `avaliacoes_subempreiteiro`; não altera as
 permissões de escrita nem concede acesso ao papel `anon`.
+
+## Documentos por obra
+
+Executar `supabase/documentos_obra_workflow.sql` no SQL Editor para ativar a aba
+Documentos dentro de cada obra. O script mantém o bucket privado, cria o bucket
+`documentos` com limite de 25 MB e protege tanto os metadados como os objetos de
+Storage através de `fn_pode_ver_obra(obra_id)` e `fn_pode_editar_obra(obra_id)`.
+O papel `anon` não recebe acesso.
