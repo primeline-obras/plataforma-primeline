@@ -962,3 +962,22 @@ button, input, select, textarea,
   .work-document-readonly { align-items: flex-start; flex-direction: column; }
   .work-document-row { grid-template-columns: 38px minmax(0,1fr); }.work-document-row .work-document-meta { grid-column: 2; }.work-document-actions { grid-column: 1 / -1; justify-content: flex-start; }
 }
+
+/* Estados de consulta e resumo restrito por papel. */
+.readonly-note { margin-top: 12px; padding: 11px 13px; border: 1px solid var(--card-border); border-radius: 9px; background: color-mix(in srgb,var(--card) 92%,var(--bg)); color: var(--text-muted); font: 800 7px "Manrope"; letter-spacing: .55px; }
+.approval-fields.readonly .guide-picker { cursor: default; opacity: .8; }
+.work-limited-summary { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); border: 1px solid var(--card-border); border-radius: 11px; overflow: hidden; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.work-limited-summary > div { min-height: 92px; padding: 18px; border-right: 1px solid var(--card-border); display: grid; align-content: center; gap: 8px; }
+.work-limited-summary > div:last-child { border-right: 0; }
+.work-limited-summary span { color: var(--text-muted); font: 800 7px "Manrope"; letter-spacing: .55px; }
+.work-limited-summary strong { color: var(--text-primary); font-size: 12px; }
+
+@media (max-width: 1050px) {
+  .work-limited-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .work-limited-summary > div:nth-child(2n) { border-right: 0; }
+}
+@media (max-width: 760px) {
+  .work-limited-summary { grid-template-columns: 1fr; }
+  .work-limited-summary > div { border-right: 0; border-bottom: 1px solid var(--card-border); }
+  .work-limited-summary > div:last-child { border-bottom: 0; }
+}

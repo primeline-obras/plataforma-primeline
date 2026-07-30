@@ -138,3 +138,15 @@ O papel `anon` não recebe acesso.
 As categorias disponíveis incluem contrato, orçamento, plantas/projeto, desenhos de
 preparação, atas de reunião, PDEs/RFIs, PAMEs, licenças, planeamento detalhado e
 outros documentos.
+
+## Matriz final de permissões
+
+Executar `supabase/rls_permissoes_finais.sql` integralmente no SQL Editor, com uma
+conta owner, depois das migrações funcionais acima. O script substitui as políticas
+RLS antigas das tabelas usadas pela aplicação, inclui `gerencia` no acesso total,
+separa leitura e escrita por papel e expõe as operações sensíveis de faturas pelas
+funções `fn_decidir_fatura` e `fn_marcar_fatura_paga`.
+
+Depois, executar `supabase/auditoria_rls_permissoes_finais.sql`. A auditoria é apenas
+de leitura e confirma funções, políticas, grants e a existência de contas para a
+validação manual de cada papel.

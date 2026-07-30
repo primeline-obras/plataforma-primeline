@@ -21,7 +21,7 @@ on public.documentos_obra
 for insert
 to authenticated
 with check (
-  public.fn_pode_editar_obra(obra_id)
+  (public.fn_pode_editar_obra(obra_id) or public.fn_e_administrativo())
   and enviado_por = public.fn_utilizador_atual_id()
 );
 
@@ -32,7 +32,8 @@ stable
 security invoker
 set search_path = public
 as $$
-  select public.fn_pode_editar_obra(p_obra_id);
+  select public.fn_pode_editar_obra(p_obra_id)
+    or public.fn_e_administrativo();
 $$;
 
 revoke all on function public.fn_pode_editar_documentos_obra(uuid) from public, anon;
@@ -57,7 +58,7 @@ begin
     raise exception 'Sessão autenticada obrigatória.';
   end if;
 
-  if not public.fn_pode_editar_obra(p_obra_id) then
+  if not (public.fn_pode_editar_obra(p_obra_id) or public.fn_e_administrativo()) then
     raise exception 'Sem permissão para enviar documentos para esta obra.';
   end if;
 
@@ -171,7 +172,10 @@ to authenticated
 with check (
   bucket_id = 'documentos'
   and (storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-  and public.fn_pode_editar_obra(((storage.foldername(name))[1])::uuid)
+  and (
+    public.fn_pode_editar_obra(((storage.foldername(name))[1])::uuid)
+    or public.fn_e_administrativo()
+  )
 );
 
 commit;
