@@ -1,6 +1,7 @@
 import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=6";
+import { createPlanningModule } from "./planning.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -80,7 +81,7 @@ document.querySelector("#root").innerHTML = `
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
         <button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button>⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -148,6 +149,19 @@ document.querySelector("#root").innerHTML = `
             <div class="empty-state"><strong>SELECIONE UMA OBRA</strong><span>Consulte os principais dados e indicadores.</span></div>
           </section>
         </div>
+      </div>
+      <div class="page planning-view" id="planning-view" hidden>
+        <div class="page-heading">
+          <div><p class="eyebrow">PROGRAMAÇÃO DE OBRA</p><h1>PLANEAMENTO</h1><p>Tarefas, dependências e prazos detalhados por fase.</p></div>
+          <div class="planning-work-picker"><label>OBRA</label><div class="select-wrap"><select id="planning-work"></select><b>⌄</b></div></div>
+        </div>
+        <section class="panel planning-panel">
+          <div class="planning-panel-head">
+            <div><p class="eyebrow">CRONOGRAMA DETALHADO</p><h2>FASES E TAREFAS</h2></div>
+            <div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span></div>
+          </div>
+          <div id="planning-content"></div>
+        </section>
       </div>
       <div class="page finance-view" id="finance-view" hidden>
         <div class="page-heading">
@@ -262,6 +276,12 @@ const productionDashboard = createProductionDashboard({
   showView: view => switchView(view),
 });
 productionDashboard.bind();
+const planningModule = createPlanningModule({
+  supabase,
+  isSupabaseConfigured,
+  getWorks: () => works,
+  toast,
+});
 
 function renderUser() {
   const email = session?.user?.email || "utilizador";
@@ -1108,11 +1128,12 @@ function switchView(view) {
   $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
   $("#works-view").hidden = view !== "works";
+  $("#planning-view").hidden = view !== "planning";
   $("#finance-view").hidden = view !== "finance";
   $("#team-view").hidden = view !== "team";
   $("#workforce-view").hidden = view !== "workforce";
-  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "finance", "team", "workforce"].includes(view);
-  if (!["overview", "meeting", "invoices", "works", "finance", "team", "workforce"].includes(view)) {
+  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "planning", "finance", "team", "workforce"].includes(view);
+  if (!["overview", "meeting", "invoices", "works", "planning", "finance", "team", "workforce"].includes(view)) {
     const labels = { documents: "DOCUMENTOS" };
     $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
   }
@@ -1121,6 +1142,7 @@ function switchView(view) {
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
   if (view === "finance") renderFinance();
+  if (view === "planning") planningModule.show();
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "overview") productionDashboard.refreshOverview();
   closeSidebar();

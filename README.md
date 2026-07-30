@@ -80,3 +80,30 @@ O fluxo de autos de medição, faturação ao cliente e recebimentos é ativado 
 conteúdo de `supabase/autos_faturacao_workflow.sql`. A migração cria a relação entre
 autos e faturas, permite associar os PDFs através de `documentos` e mantém o papel
 `anon` sem acesso.
+
+## Planeamento detalhado
+
+Executar `supabase/planeamento_detalhado.sql` no SQL Editor para criar as tarefas de
+segundo nível, as dependências e as políticas de acesso. A migração impede
+dependências circulares, recalcula atrasos `fim_inicio` apenas para a frente e
+identifica visualmente as tarefas alteradas automaticamente.
+
+Antes de importar planeamentos reais, suspender o trigger de recálculo e carregar os
+dados:
+
+```sql
+alter table public.planeamento_itens disable trigger trg_recalcular_planeamento;
+```
+
+Depois executar obrigatoriamente:
+
+```sql
+select * from public.fn_auditar_ciclos_planeamento();
+```
+
+Todos os ciclos encontrados devem ser corrigidos. O trigger só pode ser reativado
+quando a auditoria devolver zero linhas:
+
+```sql
+alter table public.planeamento_itens enable trigger trg_recalcular_planeamento;
+```
