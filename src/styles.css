@@ -284,7 +284,7 @@ input::placeholder { color: #acb0b1; }
 .finance-board { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 15px; align-items: start; }
 .finance-column { border: 1px solid #dfe1de; background: #f4f4f1; min-height: 210px; }
 .finance-column-head { height: 50px; padding: 0 15px; background: var(--charcoal); color: white; display: flex; align-items: center; justify-content: space-between; }
-.finance-column-head h2 { font: 700 10px "Manrope"; letter-spacing: 1px; }.finance-column-head span { min-width: 22px; height: 22px; border: 1px solid #656b6d; display: grid; place-items: center; font: 700 8px "Manrope"; }
+.finance-column-head h2 { color: #f7f8f7; font: 700 10px "Manrope"; letter-spacing: 1px; }.finance-column-head span { min-width: 22px; height: 22px; border: 1px solid #656b6d; color: #f7f8f7; display: grid; place-items: center; font: 700 8px "Manrope"; }
 .finance-column-list { padding: 10px; display: flex; flex-direction: column; gap: 9px; }
 .finance-card { background: white; border: 1px solid #dcdfdc; padding: 14px; }
 .finance-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }.finance-card-top span { color: #9a7a46; font: 700 7px "Manrope"; letter-spacing: .65px; }.finance-card-top strong { font: 700 12px "Manrope"; }
