@@ -2,7 +2,7 @@ import { clearSession, downloadInvoicePdf, getSession, isSupabaseConfigured, req
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=6";
 import { createPlanningModule } from "./planning.js?v=1";
-import { createSubcontractorsModule } from "./subcontractors.js?v=1";
+import { createSubcontractorsModule } from "./subcontractors.js?v=2";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -166,8 +166,7 @@ document.querySelector("#root").innerHTML = `
       </div>
       <div class="page subcontractors-view" id="subcontractors-view" hidden>
         <div class="page-heading">
-          <div><p class="eyebrow">DIRETÓRIO E PROCUREMENT</p><h1>SUBEMPREITEIROS</h1><p>Mapas comparativos, adjudicações e avaliação do trabalho executado.</p></div>
-          <div class="planning-work-picker"><label>OBRA</label><div class="select-wrap"><select id="subcontractors-work"></select><b>⌄</b></div></div>
+          <div><p class="eyebrow">BASE DE PARCEIROS</p><h1>SUBEMPREITEIROS</h1><p>Diretório geral, experiência em obra e avaliação histórica.</p></div>
         </div>
         <div id="subcontractors-content"></div>
       </div>
@@ -295,6 +294,7 @@ const subcontractorsModule = createSubcontractorsModule({
   isSupabaseConfigured,
   getWorks: () => works,
   getSuppliers: () => suppliers,
+  getSubcontracts: () => subcontracts,
   euro,
   toast,
 });
