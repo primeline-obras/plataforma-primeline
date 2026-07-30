@@ -67,9 +67,9 @@ order by c.relname;
 
 -- 5. Contas disponíveis para testar cada papel no frontend.
 select
-  papel,
-  count(u.id) as utilizadores_ativos,
-  count(u.auth_user_id) as contas_auth_ligadas,
+  papeis.papel,
+  count(distinct u.id) as utilizadores_ativos,
+  count(distinct u.auth_user_id) as contas_auth_ligadas,
   count(distinct r.obra_id) as obras_associadas
 from unnest(array[
   'gerencia',
@@ -79,13 +79,13 @@ from unnest(array[
   'preparador'
 ]) as papeis(papel)
 left join public.utilizadores u
-  on u.funcao = papel and coalesce(u.ativo, true)
+  on u.funcao = papeis.papel and coalesce(u.ativo, true)
 left join public.obra_responsaveis r
   on r.utilizador_id = u.id
-group by papel
+group by papeis.papel
 order by array_position(
   array['gerencia','administrativo','financeiro','diretor_obra','preparador'],
-  papel
+  papeis.papel
 );
 
 -- 6. Administradores mantêm acesso total independentemente da função.

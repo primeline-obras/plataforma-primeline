@@ -705,6 +705,13 @@ button, input, select, textarea,
 .workforce-edit-banner button { padding: 7px 11px; border: 1px solid var(--info-border); background: transparent; color: var(--info-text); font-size: 7px; font-weight: 800; }
 .workforce-edit-banner label { display: flex; align-items: center; gap: 7px; font-size: 7px; font-weight: 800; letter-spacing: .7px; }
 .workforce-edit-banner select { min-height: 32px; padding: 0 28px 0 9px; border: 1px solid var(--info-border); background: var(--card); color: var(--text-primary); font-size: 8px; }
+.workforce-new-line { margin: 16px 0 -8px; padding: 14px 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); display: grid; grid-template-columns: minmax(150px,.7fr) minmax(240px,1.5fr) auto auto; align-items: end; gap: 12px; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
+.workforce-new-line[hidden] { display: none; }
+.workforce-new-line > div { display: grid; gap: 6px; }
+.workforce-new-line span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.workforce-new-line select, .workforce-new-line input { min-height: 38px; padding: 0 11px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--bg); color: var(--text-primary); font-size: 9px; }
+.workforce-new-line button { min-height: 38px; padding: 0 13px; border: 1px solid var(--card-border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-size: 7px; font-weight: 800; }
+.workforce-new-line button[type="submit"] { border-color: var(--sidebar-bg); background: var(--sidebar-bg); color: #fff; }
 .workforce-roster { position: sticky; top: 74px; z-index: 12; margin: 16px 0 -8px; padding: 14px 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); display: flex; align-items: center; gap: 18px; box-shadow: 0 3px 10px rgba(0,0,0,.1); }
 .workforce-roster[hidden] { display: none; }
 .workforce-roster .roster-intro { flex: 0 0 150px; display: grid; gap: 4px; }
@@ -724,6 +731,10 @@ button, input, select, textarea,
 .fixed-work-team { display: grid; gap: 3px; margin-top: 4px; }
 .fixed-work-team small { display: grid; grid-template-columns: 48px 1fr; gap: 4px; color: var(--text-secondary); font-size: 6px; line-height: 1.2; }
 .fixed-work-team small b { color: var(--text-muted); font-size: 6px; letter-spacing: .6px; }
+.workforce-line-type { width: max-content; padding: 4px 7px; border: 1px solid var(--warn-border); border-radius: 999px; background: var(--warn-bg); color: var(--warn-text) !important; }
+.workforce-line-type.pontual { border-color: var(--info-border); background: var(--info-bg); color: var(--info-text) !important; }
+.workforce-custom-name { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--info-border); border-radius: 7px; background: var(--card); color: var(--text-primary); font-size: 11px; font-weight: 800; }
+.workforce-custom-name:focus { outline: 2px solid var(--info-text); outline-offset: 1px; }
 .team-person-chip > span { display: grid; gap: 2px; }
 .team-person-chip > span small { color: var(--text-muted); font-size: 6px; font-weight: 700; text-transform: uppercase; }
 .workforce-grid { width: 100%; display: grid; grid-template-columns: minmax(120px, .6fr) repeat(4, minmax(0, 1fr)); }
@@ -945,6 +956,7 @@ button, input, select, textarea,
   .workforce-roster { align-items: flex-start; flex-wrap: wrap; }
   .workforce-roster .roster-intro { flex-basis: 100%; }
   .workforce-roster .roster-period { margin-left: 0; }
+  .workforce-new-line { grid-template-columns: 1fr; }
   .planning-view .page-heading { align-items: stretch; }
   .planning-work-picker { min-width: 100%; }
   .planning-panel-head { align-items: flex-start; flex-direction: column; }

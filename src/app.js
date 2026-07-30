@@ -49,6 +49,7 @@ let selectedWorkforcePersonId = "";
 let selectedWorkforceSourceDate = "";
 let selectedWorkforceSourcePeriod = "";
 let selectedWorkforcePeriod = "dia_inteiro";
+let pendingWorkforceRows = [];
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -222,7 +223,13 @@ document.querySelector("#root").innerHTML = `
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
           <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div>
         </div>
-        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
+        <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="add-workforce-line" type="button">＋ NOVA LINHA</button><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
+        <form class="workforce-new-line" id="workforce-new-line" hidden>
+          <div><span>TIPO DE LINHA</span><select id="workforce-line-type"><option value="obra">Obra existente</option><option value="garantia">Garantia</option><option value="pontual">Pontual</option></select></div>
+          <div data-workforce-existing><span>OBRA</span><select id="workforce-line-work"></select></div>
+          <div data-workforce-free hidden><span>NOME DA LINHA</span><input id="workforce-line-description" maxlength="120" placeholder="Ex.: Garantia Casa R"></div>
+          <button type="submit">ADICIONAR LINHA</button><button type="button" data-cancel-workforce-line>CANCELAR</button>
+        </form>
         <div class="workforce-roster" id="workforce-roster" hidden></div>
         <div class="team-toolbar">
           <div class="week-navigation">
@@ -624,6 +631,56 @@ function fixedWorkTeam(work) {
   return fixed;
 }
 
+function workforceAllocationType(allocation) {
+  return ["garantia", "pontual"].includes(allocation?.tipo_alocacao) ? allocation.tipo_alocacao : "obra";
+}
+
+function workforceRowKey(allocation) {
+  const type = workforceAllocationType(allocation);
+  if (type === "obra") return allocation?.obra_id ? `obra:${allocation.obra_id}` : "";
+  const description = String(allocation?.descricao_livre || "").trim();
+  return description ? `${type}:${description.toLocaleLowerCase("pt-PT")}` : "";
+}
+
+function workforceRows(activeWorks, allocations) {
+  const realWorkIds = new Set(activeWorks.map(work => work.id));
+  allocations.filter(item => workforceAllocationType(item) === "obra" && item.obra_id)
+    .forEach(item => realWorkIds.add(item.obra_id));
+  pendingWorkforceRows.filter(row => row.type === "obra" && row.workId)
+    .forEach(row => realWorkIds.add(row.workId));
+
+  const realRows = [...realWorkIds].map(workId => works.find(work => work.id === workId)).filter(Boolean)
+    .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }))
+    .map(work => ({ key: `obra:${work.id}`, type: "obra", workId: work.id, description: "", work }));
+
+  const customRows = new Map();
+  allocations.filter(item => workforceAllocationType(item) !== "obra").forEach(item => {
+    const key = workforceRowKey(item);
+    if (key && !customRows.has(key)) customRows.set(key, {
+      key,
+      type: workforceAllocationType(item),
+      workId: "",
+      description: String(item.descricao_livre || "").trim(),
+      work: null,
+    });
+  });
+  pendingWorkforceRows.filter(row => row.type !== "obra").forEach(row => {
+    const key = workforceRowKey({ tipo_alocacao: row.type, descricao_livre: row.description });
+    if (key && !customRows.has(key)) customRows.set(key, { key, ...row, workId: "", work: null });
+  });
+  return [...realRows, ...[...customRows.values()].sort((a, b) =>
+    a.type.localeCompare(b.type, "pt-PT") || a.description.localeCompare(b.description, "pt-PT"))];
+}
+
+function renderWorkforceLineEditor() {
+  const select = $("#workforce-line-work");
+  if (!select) return;
+  select.innerHTML = [...works].sort((a, b) =>
+    String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }))
+    .map(work => `<option value="${work.id}">OBRA ${safeText(work.numero || "—")} · ${safeText(work.nome || "Sem designação")}</option>`)
+    .join("");
+}
+
 function renderWorkforceMagnet(person, allocation = null) {
   const period = allocation?.periodo || "";
   const periodLabel = period === "manha" ? "M" : period === "tarde" ? "T" : "";
@@ -643,16 +700,28 @@ function effectiveWorkforceForDate(events, date, personById) {
     dayEvents.filter(item => item.colaborador_id === personId).forEach(event => {
       const eventSlots = event.periodo === "dia_inteiro" ? ["manha", "tarde"] : [event.periodo];
       eventSlots.forEach(slot => {
-      const entry = grouped.get(event.obra_id) || { person, slots: [], sourceEvents: [] };
-      entry.slots.push(slot);
-      entry.sourceEvents.push(event);
-      grouped.set(event.obra_id, entry);
+        const rowKey = workforceRowKey(event);
+        if (!rowKey) return;
+        const entry = grouped.get(rowKey) || {
+          person,
+          slots: [],
+          sourceEvents: [],
+          obra_id: event.obra_id || null,
+          tipo_alocacao: workforceAllocationType(event),
+          descricao_livre: event.descricao_livre || null,
+        };
+        entry.slots.push(slot);
+        entry.sourceEvents.push(event);
+        grouped.set(rowKey, entry);
       });
     });
-    grouped.forEach((entry, obraId) => {
+    grouped.forEach((entry, rowKey) => {
       const sameSource = entry.sourceEvents.length === 2 && entry.sourceEvents[0].id === entry.sourceEvents[1].id;
       result.push({
-        obra_id: obraId,
+        row_key: rowKey,
+        obra_id: entry.obra_id,
+        tipo_alocacao: entry.tipo_alocacao,
+        descricao_livre: entry.descricao_livre,
         person: entry.person,
         slots: entry.slots,
         allocation: {
@@ -674,6 +743,7 @@ function isVacation(absence) {
 }
 
 function renderTeam() {
+  renderWorkforceLineEditor();
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
@@ -688,6 +758,7 @@ function renderTeam() {
   const activeWorks = works
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
+  const boardRows = workforceRows(activeWorks, allocations);
   const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
 
@@ -706,27 +777,36 @@ function renderTeam() {
   } else {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
-    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
+    const boardHead = `<div class="workforce-grid workforce-grid-head"><div>LINHA / OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
       const vacationPeople = operationalPeople.filter(person => teamData.absences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
       return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para marcar férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
     }).join("")}</div>`;
-    const rows = activeWorks.map(work => {
-      const workAllocations = allocations.filter(item => item.obra_id === work.id);
-      const matchesSearch = workAllocations.some(item => `${personById.get(item.colaborador_id)?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch))
-        || `${work.numero || ""} ${work.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch);
+    const rows = boardRows.map(row => {
+      const work = row.work;
+      const rowAllocations = allocations.filter(item => workforceRowKey(item) === row.key);
+      const rowSearchText = row.type === "obra"
+        ? `${work?.numero || ""} ${work?.nome || ""}`
+        : `${row.type} ${row.description}`;
+      const matchesSearch = rowAllocations.some(item => `${personById.get(item.colaborador_id)?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(workforceSearch))
+        || rowSearchText.toLocaleLowerCase("pt-PT").includes(workforceSearch);
       if (workforceSearch && !matchesSearch) return "";
-      const fixed = fixedWorkTeam(work);
+      const fixed = work ? fixedWorkTeam(work) : [];
+      const rowHeading = row.type === "obra"
+        ? `<span>OBRA ${safeText(work?.numero || "—")}</span><strong title="${safeText(work?.nome || "Sem designação")}">${safeText(compactWorkName(work?.nome || "Sem designação"))}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${safeText(shortPersonName(person.name))}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div>`
+        : `<span class="workforce-line-type ${row.type}">${row.type.toUpperCase()}</span>${workforceEditing
+          ? `<input class="workforce-custom-name" value="${safeText(row.description)}" maxlength="120" data-workforce-rename data-row-type="${row.type}" data-old-description="${encodeURIComponent(row.description)}" aria-label="Nome da linha ${row.type}">`
+          : `<strong title="${safeText(row.description)}">${safeText(row.description)}</strong>`}<div class="fixed-work-team"><small>SEM OBRA FORMAL ASSOCIADA</small></div>`;
       return `<article class="workforce-grid team-work-row">
-        <div class="team-work-name"><span>OBRA ${work.numero || "—"}</span><strong title="${work.nome || "Sem designação"}">${compactWorkName(work.nome || "Sem designação")}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${shortPersonName(person.name)}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div></div>
+        <div class="team-work-name">${rowHeading}</div>
         ${boardWeeks.map((week, weekIndex) => {
           let previousSignature = "";
           let previousEffective = [];
           return `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${weekdays.map((day, dayIndex) => {
             const date = addDaysIso(week, dayIndex);
             const allExact = effectiveWorkforceForDate(allocations, date, personById);
-            const exact = allExact.filter(item => item.obra_id === work.id);
+            const exact = allExact.filter(item => item.row_key === row.key);
             const carried = previousEffective.map(previous => {
-              const reassignedSlots = allExact.filter(item => item.person.id === previous.person.id && item.obra_id !== work.id).flatMap(item => item.slots);
+              const reassignedSlots = allExact.filter(item => item.person.id === previous.person.id && item.row_key !== row.key).flatMap(item => item.slots);
               return { ...previous, slots: previous.slots.filter(slot => !reassignedSlots.includes(slot)) };
             }).filter(item => item.slots.length);
             const effective = exact.length ? exact : carried;
@@ -739,7 +819,7 @@ function renderTeam() {
               : unchanged
                 ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
                 : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
-            return `<div class="workforce-day-cell ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" data-workforce-cell data-work-id="${work.id}" data-date="${date}">${content}</div>`;
+            return `<div class="workforce-day-cell ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}</div>`;
           }).join("")}</div>`;
         }).join("")}
       </article>`;
@@ -758,8 +838,9 @@ function renderTeam() {
   const hoursByPerson = new Map();
   teamData.overtime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
   const visiblePeople = collaborators.filter(person => {
-    const work = workById.get(currentAllocations.find(item => item.colaborador_id === person.id)?.obra_id);
-    return !directorySearch || `${person.nome} ${person.funcao || ""} ${person.nivel || ""} ${work?.numero || ""} ${work?.nome || ""}`.toLocaleLowerCase("pt-PT").includes(directorySearch);
+    const allocation = currentAllocations.find(item => item.colaborador_id === person.id);
+    const work = workById.get(allocation?.obra_id);
+    return !directorySearch || `${person.nome} ${person.funcao || ""} ${person.nivel || ""} ${work?.numero || ""} ${work?.nome || ""} ${allocation?.descricao_livre || ""} ${allocation?.tipo_alocacao || ""}`.toLocaleLowerCase("pt-PT").includes(directorySearch);
   });
   $("#team-result-count").textContent = `${visiblePeople.length} COLABORADOR${visiblePeople.length === 1 ? "" : "ES"} · ${pendingHours.toLocaleString("pt-PT")} H EXTRA POR PAGAR`;
   $("#team-directory").innerHTML = visiblePeople.length ? visiblePeople.map(person => {
@@ -767,10 +848,13 @@ function renderTeam() {
     const work = workById.get(allocation?.obra_id);
     const contract = contractByPerson.get(person.id);
     const absence = currentAbsences.find(item => item.colaborador_id === person.id);
+    const allocationLabel = workforceAllocationType(allocation) === "obra"
+      ? work ? `Obra ${work.numero || "—"}` : "Sem alocação"
+      : `${workforceAllocationType(allocation) === "garantia" ? "Garantia" : "Pontual"} · ${allocation?.descricao_livre || "Sem nome"}`;
     return `<article class="team-directory-row">
       <span class="team-avatar">${personInitials(person.nome)}</span>
       <div class="team-person-main"><strong>${person.nome}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
-      <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : work ? `Obra ${work.numero || "—"}` : "Sem alocação"}</strong></div>
+      <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : safeText(allocationLabel)}</strong></div>
       <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
     </article>`;
@@ -806,6 +890,7 @@ function setWorkforceEditing(enabled) {
   selectedWorkforceSourcePeriod = "";
   $("#workforce-edit-banner").hidden = !enabled;
   $("#workforce-roster").hidden = !enabled;
+  $("#workforce-new-line").hidden = true;
   $("#remove-workforce-allocation").hidden = true;
   $("#edit-workforce").textContent = enabled ? "A EDITAR…" : "EDITAR QUADRO";
   $("#edit-workforce").classList.toggle("active", enabled);
@@ -814,9 +899,88 @@ function setWorkforceEditing(enabled) {
   renderTeam();
 }
 
-async function saveWorkforceAllocation(personId, date, workId) {
+function toggleWorkforceLineForm(show) {
+  const formElement = $("#workforce-new-line");
+  formElement.hidden = !show;
+  if (!show) {
+    $("#workforce-line-type").value = "obra";
+    $("#workforce-line-description").value = "";
+  }
+  const custom = $("#workforce-line-type").value !== "obra";
+  formElement.querySelector("[data-workforce-existing]").hidden = custom;
+  formElement.querySelector("[data-workforce-free]").hidden = !custom;
+  if (show) (custom ? $("#workforce-line-description") : $("#workforce-line-work")).focus();
+}
+
+function addWorkforceLine(type, workId, description) {
+  const row = type === "obra"
+    ? { type: "obra", workId, description: "" }
+    : { type, workId: "", description: String(description || "").trim() };
+  const key = workforceRowKey({ obra_id: row.workId, tipo_alocacao: row.type, descricao_livre: row.description });
+  if (!key) return false;
+  const activeWorks = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
+  if (workforceRows(activeWorks, teamData.allocations).some(item => item.key === key)) return false;
+  pendingWorkforceRows.push(row);
+  return true;
+}
+
+async function renameWorkforceLine(type, oldDescription, newDescription) {
+  const oldName = String(oldDescription || "").trim();
+  const newName = String(newDescription || "").trim();
+  if (!newName) {
+    toast("O nome da linha é obrigatório.", "error");
+    renderTeam();
+    return;
+  }
+  if (oldName === newName) return;
+  const newKey = workforceRowKey({ tipo_alocacao: type, descricao_livre: newName });
+  const duplicate = workforceRows([], teamData.allocations).some(row =>
+    row.key === newKey && row.description !== oldName);
+  if (duplicate) {
+    toast("Já existe uma linha deste tipo com esse nome.", "error");
+    renderTeam();
+    return;
+  }
+
+  pendingWorkforceRows = pendingWorkforceRows.map(row =>
+    row.type === type && row.description === oldName ? { ...row, description: newName } : row);
+  const persisted = teamData.allocations.some(item =>
+    workforceAllocationType(item) === type && String(item.descricao_livre || "").trim() === oldName);
+  if (!persisted || !isSupabaseConfigured) {
+    teamData.allocations.forEach(item => {
+      if (workforceAllocationType(item) === type && String(item.descricao_livre || "").trim() === oldName) item.descricao_livre = newName;
+    });
+    renderTeam();
+    return;
+  }
+
+  const response = await supabase(`quadro_pessoal_alocacao?tipo_alocacao=eq.${encodeURIComponent(type)}&descricao_livre=eq.${encodeURIComponent(oldName)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ descricao_livre: newName }),
+  });
+  if (!response.ok) {
+    toast(`Não foi possível alterar o nome da linha: ${await response.text()}`, "error");
+    pendingWorkforceRows = pendingWorkforceRows.map(row =>
+      row.type === type && row.description === newName ? { ...row, description: oldName } : row);
+    renderTeam();
+    return;
+  }
+  await loadTeamData(true);
+  toast("Nome da linha atualizado.");
+}
+
+async function saveWorkforceAllocation(personId, date, target) {
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
+  const type = ["garantia", "pontual"].includes(target?.type) ? target.type : "obra";
+  const workId = type === "obra" ? target?.workId || null : null;
+  const description = type === "obra" ? null : String(target?.description || "").trim();
+  const targetKey = workforceRowKey({ obra_id: workId, tipo_alocacao: type, descricao_livre: description });
+  if (!targetKey || (type !== "obra" && !description)) {
+    toast("A linha de destino não está corretamente identificada.", "error");
+    return;
+  }
   const period = selectedWorkforcePeriod;
   const vacation = teamData.absences.find(item => item.colaborador_id === personId && item.data === date && isVacation(item));
   if (vacation) {
@@ -825,7 +989,7 @@ async function saveWorkforceAllocation(personId, date, workId) {
   }
   const dayAllocations = teamData.allocations.filter(item => item.colaborador_id === personId && item.data === date);
   const conflicting = dayAllocations.filter(item => period === "dia_inteiro" || item.periodo === "dia_inteiro" || item.periodo === period);
-  const alreadyThere = conflicting.length === 1 && conflicting[0].obra_id === workId && conflicting[0].periodo === period;
+  const alreadyThere = conflicting.length === 1 && workforceRowKey(conflicting[0]) === targetKey && conflicting[0].periodo === period;
   if (alreadyThere) {
     toast("O colaborador já se encontra nessa posição.");
     return;
@@ -846,7 +1010,7 @@ async function saveWorkforceAllocation(personId, date, workId) {
   } else if (conflicting.length) {
     response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}&periodo=eq.${period}`, {
       method: "PATCH",
-      body: JSON.stringify({ obra_id: workId, criado_por: currentUser?.id || null }),
+      body: JSON.stringify({ obra_id: workId, tipo_alocacao: type, descricao_livre: description, criado_por: currentUser?.id || null }),
     });
     if (response.ok) {
       selectedWorkforceSourceDate = "";
@@ -862,7 +1026,7 @@ async function saveWorkforceAllocation(personId, date, workId) {
     response = await supabase("quadro_pessoal_alocacao", {
       method: "POST",
       headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, semana_inicio: mondayIso(date), data: date, periodo: period, criado_por: currentUser?.id || null }),
+      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, tipo_alocacao: type, descricao_livre: description, semana_inicio: mondayIso(date), data: date, periodo: period, criado_por: currentUser?.id || null }),
     });
   }
   if (!response.ok) {
@@ -924,7 +1088,7 @@ async function loadTeamData(force = false) {
   const boardStart = addDaysIso(selectedTeamWeek, -7);
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const results = await Promise.all([
-    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
+    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
     supabase(`ausencias?select=id,colaborador_id,data,tipo&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo"),
     supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
@@ -1399,6 +1563,42 @@ $("#team-directory-search").addEventListener("input", renderTeam);
 $("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
 $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
 $("#remove-workforce-allocation").addEventListener("click", removeWorkforceAllocation);
+$("#add-workforce-line").addEventListener("click", () => toggleWorkforceLineForm($("#workforce-new-line").hidden));
+$("#workforce-line-type").addEventListener("change", () => toggleWorkforceLineForm(true));
+$("#workforce-new-line").addEventListener("click", event => {
+  if (event.target.closest("[data-cancel-workforce-line]")) toggleWorkforceLineForm(false);
+});
+$("#workforce-new-line").addEventListener("submit", event => {
+  event.preventDefault();
+  const type = $("#workforce-line-type").value;
+  const workId = $("#workforce-line-work").value;
+  const description = $("#workforce-line-description").value.trim();
+  if (type !== "obra" && !description) {
+    toast("Escreva o nome da linha.", "error");
+    $("#workforce-line-description").focus();
+    return;
+  }
+  if (!addWorkforceLine(type, workId, description)) {
+    toast("Essa linha já existe no quadro.", "error");
+    return;
+  }
+  toggleWorkforceLineForm(false);
+  renderTeam();
+  toast("Linha adicionada. Coloque um íman para a gravar no quadro.");
+});
+$("#team-board").addEventListener("change", async event => {
+  const input = event.target.closest("[data-workforce-rename]");
+  if (!input || !workforceEditing) return;
+  await renameWorkforceLine(input.dataset.rowType, decodeURIComponent(input.dataset.oldDescription || ""), input.value);
+});
+$("#team-board").addEventListener("keydown", event => {
+  const input = event.target.closest("[data-workforce-rename]");
+  if (!input) return;
+  if (event.key === "Enter") {
+    event.preventDefault();
+    input.blur();
+  } else if (event.key === "Escape") renderTeam();
+});
 $("#team-board").addEventListener("click", async event => {
   if (!workforceEditing) return;
   const vacationBox = event.target.closest("[data-vacation-week]");
@@ -1427,7 +1627,11 @@ $("#team-board").addEventListener("click", async event => {
     return;
   }
   cell.classList.add("saving");
-  await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.date, cell.dataset.workId);
+  await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.date, {
+    type: cell.dataset.allocationType,
+    workId: cell.dataset.workId,
+    description: decodeURIComponent(cell.dataset.description || ""),
+  });
 });
 $("#workforce-roster").addEventListener("click", event => {
   if (!workforceEditing) return;
