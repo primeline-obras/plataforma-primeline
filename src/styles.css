@@ -840,54 +840,60 @@ button, input, select, textarea,
 .planning-state.em_execucao { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
 .planning-phase-empty { padding: 25px 48px; background: var(--card); color: var(--text-muted); font-size: 8px; font-weight: 800; letter-spacing: .7px; }
 
-/* Diretório e mapas comparativos de subempreiteiros */
+/* Diretório global de subempreiteiros */
 .subcontractors-kpis { margin-top: 24px; display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
 .subcontractors-kpis article { min-height: 105px; padding: 22px; border: 1px solid var(--card-border); border-radius: 11px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.14); display: grid; align-content: space-between; }
 .subcontractors-kpis span { color: var(--text-muted); font: 800 7px "Manrope"; letter-spacing: .8px; }
-.subcontractors-kpis strong { color: var(--text-primary); font: 850 24px "Manrope"; }
-.subcontractors-section { margin-top: 20px; padding: 24px; border: 1px solid var(--card-border); border-radius: 11px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
-.subcontractors-section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding-bottom: 17px; border-bottom: 1px solid var(--card-border); }
-.subcontractors-section-head h2 { margin: 4px 0 0; font-size: 17px; }
-.subcontractors-section-head > span { color: var(--text-muted); font: 800 7px "Manrope"; letter-spacing: .8px; }
-.comparison-list, .subcontract-directory-list { display: grid; gap: 14px; margin-top: 17px; }
-.comparison-card { overflow: hidden; border: 1px solid var(--card-border); border-radius: 10px; background: color-mix(in srgb,var(--card) 94%,var(--bg)); }
-.comparison-head { padding: 17px 19px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.comparison-head span { color: var(--brand-amber); font: 800 7px "Manrope"; letter-spacing: .7px; }
-.comparison-head h3 { margin: 4px 0 0; font-size: 14px; }
-.comparison-status { padding: 5px 8px; border: 1px solid var(--warn-border); border-radius: 999px; background: var(--warn-bg); color: var(--warn-text); font: 800 7px "Manrope"; }
-.comparison-status.adjudicado { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
-.comparison-scroll { overflow-x: auto; border-top: 1px solid var(--card-border); }
-.comparison-table { width: 100%; min-width: 650px; border-collapse: collapse; }
-.comparison-table th, .comparison-table td { min-width: 145px; padding: 11px 13px; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); text-align: right; }
-.comparison-table th:first-child, .comparison-table td:first-child { min-width: 230px; text-align: left; }
-.comparison-table th { background: var(--sidebar-bg); color: #fff; font: 800 7px "Manrope"; letter-spacing: .6px; }
-.comparison-table td { color: var(--text-secondary); font-size: 9px; }
-.comparison-total td { color: var(--text-primary); font-weight: 850; }
-.comparison-candidates { padding: 13px; display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 9px; }
-.comparison-candidates section { padding: 13px; border: 1px solid var(--card-border); border-radius: 9px; display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; }
-.comparison-candidates section.chosen { border-color: var(--pos-border); background: var(--pos-bg); }
-.comparison-candidates section div { display: grid; gap: 3px; }
-.comparison-candidates section div strong { font-size: 10px; }.comparison-candidates section div span { color: var(--text-muted); font-size: 8px; }
-.comparison-candidates section > b { font-size: 12px; }
-.comparison-candidates section button, .comparison-candidates section em { grid-column: 1 / -1; min-height: 32px; border: 1px solid var(--text-primary); border-radius: 8px; background: transparent; color: var(--text-primary); font: 800 7px "Manrope"; font-style: normal; }
-.comparison-candidates section em { min-height: auto; padding: 7px; border-color: var(--pos-border); color: var(--pos-text); text-align: center; }
-.comparison-candidates section em.read-only { border-color: var(--card-border); color: var(--text-muted); }
-.subcontract-contract-alert, .subcontract-contract-na { width: fit-content; padding: 4px 6px; border-radius: 999px; font: 800 6px "Manrope"; letter-spacing: .4px; }
-.subcontract-contract-alert { border: 1px solid var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
-.subcontract-contract-na { color: var(--text-muted); background: color-mix(in srgb,var(--card-border) 35%,transparent); }
-.subcontract-directory-card { padding: 18px; border: 1px solid var(--card-border); border-radius: 10px; display: grid; grid-template-columns: minmax(190px,1.3fr) minmax(190px,.8fr) minmax(260px,1.3fr) minmax(150px,.7fr); gap: 18px; align-items: center; }
-.subcontract-directory-card > div:first-child span { color: var(--brand-amber); font: 800 7px "Manrope"; }.subcontract-directory-card h3 { margin: 4px 0; font-size: 13px; }.subcontract-directory-card p { margin: 0; color: var(--text-secondary); font-size: 9px; }
-.subcontract-directory-value { display: grid; gap: 7px; }.subcontract-directory-value > strong { font-size: 14px; }
-.subcontract-directory-card dl { margin: 0; display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-.subcontract-directory-card dl div { display: grid; gap: 4px; }.subcontract-directory-card dt { color: var(--text-muted); font: 800 6px "Manrope"; }.subcontract-directory-card dd { margin: 0; font-size: 9px; font-weight: 750; }
-.subcontract-directory-state { display: grid; justify-items: start; gap: 7px; }.subcontract-directory-state > span { padding: 5px 8px; border: 1px solid var(--warn-border); border-radius: 999px; background: var(--warn-bg); color: var(--warn-text); font: 800 7px "Manrope"; }.subcontract-directory-state > span.concluido { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
-.subcontract-directory-state small { color: var(--pos-text); font: 800 6px "Manrope"; }.subcontract-directory-state button { min-height: 32px; padding: 0 10px; border: 1px solid var(--text-primary); border-radius: 8px; background: transparent; color: var(--text-primary); font: 800 7px "Manrope"; }
+.subcontractors-kpis strong { color: var(--text-primary); font: 850 22px "Manrope"; }
+.supplier-directory-panel, .supplier-detail { margin-top: 20px; overflow: hidden; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+.supplier-directory-toolbar { padding: 18px; display: grid; grid-template-columns: minmax(280px,1fr) 210px 210px; gap: 12px; border-bottom: 1px solid var(--card-border); background: color-mix(in srgb,var(--card) 94%,var(--bg)); }
+.supplier-directory-toolbar > label { display: grid; gap: 7px; color: var(--text-muted); font: 800 7px "Manrope"; letter-spacing: .6px; }
+.supplier-search { position: relative; align-self: end; }
+.supplier-search > span { position: absolute; z-index: 1; left: 14px; bottom: 12px; color: var(--text-muted); font-size: 17px; }
+.supplier-search input { height: 42px; padding-left: 40px; }
+.supplier-directory-heading, .supplier-subsection-title { padding: 18px 20px; display: flex; align-items: end; justify-content: space-between; gap: 18px; border-bottom: 1px solid var(--card-border); }
+.supplier-directory-heading h2, .supplier-detail h2, .supplier-subsection-title h3 { margin: 4px 0 0; }
+.supplier-directory-heading h2 { font-size: 17px; }
+.supplier-directory-heading > span, .supplier-subsection-title > span { min-width: 28px; padding: 6px 8px; border-radius: 7px; background: var(--sidebar-bg); color: #fff; text-align: center; font: 850 8px "Manrope"; }
+.supplier-directory-list { padding: 10px; display: grid; gap: 8px; }
+.supplier-directory-row { width: 100%; min-height: 92px; padding: 14px 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); color: var(--text-primary); display: grid; grid-template-columns: minmax(280px,1.45fr) 90px minmax(160px,.75fr) minmax(200px,.8fr) 22px; gap: 16px; align-items: center; text-align: left; transition: border-color .16s, background .16s, transform .16s; }
+.supplier-directory-row:hover, .supplier-directory-row.selected { border-color: var(--brand-amber); background: color-mix(in srgb,var(--brand-amber) 5%,var(--card)); transform: translateY(-1px); }
+.supplier-identity { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 12px; align-items: center; }
+.supplier-avatar { width: 42px; height: 42px; border: 1px solid var(--card-border); border-radius: 50%; background: var(--sidebar-bg); color: #fff; display: grid; place-items: center; font: 850 10px "Manrope"; letter-spacing: .5px; }
+.supplier-identity > div { min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.supplier-identity strong { max-width: 100%; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.supplier-identity small { width: 100%; overflow: hidden; color: var(--text-muted); font-size: 8px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.supplier-trust { width: fit-content; padding: 4px 7px; border: 1px solid var(--info-border); border-radius: 999px; background: var(--info-bg); color: var(--info-text); font: 850 6px "Manrope"; letter-spacing: .4px; }
+.supplier-trust.positive { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
+.supplier-trust.negative { border-color: var(--neg-border); background: var(--neg-bg); color: var(--neg-text); }
+.supplier-trust.inactive { border-color: var(--card-border); background: color-mix(in srgb,var(--card-border) 45%,transparent); color: var(--text-muted); }
+.supplier-stat { display: grid; gap: 5px; }
+.supplier-stat span, .supplier-rating > span { color: var(--text-muted); font: 800 6px "Manrope"; letter-spacing: .5px; }
+.supplier-stat strong { font-size: 11px; }
+.supplier-rating { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; align-items: baseline; }
+.supplier-rating > strong { grid-row: 1 / 3; color: var(--info-text); font-size: 19px; }.supplier-rating > strong small { color: var(--text-muted); font-size: 8px; }
+.supplier-rating > div { display: flex; gap: 5px; flex-wrap: wrap; }.supplier-rating em { color: var(--text-secondary); font: 750 6px "Manrope"; font-style: normal; }
+.supplier-rating.empty > strong { color: var(--text-muted); }
+.supplier-open-arrow { color: var(--info-text); font-size: 16px; text-align: right; }
+.supplier-detail { scroll-margin-top: 18px; }
+.supplier-detail-head { padding: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; border-bottom: 1px solid var(--card-border); }
+.supplier-detail-head h2 { font-size: 21px; }.supplier-detail-head button { min-height: 34px; padding: 0 11px; border: 1px solid var(--card-border); border-radius: 8px; background: transparent; color: var(--text-secondary); font: 800 7px "Manrope"; }
+.supplier-detail-meta { margin-top: 9px; display: flex; align-items: center; gap: 9px; color: var(--text-muted); font-size: 8px; }
+.supplier-detail-kpis { display: grid; grid-template-columns: repeat(4,1fr); border-bottom: 1px solid var(--card-border); }
+.supplier-detail-kpis > div { min-height: 88px; padding: 18px 20px; border-right: 1px solid var(--card-border); display: grid; align-content: center; gap: 7px; }
+.supplier-detail-kpis > div:last-child { border-right: 0; }.supplier-detail-kpis > div > span { color: var(--text-muted); font: 800 6px "Manrope"; letter-spacing: .5px; }.supplier-detail-kpis > div > strong { font-size: 15px; }
+.supplier-detail-columns { display: grid; grid-template-columns: 1.2fr .8fr; }
+.supplier-detail-columns > section + section { border-left: 1px solid var(--card-border); }
+.supplier-subsection-title { padding: 17px 19px; }.supplier-subsection-title h3 { font-size: 12px; }
+.supplier-history-list, .supplier-evaluation-list { padding: 12px; display: grid; gap: 8px; }
+.supplier-history-row { min-height: 74px; padding: 12px; border: 1px solid var(--card-border); border-radius: 9px; display: grid; grid-template-columns: minmax(180px,1.2fr) minmax(120px,.7fr) minmax(170px,.8fr) auto; gap: 12px; align-items: center; }
+.supplier-history-row > div { min-width: 0; display: grid; gap: 5px; }.supplier-history-row span, .supplier-evaluation-head span { color: var(--text-muted); font: 800 6px "Manrope"; letter-spacing: .4px; }.supplier-history-row strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.supplier-work-state { padding: 5px 7px; border: 1px solid var(--warn-border); border-radius: 999px; background: var(--warn-bg); color: var(--warn-text); font: 850 6px "Manrope"; white-space: nowrap; }.supplier-work-state.concluido { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
+.supplier-evaluation-card { padding: 14px; border: 1px solid var(--card-border); border-radius: 9px; }
+.supplier-evaluation-head { display: flex; justify-content: space-between; gap: 12px; }.supplier-evaluation-head > div { display: grid; gap: 5px; }.supplier-evaluation-head strong { font-size: 9px; }.supplier-evaluation-head b { color: var(--info-text); font-size: 17px; }.supplier-evaluation-head b small { color: var(--text-muted); font-size: 7px; }
+.supplier-score-grid { margin-top: 12px; display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; }.supplier-score-grid div { padding: 9px; border-right: 1px solid var(--card-border); display: grid; gap: 4px; }.supplier-score-grid div:last-child { border-right: 0; }.supplier-score-grid span { color: var(--text-muted); font: 800 5px "Manrope"; }.supplier-score-grid strong { font-size: 10px; }
+.supplier-evaluation-card p { margin: 12px 0 0; padding: 10px; border-radius: 7px; background: color-mix(in srgb,var(--card-border) 22%,transparent); color: var(--text-secondary); font-size: 8px; line-height: 1.55; }.supplier-evaluation-card p.empty-note { color: var(--text-muted); font-style: italic; }
 .subcontract-empty { padding: 28px; border: 1px dashed var(--card-border); border-radius: 9px; color: var(--text-muted); text-align: center; font: 800 8px "Manrope"; letter-spacing: .6px; }
-.subcontract-action-dialog { display: grid; }
-.subcontract-action-dialog .work-dialog-card { width: min(660px,calc(100vw - 32px)); }
-.subcontract-action-dialog form { padding: 22px; display: grid; gap: 16px; }
-.subcontract-evaluation-note { margin: 0; padding: 10px; border-radius: 8px; background: var(--warn-bg); color: var(--warn-text); font-size: 9px; }
-.evaluation-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
 
 @media (max-width: 1050px) {
   .team-layout { grid-template-columns: 1fr; }
@@ -900,7 +906,9 @@ button, input, select, textarea,
   .planning-panel { overflow-x: auto; }
   #planning-content { min-width: 980px; }
   .subcontractors-kpis { grid-template-columns: 1fr 1fr; }
-  .subcontract-directory-card { grid-template-columns: 1fr 1fr; }
+  .supplier-directory-row { grid-template-columns: minmax(250px,1.3fr) 75px minmax(150px,.7fr) minmax(180px,.8fr) 18px; gap: 10px; }
+  .supplier-detail-columns { grid-template-columns: 1fr; }
+  .supplier-detail-columns > section + section { border-left: 0; border-top: 1px solid var(--card-border); }
 }
 @media (max-width: 760px) {
   .team-toolbar, .week-navigation { align-items: stretch; flex-wrap: wrap; }
@@ -921,7 +929,14 @@ button, input, select, textarea,
   .planning-view .page-heading { align-items: stretch; }
   .planning-work-picker { min-width: 100%; }
   .planning-panel-head { align-items: flex-start; flex-direction: column; }
-  .subcontractors-kpis, .evaluation-grid, .subcontract-directory-card { grid-template-columns: 1fr; }
-  .subcontractors-section { padding: 16px; }
-  .subcontractors-section-head { align-items: flex-start; flex-direction: column; }
+  .subcontractors-kpis, .supplier-directory-toolbar, .supplier-detail-kpis { grid-template-columns: 1fr; }
+  .supplier-detail-kpis > div { border-right: 0; border-bottom: 1px solid var(--card-border); }.supplier-detail-kpis > div:last-child { border-bottom: 0; }
+  .supplier-directory-row { grid-template-columns: 1fr 1fr; }
+  .supplier-identity { grid-column: 1 / -1; }
+  .supplier-directory-row .supplier-rating { grid-column: 1 / -1; }
+  .supplier-open-arrow { justify-self: end; }
+  .supplier-history-row { grid-template-columns: 1fr 1fr; }
+  .supplier-history-row > div:first-child { grid-column: 1 / -1; }
+  .supplier-detail-head { flex-direction: column; }
+  .supplier-detail-meta { align-items: flex-start; flex-direction: column; }
 }

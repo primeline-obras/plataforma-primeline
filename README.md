@@ -120,3 +120,9 @@ Depois da migração, executar
 `supabase/teste_bloqueio_conclusao_sem_avaliacao.sql`. O teste tenta concluir, sem
 avaliação, uma subempreitada elegível e reverte qualquer alteração. O resultado
 esperado é o aviso `TESTE PASSOU` e os dois triggers apresentados como ativos.
+
+Para que o diretório geral mostre o histórico transversal de todas as obras a
+qualquer utilizador autenticado, executar também
+`supabase/rls_diretorio_subempreiteiros_authenticated.sql`. Este script concede
+apenas leitura de `subempreitadas` e `avaliacoes_subempreiteiro`; não altera as
+permissões de escrita nem concede acesso ao papel `anon`.
