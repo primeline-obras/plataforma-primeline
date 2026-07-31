@@ -2,7 +2,7 @@ import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isS
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=7";
 import { createPlanningModule } from "./planning.js?v=1";
-import { createSubcontractorsModule } from "./subcontractors.js?v=2";
+import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
@@ -38,7 +38,14 @@ let localPdfUrl = "";
 let openedPdfUrl = "";
 let activeView = "overview";
 let selectedWorkId = "";
-let workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {}, canEditDocuments: false, error: "", procurementError: "", billingError: "", workDocumentsError: "" };
+let workDetails = {
+  contract: null, phases: [], measurements: [], payments: [], consultations: [],
+  billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
+  drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
+  safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
+  error: "", procurementError: "", billingError: "", workDocumentsError: "",
+  documentIndexesError: "", safetyError: "",
+};
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
@@ -112,6 +119,12 @@ document.querySelector("#root").innerHTML = `
               <label class="conditional" id="subcontract-field">SUBEMPREITADA<div class="select-wrap"><select name="subempreitada_id" required></select><b>⌄</b></div><em id="subcontract-hint"></em></label>
               <div class="form-row"><label>N.º DOCUMENTO<input name="numero_doc" placeholder="Ex. FT 2026/001" required></label><label>DATA<input name="data_fatura" type="date" required></label></div>
               <label>VALOR (EUR)<div class="money-input"><input name="valor" type="number" min="0.01" step="0.01" placeholder="0,00" required><span>€</span></div></label>
+              <section class="material-items-editor" id="material-items-editor" hidden>
+                <div class="material-items-head"><div><span>DETALHE DA FATURA</span><strong>ARTIGOS / MATERIAIS</strong></div><button type="button" id="add-material-item">＋ ARTIGO</button></div>
+                <div class="material-items-columns"><span>DESIGNAÇÃO</span><span>UNIDADE</span><span>QUANTIDADE</span><span>PREÇO UNIT.</span><span>TOTAL</span><span></span></div>
+                <div id="material-items-list"></div>
+                <p>O valor total da fatura continua a ser o valor final com IVA incluído.</p>
+              </section>
               <label>CONDIÇÃO DE PAGAMENTO<div class="select-wrap"><select name="condicao_pagamento" required><option value="">Selecionar condição</option><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option></select><b>⌄</b></div><em id="payment-condition-suggestion"></em></label>
               <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden>
               <div class="pdf-attachment" id="pdf-attachment" hidden>
@@ -279,6 +292,50 @@ document.querySelector("#root").innerHTML = `
 
 const form = $("#invoice-form");
 form.data_fatura.value = new Date().toISOString().slice(0, 10);
+
+function materialItemRow(item = {}) {
+  const id = item.id || crypto.randomUUID();
+  return `<div class="material-item-row" data-material-item="${id}">
+    <input data-item-field="designacao" value="${safeText(item.designacao || "")}" required placeholder="Ex.: Cimento cola">
+    <input data-item-field="unidade" value="${safeText(item.unidade || "")}" required placeholder="un., kg, m²">
+    <input data-item-field="quantidade" type="number" min="0.001" step="0.001" value="${item.quantidade ?? ""}" required placeholder="0">
+    <input data-item-field="preco_unitario" type="number" min="0" step="0.0001" value="${item.preco_unitario ?? ""}" required placeholder="0,00">
+    <output data-item-total>${euro.format(Number(item.preco_total || 0))}</output>
+    <button type="button" data-remove-material-item aria-label="Remover artigo">×</button>
+  </div>`;
+}
+
+function addMaterialItem(item = {}) {
+  $("#material-items-list").insertAdjacentHTML("beforeend", materialItemRow(item));
+}
+
+function resetMaterialItems() {
+  $("#material-items-list").innerHTML = "";
+  addMaterialItem();
+}
+
+function updateMaterialItemTotal(row) {
+  const quantity = Number(row.querySelector('[data-item-field="quantidade"]').value || 0);
+  const unitPrice = Number(row.querySelector('[data-item-field="preco_unitario"]').value || 0);
+  row.querySelector("[data-item-total]").textContent = euro.format(quantity * unitPrice);
+}
+
+function collectMaterialItems() {
+  return [...document.querySelectorAll("[data-material-item]")].map(row => {
+    const value = field => row.querySelector(`[data-item-field="${field}"]`).value;
+    const quantity = Number(value("quantidade"));
+    const unitPrice = Number(value("preco_unitario"));
+    return {
+      designacao: value("designacao").trim(),
+      unidade: value("unidade").trim(),
+      quantidade: quantity,
+      preco_unitario: unitPrice,
+      preco_total: quantity * unitPrice,
+    };
+  }).filter(item => item.designacao || item.unidade || item.quantidade || item.preco_unitario);
+}
+
+resetMaterialItems();
 const productionDashboard = createProductionDashboard({
   supabase,
   isSupabaseConfigured,
@@ -499,7 +556,7 @@ async function loadData() {
   } else {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id&order=numero.desc"),
-      supabase("fornecedores?select=id,nome&estado_confianca=neq.inativo&order=nome"),
+      supabase("fornecedores?select=id,nome&order=nome"),
       supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
       supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
@@ -1134,7 +1191,14 @@ function workProgress(work) {
 async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
-  workDetails = { contract: null, phases: [], measurements: [], payments: [], consultations: [], billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {}, canEditDocuments: false, error: "", procurementError: "", billingError: "", workDocumentsError: "" };
+  workDetails = {
+    contract: null, phases: [], measurements: [], payments: [], consultations: [],
+    billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
+    drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
+    safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
+    error: "", procurementError: "", billingError: "", workDocumentsError: "",
+    documentIndexesError: "", safetyError: "",
+  };
   renderWorks();
   const work = works.find(item => item.id === workId);
   $("#work-detail").innerHTML = `<div class="empty-state">A CARREGAR DADOS DA OBRA…</div>`;
@@ -1156,11 +1220,20 @@ async function loadWorkDetails(workId) {
       documents: [],
       workDocuments: [],
       documentUsers: {},
+      drawings: [],
+      rfis: [],
+      safetyIncidents: [],
+      safetyInspections: [],
+      epis: [],
+      safetyCollaborators: collaborators,
       canEditDocuments: true,
+      canEditSafety: true,
       error: "",
       procurementError: "",
       billingError: "",
       workDocumentsError: "",
+      documentIndexesError: "",
+      safetyError: "",
     };
     renderWorkDetail(work);
     return;
@@ -1211,9 +1284,21 @@ async function loadWorkDetails(workId) {
     workDetails.consultations = await consultationsResult.json();
     workDetails.payments = await paymentsResult.json();
   }
-  const [workDocumentsResult, editPermissionResult] = await Promise.all([
+  const securityRequests = [
+    supabase(`seguranca_incidentes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
+    supabase(`seguranca_inspecoes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
+    supabase("colaboradores?select=id,nome,funcao&data_saida=is.null&order=nome"),
+    supabase("rpc/fn_pode_editar_obra", { method: "POST", body: JSON.stringify({ p_obra_id: workId }) }),
+  ];
+  if (hasFullAccess() || isAdministrative()) {
+    securityRequests.push(supabase("epis?select=*&order=data_validade.asc.nullslast,data_entrega.desc"));
+  }
+  const [workDocumentsResult, editPermissionResult, drawingsResult, rfisResult, ...securityResults] = await Promise.all([
     supabase(`documentos_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=criado_em.desc`),
     supabase("rpc/fn_pode_editar_documentos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: workId }) }),
+    supabase(`desenhos?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=numero.asc,revisao.desc`),
+    supabase(`rfis?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=numero.asc`),
+    ...securityRequests,
   ]);
   if (workDocumentsResult.ok) {
     workDetails.workDocuments = await workDocumentsResult.json();
@@ -1229,6 +1314,22 @@ async function loadWorkDetails(workId) {
     workDetails.workDocumentsError = detail.message || "Não foi possível consultar os documentos desta obra.";
   }
   if (editPermissionResult.ok) workDetails.canEditDocuments = Boolean(await editPermissionResult.json());
+  if (drawingsResult.ok) workDetails.drawings = await drawingsResult.json();
+  else workDetails.documentIndexesError = "Não foi possível consultar o índice de desenhos.";
+  if (rfisResult.ok) workDetails.rfis = await rfisResult.json();
+  else workDetails.documentIndexesError += `${workDetails.documentIndexesError ? " " : ""}Não foi possível consultar o índice de PDEs.`;
+  const [incidentsResult, inspectionsResult, safetyPeopleResult, safetyPermissionResult, episResult] = securityResults;
+  const safetyFailures = [];
+  if (incidentsResult?.ok) workDetails.safetyIncidents = await incidentsResult.json();
+  else safetyFailures.push("incidentes");
+  if (inspectionsResult?.ok) workDetails.safetyInspections = await inspectionsResult.json();
+  else safetyFailures.push("inspeções");
+  if (safetyPeopleResult?.ok) workDetails.safetyCollaborators = await safetyPeopleResult.json();
+  else safetyFailures.push("colaboradores");
+  if (safetyPermissionResult?.ok) workDetails.canEditSafety = Boolean(await safetyPermissionResult.json());
+  if (episResult?.ok) workDetails.epis = await episResult.json();
+  else if (hasFullAccess() || isAdministrative()) safetyFailures.push("EPI's");
+  if (safetyFailures.length) workDetails.safetyError = `Não foi possível consultar: ${safetyFailures.join(", ")}.`;
   renderWorkDetail(work);
 }
 
@@ -1408,6 +1509,52 @@ function canPreviewWorkDocument(document) {
   return ["pdf", "jpg", "jpeg", "png", "webp", "heic"].includes(workDocumentExtension(document.nome_arquivo));
 }
 
+function documentIndexNumber(item) {
+  return item.numero_documento || item.numero || item.codigo || "Sem número";
+}
+
+function latestDrawingRows() {
+  const grouped = new Map();
+  workDetails.drawings.forEach(item => {
+    const number = documentIndexNumber(item);
+    const current = grouped.get(number);
+    const itemSort = `${item.revisao || ""}|${item.data_emissao || ""}`;
+    const currentSort = current ? `${current.revisao || ""}|${current.data_emissao || ""}` : "";
+    if (!current || itemSort.localeCompare(currentSort, "pt-PT", { numeric: true }) > 0) grouped.set(number, item);
+  });
+  return [...grouped.values()].sort((a, b) =>
+    documentIndexNumber(a).localeCompare(documentIndexNumber(b), "pt-PT", { numeric: true }));
+}
+
+function renderDocumentIndexes() {
+  const drawings = latestDrawingRows();
+  const rfis = [...workDetails.rfis].sort((a, b) =>
+    String(b.data_envio || "").localeCompare(String(a.data_envio || "")));
+  return `<section class="document-indexes">
+    ${workDetails.documentIndexesError ? `<div class="work-warning"><strong>ÍNDICES PARCIAIS</strong><span>${safeText(workDetails.documentIndexesError)} Confirme as políticas RLS dos índices.</span></div>` : ""}
+    <div class="document-index-grid">
+      <section class="document-index-card">
+        <header><div><p class="eyebrow">CONTROLO DE REVISÕES</p><h3>ÍNDICE DE DESENHOS</h3></div><span>${drawings.length}</span></header>
+        <div class="document-index-list">${drawings.length ? drawings.map(item => `
+          <article><div><span>NÚMERO</span><strong>${safeText(documentIndexNumber(item))}</strong></div>
+            <div><span>REVISÃO MAIS RECENTE</span><strong>${safeText(item.revisao || "—")}</strong></div>
+            <div><span>DATA</span><strong>${formatOptionalDate(String(item.data_emissao || "").slice(0, 10))}</strong></div>
+          </article>`).join("") : `<div class="work-document-empty">SEM DESENHOS INDEXADOS</div>`}</div>
+      </section>
+      <section class="document-index-card">
+        <header><div><p class="eyebrow">PEDIDOS DE ESCLARECIMENTO</p><h3>ÍNDICE DE PDEs</h3></div><span>${rfis.length}</span></header>
+        <div class="document-index-list">${rfis.length ? rfis.map(item => {
+          const status = String(item.estado || (item.data_resposta ? "respondido" : "enviado")).toLocaleLowerCase("pt-PT");
+          return `<article><div><span>NÚMERO</span><strong>${safeText(documentIndexNumber(item))}</strong></div>
+            <div><span>ESTADO</span><strong class="index-state ${safeText(status)}">${safeText(status.replaceAll("_", " ").toUpperCase())}</strong></div>
+            <div><span>DATA</span><strong>${formatOptionalDate(String(item.data_envio || "").slice(0, 10))}</strong></div>
+          </article>`;
+        }).join("") : `<div class="work-document-empty">SEM PDEs INDEXADOS</div>`}</div>
+      </section>
+    </div>
+  </section>`;
+}
+
 function renderWorkDocumentsTab() {
   const grouped = new Map(WORK_DOCUMENT_TYPES.map(([type]) => [type, []]));
   workDetails.workDocuments.forEach(document => {
@@ -1423,10 +1570,13 @@ function renderWorkDocumentsTab() {
         <span>PDF, imagem, Excel, Word, MS Project, DWG/DXF, ZIP ou TXT · máximo 25 MB</span>
       </div>
       <label>TIPO<div class="select-wrap"><select name="tipo" required>${WORK_DOCUMENT_TYPES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select><b>⌄</b></div></label>
+      <label class="work-document-index-field" data-document-number hidden>NÚMERO DO DOCUMENTO<input name="numero_documento" maxlength="80" placeholder="Ex.: DES-042 ou PDE-018"></label>
+      <label class="work-document-index-field" data-document-revision hidden>REVISÃO<input name="revisao" maxlength="30" placeholder="Ex.: A ou 02"></label>
       <label class="work-document-file">FICHEIRO<input name="arquivo" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.doc,.docx,.mpp,.dwg,.dxf,.zip,.txt"></label>
       <button class="primary-button" type="submit">ENVIAR <span>→</span></button>
       <p class="form-error"></p>
     </form>` : `<div class="work-document-readonly"><strong>CONSULTA DE DOCUMENTOS</strong><span>Tem acesso de leitura. O envio está reservado à equipa que pode editar esta obra.</span></div>`}
+    ${renderDocumentIndexes()}
     <div class="work-document-groups">
       ${WORK_DOCUMENT_TYPES.map(([type, label]) => {
         const documents = grouped.get(type);
@@ -1454,11 +1604,88 @@ function renderWorkDocumentsTab() {
     </div>`;
 }
 
+function safetyPersonName(id) {
+  return workDetails.safetyCollaborators.find(person => person.id === id)?.nome
+    || collaborators.find(person => person.id === id)?.nome
+    || "Colaborador não identificado";
+}
+
+function dateUrgencyClass(value, days = 30) {
+  if (!value) return "";
+  const today = new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00`);
+  const target = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+  const difference = Math.ceil((target - today) / 86400000);
+  if (difference < 0) return "expired";
+  if (difference <= days) return "attention";
+  return "";
+}
+
+function renderSafetyTab() {
+  const peopleOptions = workDetails.safetyCollaborators.map(person =>
+    `<option value="${person.id}">${safeText(person.nome)}${person.funcao ? ` — ${safeText(person.funcao)}` : ""}</option>`).join("");
+  const canManageEpis = hasFullAccess() || isAdministrative();
+  return `
+    ${workDetails.safetyError ? `<div class="work-warning"><strong>SEGURANÇA PARCIAL</strong><span>${safeText(workDetails.safetyError)} Execute a migração RLS deste módulo.</span></div>` : ""}
+    <div class="safety-sections">
+      <section class="safety-card">
+        <header><div><p class="eyebrow">REGISTO E PREVENÇÃO</p><h3>INCIDENTES / ACIDENTES</h3></div><span>${workDetails.safetyIncidents.length}</span></header>
+        ${workDetails.canEditSafety ? `<form class="safety-form" id="safety-incident-form">
+          <label>DATA<input name="data" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label>
+          <label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${peopleOptions}</select></label>
+          <label>TIPO<input name="tipo" required maxlength="80" placeholder="Acidente, quase acidente…"></label>
+          <label>GRAVIDADE<select name="gravidade" required><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="grave">Grave</option><option value="muito_grave">Muito grave</option></select></label>
+          <label class="wide">DESCRIÇÃO<textarea name="descricao" required rows="3"></textarea></label>
+          <label class="wide">MEDIDAS TOMADAS<textarea name="medidas_tomadas" required rows="3"></textarea></label>
+          <p class="form-error wide"></p><button class="primary-button" type="submit">REGISTAR INCIDENTE <span>→</span></button>
+        </form>` : ""}
+        <div class="safety-list">${workDetails.safetyIncidents.length ? workDetails.safetyIncidents.map(item => `
+          <article class="safety-row severity-${safeText(item.gravidade || "leve")}">
+            <div><span>${formatOptionalDate(item.data)}</span><strong>${safeText(safetyPersonName(item.colaborador_id))}</strong><small>${safeText(item.tipo || "Incidente")}</small></div>
+            <div><span>GRAVIDADE</span><strong>${safeText(String(item.gravidade || "—").replaceAll("_", " ").toUpperCase())}</strong></div>
+            <div><span>DESCRIÇÃO</span><p>${safeText(item.descricao || "—")}</p></div>
+            <div><span>MEDIDAS TOMADAS</span><p>${safeText(item.medidas_tomadas || "—")}</p></div>
+          </article>`).join("") : `<div class="work-document-empty">SEM INCIDENTES REGISTADOS</div>`}</div>
+      </section>
+      ${canManageEpis ? `<section class="safety-card">
+        <header><div><p class="eyebrow">PROTEÇÃO INDIVIDUAL</p><h3>EPI's</h3></div><span>${workDetails.epis.length}</span></header>
+        <div class="safety-list">${workDetails.epis.length ? workDetails.epis.map(item => {
+          const validity = item.data_validade || item.data_renovacao || item.validade;
+          return `<article class="epi-row ${dateUrgencyClass(validity)}">
+            <div><span>COLABORADOR</span><strong>${safeText(safetyPersonName(item.colaborador_id))}</strong></div>
+            <div><span>EQUIPAMENTO</span><strong>${safeText(item.tipo_epi || item.tipo_equipamento || item.tipo || item.equipamento || "—")}</strong></div>
+            <div><span>ENTREGA</span><strong>${formatOptionalDate(item.data_entrega)}</strong></div>
+            <div><span>VALIDADE / RENOVAÇÃO</span><strong>${formatOptionalDate(validity)}</strong></div>
+          </article>`;
+        }).join("") : `<div class="work-document-empty">SEM EPI's REGISTADOS</div>`}</div>
+      </section>` : ""}
+      <section class="safety-card">
+        <header><div><p class="eyebrow">CONTROLO EM OBRA</p><h3>INSPEÇÕES / CHECKLISTS</h3></div><span>${workDetails.safetyInspections.length}</span></header>
+        ${workDetails.canEditSafety ? `<form class="safety-form inspection" id="safety-inspection-form">
+          <label>DATA<input name="data" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label>
+          <label>RESPONSÁVEL<select name="responsavel_id" required><option value="">Selecionar responsável</option>${peopleOptions}</select></label>
+          <label>CONFORMIDADE<select name="conformidade" required><option value="true">Conforme</option><option value="false">Não conforme</option></select></label>
+          <label class="wide">OBSERVAÇÕES<textarea name="observacoes" rows="3"></textarea></label>
+          <p class="form-error wide"></p><button class="primary-button" type="submit">REGISTAR INSPEÇÃO <span>→</span></button>
+        </form>` : ""}
+        <div class="safety-list">${workDetails.safetyInspections.length ? workDetails.safetyInspections.map(item => {
+          const compliant = item.conformidade === true || ["true", "conforme", "sim"].includes(String(item.conformidade).toLowerCase());
+          return `<article class="inspection-row ${compliant ? "compliant" : "noncompliant"}">
+            <div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div>
+            <div><span>RESPONSÁVEL</span><strong>${safeText(safetyPersonName(item.responsavel_id))}</strong></div>
+            <div><span>RESULTADO</span><strong>${compliant ? "CONFORME" : "NÃO CONFORME"}</strong></div>
+            <div><span>OBSERVAÇÕES</span><p>${safeText(item.observacoes || "Sem observações")}</p></div>
+          </article>`;
+        }).join("") : `<div class="work-document-empty">SEM INSPEÇÕES REGISTADAS</div>`}</div>
+      </section>
+    </div>`;
+}
+
 function renderWorkTab(work) {
   if (selectedWorkTab === "subcontracts") return renderSubcontractsTab(work);
   if (selectedWorkTab === "measurements") return renderMeasurementsTab(work);
   if (selectedWorkTab === "phases") return `<div class="empty-state"><strong>FASES</strong><span>Este separador será desenvolvido numa próxima etapa.</span></div>`;
   if (selectedWorkTab === "documents") return renderWorkDocumentsTab();
+  if (selectedWorkTab === "safety") return renderSafetyTab();
   return renderWorkSummary(work);
 }
 
@@ -1498,6 +1725,7 @@ function renderWorkDetail(work) {
       <button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
       <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
       <button data-work-tab="documents" class="${selectedWorkTab === "documents" ? "active" : ""}">DOCUMENTOS</button>
+      <button data-work-tab="safety" class="${selectedWorkTab === "safety" ? "active" : ""}">SEGURANÇA</button>
     </nav>
     <div class="work-tab-content">${renderWorkTab(work)}</div>`;
 }
@@ -1550,7 +1778,24 @@ document.querySelectorAll("[data-type]").forEach(button => button.addEventListen
   button.classList.add("selected"); form.tipo_origem.value = button.dataset.type;
   const isSubcontract = button.dataset.type === "subempreitada";
   $("#subcontract-field").hidden = !isSubcontract; form.subempreitada_id.required = isSubcontract;
+  const isMaterial = button.dataset.type === "material";
+  $("#material-items-editor").hidden = !isMaterial;
+  if (isMaterial && !$("#material-items-list").children.length) addMaterialItem();
 }));
+$("#add-material-item").addEventListener("click", () => addMaterialItem());
+$("#material-items-list").addEventListener("input", event => {
+  const row = event.target.closest("[data-material-item]");
+  if (row) updateMaterialItemTotal(row);
+});
+$("#material-items-list").addEventListener("click", event => {
+  const removeButton = event.target.closest("[data-remove-material-item]");
+  if (!removeButton) return;
+  const rows = $("#material-items-list").querySelectorAll("[data-material-item]");
+  if (rows.length === 1) {
+    rows[0].querySelectorAll("input").forEach(input => { input.value = ""; });
+    updateMaterialItemTotal(rows[0]);
+  } else removeButton.closest("[data-material-item]").remove();
+});
 form.obra_id.addEventListener("change", renderSubcontracts);
 form.fornecedor_id.addEventListener("change", renderSubcontracts);
 $("#search").addEventListener("input", renderInvoices);
@@ -1894,29 +2139,88 @@ function openPaymentDialog(billingId) {
 
 $("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
 $("#workflow-dialog").addEventListener("click", event => { if (event.target === $("#workflow-dialog") || event.target.closest("[data-close-workflow]")) closeWorkflowDialog(); });
+$("#work-detail").addEventListener("change", event => {
+  if (event.target.name !== "tipo" || event.target.form?.id !== "work-document-upload") return;
+  const formElement = event.target.form;
+  const isDrawing = event.target.value === "desenhos_preparacao";
+  const isPde = event.target.value === "pdes_rfis";
+  const numberField = formElement.querySelector("[data-document-number]");
+  const revisionField = formElement.querySelector("[data-document-revision]");
+  numberField.hidden = !isDrawing && !isPde;
+  revisionField.hidden = !isDrawing;
+  formElement.elements.numero_documento.required = isDrawing || isPde;
+  if (!isDrawing && !isPde) formElement.elements.numero_documento.value = "";
+  if (!isDrawing) formElement.elements.revisao.value = "";
+});
 $("#work-detail").addEventListener("submit", async event => {
+  if (event.target.id === "safety-incident-form" || event.target.id === "safety-inspection-form") {
+    event.preventDefault();
+    const safetyForm = event.target;
+    const isIncident = safetyForm.id === "safety-incident-form";
+    const values = Object.fromEntries(new FormData(safetyForm));
+    const submitButton = safetyForm.querySelector('button[type="submit"]');
+    const errorNode = safetyForm.querySelector(".form-error");
+    submitButton.disabled = true;
+    errorNode.textContent = "";
+    const payload = { ...values, obra_id: selectedWorkId };
+    if (!isIncident) payload.conformidade = values.conformidade === "true";
+    try {
+      if (isSupabaseConfigured) {
+        const table = isIncident ? "seguranca_incidentes" : "seguranca_inspecoes";
+        const response = await supabase(`${table}?select=*`, {
+          method: "POST",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const [saved] = await response.json();
+        (isIncident ? workDetails.safetyIncidents : workDetails.safetyInspections).unshift(saved);
+      } else {
+        const saved = { ...payload, id: crypto.randomUUID(), criado_em: new Date().toISOString() };
+        (isIncident ? workDetails.safetyIncidents : workDetails.safetyInspections).unshift(saved);
+      }
+      renderWorkDetail(works.find(item => item.id === selectedWorkId));
+      toast(isIncident ? "Incidente registado." : "Inspeção registada.");
+    } catch (error) {
+      errorNode.textContent = error.message || "Não foi possível guardar o registo.";
+    } finally {
+      submitButton.disabled = false;
+    }
+    return;
+  }
   if (event.target.id !== "work-document-upload") return;
   event.preventDefault();
   const uploadForm = event.target;
   const file = uploadForm.elements.arquivo.files[0];
   const type = uploadForm.elements.tipo.value;
+  const indexed = ["desenhos_preparacao", "pdes_rfis"].includes(type);
+  const documentNumber = uploadForm.elements.numero_documento.value.trim();
+  const revision = uploadForm.elements.revisao.value.trim();
   const submitButton = uploadForm.querySelector('button[type="submit"]');
   const errorNode = uploadForm.querySelector(".form-error");
   if (!file) return;
+  if (indexed && !documentNumber) {
+    errorNode.textContent = "O número do documento é obrigatório para Desenhos e PDEs.";
+    uploadForm.elements.numero_documento.focus();
+    return;
+  }
   submitButton.disabled = true;
   errorNode.textContent = "";
   try {
     let document;
     if (isSupabaseConfigured) {
       const objectPath = await uploadWorkDocument(file, selectedWorkId, type);
-      const response = await supabase("rpc/fn_registar_documento_obra", {
+      const response = await supabase("documentos_obra?select=*", {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify({
-          p_obra_id: selectedWorkId,
-          p_tipo: type,
-          p_nome_arquivo: file.name,
-          p_arquivo_url: objectPath,
+          obra_id: selectedWorkId,
+          tipo: type,
+          nome_arquivo: file.name,
+          arquivo_url: objectPath,
+          enviado_por: accessContext.profile?.id,
+          numero_documento: indexed ? documentNumber : null,
+          revisao: type === "desenhos_preparacao" ? revision || null : null,
         }),
       });
       if (!response.ok) {
@@ -1934,12 +2238,25 @@ $("#work-detail").addEventListener("submit", async event => {
         tipo: type,
         nome_arquivo: file.name,
         arquivo_url: localPath,
+        numero_documento: indexed ? documentNumber : null,
+        revisao: type === "desenhos_preparacao" ? revision || null : null,
         enviado_por: "demo",
         criado_em: new Date().toISOString(),
       };
       workDetails.documentUsers.demo = "Utilizador de demonstração";
     }
     workDetails.workDocuments.unshift(document);
+    if (indexed) {
+      if (isSupabaseConfigured) {
+        const table = type === "desenhos_preparacao" ? "desenhos" : "rfis";
+        const order = table === "desenhos" ? "numero.asc,revisao.desc" : "numero.asc";
+        const indexResult = await supabase(`${table}?select=*&obra_id=eq.${encodeURIComponent(selectedWorkId)}&order=${order}`);
+        if (indexResult.ok) workDetails[type === "desenhos_preparacao" ? "drawings" : "rfis"] = await indexResult.json();
+      } else {
+        const indexItem = { ...document, documento_obra_id: document.id };
+        workDetails[type === "desenhos_preparacao" ? "drawings" : "rfis"].unshift(indexItem);
+      }
+    }
     renderWorkDetail(works.find(item => item.id === selectedWorkId));
     toast("Documento adicionado à obra.");
   } catch (error) {
@@ -2330,9 +2647,23 @@ form.addEventListener("submit", async event => {
   if (!canInsertInvoices()) return toast("O lançamento de faturas está reservado ao Administrativo e à Gerência.", "error");
   const payload = Object.fromEntries(new FormData(form));
   payload.valor = Number(payload.valor); payload.subempreitada_id ||= null;
+  const materialItems = payload.tipo_origem === "material" ? collectMaterialItems() : [];
+  if (payload.tipo_origem === "material") {
+    const invalidItem = materialItems.find(item =>
+      !item.designacao || !item.unidade || !Number.isFinite(item.quantidade)
+      || !(item.quantidade > 0) || !Number.isFinite(item.preco_unitario) || item.preco_unitario < 0);
+    if (!materialItems.length || invalidItem) {
+      toast("Preencha pelo menos um artigo com designação, unidade, quantidade e preço unitário.", "error");
+      return;
+    }
+  }
   const submit = form.querySelector(".primary-button"); submit.disabled = true; submit.firstChild.textContent = "A GUARDAR… ";
+  let saved = false;
   if (!isSupabaseConfigured) {
-    invoices.unshift({ ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() });
+    const demoInvoice = { ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() };
+    invoices.unshift(demoInvoice);
+    materialItems.forEach(item => item.fatura_id = demoInvoice.id);
+    saved = true;
     toast("Fatura adicionada em modo de demonstração.");
   } else {
     if (selectedPdf) {
@@ -2356,11 +2687,39 @@ form.addEventListener("submit", async event => {
           : `Erro ao registar: ${detail}`,
         "error",
       );
+    } else {
+      const [inserted] = await result.json();
+      invoices.unshift(inserted);
+      if (materialItems.length) {
+        submit.firstChild.textContent = "A REGISTAR ARTIGOS… ";
+        const itemResult = await supabase("faturas_itens", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify(materialItems.map(item => ({
+            fatura_id: inserted.id,
+            designacao: item.designacao,
+            unidade: item.unidade,
+            quantidade: item.quantidade,
+            valor_unitario: item.preco_unitario,
+            valor_total: item.preco_total,
+          }))),
+        });
+        if (!itemResult.ok) {
+          toast(`A fatura foi registada, mas os artigos não foram guardados: ${await itemResult.text()}`, "error");
+        } else toast("Fatura e artigos registados e enviados para aprovação.");
+      } else toast("Fatura registada e enviada para aprovação.");
+      saved = true;
     }
-    else { const [inserted] = await result.json(); invoices.unshift(inserted); toast("Fatura registada e enviada para aprovação."); }
+  }
+  if (!saved) {
+    submit.disabled = false;
+    submit.firstChild.textContent = "REGISTAR FATURA ";
+    return;
   }
   const keepWork = form.obra_id.value, keepType = form.tipo_origem.value;
   form.reset(); form.obra_id.value = keepWork; form.tipo_origem.value = keepType; form.data_fatura.value = new Date().toISOString().slice(0, 10);
+  resetMaterialItems();
+  $("#material-items-editor").hidden = keepType !== "material";
   if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
   selectedPdf = null; localPdfUrl = "";
   $("#pdf-attachment").hidden = true;

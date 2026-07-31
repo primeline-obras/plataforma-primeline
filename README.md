@@ -158,3 +158,20 @@ uma obra existente ou uma linha livre dos tipos Garantia e Pontual. As linhas
 livres usam `quadro_pessoal_alocacao.tipo_alocacao` e `descricao_livre`, podem ser
 renomeadas diretamente no quadro e ficam persistidas quando recebem a primeira
 alocação. Não representam uma obra nem apresentam informação financeira.
+
+## Segurança, índices e preços de materiais
+
+Executar `supabase/rls_seguranca_indices_precos.sql` no SQL Editor depois de as
+tabelas funcionais terem sido criadas. O script:
+
+- protege incidentes e inspeções através de `fn_pode_ver_obra` e
+  `fn_pode_editar_obra`;
+- reserva EPI's a Administrativo/Gerência;
+- permite consultar os índices automáticos de desenhos e PDEs;
+- protege os artigos de faturas de material pela obra da respetiva fatura;
+- acrescenta `faturas_itens.unidade`, a única coluna pedida pelo formulário que
+  ainda não existia no schema confirmado.
+
+O upload de Desenhos e PDEs grava `numero_documento` e `revisao` em
+`documentos_obra`; o trigger existente `fn_sincronizar_indice_documento` continua
+a ser o único responsável pela sincronização com `desenhos` e `rfis`.

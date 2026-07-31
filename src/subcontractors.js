@@ -44,8 +44,14 @@ export function createSubcontractorsModule({
 }) {
   const state = {
     suppliers: [],
+    allSuppliers: [],
     subcontracts: [],
     evaluations: [],
+    priceRows: [],
+    priceError: "",
+    priceSearch: "",
+    priceSupplier: "all",
+    activeTab: "directory",
     search: "",
     trustFilter: "all",
     sort: "rating",
@@ -53,6 +59,12 @@ export function createSubcontractorsModule({
     loaded: false,
   };
   const content = document.querySelector("#subcontractors-content");
+
+  function supplierName(id) {
+    return state.allSuppliers.find(item => item.id === id)?.nome
+      || state.suppliers.find(item => item.id === id)?.nome
+      || "Fornecedor não identificado";
+  }
 
   function workName(id) {
     const work = getWorks().find(item => item.id === id);
@@ -217,9 +229,59 @@ export function createSubcontractorsModule({
     </section>`;
   }
 
+  function renderModuleTabs() {
+    return `<nav class="subcontractor-module-tabs">
+      <button type="button" data-subcontractor-tab="directory" class="${state.activeTab === "directory" ? "active" : ""}">DIRETÓRIO GERAL</button>
+      <button type="button" data-subcontractor-tab="prices" class="${state.activeTab === "prices" ? "active" : ""}">COMPARATIVO DE PREÇOS</button>
+    </nav>`;
+  }
+
+  function filteredPriceRows() {
+    const needle = state.priceSearch.trim().toLocaleLowerCase("pt-PT");
+    return state.priceRows.filter(row => {
+      const matchesSupplier = state.priceSupplier === "all" || row.fornecedor_id === state.priceSupplier;
+      const searchable = `${row.artigo} ${row.unidade || ""} ${supplierName(row.fornecedor_id)}`.toLocaleLowerCase("pt-PT");
+      return matchesSupplier && (!needle || searchable.includes(needle));
+    }).sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
+  }
+
+  function renderPriceComparison() {
+    const rows = filteredPriceRows();
+    const supplierIds = [...new Set(state.priceRows.map(item => item.fornecedor_id).filter(Boolean))]
+      .sort((a, b) => supplierName(a).localeCompare(supplierName(b), "pt-PT"));
+    return `${renderModuleTabs()}
+      <section class="price-comparison-panel">
+        <div class="price-comparison-head"><div><p class="eyebrow">HISTÓRICO DE COMPRAS</p><h2>COMPARATIVO DE PREÇOS</h2>
+          <span>Faturas de material e despesas de estaleiro, ordenadas da mais recente para a mais antiga.</span></div>
+          <strong>${rows.length} REGISTOS</strong></div>
+        ${state.priceError ? `<div class="subcontract-price-warning">${escapeHtml(state.priceError)}</div>` : ""}
+        <div class="price-comparison-filters">
+          <label class="supplier-search"><span>⌕</span><input type="search" data-price-search value="${escapeHtml(state.priceSearch)}" placeholder="Pesquisar artigo ou designação…"></label>
+          <label><span>FORNECEDOR</span><div class="select-wrap"><select data-price-supplier><option value="all">Todos os fornecedores</option>
+            ${supplierIds.map(id => `<option value="${escapeHtml(id)}" ${state.priceSupplier === id ? "selected" : ""}>${escapeHtml(supplierName(id))}</option>`).join("")}
+          </select><b>⌄</b></div></label>
+        </div>
+        <div class="price-comparison-table-wrap"><table class="price-comparison-table">
+          <thead><tr><th>FORNECEDOR</th><th>ARTIGO</th><th>UNIDADE</th><th>PREÇO UNITÁRIO</th><th>DATA</th><th>ORIGEM</th></tr></thead>
+          <tbody>${rows.length ? rows.map(row => `<tr>
+            <td><strong>${escapeHtml(supplierName(row.fornecedor_id))}</strong></td>
+            <td>${escapeHtml(row.artigo || "Sem designação")}</td>
+            <td>${escapeHtml(row.unidade || "—")}</td>
+            <td><strong>${euro.format(Number(row.preco_unitario || 0))}</strong></td>
+            <td>${escapeHtml(isoDate(row.data) || "—")}</td>
+            <td><span class="price-origin ${row.origem === "Material" ? "material" : "estaleiro"}">${escapeHtml(row.origem)}</span></td>
+          </tr>`).join("") : `<tr><td colspan="6"><div class="subcontract-empty">SEM PREÇOS PARA OS FILTROS SELECIONADOS</div></td></tr>`}</tbody>
+        </table></div>
+      </section>`;
+  }
+
   function render() {
     if (!state.loaded) {
       content.innerHTML = `<div class="empty-state"><strong>A CARREGAR DIRETÓRIO…</strong></div>`;
+      return;
+    }
+    if (state.activeTab === "prices") {
+      content.innerHTML = renderPriceComparison();
       return;
     }
     const rows = directoryRows();
@@ -234,7 +296,7 @@ export function createSubcontractorsModule({
     const trustOptions = [...new Set(state.suppliers.map(item =>
       normalizeState(item.estado_confianca)))].sort();
 
-    content.innerHTML = `
+    content.innerHTML = `${renderModuleTabs()}
       <section class="subcontractors-kpis">
         <article><span>SUBEMPREITEIROS</span><strong>${state.suppliers.length}</strong></article>
         <article><span>ATIVOS / RECOMENDADOS</span><strong>${recommended}</strong></article>
@@ -286,8 +348,10 @@ export function createSubcontractorsModule({
         tipo_entidade: "subempreiteiro",
         estado_confianca: item.estado_confianca || "nao_avaliado",
       }));
+      state.allSuppliers = getSuppliers();
       state.subcontracts = typeof getSubcontracts === "function" ? getSubcontracts() : [];
       state.evaluations = [];
+      state.priceRows = [];
       state.loaded = true;
       render();
       return;
@@ -298,10 +362,47 @@ export function createSubcontractorsModule({
         query("subempreitadas?select=*&order=criado_em.desc"),
         query("avaliacoes_subempreiteiro?select=*&order=criado_em.desc"),
       ]);
+      state.allSuppliers = getSuppliers();
+      const priceResults = await Promise.allSettled([
+        query("faturas?select=id,fornecedor_id,data_fatura,tipo_origem&tipo_origem=eq.material"),
+        query("faturas_itens?select=*"),
+        query("despesas_estaleiro?select=*"),
+      ]);
+      const [invoiceResult, itemResult, expenseResult] = priceResults;
+      const materialInvoices = invoiceResult.status === "fulfilled" ? invoiceResult.value : [];
+      const invoiceItems = itemResult.status === "fulfilled" ? itemResult.value : [];
+      const expenses = expenseResult.status === "fulfilled" ? expenseResult.value : [];
+      const invoiceById = new Map(materialInvoices.map(item => [item.id, item]));
+      state.priceRows = invoiceItems.map(item => {
+        const invoice = invoiceById.get(item.fatura_id) || {};
+        return {
+          fornecedor_id: invoice.fornecedor_id || item.fornecedor_id,
+          artigo: item.designacao || item.artigo || item.descricao,
+          unidade: item.unidade,
+          preco_unitario: item.valor_unitario ?? item.preco_unitario,
+          data: invoice.data_fatura || item.data || item.criado_em,
+          origem: "Material",
+        };
+      }).filter(item => item.artigo).concat(expenses.map(item => ({
+        fornecedor_id: item.fornecedor_id,
+        artigo: item.designacao || item.artigo || item.descricao || item.tipo_despesa,
+        unidade: item.unidade,
+        preco_unitario: item.preco_unitario ?? item.valor_unitario ?? (
+          Number(item.quantidade) ? Number(item.valor_total || item.valor) / Number(item.quantidade) : item.valor_total || item.valor
+        ),
+        data: item.data_pagamento || item.data || item.criado_em,
+        origem: "Estaleiro",
+      })).filter(item => item.artigo && Number.isFinite(Number(item.preco_unitario))));
+      const priceFailures = priceResults.filter(result => result.status === "rejected");
+      state.priceError = priceFailures.length
+        ? "Algumas origens ainda não estão disponíveis. Confirme as políticas RLS de faturas_itens e despesas_estaleiro."
+        : "";
     } catch (error) {
       state.suppliers = [];
       state.subcontracts = [];
       state.evaluations = [];
+      state.priceRows = [];
+      state.priceError = "Não foi possível carregar o comparativo de preços.";
       toast(`Não foi possível carregar o diretório: ${error.message}`, "error");
     }
     state.loaded = true;
@@ -309,6 +410,14 @@ export function createSubcontractorsModule({
   }
 
   content.addEventListener("input", event => {
+    if (event.target.matches("[data-price-search]")) {
+      state.priceSearch = event.target.value;
+      render();
+      const search = content.querySelector("[data-price-search]");
+      search?.focus();
+      search?.setSelectionRange(state.priceSearch.length, state.priceSearch.length);
+      return;
+    }
     if (!event.target.matches("[data-supplier-search]")) return;
     state.search = event.target.value;
     state.selectedSupplierId = null;
@@ -319,6 +428,11 @@ export function createSubcontractorsModule({
   });
 
   content.addEventListener("change", event => {
+    if (event.target.matches("[data-price-supplier]")) {
+      state.priceSupplier = event.target.value;
+      render();
+      return;
+    }
     if (event.target.matches("[data-supplier-trust]")) {
       state.trustFilter = event.target.value;
       state.selectedSupplierId = null;
@@ -331,6 +445,13 @@ export function createSubcontractorsModule({
   });
 
   content.addEventListener("click", event => {
+    const tab = event.target.closest("[data-subcontractor-tab]");
+    if (tab) {
+      state.activeTab = tab.dataset.subcontractorTab;
+      state.selectedSupplierId = null;
+      render();
+      return;
+    }
     const row = event.target.closest("[data-supplier-detail]");
     if (row) {
       state.selectedSupplierId = row.dataset.supplierDetail;

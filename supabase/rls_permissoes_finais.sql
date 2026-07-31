@@ -123,7 +123,8 @@ declare
     'documentos', 'documentos_obra', 'alertas', 'lancamentos_mao_obra',
     'despesas_estaleiro', 'colaboradores', 'medicina_trabalho', 'viaturas',
     'ausencias', 'colaboradores_contratos', 'horas_extraordinarias',
-    'quadro_pessoal_alocacao'
+    'quadro_pessoal_alocacao', 'seguranca_incidentes', 'seguranca_inspecoes',
+    'epis', 'desenhos', 'rfis', 'faturas_itens'
   ];
 begin
   for r in
@@ -257,6 +258,24 @@ create policy pl_mao_obra_select on public.lancamentos_mao_obra
 for select to authenticated using (public.fn_pode_ver_obra(obra_id));
 create policy pl_estaleiro_select on public.despesas_estaleiro
 for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+create policy pl_seguranca_incidentes_select on public.seguranca_incidentes
+for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+create policy pl_seguranca_inspecoes_select on public.seguranca_inspecoes
+for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+create policy pl_desenhos_select on public.desenhos
+for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+create policy pl_rfis_select on public.rfis
+for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+create policy pl_faturas_itens_select on public.faturas_itens
+for select to authenticated using (exists (
+  select 1 from public.faturas f
+  where f.id = fatura_id
+    and (
+      public.fn_pode_ver_obra(f.obra_id)
+      or public.fn_e_administrativo()
+      or public.fn_e_financeiro()
+    )
+));
 
 -- Escrita operacional apenas por quem gere a obra.
 create policy pl_autos_write on public.autos_medicao
@@ -275,6 +294,22 @@ create policy pl_faturacao_write on public.faturacao
 for all to authenticated
 using (public.fn_pode_editar_obra(obra_id))
 with check (public.fn_pode_editar_obra(obra_id));
+create policy pl_seguranca_incidentes_write on public.seguranca_incidentes
+for all to authenticated
+using (public.fn_pode_editar_obra(obra_id))
+with check (public.fn_pode_editar_obra(obra_id));
+create policy pl_seguranca_inspecoes_write on public.seguranca_inspecoes
+for all to authenticated
+using (public.fn_pode_editar_obra(obra_id))
+with check (public.fn_pode_editar_obra(obra_id));
+create policy pl_faturas_itens_insert on public.faturas_itens
+for insert to authenticated
+with check (exists (
+  select 1 from public.faturas f
+  where f.id = fatura_id
+    and f.tipo_origem = 'material'
+    and public.fn_e_administrativo()
+));
 
 -- Dados dependentes de fase.
 create policy pl_itens_orcamento_select
@@ -602,6 +637,20 @@ using (
 
 -- Equipa e Quadro: exclusivamente Gerência/Administração e Administrativo.
 create policy pl_colaboradores_rh on public.colaboradores
+for all to authenticated using (public.fn_e_administrativo()) with check (public.fn_e_administrativo());
+create policy pl_colaboradores_seguranca_select on public.colaboradores
+for select to authenticated
+using (
+  data_saida is null
+  and (
+    public.fn_e_administrativo()
+    or exists (
+      select 1 from public.obra_responsaveis r
+      where r.utilizador_id = public.fn_utilizador_atual_id()
+    )
+  )
+);
+create policy pl_epis_rh on public.epis
 for all to authenticated using (public.fn_e_administrativo()) with check (public.fn_e_administrativo());
 create policy pl_medicina_rh on public.medicina_trabalho
 for all to authenticated using (public.fn_e_administrativo()) with check (public.fn_e_administrativo());
