@@ -993,3 +993,92 @@ button, input, select, textarea,
   .work-limited-summary > div { border-right: 0; border-bottom: 1px solid var(--card-border); }
   .work-limited-summary > div:last-child { border-bottom: 0; }
 }
+
+/* Segurança, índices documentais e comparativo de preços. */
+.material-items-editor { padding: 14px; border: 1px solid var(--info-border); border-radius: 10px; background: var(--info-bg); display: grid; gap: 10px; }
+.material-items-editor[hidden] { display: none; }
+.material-items-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.material-items-head > div { display: grid; gap: 3px; }
+.material-items-head span, .material-items-columns span { color: var(--info-text); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
+.material-items-head strong { font-size: 11px; }
+.material-items-head button { min-height: 32px; padding: 0 10px; border: 1px solid var(--info-border); background: var(--card); color: var(--info-text); font-size: 7px; font-weight: 800; }
+.material-items-columns, .material-item-row { display: grid; grid-template-columns: minmax(150px, 1.6fr) 70px 90px 100px 100px 30px; gap: 7px; align-items: center; }
+.material-items-columns { padding: 0 4px; }
+.material-item-row input { width: 100%; min-width: 0; min-height: 36px; padding: 0 9px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-primary); font-size: 9px; }
+.material-item-row output { color: var(--info-text); font-size: 9px; font-weight: 800; text-align: right; }
+.material-item-row button { width: 28px; height: 28px; border: 1px solid var(--neg-border); background: var(--neg-bg); color: var(--neg-text); }
+.material-items-editor > p { margin: 0; color: var(--text-secondary); font-size: 8px; }
+.work-document-upload { grid-template-columns: minmax(220px, 1.4fr) minmax(150px, .8fr) minmax(160px, .9fr) auto; }
+.work-document-index-field { min-width: 150px; }
+.work-document-index-field input { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid var(--card-border); background: var(--bg); color: var(--text-primary); }
+.document-indexes { margin: 18px 0; }
+.document-index-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.document-index-card { border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); overflow: hidden; }
+.document-index-card > header, .safety-card > header { min-height: 72px; padding: 16px 18px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.document-index-card h3, .safety-card h3 { margin: 4px 0 0; font-size: 14px; }
+.document-index-card > header > span, .safety-card > header > span { min-width: 28px; height: 28px; border-radius: 999px; background: var(--sidebar-bg); color: #fff; display: grid; place-items: center; font-size: 8px; font-weight: 800; }
+.document-index-list article { min-height: 62px; padding: 12px 18px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 1fr 1fr .7fr; gap: 12px; align-items: center; }
+.document-index-list article:last-child { border-bottom: 0; }
+.document-index-list article > div { display: grid; gap: 4px; }
+.document-index-list span, .safety-row span, .epi-row span, .inspection-row span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.document-index-list strong { font-size: 9px; }
+.index-state { width: max-content; padding: 5px 8px; border-radius: 999px; color: var(--info-text); background: var(--info-bg); border: 1px solid var(--info-border); }
+.index-state.respondido { color: var(--pos-text); background: var(--pos-bg); border-color: var(--pos-border); }
+.safety-sections { display: grid; gap: 18px; }
+.safety-card { border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); overflow: hidden; }
+.safety-form { padding: 16px 18px; border-bottom: 1px solid var(--card-border); background: color-mix(in srgb, var(--info-bg) 42%, transparent); display: grid; grid-template-columns: 130px minmax(170px, 1fr) minmax(160px, 1fr) 130px; gap: 12px; align-items: end; }
+.safety-form.inspection { grid-template-columns: 130px minmax(180px, 1fr) 160px; }
+.safety-form label { display: grid; gap: 6px; color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.safety-form input, .safety-form select, .safety-form textarea { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-primary); font-size: 9px; resize: vertical; }
+.safety-form .wide { grid-column: span 2; }
+.safety-form .primary-button { justify-self: end; min-height: 38px; }
+.safety-list > article { position: relative; min-height: 70px; padding: 14px 18px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: minmax(180px, 1.1fr) 120px minmax(180px, 1.4fr) minmax(180px, 1.4fr); gap: 14px; align-items: center; }
+.safety-list > article:last-child { border-bottom: 0; }
+.safety-list article > div { display: grid; gap: 5px; }
+.safety-list article strong { font-size: 9px; }
+.safety-list article p { margin: 0; color: var(--text-secondary); font-size: 9px; line-height: 1.45; }
+.safety-row::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--warn-text); }
+.safety-row.severity-grave::before, .safety-row.severity-muito_grave::before { background: var(--neg-text); }
+.epi-row { grid-template-columns: repeat(4, minmax(140px, 1fr)) !important; }
+.epi-row.attention { background: var(--warn-bg); }
+.epi-row.expired { background: var(--neg-bg); }
+.epi-row.attention strong { color: var(--warn-text); }
+.epi-row.expired strong { color: var(--neg-text); }
+.inspection-row { grid-template-columns: 130px 1fr 150px 1.5fr !important; }
+.inspection-row.compliant > div:nth-child(3) strong { color: var(--pos-text); }
+.inspection-row.noncompliant { background: var(--neg-bg); }
+.inspection-row.noncompliant > div:nth-child(3) strong { color: var(--neg-text); }
+.subcontractor-module-tabs { display: flex; gap: 5px; margin-bottom: 14px; }
+.subcontractor-module-tabs button { min-height: 42px; padding: 0 18px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-secondary); font-size: 8px; font-weight: 800; letter-spacing: .8px; }
+.subcontractor-module-tabs button.active { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
+.price-comparison-panel { border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); overflow: hidden; }
+.price-comparison-head { padding: 22px 24px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+.price-comparison-head h2 { margin: 5px 0; font-size: 20px; }
+.price-comparison-head span { color: var(--text-secondary); font-size: 9px; }
+.price-comparison-head > strong { color: var(--info-text); font-size: 9px; }
+.subcontract-price-warning { margin: 14px 18px 0; padding: 12px 14px; border: 1px solid var(--warn-border); border-left: 3px solid var(--warn-text); border-radius: 9px; background: var(--warn-bg); color: var(--warn-text); font-size: 8px; }
+.price-comparison-filters { padding: 16px 18px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: minmax(260px, 1.5fr) minmax(200px, .8fr); gap: 12px; align-items: end; }
+.price-comparison-filters > label:not(.supplier-search) { display: grid; gap: 6px; }
+.price-comparison-filters > label > span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.price-comparison-table-wrap { overflow-x: auto; }
+.price-comparison-table { width: 100%; border-collapse: collapse; border: 0; border-radius: 0; }
+.price-comparison-table th { padding: 12px 15px; background: var(--sidebar-bg); color: #fff; font-size: 7px; letter-spacing: .7px; text-align: left; }
+.price-comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--card-border); color: var(--text-secondary); font-size: 9px; }
+.price-comparison-table td strong { color: var(--text-primary); }
+.price-origin { display: inline-flex; padding: 5px 8px; border-radius: 999px; background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); font-size: 7px; font-weight: 800; }
+.price-origin.estaleiro { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-border); }
+
+@media (max-width: 900px) {
+  .material-items-columns { display: none; }
+  .material-item-row { grid-template-columns: 1fr 80px 1fr; padding-bottom: 10px; border-bottom: 1px solid var(--info-border); }
+  .document-index-grid, .price-comparison-filters { grid-template-columns: 1fr; }
+  .safety-form, .safety-form.inspection { grid-template-columns: 1fr 1fr; }
+  .safety-list > article, .epi-row, .inspection-row { grid-template-columns: 1fr 1fr !important; }
+}
+
+@media (max-width: 600px) {
+  .material-item-row, .safety-form, .safety-form.inspection, .safety-list > article,
+  .epi-row, .inspection-row { grid-template-columns: 1fr !important; }
+  .safety-form .wide { grid-column: auto; }
+  .document-index-list article { grid-template-columns: 1fr; }
+}
