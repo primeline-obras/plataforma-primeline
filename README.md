@@ -175,3 +175,10 @@ tabelas funcionais terem sido criadas. O script:
 O upload de Desenhos e PDEs grava `numero_documento` e `revisao` em
 `documentos_obra`; o trigger existente `fn_sincronizar_indice_documento` continua
 a ser o único responsável pela sincronização com `desenhos` e `rfis`.
+
+Nas faturas de Material, a leitura do PDF tenta também reconhecer a tabela de
+artigos pelas posições dos cabeçalhos e colunas. As linhas encontradas são apenas
+sugestões editáveis; o Administrativo confirma-as antes de gravar em
+`faturas_itens`. O comparativo não usa catálogo: pesquisa parcialmente com
+`ILIKE` em `faturas_itens.designacao` e `despesas_estaleiro.designacao`, agrupando
+os resultados por fornecedor.

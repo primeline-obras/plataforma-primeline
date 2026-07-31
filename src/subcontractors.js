@@ -51,6 +51,7 @@ export function createSubcontractorsModule({
     priceError: "",
     priceSearch: "",
     priceSupplier: "all",
+    priceLoading: false,
     activeTab: "directory",
     search: "",
     trustFilter: "all",
@@ -58,6 +59,7 @@ export function createSubcontractorsModule({
     selectedSupplierId: null,
     loaded: false,
   };
+  let priceSearchTimer = null;
   const content = document.querySelector("#subcontractors-content");
 
   function supplierName(id) {
@@ -237,12 +239,32 @@ export function createSubcontractorsModule({
   }
 
   function filteredPriceRows() {
-    const needle = state.priceSearch.trim().toLocaleLowerCase("pt-PT");
     return state.priceRows.filter(row => {
       const matchesSupplier = state.priceSupplier === "all" || row.fornecedor_id === state.priceSupplier;
-      const searchable = `${row.artigo} ${row.unidade || ""} ${supplierName(row.fornecedor_id)}`.toLocaleLowerCase("pt-PT");
-      return matchesSupplier && (!needle || searchable.includes(needle));
-    }).sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
+      return matchesSupplier;
+    }).sort((a, b) => supplierName(a.fornecedor_id).localeCompare(supplierName(b.fornecedor_id), "pt-PT")
+      || String(b.data || "").localeCompare(String(a.data || "")));
+  }
+
+  function renderPriceRows(rows) {
+    if (state.priceLoading) return `<tr><td colspan="6"><div class="subcontract-empty">A PESQUISAR PREÇOS…</div></td></tr>`;
+    if (!state.priceSearch.trim()) return `<tr><td colspan="6"><div class="subcontract-empty">ESCREVA UMA PALAVRA-CHAVE PARA PESQUISAR</div></td></tr>`;
+    if (!rows.length) return `<tr><td colspan="6"><div class="subcontract-empty">SEM PREÇOS PARA A PALAVRA PESQUISADA</div></td></tr>`;
+    let previousSupplier = null;
+    return rows.map(row => {
+      const supplier = supplierName(row.fornecedor_id);
+      const group = supplier !== previousSupplier
+        ? `<tr class="price-supplier-group"><td colspan="6">${escapeHtml(supplier)}</td></tr>` : "";
+      previousSupplier = supplier;
+      return `${group}<tr>
+        <td><strong>${escapeHtml(supplier)}</strong></td>
+        <td>${escapeHtml(row.artigo || "Sem designação")}</td>
+        <td>${escapeHtml(row.unidade || "—")}</td>
+        <td><strong>${euro.format(Number(row.preco_unitario || 0))}</strong></td>
+        <td>${escapeHtml(isoDate(row.data) || "—")}</td>
+        <td><span class="price-origin ${row.origem === "Material" ? "material" : "estaleiro"}">${escapeHtml(row.origem)}</span></td>
+      </tr>`;
+    }).join("");
   }
 
   function renderPriceComparison() {
@@ -252,7 +274,7 @@ export function createSubcontractorsModule({
     return `${renderModuleTabs()}
       <section class="price-comparison-panel">
         <div class="price-comparison-head"><div><p class="eyebrow">HISTÓRICO DE COMPRAS</p><h2>COMPARATIVO DE PREÇOS</h2>
-          <span>Faturas de material e despesas de estaleiro, ordenadas da mais recente para a mais antiga.</span></div>
+          <span>Pesquisa parcial por designação em faturas de material e despesas de estaleiro, agrupada por fornecedor.</span></div>
           <strong>${rows.length} REGISTOS</strong></div>
         ${state.priceError ? `<div class="subcontract-price-warning">${escapeHtml(state.priceError)}</div>` : ""}
         <div class="price-comparison-filters">
@@ -263,14 +285,7 @@ export function createSubcontractorsModule({
         </div>
         <div class="price-comparison-table-wrap"><table class="price-comparison-table">
           <thead><tr><th>FORNECEDOR</th><th>ARTIGO</th><th>UNIDADE</th><th>PREÇO UNITÁRIO</th><th>DATA</th><th>ORIGEM</th></tr></thead>
-          <tbody>${rows.length ? rows.map(row => `<tr>
-            <td><strong>${escapeHtml(supplierName(row.fornecedor_id))}</strong></td>
-            <td>${escapeHtml(row.artigo || "Sem designação")}</td>
-            <td>${escapeHtml(row.unidade || "—")}</td>
-            <td><strong>${euro.format(Number(row.preco_unitario || 0))}</strong></td>
-            <td>${escapeHtml(isoDate(row.data) || "—")}</td>
-            <td><span class="price-origin ${row.origem === "Material" ? "material" : "estaleiro"}">${escapeHtml(row.origem)}</span></td>
-          </tr>`).join("") : `<tr><td colspan="6"><div class="subcontract-empty">SEM PREÇOS PARA OS FILTROS SELECIONADOS</div></td></tr>`}</tbody>
+          <tbody>${renderPriceRows(rows)}</tbody>
         </table></div>
       </section>`;
   }
@@ -339,8 +354,61 @@ export function createSubcontractorsModule({
     return response.json();
   }
 
+  async function loadPriceRows(searchTerm) {
+    const term = String(searchTerm || "").trim();
+    if (!term || !isSupabaseConfigured) {
+      state.priceRows = [];
+      state.priceError = "";
+      state.priceLoading = false;
+      render();
+      return;
+    }
+    state.priceLoading = true;
+    state.priceError = "";
+    render();
+    const pattern = encodeURIComponent(`*${term.replace(/[*,]/g, " ")}*`);
+    const results = await Promise.allSettled([
+      query("faturas?select=id,fornecedor_id,data_fatura,tipo_origem&tipo_origem=eq.material"),
+      query(`faturas_itens?select=*&designacao=ilike.${pattern}`),
+      query(`despesas_estaleiro?select=*&designacao=ilike.${pattern}`),
+    ]);
+    if (term !== state.priceSearch.trim()) return;
+    const [invoiceResult, itemResult, expenseResult] = results;
+    const materialInvoices = invoiceResult.status === "fulfilled" ? invoiceResult.value : [];
+    const invoiceItems = itemResult.status === "fulfilled" ? itemResult.value : [];
+    const expenses = expenseResult.status === "fulfilled" ? expenseResult.value : [];
+    const invoiceById = new Map(materialInvoices.map(item => [item.id, item]));
+    state.priceRows = invoiceItems.map(item => {
+      const invoice = invoiceById.get(item.fatura_id) || {};
+      return {
+        fornecedor_id: invoice.fornecedor_id || item.fornecedor_id,
+        artigo: item.designacao,
+        unidade: item.unidade,
+        preco_unitario: item.valor_unitario ?? item.preco_unitario,
+        data: invoice.data_fatura || item.data || item.criado_em,
+        origem: "Material",
+      };
+    }).filter(item => item.artigo && Number.isFinite(Number(item.preco_unitario)))
+      .concat(expenses.map(item => ({
+        fornecedor_id: item.fornecedor_id,
+        artigo: item.designacao,
+        unidade: item.unidade,
+        preco_unitario: item.preco_unitario ?? item.valor_unitario ?? (
+          Number(item.quantidade) ? Number(item.valor_total || item.valor) / Number(item.quantidade) : item.valor_total || item.valor
+        ),
+        data: item.data_pagamento || item.data || item.criado_em,
+        origem: "Estaleiro",
+      })).filter(item => item.artigo && Number.isFinite(Number(item.preco_unitario))));
+    state.priceError = results.some(result => result.status === "rejected")
+      ? "Algumas origens ainda não estão disponíveis para esta pesquisa."
+      : "";
+    state.priceLoading = false;
+    render();
+  }
+
   async function load() {
     state.loaded = false;
+    state.priceLoading = false;
     render();
     if (!isSupabaseConfigured) {
       state.suppliers = getSuppliers().map(item => ({
@@ -363,45 +431,14 @@ export function createSubcontractorsModule({
         query("avaliacoes_subempreiteiro?select=*&order=criado_em.desc"),
       ]);
       state.allSuppliers = getSuppliers();
-      const priceResults = await Promise.allSettled([
-        query("faturas?select=id,fornecedor_id,data_fatura,tipo_origem&tipo_origem=eq.material"),
-        query("faturas_itens?select=*"),
-        query("despesas_estaleiro?select=*"),
-      ]);
-      const [invoiceResult, itemResult, expenseResult] = priceResults;
-      const materialInvoices = invoiceResult.status === "fulfilled" ? invoiceResult.value : [];
-      const invoiceItems = itemResult.status === "fulfilled" ? itemResult.value : [];
-      const expenses = expenseResult.status === "fulfilled" ? expenseResult.value : [];
-      const invoiceById = new Map(materialInvoices.map(item => [item.id, item]));
-      state.priceRows = invoiceItems.map(item => {
-        const invoice = invoiceById.get(item.fatura_id) || {};
-        return {
-          fornecedor_id: invoice.fornecedor_id || item.fornecedor_id,
-          artigo: item.designacao || item.artigo || item.descricao,
-          unidade: item.unidade,
-          preco_unitario: item.valor_unitario ?? item.preco_unitario,
-          data: invoice.data_fatura || item.data || item.criado_em,
-          origem: "Material",
-        };
-      }).filter(item => item.artigo).concat(expenses.map(item => ({
-        fornecedor_id: item.fornecedor_id,
-        artigo: item.designacao || item.artigo || item.descricao || item.tipo_despesa,
-        unidade: item.unidade,
-        preco_unitario: item.preco_unitario ?? item.valor_unitario ?? (
-          Number(item.quantidade) ? Number(item.valor_total || item.valor) / Number(item.quantidade) : item.valor_total || item.valor
-        ),
-        data: item.data_pagamento || item.data || item.criado_em,
-        origem: "Estaleiro",
-      })).filter(item => item.artigo && Number.isFinite(Number(item.preco_unitario))));
-      const priceFailures = priceResults.filter(result => result.status === "rejected");
-      state.priceError = priceFailures.length
-        ? "Algumas origens ainda não estão disponíveis. Confirme as políticas RLS de faturas_itens e despesas_estaleiro."
-        : "";
+      state.priceRows = [];
+      state.priceError = "";
     } catch (error) {
       state.suppliers = [];
       state.subcontracts = [];
       state.evaluations = [];
       state.priceRows = [];
+      state.priceLoading = false;
       state.priceError = "Não foi possível carregar o comparativo de preços.";
       toast(`Não foi possível carregar o diretório: ${error.message}`, "error");
     }
@@ -412,10 +449,15 @@ export function createSubcontractorsModule({
   content.addEventListener("input", event => {
     if (event.target.matches("[data-price-search]")) {
       state.priceSearch = event.target.value;
+      state.priceRows = [];
+      state.priceError = "";
+      state.priceLoading = Boolean(state.priceSearch.trim());
       render();
       const search = content.querySelector("[data-price-search]");
       search?.focus();
       search?.setSelectionRange(state.priceSearch.length, state.priceSearch.length);
+      clearTimeout(priceSearchTimer);
+      priceSearchTimer = setTimeout(() => loadPriceRows(state.priceSearch), 350);
       return;
     }
     if (!event.target.matches("[data-supplier-search]")) return;

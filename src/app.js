@@ -35,6 +35,8 @@ let currentFilter = "all";
 let session = getSession();
 let selectedPdf = null;
 let localPdfUrl = "";
+let extractedMaterialItems = [];
+let extractedMaterialItemsApplied = false;
 let openedPdfUrl = "";
 let activeView = "overview";
 let selectedWorkId = "";
@@ -312,6 +314,22 @@ function addMaterialItem(item = {}) {
 function resetMaterialItems() {
   $("#material-items-list").innerHTML = "";
   addMaterialItem();
+}
+
+function showExtractedMaterialItems(items) {
+  if (items !== extractedMaterialItems) {
+    extractedMaterialItems = items.map(item => ({ ...item }));
+    extractedMaterialItemsApplied = false;
+    if (form.tipo_origem.value === "material") $("#material-items-list").innerHTML = "";
+  }
+  if (form.tipo_origem.value !== "material" || extractedMaterialItemsApplied) return;
+  if (!extractedMaterialItems.length) {
+    if (!$("#material-items-list").children.length) addMaterialItem();
+    return;
+  }
+  $("#material-items-list").innerHTML = "";
+  extractedMaterialItems.forEach(addMaterialItem);
+  extractedMaterialItemsApplied = true;
 }
 
 function updateMaterialItemTotal(row) {
@@ -1780,7 +1798,8 @@ document.querySelectorAll("[data-type]").forEach(button => button.addEventListen
   $("#subcontract-field").hidden = !isSubcontract; form.subempreitada_id.required = isSubcontract;
   const isMaterial = button.dataset.type === "material";
   $("#material-items-editor").hidden = !isMaterial;
-  if (isMaterial && !$("#material-items-list").children.length) addMaterialItem();
+  if (isMaterial && extractedMaterialItems.length) showExtractedMaterialItems(extractedMaterialItems);
+  else if (isMaterial && !$("#material-items-list").children.length) addMaterialItem();
 }));
 $("#add-material-item").addEventListener("click", () => addMaterialItem());
 $("#material-items-list").addEventListener("input", event => {
@@ -2430,7 +2449,11 @@ function findFinalTotal(rows) {
   return null;
 }
 function findDocumentNumber(rows) {
-  for (const row of rows) { if (!/(fatura|invoice|nota|recibo)/i.test(row.text)) continue; const match = row.text.match(/\bN(?:\.?\s*[ºo°])?\.?\s*(?:[:#-]\s*)?(.+?)\s*$/i); if (match?.[1]) return match[1].trim(); }
+  for (const row of rows) {
+    if (!/(fatura|invoice|nota|recibo)/i.test(row.text)) continue;
+    const match = row.text.match(/\bN(?:\.?\s*[ºo°])?\.?\s*(?:[:#-]\s*)?(.+?)(?=\s+(?:data|date|emiss[aã]o)\b|$)/i);
+    if (match?.[1]) return match[1].trim();
+  }
   return "";
 }
 function findSupplierCandidate(firstPageRows) {
@@ -2446,11 +2469,81 @@ function findPaymentConditionSuggestion(rows) {
   const match = row.text.match(/\b(?:cond(?:ição|\.)?\s*(?:de\s*)?pagamento|payment\s*terms?|termos?\s+de\s+pagamento)\b\s*[:.-]?\s*(.*)$/i);
   return (match?.[1] || row.text).replace(/^[.: -]+/, "").trim();
 }
+
+function parsePdfNumber(value) {
+  const clean = String(value || "").replace(/[^\d,.-]/g, "");
+  if (!clean || clean === "-" || clean === "," || clean === ".") return null;
+  let normalized = clean;
+  if (clean.includes(",")) normalized = clean.replace(/\./g, "").replace(",", ".");
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : null;
+}
+
+function pdfHeaderColumn(row, patterns) {
+  for (const pattern of patterns) {
+    const position = labelPosition(row, pattern);
+    if (position) return position.centerX;
+  }
+  return null;
+}
+
+function findMaterialItems(rows) {
+  const headers = rows.map(row => ({
+    row,
+    designationX: pdfHeaderColumn(row, [/designa[cç][aã]o/i, /descri[cç][aã]o/i, /artigo/i, /produto/i]),
+    quantityX: pdfHeaderColumn(row, [/quantidade/i, /\bqtd\.?\b/i, /\bqt\.?\b/i]),
+    unitX: pdfHeaderColumn(row, [/\bunidade\b/i, /\bun\.?\b/i]),
+    unitPriceX: pdfHeaderColumn(row, [/pre[cç]o\s+unit[aá]rio/i, /valor\s+unit[aá]rio/i, /\bp\.?\s*unit\.?\b/i]),
+    totalX: pdfHeaderColumn(row, [/pre[cç]o\s+total/i, /valor\s+total/i, /\btotal\b/i]),
+  })).filter(candidate => candidate.designationX !== null
+    && [candidate.quantityX, candidate.unitX, candidate.unitPriceX, candidate.totalX].filter(value => value !== null).length >= 2);
+
+  if (!headers.length) return [];
+  const extracted = [];
+  for (const header of headers) {
+    const columns = [
+      ["designacao", header.designationX], ["quantidade", header.quantityX], ["unidade", header.unitX],
+      ["preco_unitario", header.unitPriceX], ["preco_total", header.totalX],
+    ].filter(([, x]) => x !== null).sort((a, b) => a[1] - b[1]);
+    const boundaries = columns.slice(0, -1).map((column, index) => (column[1] + columns[index + 1][1]) / 2);
+    const bodyRows = rows.filter(row => row.pageNumber === header.row.pageNumber && row.y < header.row.y)
+      .sort((a, b) => b.y - a.y);
+    let pendingDesignation = "";
+    for (const row of bodyRows) {
+      if (/\b(total\s+(?:do\s+documento|l[ií]quido|geral)|valor\s+a\s+pagar|incid[eê]ncia|resumo\s+de\s+iva)\b/i.test(row.text)) break;
+      const cells = Object.fromEntries(columns.map(([name]) => [name, []]));
+      row.items.forEach(item => {
+        const index = boundaries.findIndex(boundary => item.x < boundary);
+        const column = columns[index < 0 ? columns.length - 1 : index]?.[0];
+        if (column) cells[column].push(item.text);
+      });
+      let designation = (cells.designacao || []).join(" ").replace(/\s+/g, " ").trim();
+      if ((!designation && !pendingDesignation) || /^(ref\.?|c[oó]digo|artigo|designa[cç][aã]o)$/i.test(designation)) continue;
+      const quantity = parsePdfNumber((cells.quantidade || []).join(" "));
+      const unit = (cells.unidade || []).join(" ").trim();
+      let unitPrice = parsePdfNumber((cells.preco_unitario || []).join(" "));
+      let total = parsePdfNumber((cells.preco_total || []).join(" "));
+      if (!(quantity > 0) && unitPrice === null && total === null) {
+        pendingDesignation = `${pendingDesignation} ${designation}`.trim();
+        continue;
+      }
+      if (pendingDesignation) designation = `${pendingDesignation} ${designation}`.trim();
+      if (unitPrice === null && quantity > 0 && total !== null) unitPrice = total / quantity;
+      if (total === null && quantity > 0 && unitPrice !== null) total = quantity * unitPrice;
+      if (!(quantity > 0) || unitPrice === null || total === null) continue;
+      extracted.push({ designacao: designation, unidade: unit, quantidade: quantity, preco_unitario: unitPrice, preco_total: total });
+      pendingDesignation = "";
+    }
+    if (extracted.length) break;
+  }
+  return extracted.slice(0, 100);
+}
 async function extractPdfData(file) {
   $("#extraction-panel").hidden = false;
   $("#extraction-status").textContent = "A ANALISAR…";
   $("#extraction-results").innerHTML = "";
   $("#extraction-note").textContent = "Os dados encontrados continuam editáveis e devem ser confirmados.";
+  showExtractedMaterialItems([]);
   try {
     const pdfjs = await import("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs");
     pdfjs.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
@@ -2480,6 +2573,8 @@ async function extractPdfData(file) {
 
     const invoiceValue = findFinalTotal(rows);
     const paymentConditionSuggestion = findPaymentConditionSuggestion(rows);
+    const materialItems = findMaterialItems(rows);
+    showExtractedMaterialItems(materialItems);
 
     const supplierCandidate = findSupplierCandidate(rows.filter(row => row.pageNumber === 1));
     const exactSupplier = suppliers.find(supplier => normalizeExactName(supplier.nome) === normalizeExactName(supplierCandidate));
@@ -2502,13 +2597,17 @@ async function extractPdfData(file) {
       extractionRow("Fornecedor", supplierCandidate, exactSupplier ? "alta" : supplierCandidate ? "provavel" : "manual") +
       extractionRow("Data", invoiceDate ? prettyDate.format(new Date(`${invoiceDate}T12:00:00`)) : "", invoiceDate ? "provavel" : "manual") +
       extractionRow("Valor", invoiceValue ? euro.format(invoiceValue) : "", invoiceValue ? "provavel" : "manual") +
-      extractionRow("Cond. pagamento (sugestão)", paymentConditionSuggestion, "manual");
+      extractionRow("Cond. pagamento (sugestão)", paymentConditionSuggestion, "manual") +
+      extractionRow("Artigos sugeridos", materialItems.length ? `${materialItems.length} linha${materialItems.length === 1 ? "" : "s"}` : "", materialItems.length ? "provavel" : "manual");
     $("#payment-condition-suggestion").textContent = paymentConditionSuggestion
       ? `Sugestão lida no PDF: ${paymentConditionSuggestion}. Confirme manualmente uma das opções.`
       : "Selecione manualmente; este campo nunca é preenchido automaticamente.";
-    $("#extraction-note").textContent = exactSupplier
+    const itemNote = materialItems.length
+      ? " Os artigos foram apenas sugeridos: reveja designação, unidade, quantidade e preços antes de gravar."
+      : "";
+    $("#extraction-note").textContent = (exactSupplier
       ? "Fornecedor encontrado por correspondência exata. Confirme os restantes campos e escolha manualmente a subempreitada, quando aplicável."
-      : "O fornecedor não corresponde exatamente a nenhum registo existente. Selecione-o manualmente na lista; nenhum fornecedor foi criado.";
+      : "O fornecedor não corresponde exatamente a nenhum registo existente. Selecione-o manualmente na lista; nenhum fornecedor foi criado.") + itemNote;
   } catch (error) {
     $("#extraction-status").textContent = "FALHOU";
     $("#extraction-results").innerHTML = "";
@@ -2561,6 +2660,8 @@ $("#remove-pdf").addEventListener("click", () => {
   if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
   selectedPdf = null;
   localPdfUrl = "";
+  extractedMaterialItems = [];
+  extractedMaterialItemsApplied = false;
   $("#pdf-input").value = "";
   $("#pdf-attachment").hidden = true;
   $("#extraction-panel").hidden = true;
@@ -2719,6 +2820,8 @@ form.addEventListener("submit", async event => {
   const keepWork = form.obra_id.value, keepType = form.tipo_origem.value;
   form.reset(); form.obra_id.value = keepWork; form.tipo_origem.value = keepType; form.data_fatura.value = new Date().toISOString().slice(0, 10);
   resetMaterialItems();
+  extractedMaterialItems = [];
+  extractedMaterialItemsApplied = false;
   $("#material-items-editor").hidden = keepType !== "material";
   if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
   selectedPdf = null; localPdfUrl = "";

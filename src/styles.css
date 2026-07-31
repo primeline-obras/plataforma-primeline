@@ -1065,6 +1065,7 @@ button, input, select, textarea,
 .price-comparison-table th { padding: 12px 15px; background: var(--sidebar-bg); color: #fff; font-size: 7px; letter-spacing: .7px; text-align: left; }
 .price-comparison-table td { padding: 13px 15px; border-bottom: 1px solid var(--card-border); color: var(--text-secondary); font-size: 9px; }
 .price-comparison-table td strong { color: var(--text-primary); }
+.price-comparison-table .price-supplier-group td { padding: 9px 15px; background: var(--bg-soft); color: var(--accent); font-size: 7px; font-weight: 900; letter-spacing: .9px; text-transform: uppercase; }
 .price-origin { display: inline-flex; padding: 5px 8px; border-radius: 999px; background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); font-size: 7px; font-weight: 800; }
 .price-origin.estaleiro { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-border); }
 
