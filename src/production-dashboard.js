@@ -1,9 +1,16 @@
 const number = value => Number(value || 0);
 const sum = (rows, field) => rows.reduce((total, row) => total + number(row[field]), 0);
+const DAY_MS = 86400000;
 const clampPercent = value => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
 const monthKey = value => value ? String(value).slice(0, 7) : "";
 const monthLabel = key => new Intl.DateTimeFormat("pt-PT", { month: "short", year: "2-digit" }).format(new Date(`${key}-01T12:00:00`)).toUpperCase();
 const safeDate = value => value instanceof Date ? new Date(value.getTime()) : value ? new Date(`${String(value).slice(0, 10)}T12:00:00`) : null;
+const addDaysDate = (value, days) => {
+  const date = safeDate(value) || new Date();
+  date.setDate(date.getDate() + Number(days || 0));
+  return date;
+};
+const calendarDays = (start, end) => Math.max(0, Math.ceil(((safeDate(end)?.getTime() || 0) - (safeDate(start)?.getTime() || 0)) / DAY_MS));
 const plannedStart = plan => plan?.data_inicio_prevista || plan?.data_inicio_planeada || plan?.inicio_previsto || plan?.inicio_planeado || plan?.data_inicio || plan?.inicio || null;
 const plannedEnd = plan => plan?.data_fim_prevista || plan?.data_fim_planeada || plan?.fim_previsto || plan?.fim_planeado || plan?.data_fim || plan?.fim || null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
@@ -424,6 +431,137 @@ export function createProductionDashboard(options) {
     </div>`;
   }
 
+  function financialProjection(work, data, totalSale, updatedBudgetCost, execution) {
+    const today = new Date();
+    const currentMonth = monthKey(today.toISOString());
+    const subcontractPaid = sum(data.payments, "valor");
+    const subcontractCommitted = sum(data.subcontracts, "valor_adjudicado");
+    const laborActual = data.labor.reduce((total, row) =>
+      total + number(row.valor_total || number(row.horas) * number(row.valor_hora)), 0);
+    const siteActual = sum(data.siteExpenses, "valor_total");
+    const actualCost = subcontractPaid + laborActual + siteActual;
+    const remainingCommitments = Math.max(0, subcontractCommitted - subcontractPaid);
+    const closedLaborRows = data.labor.filter(row => monthKey(row.data) && monthKey(row.data) < currentMonth);
+    const closedLaborMonths = new Set(closedLaborRows.map(row => monthKey(row.data)));
+    const closedLaborTotal = closedLaborRows.reduce((total, row) =>
+      total + number(row.valor_total || number(row.horas) * number(row.valor_hora)), 0);
+    const historicalMonthlyStaff = closedLaborMonths.size ? closedLaborTotal / closedLaborMonths.size : laborActual;
+    const monthlyStaffVehicle = historicalMonthlyStaff ? Math.ceil(historicalMonthlyStaff / 100) * 100 : 0;
+    const contractualEnd = safeDate(work.data_fim_prevista);
+    const remainingMonths = contractualEnd && contractualEnd > today
+      ? Math.max(1, Math.ceil(calendarDays(today, contractualEnd) / 30.4375)) : 0;
+    const start = safeDate(work.data_inicio);
+    const elapsedDays = start && today > start ? Math.max(1, calendarDays(start, today)) : 0;
+    const progress = clampPercent(execution);
+    const dailyProgress = elapsedDays && progress > 0 ? progress / elapsedDays : 0;
+    const projectedFinish = dailyProgress
+      ? addDaysDate(today, Math.ceil(Math.max(0, 100 - progress) / dailyProgress))
+      : contractualEnd || today;
+    const estimatedFinalCost = actualCost + remainingCommitments + monthlyStaffVehicle * remainingMonths;
+    return {
+      totalSale, updatedBudgetCost, actualCost, remainingCommitments, monthlyStaffVehicle,
+      remainingMonths, estimatedFinalCost, contractualEnd, projectedFinish, progress, start, dailyProgress,
+    };
+  }
+
+  function deadlineScenario(model, factor, label, description) {
+    const today = new Date();
+    const finish = model.dailyProgress
+      ? addDaysDate(today, Math.ceil(Math.max(0, 100 - model.progress) / (model.dailyProgress * factor)))
+      : model.contractualEnd || today;
+    const deviationDays = model.dailyProgress && model.contractualEnd
+      ? Math.ceil((finish.getTime() - model.contractualEnd.getTime()) / DAY_MS) : 0;
+    return { label, description, finish, deviationDays, available: Boolean(model.dailyProgress && model.contractualEnd) };
+  }
+
+  function renderFinancialForecast(work, model) {
+    const scenarios = [
+      deadlineScenario(model, 1.25, "RECUPERAÇÃO", "Ritmo de execução 25% superior ao atual"),
+      deadlineScenario(model, 1, "RITMO ATUAL", "Mantém a velocidade média observada"),
+      deadlineScenario(model, .8, "RISCO", "Ritmo 20% inferior ao atual"),
+    ];
+    const initialDeviation = model.estimatedFinalCost - model.updatedBudgetCost;
+    const delayMax = 120;
+    return `<section class="financial-forecast">
+      <div class="meeting-title financial-forecast-title"><span>PREVISÃO FINANCEIRA E CENÁRIOS DE PRAZO</span><small>Análise dinâmica · não altera dados da obra</small></div>
+      <div class="financial-forecast-grid">
+        <article class="panel financial-forecast-card">
+          <header><span>CUSTOS ESTIMADOS</span><strong data-forecast-status class="${initialDeviation > 0 ? "negative" : "positive"}">${initialDeviation > 0 ? "ACIMA" : "DENTRO"}</strong></header>
+          <dl class="financial-forecast-values">
+            <div><dt>Orçamento de custo</dt><dd>${euro.format(model.updatedBudgetCost)}</dd></div>
+            <div><dt>Custo real incorrido</dt><dd>${euro.format(model.actualCost)}</dd></div>
+            <div><dt>Compromissos por executar</dt><dd>${euro.format(model.remainingCommitments)}</dd></div>
+            <div><dt>Estimativa final</dt><dd data-estimated-final>${euro.format(model.estimatedFinalCost)}</dd></div>
+            <div class="forecast-deviation"><dt>Desvio ao orçamento</dt><dd data-budget-deviation class="${initialDeviation > 0 ? "negative" : "positive"}">${euro.format(initialDeviation)}</dd></div>
+          </dl>
+          <label class="financial-number-control"><span>PESSOAL + VIATURA / MÊS</span><input id="staff-vehicle-cost" type="number" min="0" step="250" value="${Math.round(model.monthlyStaffVehicle)}"><small>Base: média histórica da mão de obra. Ajuste para incluir a viatura.</small></label>
+        </article>
+        <article class="panel financial-forecast-card">
+          <header><span>CENÁRIOS DE PRAZO</span><strong>${Math.round(model.progress)}% EXECUTADO</strong></header>
+          <div class="deadline-scenarios">${scenarios.map(scenario => {
+            const state = !scenario.available ? "warning" : scenario.deviationDays <= 0 ? "positive" : scenario.deviationDays <= 30 ? "warning" : "negative";
+            const deviationLabel = !scenario.available ? "SEM BASE" : scenario.deviationDays > 0 ? `+${scenario.deviationDays} DIAS` : scenario.deviationDays < 0 ? `${scenario.deviationDays} DIAS` : "NO PRAZO";
+            return `<div class="${state}"><span><b>${scenario.label}</b><small>${scenario.description}</small></span><strong>${scenario.available ? prettyDate.format(scenario.finish) : "—"}</strong><em>${deviationLabel}</em></div>`;
+          }).join("")}</div>
+          <p class="financial-method-note">Projeção baseada na relação entre percentagem executada e dias decorridos. É uma estimativa de apoio à decisão.</p>
+        </article>
+        <article class="panel financial-forecast-card delay-simulator">
+          <header><span>SIMULADOR DE ATRASOS</span><strong data-delay-label>0 DIAS</strong></header>
+          <label><span>ATRASO ADICIONAL</span><input id="delay-simulator" type="range" min="0" max="${delayMax}" step="5" value="0"><small>0</small><small>${delayMax} dias</small></label>
+          <dl class="financial-forecast-values">
+            <div><dt>Conclusão projetada</dt><dd data-delay-finish>${prettyDate.format(model.projectedFinish)}</dd></div>
+            <div><dt>Custo adicional</dt><dd data-delay-cost>${euro.format(0)}</dd></div>
+            <div><dt>Estimativa final com atraso</dt><dd data-delay-final>${euro.format(model.estimatedFinalCost)}</dd></div>
+            <div class="forecast-deviation"><dt>Margem estimada</dt><dd data-delay-margin>${euro.format(model.totalSale - model.estimatedFinalCost)}</dd></div>
+          </dl>
+          <div class="delay-warning" data-delay-warning>SEM ATRASO ADICIONAL SIMULADO</div>
+        </article>
+      </div>
+    </section>`;
+  }
+
+  function bindFinancialForecast(model) {
+    const root = document.querySelector("#meeting-view .financial-forecast");
+    const monthlyInput = root?.querySelector("#staff-vehicle-cost");
+    const delayInput = root?.querySelector("#delay-simulator");
+    if (!root || !monthlyInput || !delayInput) return;
+    const update = () => {
+      const monthly = Math.max(0, number(monthlyInput.value));
+      const delayDays = Math.max(0, number(delayInput.value));
+      const estimatedFinal = model.actualCost + model.remainingCommitments + monthly * model.remainingMonths;
+      const deviation = estimatedFinal - model.updatedBudgetCost;
+      const delayCost = monthly / 30.4375 * delayDays;
+      const finalWithDelay = estimatedFinal + delayCost;
+      const margin = model.totalSale - finalWithDelay;
+      const finish = addDaysDate(model.projectedFinish, delayDays);
+      const write = (selector, value) => { const element = root.querySelector(selector); if (element) element.textContent = value; };
+      write("[data-estimated-final]", euro.format(estimatedFinal));
+      write("[data-budget-deviation]", euro.format(deviation));
+      write("[data-forecast-status]", deviation > 0 ? "ACIMA" : "DENTRO");
+      write("[data-delay-label]", `${delayDays} ${delayDays === 1 ? "DIA" : "DIAS"}`);
+      write("[data-delay-finish]", prettyDate.format(finish));
+      write("[data-delay-cost]", euro.format(delayCost));
+      write("[data-delay-final]", euro.format(finalWithDelay));
+      write("[data-delay-margin]", euro.format(margin));
+      const deviationElement = root.querySelector("[data-budget-deviation]");
+      const statusElement = root.querySelector("[data-forecast-status]");
+      const marginElement = root.querySelector("[data-delay-margin]");
+      [deviationElement, statusElement].forEach(element => element?.classList.toggle("negative", deviation > 0));
+      [deviationElement, statusElement].forEach(element => element?.classList.toggle("positive", deviation <= 0));
+      marginElement?.classList.toggle("negative", margin < 0);
+      marginElement?.classList.toggle("positive", margin >= 0);
+      const warning = root.querySelector("[data-delay-warning]");
+      if (warning) {
+        warning.className = `delay-warning ${delayDays > 60 ? "negative" : delayDays > 0 ? "warning" : ""}`;
+        warning.textContent = delayDays > 60 ? "RISCO ELEVADO DE IMPACTO EM PRAZO E MARGEM"
+          : delayDays > 0 ? "O ATRASO AUMENTA O CUSTO DE ESTRUTURA DA OBRA" : "SEM ATRASO ADICIONAL SIMULADO";
+      }
+    };
+    monthlyInput.addEventListener("input", update);
+    delayInput.addEventListener("input", update);
+    update();
+  }
+
   function renderMeeting() {
     const { work, data, warnings } = meetingState;
     const contract = selectCurrentContract(data.contracts);
@@ -447,6 +585,7 @@ export function createProductionDashboard(options) {
     const subcontractPhaseIds = new Set(data.subcontracts.map(row => row.fase_id).filter(Boolean));
     const budgetPhaseIds = new Set(data.budget.map(row => row.fase_id));
     const notConsulted = data.phases.filter(phase => budgetPhaseIds.has(phase.id) && !consultationPhaseIds.has(phase.id) && !subcontractPhaseIds.has(phase.id));
+    const projection = financialProjection(work, data, totalSale, directCost + approvedTeeCost, execution);
 
     document.querySelector("#meeting-view").innerHTML = `
       <div class="meeting-heading"><button id="meeting-back">← ${meetingReturnView === "works" ? "OBRA" : "VISÃO GERAL"}</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · OBRA ${escapeHtml(work.numero)}</p><h1>${escapeHtml(work.nome)}</h1><span>${escapeHtml(work.cliente || "")}</span></div><em class="work-status ${escapeHtml(work.situacao)}">${escapeHtml(String(work.situacao || "").replace(/_/g, " "))}</em></div>
@@ -469,6 +608,7 @@ export function createProductionDashboard(options) {
           <div class="meeting-progress deadline"><span>PRAZO CONSUMIDO <b>${Math.round(deadline)}%</b></span><div><i style="width:${deadline}%"></i></div><small>${work.data_inicio ? prettyDate.format(safeDate(work.data_inicio)) : "—"} → ${work.data_fim_prevista ? prettyDate.format(safeDate(work.data_fim_prevista)) : "—"}</small></div>
         </article>
       </section>
+      ${renderFinancialForecast(work, projection)}
       <section class="panel meeting-card meeting-subcontracts"><div class="meeting-title"><span>SUBEMPREITADAS</span></div>
         <div class="meeting-tabs">
           <details open><summary>ADJUDICADAS <b>${data.subcontracts.length}</b></summary><div class="meeting-table">${data.subcontracts.map(row => {
@@ -482,6 +622,7 @@ export function createProductionDashboard(options) {
       <section class="panel meeting-card"><div class="meeting-title"><span>CASH FLOW MENSAL · REAL E PREVISTO</span><small>Meses encerrados com valores reais; período atual e futuro com previsão</small></div>${renderCashFlow(work, data)}</section>
       <section class="panel meeting-card"><div class="meeting-title"><span>PLANEAMENTO DE FASES</span><small>${data.phases.length} fases · posição atual e cumprimento do prazo</small></div>${renderPhaseTimeline(work, data)}</section>`;
     document.querySelector("#meeting-back").addEventListener("click", () => showView(meetingReturnView));
+    bindFinancialForecast(projection);
   }
 
   async function openMeeting(workId, returnView = "overview") {

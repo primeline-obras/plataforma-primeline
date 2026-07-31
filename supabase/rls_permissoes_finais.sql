@@ -242,22 +242,27 @@ create policy pl_contratos_select on public.contratos
 for select to authenticated
 using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_fases_select on public.fases
-for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+for select to authenticated
+using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_autos_select on public.autos_medicao
 for select to authenticated
 using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_tees_select on public.alteracoes_tee
-for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+for select to authenticated
+using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_consultas_select on public.consultas_subempreitada
-for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+for select to authenticated
+using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_faturacao_select on public.faturacao
 for select to authenticated using (public.fn_pode_ver_obra(obra_id));
 create policy pl_documentos_obra_select on public.documentos_obra
 for select to authenticated using (public.fn_pode_ver_obra(obra_id));
 create policy pl_mao_obra_select on public.lancamentos_mao_obra
-for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+for select to authenticated
+using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_estaleiro_select on public.despesas_estaleiro
-for select to authenticated using (public.fn_pode_ver_obra(obra_id));
+for select to authenticated
+using (public.fn_pode_ver_obra(obra_id) or public.fn_e_financeiro());
 create policy pl_seguranca_incidentes_select on public.seguranca_incidentes
 for select to authenticated using (public.fn_pode_ver_obra(obra_id));
 create policy pl_seguranca_inspecoes_select on public.seguranca_inspecoes
@@ -316,21 +321,24 @@ create policy pl_itens_orcamento_select
 on public.itens_orcamento for select to authenticated
 using (exists (
   select 1 from public.fases f
-  where f.id = fase_id and public.fn_pode_ver_obra(f.obra_id)
+  where f.id = fase_id
+    and (public.fn_pode_ver_obra(f.obra_id) or public.fn_e_financeiro())
 ));
 
 create policy pl_planeamento_fases_select
 on public.planeamento_fases_resumo for select to authenticated
 using (exists (
   select 1 from public.fases f
-  where f.id = fase_id and public.fn_pode_ver_obra(f.obra_id)
+  where f.id = fase_id
+    and (public.fn_pode_ver_obra(f.obra_id) or public.fn_e_financeiro())
 ));
 
 create policy pl_planeamento_itens_select
 on public.planeamento_itens for select to authenticated
 using (exists (
   select 1 from public.fases f
-  where f.id = fase_id and public.fn_pode_ver_obra(f.obra_id)
+  where f.id = fase_id
+    and (public.fn_pode_ver_obra(f.obra_id) or public.fn_e_financeiro())
 ));
 
 create policy pl_planeamento_itens_write
@@ -350,7 +358,8 @@ using (exists (
   select 1
   from public.planeamento_itens i
   join public.fases f on f.id = i.fase_id
-  where i.id = item_id and public.fn_pode_ver_obra(f.obra_id)
+  where i.id = item_id
+    and (public.fn_pode_ver_obra(f.obra_id) or public.fn_e_financeiro())
 ));
 
 create policy pl_planeamento_dependencias_write
@@ -381,7 +390,8 @@ create policy pl_consulta_itens_select
 on public.consultas_subempreitada_itens for select to authenticated
 using (exists (
   select 1 from public.consultas_subempreitada c
-  where c.id = consulta_subempreitada_id and public.fn_pode_ver_obra(c.obra_id)
+  where c.id = consulta_subempreitada_id
+    and (public.fn_pode_ver_obra(c.obra_id) or public.fn_e_financeiro())
 ));
 create policy pl_consulta_itens_write
 on public.consultas_subempreitada_itens for all to authenticated
@@ -398,7 +408,8 @@ create policy pl_candidatos_select
 on public.consultas_subempreitada_candidatos for select to authenticated
 using (exists (
   select 1 from public.consultas_subempreitada c
-  where c.id = consulta_subempreitada_id and public.fn_pode_ver_obra(c.obra_id)
+  where c.id = consulta_subempreitada_id
+    and (public.fn_pode_ver_obra(c.obra_id) or public.fn_e_financeiro())
 ));
 create policy pl_candidatos_write
 on public.consultas_subempreitada_candidatos for all to authenticated
@@ -417,7 +428,8 @@ using (exists (
   select 1
   from public.consultas_subempreitada_candidatos cc
   join public.consultas_subempreitada c on c.id = cc.consulta_subempreitada_id
-  where cc.id = candidato_id and public.fn_pode_ver_obra(c.obra_id)
+  where cc.id = candidato_id
+    and (public.fn_pode_ver_obra(c.obra_id) or public.fn_e_financeiro())
 ));
 create policy pl_candidato_itens_write
 on public.consultas_subempreitada_candidatos_itens for all to authenticated
@@ -438,7 +450,8 @@ create policy pl_pagamentos_subempreitada_select
 on public.pagamentos_subempreitada for select to authenticated
 using (exists (
   select 1 from public.subempreitadas s
-  where s.id = subempreitada_id and public.fn_pode_ver_obra(s.obra_id)
+  where s.id = subempreitada_id
+    and (public.fn_pode_ver_obra(s.obra_id) or public.fn_e_financeiro())
 ));
 create policy pl_pagamentos_subempreitada_insert
 on public.pagamentos_subempreitada for insert to authenticated
