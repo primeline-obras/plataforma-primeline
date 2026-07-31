@@ -424,6 +424,46 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
 .phase-timeline-legend i.late { background: #b45454; }.phase-timeline-legend i.on-time { background: #d09a3f; }.phase-timeline-legend i.ahead { background: #55a66b; }
 .phase-timeline-legend strong { margin-left: auto; color: #2468c7; }
 
+/* Financial forecast, deadline scenarios and delay simulator. */
+.financial-forecast { margin: 0 0 18px; }
+.financial-forecast-title { padding: 16px 20px; border: 1px solid var(--card-border); border-radius: 11px 11px 0 0; background: var(--card); }
+.financial-forecast-grid { display: grid; grid-template-columns: 1.12fr 1fr 1fr; gap: 12px; padding-top: 12px; }
+.financial-forecast-card { min-width: 0; margin: 0; padding: 20px; }
+.financial-forecast-card > header { min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; }
+.financial-forecast-card > header span { color: var(--text-primary); font: 800 9px "Manrope"; letter-spacing: .85px; }
+.financial-forecast-card > header strong { color: var(--info-text); font: 800 7px "Manrope"; letter-spacing: .6px; }
+.financial-forecast-card .positive { color: var(--pos-text) !important; }
+.financial-forecast-card .negative { color: var(--neg-text) !important; }
+.financial-forecast-card .warning { color: var(--warn-text) !important; }
+.financial-forecast-values { margin: 8px 0 0; }
+.financial-forecast-values > div { min-height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--card-border); }
+.financial-forecast-values dt { color: var(--text-muted); font-size: 8px; }
+.financial-forecast-values dd { margin: 0; color: var(--text-primary); font: 750 9px "Manrope"; text-align: right; }
+.financial-forecast-values .forecast-deviation { margin-top: 5px; border-bottom: 0; }
+.financial-forecast-values .forecast-deviation dt, .financial-forecast-values .forecast-deviation dd { font-weight: 850; }
+.financial-number-control { margin: 15px 0 0; padding: 12px; border: 1px solid var(--info-border); border-radius: 9px; background: var(--info-bg); }
+.financial-number-control > span, .delay-simulator label > span { color: var(--info-text); font: 800 7px "Manrope"; letter-spacing: .65px; }
+.financial-number-control input { height: 36px; margin-top: 7px; border-color: var(--info-border); background: var(--card); color: var(--text-primary); font-weight: 750; }
+.financial-number-control small { display: block; margin-top: 6px; color: var(--text-muted); font-size: 7px; line-height: 1.45; }
+.deadline-scenarios { display: grid; gap: 8px; margin-top: 12px; }
+.deadline-scenarios > div { min-height: 58px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 10px 11px; border: 1px solid var(--card-border); border-left: 3px solid currentColor; border-radius: 8px; background: var(--bg-soft); }
+.deadline-scenarios span { min-width: 0; }
+.deadline-scenarios span b { display: block; color: currentColor; font: 850 7px "Manrope"; letter-spacing: .6px; }
+.deadline-scenarios span small { display: block; margin-top: 3px; color: var(--text-muted); font-size: 7px; }
+.deadline-scenarios > div > strong { color: var(--text-primary); font: 750 9px "Manrope"; }
+.deadline-scenarios em { grid-column: 2; color: currentColor; font: 800 6px "Manrope"; font-style: normal; letter-spacing: .5px; text-align: right; }
+.financial-method-note { margin: 12px 0 0; color: var(--text-muted); font-size: 7px; line-height: 1.5; }
+.delay-simulator > label { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 14px 0 4px; }
+.delay-simulator > label > span, .delay-simulator > label input { grid-column: 1 / -1; }
+.delay-simulator > label input { width: 100%; height: 20px; margin: 4px 0 0; padding: 0; accent-color: var(--accent); }
+.delay-simulator > label small { color: var(--text-muted); font-size: 7px; }
+.delay-simulator > label small:last-child { text-align: right; }
+.delay-warning { margin-top: 13px; padding: 10px; border: 1px solid var(--info-border); border-radius: 8px; background: var(--info-bg); color: var(--info-text); font: 800 7px "Manrope"; letter-spacing: .5px; text-align: center; }
+.delay-warning.warning { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text) !important; }
+.delay-warning.negative { border-color: var(--neg-border); background: var(--neg-bg); color: var(--neg-text) !important; }
+@media (max-width: 1180px) { .financial-forecast-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .financial-forecast-card { padding: 16px; }.financial-forecast-title { align-items: flex-start; flex-direction: column; } }
+
 /* Persistent presentation mode for meeting-room TVs. */
 :root.tv-mode .page { max-width: 1800px; padding-left: 55px; padding-right: 55px; }
 :root.tv-mode .sidebar nav button { font-size: 16px; padding-top: 16px; padding-bottom: 16px; }

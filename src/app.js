@@ -1,9 +1,9 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=7";
+import { createProductionDashboard } from "./production-dashboard.js?v=8";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=1";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=2";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -1302,6 +1302,10 @@ async function loadWorkDetails(workId) {
     workDetails.consultations = await consultationsResult.json();
     workDetails.payments = await paymentsResult.json();
   }
+  if (isFinancial()) {
+    renderWorkDetail(work);
+    return;
+  }
   const securityRequests = [
     supabase(`seguranca_incidentes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
     supabase(`seguranca_inspecoes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
@@ -1707,29 +1711,10 @@ function renderWorkTab(work) {
   return renderWorkSummary(work);
 }
 
-function renderFinancialWorkSummary(work) {
-  const progress = workProgress(work);
-  return `<div class="work-limited-summary">
-    <div><span>OBRA</span><strong>${safeText(work.numero || "—")} · ${safeText(work.nome || "Sem designação")}</strong></div>
-    <div><span>SITUAÇÃO</span><strong>${safeText(workSituationLabel(work.situacao))}</strong></div>
-    <div><span>INÍCIO</span><strong>${formatOptionalDate(work.data_inicio)}</strong></div>
-    <div><span>FIM PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
-    <div><span>PRAZO CONSUMIDO</span><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
-  </div><div class="readonly-note">RESUMO GERAL · O DETALHE OPERACIONAL DESTA OBRA NÃO ESTÁ DISPONÍVEL AO PAPEL FINANCEIRO</div>`;
-}
-
 function renderWorkDetail(work) {
   if (!work) return;
-  if (isFinancial()) {
-    $("#work-detail").innerHTML = `
-      <div class="work-detail-head">
-        <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
-        <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
-      </div>
-      <div class="work-location">${work.morada || "Morada não indicada"}</div>
-      <div class="work-tab-content">${renderFinancialWorkSummary(work)}</div>`;
-    return;
-  }
+  const financialReadOnly = isFinancial();
+  if (financialReadOnly && !["summary", "subcontracts"].includes(selectedWorkTab)) selectedWorkTab = "summary";
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
       <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
@@ -1740,11 +1725,12 @@ function renderWorkDetail(work) {
     <nav class="work-tabs">
       <button data-work-tab="summary" class="${selectedWorkTab === "summary" ? "active" : ""}">RESUMO</button>
       <button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
-      <button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
+      ${financialReadOnly ? "" : `<button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
       <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
       <button data-work-tab="documents" class="${selectedWorkTab === "documents" ? "active" : ""}">DOCUMENTOS</button>
-      <button data-work-tab="safety" class="${selectedWorkTab === "safety" ? "active" : ""}">SEGURANÇA</button>
+      <button data-work-tab="safety" class="${selectedWorkTab === "safety" ? "active" : ""}">SEGURANÇA</button>`}
     </nav>
+    ${financialReadOnly ? `<div class="readonly-note">CONSULTA FINANCEIRA · SEM PERMISSÃO PARA ALTERAR A OBRA</div>` : ""}
     <div class="work-tab-content">${renderWorkTab(work)}</div>`;
 }
 

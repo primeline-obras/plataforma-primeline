@@ -151,6 +151,12 @@ Depois, executar `supabase/auditoria_rls_permissoes_finais.sql`. A auditoria é 
 de leitura e confirma funções, políticas, grants e a existência de contas para a
 validação manual de cada papel.
 
+Para permitir ao papel Financeiro consultar, sem editar, Subempreitadas, TEEs e
+Planeamento de todas as obras numa base que já tenha a matriz final instalada,
+executar também `supabase/rls_financeiro_detalhe_obras.sql`. A migração substitui
+apenas políticas de leitura; as políticas de escrita continuam limitadas à equipa
+responsável pela obra.
+
 ## Linhas especiais no Quadro de Pessoal
 
 No modo de edição do Quadro de Pessoal, o botão `Nova linha` permite acrescentar
