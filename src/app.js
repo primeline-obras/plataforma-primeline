@@ -1,13 +1,15 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=2";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=9";
+import { createProductionDashboard } from "./production-dashboard.js?v=10";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=3";
+import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 const prettyDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const UI_THEME_KEY = "primeline_theme";
 const UI_TV_KEY = "primeline_tv_mode";
 const UI_SIDEBAR_KEY = "primeline_sidebar_collapsed";
@@ -29,6 +31,7 @@ const icon = (name) => {
 };
 
 let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], collaborators = [];
+let directDebits = [], directDebitEntries = [];
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
 let currentFilter = "all";
@@ -39,6 +42,8 @@ let extractedMaterialItems = [];
 let extractedMaterialItemsApplied = false;
 let openedPdfUrl = "";
 let activeView = "overview";
+let selectedFinanceTab = "invoices";
+let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
   contract: null, phases: [], measurements: [], payments: [], consultations: [],
@@ -195,14 +200,42 @@ document.querySelector("#root").innerHTML = `
       </div>
       <div class="page finance-view" id="finance-view" hidden>
         <div class="page-heading">
-          <div><p class="eyebrow">TESOURARIA</p><h1>FINANCEIRO</h1><p>Faturas aprovadas a aguardar pagamento.</p></div>
+          <div><p class="eyebrow">TESOURARIA</p><h1>FINANCEIRO</h1><p>Pagamentos, compromissos recorrentes e histórico financeiro.</p></div>
           <div class="heading-stat"><span>POR PAGAR</span><strong id="finance-count">00</strong></div>
         </div>
-        <section class="finance-board" id="finance-board"></section>
-        <section class="panel paid-history">
-          <div class="paid-history-head"><div><p class="eyebrow">ARQUIVO</p><h2>HISTÓRICO DE FATURAS PAGAS</h2></div><span id="paid-count">0 FATURAS</span></div>
-          <div class="paid-list" id="paid-list"></div>
-        </section>
+        <nav class="finance-tabs" aria-label="Secções financeiras">
+          <button type="button" class="active" data-finance-tab="invoices">FATURAS E PAGAMENTOS</button>
+          <button type="button" data-finance-tab="direct-debits">DÉBITOS DIRETOS</button>
+        </nav>
+        <div data-finance-panel="invoices">
+          <section class="finance-board" id="finance-board"></section>
+          <section class="panel paid-history">
+            <div class="paid-history-head"><div><p class="eyebrow">ARQUIVO</p><h2>HISTÓRICO DE FATURAS PAGAS</h2></div><span id="paid-count">0 FATURAS</span></div>
+            <div class="paid-list" id="paid-list"></div>
+          </section>
+        </div>
+        <div data-finance-panel="direct-debits" hidden>
+          <section class="panel direct-debit-create">
+            <div class="direct-debit-section-head"><div><p class="eyebrow">COMPROMISSOS RECORRENTES</p><h2>NOVO DÉBITO DIRETO</h2></div><small>Os valores previstos alimentam automaticamente a previsão da obra.</small></div>
+            <form id="direct-debit-form" class="direct-debit-form">
+              <label>DESCRIÇÃO<input name="descricao" required maxlength="160" placeholder="Ex.: Seguro mensal da obra"></label>
+              <label>CATEGORIA<select name="categoria"><option value="renda">Renda</option><option value="seguro">Seguro</option><option value="software">Software</option><option value="emprestimo">Empréstimo</option><option value="servico_publico">Serviço público</option><option value="outro">Outro</option></select></label>
+              <label>VALOR PREVISTO (€)<input name="valor_previsto" type="number" min="0.01" step="0.01" required></label>
+              <label>OBRA<select name="obra_id" id="direct-debit-work"><option value="">Geral da empresa</option></select></label>
+              <label>RECORRÊNCIA<select name="recorrencia"><option value="">Sem recorrência</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></label>
+              <label>DIA DO MÊS<input name="dia_mes" type="number" min="1" max="31" placeholder="Ex.: 8"></label>
+              <label>DATA DE INÍCIO<input name="data_inicio" type="date" required></label>
+              <label>DATA DE FIM<input name="data_fim" type="date"></label>
+              <label class="direct-debit-active"><input name="ativo" type="checkbox" checked> DÉBITO ATIVO</label>
+              <button type="submit" class="primary-button">GUARDAR DÉBITO DIRETO <span>→</span></button>
+              <p class="form-error" id="direct-debit-form-error"></p>
+            </form>
+          </section>
+          <section class="panel direct-debit-directory">
+            <div class="direct-debit-section-head"><div><p class="eyebrow">CALENDÁRIO DE PAGAMENTOS</p><h2>DÉBITOS DIRETOS</h2></div><span id="direct-debit-count">0 REGISTOS</span></div>
+            <div id="direct-debit-list"></div>
+          </section>
+        </div>
       </div>
       <div class="page team-view" id="team-view" hidden>
         <div class="page-heading">
@@ -427,6 +460,10 @@ function isFinancial() {
   return effectiveRole() === "financeiro";
 }
 
+function canManageDirectDebits() {
+  return hasFullAccess() || isAdministrative() || isFinancial();
+}
+
 function canApproveInvoices() {
   return accessFor(accessContext).approveInvoices;
 }
@@ -578,6 +615,61 @@ function renderFinance() {
     const work = works.find(item => item.id === invoice.obra_id);
     return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span></div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
   }).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
+  renderDirectDebits();
+  renderFinanceTabs();
+}
+
+function renderFinanceTabs() {
+  document.querySelectorAll("[data-finance-tab]").forEach(button => {
+    button.classList.toggle("active", button.dataset.financeTab === selectedFinanceTab);
+  });
+  document.querySelectorAll("[data-finance-panel]").forEach(panel => {
+    panel.hidden = panel.dataset.financePanel !== selectedFinanceTab;
+  });
+}
+
+function nextDirectDebitOccurrence(debit) {
+  const today = new Date().toISOString().slice(0, 10);
+  const horizon = new Date();
+  horizon.setFullYear(horizon.getFullYear() + 3);
+  return directDebitOccurrences(debit, today, horizon.toISOString().slice(0, 10))[0] || null;
+}
+
+function renderDirectDebits() {
+  const list = $("#direct-debit-list");
+  if (!list) return;
+  $("#direct-debit-count").textContent = `${directDebits.length} ${directDebits.length === 1 ? "REGISTO" : "REGISTOS"}`;
+  $("#direct-debit-work").innerHTML = `<option value="">Geral da empresa</option>${works.map(work => `<option value="${work.id}">Obra ${escapeHtml(work.numero)} — ${escapeHtml(work.nome)}</option>`).join("")}`;
+  const startField = $("#direct-debit-form")?.elements?.data_inicio;
+  if (startField && !startField.value) startField.value = new Date().toISOString().slice(0, 10);
+  if (!directDebits.length) {
+    list.innerHTML = `<div class="finance-empty">AINDA NÃO EXISTEM DÉBITOS DIRETOS</div>`;
+    return;
+  }
+  list.innerHTML = [...directDebits].sort((a, b) => String(a.descricao).localeCompare(String(b.descricao), "pt")).map(debit => {
+    const work = works.find(item => item.id === debit.obra_id);
+    const entries = directDebitEntries.filter(entry => entry.debito_direto_id === debit.id)
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)));
+    const next = nextDirectDebitOccurrence(debit);
+    const expanded = expandedDirectDebitId === debit.id;
+    return `<article class="direct-debit-card ${debit.ativo ? "active" : "inactive"}">
+      <div class="direct-debit-main">
+        <div><span class="direct-debit-category">${escapeHtml(DIRECT_DEBIT_CATEGORY_LABELS[debit.categoria] || debit.categoria || "Outro")}</span><h3>${escapeHtml(debit.descricao)}</h3><p>${work ? `OBRA ${escapeHtml(work.numero)} · ${escapeHtml(work.nome)}` : "GERAL DA EMPRESA"}</p></div>
+        <dl><div><dt>VALOR PREVISTO</dt><dd>${euro.format(Number(debit.valor_previsto || 0))}</dd></div><div><dt>RECORRÊNCIA</dt><dd>${escapeHtml(DIRECT_DEBIT_RECURRENCE_LABELS[debit.recorrencia] || "Sem recorrência")}</dd></div><div><dt>PRÓXIMA PREVISÃO</dt><dd>${next ? formatOptionalDate(next.data) : "—"}</dd></div></dl>
+        <span class="direct-debit-status ${debit.ativo ? "active" : "inactive"}">${debit.ativo ? "ATIVO" : "INATIVO"}</span>
+        <button type="button" class="outline-action" data-toggle-direct-debit="${debit.id}">${expanded ? "FECHAR" : "REGISTAR LANÇAMENTO"}</button>
+      </div>
+      <div class="direct-debit-entry-area" ${expanded ? "" : "hidden"}>
+        <form data-direct-debit-entry="${debit.id}">
+          <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
+          <label>VALOR REAL (€)<input name="valor" type="number" min="0.01" step="0.01" value="${Number(debit.valor_previsto || 0).toFixed(2)}" required></label>
+          <button class="primary-button" type="submit">REGISTAR VALOR REAL <span>→</span></button>
+          <p class="form-error"></p>
+        </form>
+        <div class="direct-debit-entry-history"><strong>ÚLTIMOS LANÇAMENTOS</strong>${entries.length ? entries.slice(0, 6).map(entry => `<span><time>${formatOptionalDate(entry.data)}</time><b>${euro.format(Number(entry.valor || 0))}</b></span>`).join("") : "<small>Sem lançamentos reais registados.</small>"}</div>
+      </div>
+    </article>`;
+  }).join("");
 }
 
 async function loadData() {
@@ -589,6 +681,8 @@ async function loadData() {
     financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado")
       .map(invoice => ({ ...invoice, condicao_pagamento: invoice.condicao_pagamento || "imediato", estado_pagamento: invoice.estado_pagamento || (invoice.data_pagamento ? "pago" : "por_pagar") }));
     invoiceGuides = [];
+    directDebits = [];
+    directDebitEntries = [];
   } else {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id&order=numero.desc"),
@@ -601,6 +695,22 @@ async function loadData() {
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
     [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides] = await Promise.all(results.map(result => result.json()));
+    if (allowedViews().has("finance")) {
+      const [debitsResult, entriesResult] = await Promise.all([
+        supabase("debitos_diretos?select=id,obra_id,descricao,categoria,valor_previsto,recorrencia,dia_mes,data_inicio,data_fim,ativo,criado_por,criado_em&order=descricao"),
+        supabase("debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor,criado_em&order=data.desc"),
+      ]);
+      if (!debitsResult.ok || !entriesResult.ok) {
+        toast(`Débitos diretos indisponíveis: ${await (!debitsResult.ok ? debitsResult : entriesResult).text()}`, "error");
+        directDebits = [];
+        directDebitEntries = [];
+      } else {
+        [directDebits, directDebitEntries] = await Promise.all([debitsResult.json(), entriesResult.json()]);
+      }
+    } else {
+      directDebits = [];
+      directDebitEntries = [];
+    }
     if (hasFullAccess() || isAdministrative()) {
       const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
@@ -3238,6 +3348,112 @@ $("#finance-board").addEventListener("click", async event => {
   invoice.pago_por = accessContext.profile?.id || null;
   renderFinance();
   toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
+});
+
+document.querySelector(".finance-tabs").addEventListener("click", event => {
+  const button = event.target.closest("[data-finance-tab]");
+  if (!button) return;
+  selectedFinanceTab = button.dataset.financeTab;
+  renderFinanceTabs();
+});
+
+$("#direct-debit-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!canManageDirectDebits()) return toast("Sem permissão para criar débitos diretos.", "error");
+  const form = event.currentTarget;
+  const fields = Object.fromEntries(new FormData(form).entries());
+  const error = $("#direct-debit-form-error");
+  error.textContent = "";
+  if (fields.recorrencia && !fields.dia_mes) {
+    error.textContent = "Indique o dia do mês para gerar as previsões recorrentes.";
+    return;
+  }
+  if (fields.data_fim && fields.data_fim < fields.data_inicio) {
+    error.textContent = "A data de fim não pode ser anterior à data de início.";
+    return;
+  }
+  const payload = {
+    obra_id: fields.obra_id || null,
+    descricao: fields.descricao.trim(),
+    categoria: fields.categoria || "outro",
+    valor_previsto: Number(fields.valor_previsto),
+    recorrencia: fields.recorrencia || null,
+    dia_mes: fields.recorrencia ? Number(fields.dia_mes) : null,
+    data_inicio: fields.data_inicio,
+    data_fim: fields.data_fim || null,
+    ativo: form.elements.ativo.checked,
+    criado_por: accessContext.profile?.id || null,
+  };
+  const submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase("debitos_diretos?select=*", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.message || detail.details || "Não foi possível criar o débito direto.");
+      }
+      Object.assign(payload, (await response.json())[0]);
+    } else payload.id = crypto.randomUUID();
+    directDebits.push(payload);
+    form.reset();
+    form.elements.ativo.checked = true;
+    form.elements.data_inicio.value = new Date().toISOString().slice(0, 10);
+    renderDirectDebits();
+    toast("Débito direto criado com sucesso.");
+  } catch (submitError) {
+    error.textContent = submitError.message || "Não foi possível criar o débito direto.";
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+$("#direct-debit-list").addEventListener("click", event => {
+  const button = event.target.closest("[data-toggle-direct-debit]");
+  if (!button) return;
+  expandedDirectDebitId = expandedDirectDebitId === button.dataset.toggleDirectDebit ? "" : button.dataset.toggleDirectDebit;
+  renderDirectDebits();
+});
+
+$("#direct-debit-list").addEventListener("submit", async event => {
+  const form = event.target.closest("[data-direct-debit-entry]");
+  if (!form) return;
+  event.preventDefault();
+  if (!canManageDirectDebits()) return toast("Sem permissão para registar lançamentos.", "error");
+  const fields = Object.fromEntries(new FormData(form).entries());
+  const error = form.querySelector(".form-error");
+  error.textContent = "";
+  const payload = {
+    debito_direto_id: form.dataset.directDebitEntry,
+    data: fields.data,
+    valor: Number(fields.valor),
+  };
+  const submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase("debitos_diretos_lancamentos?select=*", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.code === "23505" ? "Já existe um lançamento deste débito nesta data." : detail.message || detail.details || "Não foi possível registar o lançamento.");
+      }
+      Object.assign(payload, (await response.json())[0]);
+    } else payload.id = crypto.randomUUID();
+    directDebitEntries.push(payload);
+    renderDirectDebits();
+    toast("Lançamento real registado com sucesso.");
+  } catch (submitError) {
+    error.textContent = submitError.message || "Não foi possível registar o lançamento.";
+    submit.disabled = false;
+  }
 });
 
 renderUser();
