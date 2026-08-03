@@ -1,6 +1,6 @@
 const FULL_VIEWS = [
   "overview", "meeting", "invoices", "works", "planning", "subcontractors",
-  "finance", "documents", "team", "workforce",
+  "finance", "documents", "team", "workforce", "settings",
 ];
 
 const ACCESS_BY_ROLE = {
@@ -21,7 +21,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "meeting", "works", "planning", "finance"],
+    views: ["overview", "meeting", "works", "planning", "finance", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
@@ -29,7 +29,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   diretor_obra: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents"],
+    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -37,7 +37,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   preparador: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents"],
+    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -47,7 +47,7 @@ const ACCESS_BY_ROLE = {
 };
 
 const NO_ACCESS = {
-  views: ["overview", "subcontractors"],
+  views: ["settings"],
   insertInvoices: false,
   approveInvoices: false,
   payInvoices: false,

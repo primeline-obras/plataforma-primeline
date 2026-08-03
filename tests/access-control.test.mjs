@@ -3,28 +3,28 @@ import { accessFor } from "../src/access-control.js";
 
 const matrix = {
   gerencia: {
-    views: ["finance", "team", "workforce", "planning"],
+    views: ["finance", "team", "workforce", "planning", "settings"],
     actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   administrativo: {
-    views: ["finance", "team", "workforce", "planning", "documents"],
+    views: ["finance", "team", "workforce", "planning", "documents", "settings"],
     actions: ["insertInvoices"],
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   financeiro: {
-    views: ["overview", "meeting", "works", "planning", "finance"],
+    views: ["overview", "meeting", "works", "planning", "finance", "settings"],
     deniedViews: ["invoices", "subcontractors", "documents", "team", "workforce"],
     actions: ["payInvoices"],
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },
   diretor_obra: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors"],
+    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "settings"],
     deniedViews: ["finance", "team", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   preparador: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors"],
+    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "settings"],
     deniedViews: ["finance", "team", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
@@ -43,5 +43,8 @@ const platformAdmin = accessFor({ role: "preparador", isAdmin: true });
 assert.equal(platformAdmin.role, "gerencia");
 assert.equal(platformAdmin.createWorks, true);
 assert(platformAdmin.views.includes("team"));
+
+const noProfile = accessFor({ role: "", isAdmin: false });
+assert.deepEqual(noProfile.views, ["settings"]);
 
 console.log("Matriz de acesso do frontend validada para 5 papéis e administrador da plataforma.");

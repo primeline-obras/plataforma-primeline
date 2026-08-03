@@ -3,8 +3,9 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=10";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=3";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=4";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
+import { createSettingsModule } from "./settings.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -68,6 +69,7 @@ let selectedWorkforceSourceDate = "";
 let selectedWorkforceSourcePeriod = "";
 let selectedWorkforcePeriod = "dia_inteiro";
 let pendingWorkforceRows = [];
+let settingsModule = null;
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -105,7 +107,7 @@ document.querySelector("#root").innerHTML = `
       <nav><p>GESTÃO</p>
         <button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
         <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
-        <p>CONFIGURAÇÃO</p><button>⚙ <span>Definições</span></button>
+        <p>CONFIGURAÇÃO</p><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
     </aside>
@@ -307,6 +309,7 @@ document.querySelector("#root").innerHTML = `
           <div id="team-board"></div>
         </section>
       </div>
+      <div class="page settings-view" id="settings-view" hidden></div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
@@ -505,14 +508,14 @@ async function loadAccessContext() {
   const authId = getSession()?.user?.id;
   if (!authId) return;
   const [profileResult, adminResult] = await Promise.all([
-    supabase(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`),
+    supabase(`utilizadores?select=id,empresa_id,nome,email,funcao,ativo,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`),
     supabase("rpc/fn_e_admin", { method: "POST", body: "{}" }),
   ]);
   const profiles = profileResult.ok ? await profileResult.json() : [];
   const profile = profiles[0] || null;
   accessContext = {
-    role: profile?.funcao || "",
-    isAdmin: adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia",
+    role: profile?.ativo === false ? "" : profile?.funcao || "",
+    isAdmin: profile?.ativo === false ? false : adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia",
     profile,
   };
   applyAccessVisibility();
@@ -1990,8 +1993,9 @@ function switchView(view) {
   $("#finance-view").hidden = view !== "finance";
   $("#team-view").hidden = view !== "team";
   $("#workforce-view").hidden = view !== "workforce";
-  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce"].includes(view);
-  if (!["overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce"].includes(view)) {
+  $("#settings-view").hidden = view !== "settings";
+  $("#placeholder-view").hidden = ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce", "settings"].includes(view);
+  if (!["overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce", "settings"].includes(view)) {
     const labels = { documents: "DOCUMENTOS" };
     $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
   }
@@ -2003,6 +2007,7 @@ function switchView(view) {
   if (view === "planning") planningModule.show();
   if (view === "subcontractors") subcontractorsModule.show();
   if (view === "team" || view === "workforce") loadTeamData();
+  if (view === "settings") settingsModule?.load();
   if (view === "overview") productionDashboard.refreshOverview();
   closeSidebar();
 }
@@ -2753,19 +2758,25 @@ function syncDisplayToggles() {
   $("#sidebar-collapse").querySelector("span").textContent = sidebarCollapsed ? "⟶" : "⟵";
   $("#sidebar-collapse").querySelector("b").textContent = sidebarCollapsed ? "EXPANDIR" : "RECOLHER";
   $("#sidebar-collapse").title = sidebarCollapsed ? "Expandir menu" : "Recolher menu";
+  const settingsTheme = document.querySelector("[data-settings-theme]");
+  const settingsTv = document.querySelector("[data-settings-tv]");
+  if (settingsTheme) settingsTheme.textContent = dark ? "☀ ATIVAR TEMA CLARO" : "☾ ATIVAR TEMA ESCURO";
+  if (settingsTv) settingsTv.textContent = tv ? "DESATIVAR MODO TV" : "ATIVAR MODO TV";
 }
-$("#theme-toggle").addEventListener("click", () => {
+function toggleThemePreference() {
   const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = theme;
   localStorage.setItem(UI_THEME_KEY, theme);
   syncDisplayToggles();
-});
-$("#tv-toggle").addEventListener("click", () => {
+}
+function toggleTvPreference() {
   const enabled = !document.documentElement.classList.contains("tv-mode");
   document.documentElement.classList.toggle("tv-mode", enabled);
   localStorage.setItem(UI_TV_KEY, String(enabled));
   syncDisplayToggles();
-});
+}
+$("#theme-toggle").addEventListener("click", toggleThemePreference);
+$("#tv-toggle").addEventListener("click", toggleTvPreference);
 $("#sidebar-collapse").addEventListener("click", () => {
   const collapsed = !document.documentElement.classList.contains("sidebar-collapsed");
   document.documentElement.classList.toggle("sidebar-collapsed", collapsed);
@@ -3456,5 +3467,20 @@ $("#direct-debit-list").addEventListener("submit", async event => {
   }
 });
 
+settingsModule = createSettingsModule({
+  root: $("#settings-view"),
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  companyId: PRIMELINE_COMPANY_ID,
+  getProfile: () => accessContext.profile,
+  getSession,
+  getWorks: () => works,
+  isAdmin: hasFullAccess,
+  toast,
+  requestPasswordReset,
+  toggleTheme: toggleThemePreference,
+  toggleTv: toggleTvPreference,
+  syncPreferences: syncDisplayToggles,
+});
 renderUser();
 loadData();
