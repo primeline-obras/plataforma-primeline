@@ -213,3 +213,16 @@ Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
 com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da
 data indicada. A Visão Geral apresenta apenas alertas cuja data de gatilho já
 tenha chegado.
+
+## Débitos diretos
+
+Executar `supabase/debitos_diretos_financeiro.sql` para consolidar a leitura e a
+inserção de `debitos_diretos` e `debitos_diretos_lancamentos`. O Financeiro inclui
+uma secção própria para criar compromissos e registar valores reais. Recorrências
+mensais, trimestrais e anuais são projetadas automaticamente entre as datas de
+início e fim, respeitando o dia do mês e o estado ativo.
+
+Quando o débito está associado a uma obra, os lançamentos entram nas saídas reais
+do respetivo cash flow e as ocorrências futuras entram nas saídas previstas. Os
+débitos gerais ficam disponíveis para a futura visão financeira consolidada, sem
+serem somados ao cash flow de nenhuma obra.

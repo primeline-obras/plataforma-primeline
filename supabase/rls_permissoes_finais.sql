@@ -124,7 +124,8 @@ declare
     'despesas_estaleiro', 'colaboradores', 'medicina_trabalho', 'viaturas',
     'ausencias', 'colaboradores_contratos', 'horas_extraordinarias',
     'quadro_pessoal_alocacao', 'seguranca_incidentes', 'seguranca_inspecoes',
-    'epis', 'desenhos', 'rfis', 'faturas_itens'
+    'epis', 'desenhos', 'rfis', 'faturas_itens',
+    'debitos_diretos', 'debitos_diretos_lancamentos'
   ];
 begin
   for r in
@@ -650,6 +651,44 @@ as $$
 $$;
 revoke all on function public.fn_pode_editar_documentos_obra(uuid) from public, anon;
 grant execute on function public.fn_pode_editar_documentos_obra(uuid) to authenticated;
+
+-- Débitos diretos: gestão financeira central e consulta pelos responsáveis da obra.
+create policy pl_debitos_diretos_select
+on public.debitos_diretos for select to authenticated
+using (
+  public.fn_e_administrativo()
+  or public.fn_e_financeiro()
+  or (obra_id is not null and public.fn_pode_ver_obra(obra_id))
+);
+
+create policy pl_debitos_diretos_insert
+on public.debitos_diretos for insert to authenticated
+with check (
+  public.fn_e_administrativo()
+  or public.fn_e_financeiro()
+);
+
+create policy pl_debitos_lancamentos_select
+on public.debitos_diretos_lancamentos for select to authenticated
+using (
+  exists (
+    select 1
+    from public.debitos_diretos d
+    where d.id = debitos_diretos_lancamentos.debito_direto_id
+      and (
+        public.fn_e_administrativo()
+        or public.fn_e_financeiro()
+        or (d.obra_id is not null and public.fn_pode_ver_obra(d.obra_id))
+      )
+  )
+);
+
+create policy pl_debitos_lancamentos_insert
+on public.debitos_diretos_lancamentos for insert to authenticated
+with check (
+  public.fn_e_administrativo()
+  or public.fn_e_financeiro()
+);
 
 -- Alertas: cada responsável vê os da sua obra; os globais respeitam o destinatário.
 create policy pl_alertas_select
