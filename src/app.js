@@ -3,7 +3,7 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=9";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=2";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=3";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
