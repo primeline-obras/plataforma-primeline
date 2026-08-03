@@ -241,6 +241,14 @@ input::placeholder { color: #acb0b1; }
 .measurement-picker { border: 1px solid #d9dbd8; margin: 0 0 18px; padding: 12px; }.measurement-picker legend { font: 700 11px "Manrope"; letter-spacing: .8px; padding: 0 5px; }
 .measurement-picker label { display: flex; align-items: center; gap: 9px; margin: 7px 0; font: 500 13px "DM Sans"; letter-spacing: 0; }.measurement-picker input { width: 14px; height: 14px; margin: 0; }
 .dialog-copy { color: #656c6f; font-size: 14px; margin: 0 0 18px; }
+.vacation-days-picker { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.vacation-days-picker label { min-height: 92px; padding: 12px 10px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-soft); display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 8px; cursor: pointer; }
+.vacation-days-picker label:has(input:checked) { border-color: var(--accent); background: var(--info-bg); box-shadow: inset 0 0 0 1px var(--accent); }
+.vacation-days-picker input { width: 18px; height: 18px; accent-color: var(--accent); }
+.vacation-days-picker span { display: grid; gap: 6px; }
+.vacation-days-picker b { color: var(--text-primary); font-size: 11px; }
+.vacation-days-picker small { color: var(--text-secondary); font-size: 10px; }
+.vacation-help { margin: 0 0 18px; color: var(--text-secondary); font-size: 11px; }
 .placeholder-view { min-height: calc(100vh - 70px); display: grid; place-items: center; }
 
 .overview-today { border-left: 2px solid var(--accent); padding: 7px 0 7px 14px; display: flex; flex-direction: column; gap: 3px; }
@@ -1366,6 +1374,8 @@ button, input, select, textarea,
   .settings-profile-list > div { grid-template-columns: 1fr; align-content: center; gap: 4px; }
   .settings-preferences { grid-template-columns: 1fr; }
   .settings-preferences p { grid-column: auto; }
+  .vacation-days-picker { grid-template-columns: 1fr; }
+  .vacation-days-picker label { min-height: 58px; }
   .procurement-form-row, .procurement-candidate-form, .procurement-candidate-form > div, .procurement-candidate-action, [data-adjudicate] { grid-template-columns: 1fr; }
   .procurement-budget-head { align-items: stretch; flex-direction: column; }
   .procurement-budget-head input { max-width: none; }
