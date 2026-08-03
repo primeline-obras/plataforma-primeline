@@ -6,6 +6,7 @@ import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=4";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
 import { createSettingsModule } from "./settings.js?v=1";
+import { createProcurementModule } from "./procurement.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -70,6 +71,7 @@ let selectedWorkforceSourcePeriod = "";
 let selectedWorkforcePeriod = "dia_inteiro";
 let pendingWorkforceRows = [];
 let settingsModule = null;
+let procurementModule = null;
 
 function brand() {
   return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
@@ -1667,10 +1669,7 @@ function renderSubcontractsTab(work) {
         </article>`;
       }).join("") : `<div class="empty-state"><strong>SEM SUBEMPREITADAS</strong><span>Ainda não existem adjudicações nesta obra.</span></div>`}
     </div>
-    <section class="open-consultations">
-      <div class="detail-section-title"><span>POR ADJUDICAR</span><small>${openConsultations.length}</small></div>
-      ${openConsultations.length ? `<div class="consultation-grid">${openConsultations.map(item => `<div><span>${item.especialidade || item.designacao || "Especialidade não indicada"}</span><strong>EM CONSULTA</strong><small>Fornecedor por definir</small></div>`).join("")}</div>` : `<p>Não existem especialidades em consulta sem fornecedor definido.</p>`}
-    </section>`;
+    <div data-procurement-root></div>`;
 }
 
 function measurementStatusLabel(status) {
@@ -1975,6 +1974,7 @@ function renderWorkDetail(work) {
     </nav>
     ${financialReadOnly ? `<div class="readonly-note">CONSULTA FINANCEIRA · SEM PERMISSÃO PARA ALTERAR A OBRA</div>` : ""}
     <div class="work-tab-content">${renderWorkTab(work)}</div>`;
+  if (selectedWorkTab === "subcontracts") procurementModule?.show(work);
 }
 
 function switchView(view) {
@@ -3481,6 +3481,23 @@ settingsModule = createSettingsModule({
   toggleTheme: toggleThemePreference,
   toggleTv: toggleTvPreference,
   syncPreferences: syncDisplayToggles,
+});
+procurementModule = createProcurementModule({
+  host: $("#work-detail"),
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getPhases: () => workDetails.phases,
+  getSuppliers: () => suppliers,
+  getSubcontracts: () => subcontracts,
+  euro,
+  toast,
+  onConsultationsChanged: rows => { workDetails.consultations = rows; },
+  onAdjudicated: async result => {
+    const row = Array.isArray(result) ? result[0] : result;
+    if (!row?.id) return;
+    const existing = subcontracts.find(item => item.id === row.id);
+    if (existing) Object.assign(existing, row); else subcontracts.push(row);
+  },
 });
 renderUser();
 loadData();
