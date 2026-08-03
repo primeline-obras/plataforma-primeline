@@ -17,8 +17,14 @@ const plannedStart = plan => plan?.data_inicio_prevista || plan?.data_inicio_pla
 const plannedEnd = plan => plan?.data_fim_prevista || plan?.data_fim_planeada || plan?.fim_previsto || plan?.fim_planeado || plan?.data_fim || plan?.fim || null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const measurementBilledValue = row => number(row?.valor_a_faturar);
-const totalClientBilling = (contract, measurements) =>
+export const totalClientBilling = (contract, measurements) =>
   number(contract?.valor_adiantamento) + measurements.reduce((total, row) => total + measurementBilledValue(row), 0);
+export const isInvestmentWork = work => work?.modalidade === "investimento_proprio";
+export const investmentFinancialValues = (investment = {}, actualCost = 0) => {
+  const initialBudget = number(investment.orcamento_inicial_sem_iva);
+  const revisedBudget = number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva);
+  return { initialBudget, revisedBudget, actualCost: number(actualCost), deviation: number(actualCost) - revisedBudget };
+};
 const budgetItemCost = row => number(
   row?.custo_direto ?? row?.custo_previsto ?? row?.compra_prevista
   ?? row?.preco_custo ?? row?.valor_custo ?? row?.custo_total
@@ -35,6 +41,10 @@ const selectCurrentContract = contracts => [...contracts].sort((a, b) => {
     || number(b.venda_contratual_inicial) - number(a.venda_contratual_inicial)
     || number(b.venda_contratual_efetiva) - number(a.venda_contratual_efetiva);
 })[0] || {};
+const selectCurrentInvestment = investments => [...investments].sort((a, b) =>
+  number(b.orcamento_revisto_sem_iva) - number(a.orcamento_revisto_sem_iva)
+  || String(b.criado_em || "").localeCompare(String(a.criado_em || ""))
+)[0] || {};
 
 export function createProductionDashboard(options) {
   const {
@@ -43,7 +53,8 @@ export function createProductionDashboard(options) {
   } = options;
   const emptyOverviewState = () => ({
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
-    contracts: [], tees: [], measurements: [], subcontracts: [], consultations: [], warnings: [],
+    contracts: [], tees: [], investments: [], impacts: [], measurements: [], subcontracts: [], consultations: [],
+    payments: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [], warnings: [],
   });
   let overviewState = emptyOverviewState();
   let meetingState = null;
@@ -91,7 +102,29 @@ export function createProductionDashboard(options) {
     return clampPercent(((Date.now() - start) / (end - start)) * 100);
   }
 
-  function workFinancialSummary(workId) {
+  function actualCostForWork(workId, data = overviewState) {
+    const subcontractIds = new Set(data.subcontracts.filter(row => row.obra_id === workId).map(row => row.id));
+    const directDebitIds = new Set((data.directDebits || []).filter(row => row.obra_id === workId).map(row => row.id));
+    const subcontract = (data.payments || []).filter(row => subcontractIds.has(row.subempreitada_id)).reduce((total, row) => total + number(row.valor), 0);
+    const labor = (data.labor || []).filter(row => row.obra_id === workId).reduce((total, row) => total + number(row.valor_total || number(row.horas) * number(row.valor_hora)), 0);
+    const site = (data.siteExpenses || []).filter(row => row.obra_id === workId).reduce((total, row) => total + number(row.valor_total), 0);
+    const directDebit = (data.directDebitEntries || []).filter(row => directDebitIds.has(row.debito_direto_id)).reduce((total, row) => total + number(row.valor), 0);
+    return subcontract + labor + site + directDebit;
+  }
+
+  function workFinancialSummary(work) {
+    const workId = work.id;
+    if (isInvestmentWork(work)) {
+      const investment = selectCurrentInvestment(overviewState.investments.filter(row => row.obra_id === workId));
+      const actualCost = actualCostForWork(workId);
+      const { initialBudget, revisedBudget, deviation } = investmentFinancialValues(investment, actualCost);
+      return {
+        mode: "investment", initialBudget, revisedBudget, actualCost, deviation,
+        impacts: overviewState.impacts.filter(row => row.obra_id === workId),
+        subcontracts: overviewState.subcontracts.filter(row => row.obra_id === workId),
+        consultations: overviewState.consultations.filter(row => row.obra_id === workId && row.estado === "em_consulta"),
+      };
+    }
     const contract = selectCurrentContract(overviewState.contracts.filter(row => row.obra_id === workId));
     const approvedTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "aprovado");
     const pendingTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "pendente");
@@ -106,6 +139,7 @@ export function createProductionDashboard(options) {
     const totalSale = sale + approvedTeeSale;
     const updatedDirectCost = directCost + approvedTeeCost;
     return {
+      mode: "client",
       sale: totalSale, directCost: updatedDirectCost, margin: totalSale - updatedDirectCost,
       billed, unbilled: totalSale - billed, approvedTees, pendingTees,
       subcontracts: overviewState.subcontracts.filter(row => row.obra_id === workId),
@@ -114,7 +148,7 @@ export function createProductionDashboard(options) {
   }
 
   function overviewWorkSection(work, pendingInvoices, readOnly) {
-    const summary = workFinancialSummary(work.id);
+    const summary = workFinancialSummary(work);
     const workInvoices = pendingInvoices.filter(invoice => invoice.obra_id === work.id);
     const progress = workExecution(work.id);
     const deadline = deadlinePercent(work);
@@ -132,11 +166,15 @@ export function createProductionDashboard(options) {
       </${readOnly ? "div" : "button"}>`).join("");
     return `<article class="panel overview-work-detail">
       <header><div><p class="eyebrow">OBRA ${escapeHtml(work.numero || "—")}</p><h2>${escapeHtml(work.nome || "Obra sem designação")}</h2></div><button data-meeting-work="${work.id}">REUNIÃO SEMANAL →</button></header>
-      <div class="overview-work-metrics">
+      <div class="overview-work-metrics">${summary.mode === "investment" ? `
+        <div><span>ORÇAMENTO INICIAL</span><strong>${euro.format(summary.initialBudget)}</strong></div>
+        <div><span>ORÇAMENTO REVISTO</span><strong>${euro.format(summary.revisedBudget)}</strong></div>
+        <div><span>CUSTO REALIZADO</span><strong>${euro.format(summary.actualCost)}</strong></div>
+        <div><span>DESVIO</span><strong class="${summary.deviation > 0 ? "negative" : "positive"}">${euro.format(summary.deviation)}</strong><small>${summary.deviation > 0 ? "ACIMA DO ORÇAMENTO" : "DENTRO DO ORÇAMENTO"}</small></div>` : `
         <div><span>VENDA</span><strong>${euro.format(summary.sale)}</strong></div>
         <div><span>CUSTO DIRETO</span><strong>${euro.format(summary.directCost)}</strong></div>
         <div><span>MARGEM</span><strong>${euro.format(summary.margin)}</strong></div>
-        <div><span>FATURADO</span><strong>${euro.format(summary.billed)}</strong><small>POR FATURAR ${euro.format(summary.unbilled)}</small></div>
+        <div><span>FATURADO</span><strong>${euro.format(summary.billed)}</strong><small>POR FATURAR ${euro.format(summary.unbilled)}</small></div>`}
       </div>
       <div class="overview-work-status">
         <div><span>OBRA EXECUTADA <b>${Math.round(progress)}%</b></span><i><em style="width:${progress}%"></em></i></div>
@@ -144,10 +182,12 @@ export function createProductionDashboard(options) {
       </div>
       <div class="overview-work-columns">
         <section><h3>A MINHA FILA <b>${workInvoices.length}</b></h3><div class="overview-actions compact">${invoiceRows || '<div class="overview-empty">SEM FATURAS PENDENTES</div>'}</div></section>
-        <section><h3>TEEs</h3>
+        ${summary.mode === "investment" ? `<section><h3>IMPACTOS DA OBRA</h3>
+          <details><summary>REGISTADOS <b>${summary.impacts.length}</b><em>${euro.format(sum(summary.impacts, "valor_sem_iva"))}</em></summary><div class="meeting-detail-list">${summary.impacts.map(row => `<div><span><strong>${escapeHtml(row.numero)} · ${escapeHtml(row.descricao)}</strong><small>${escapeHtml(row.tipo_impacto || "Impacto")}</small></span><b>${euro.format(number(row.valor_sem_iva))}</b></div>`).join("") || '<div class="overview-empty">SEM IMPACTOS REGISTADOS</div>'}</div></details>
+        </section>` : `<section><h3>TEEs</h3>
           <details><summary>APROVADOS <b>${summary.approvedTees.length}</b><em>${euro.format(sum(summary.approvedTees, "valor"))}</em></summary>${teeList(summary.approvedTees)}</details>
           <details><summary>EM ELABORAÇÃO <b>${summary.pendingTees.length}</b><em>${euro.format(sum(summary.pendingTees, "valor"))}</em></summary>${teeList(summary.pendingTees)}</details>
-        </section>
+        </section>`}
         <section><h3>SUBEMPREITADAS <b>${summary.subcontracts.length + summary.consultations.length}</b></h3>
           <div class="overview-subcontract-counts"><span>ADJUDICADAS <b>${summary.subcontracts.length}</b></span><span>EM CONSULTA <b>${summary.consultations.length}</b></span>${stateCounters}</div>
         </section>
@@ -178,12 +218,20 @@ export function createProductionDashboard(options) {
     const paymentActions = ["financeiro", "administrativo", "gerencia"].includes(role) ? unpaid : [];
     const actions = [...approvalActions.map(invoice => ({ ...invoice, action: "APROVAR" })), ...paymentActions.map(invoice => ({ ...invoice, action: "PAGAR" }))];
     const suppliers = getSuppliers();
-    const consolidated = scopedWorks.reduce((total, work) => {
-      const summary = workFinancialSummary(work.id);
+    const clientWorks = scopedWorks.filter(work => !isInvestmentWork(work));
+    const investmentWorks = scopedWorks.filter(isInvestmentWork);
+    const consolidated = clientWorks.reduce((total, work) => {
+      const summary = workFinancialSummary(work);
       total.sale += summary.sale; total.cost += summary.directCost; total.margin += summary.margin;
       total.billed += summary.billed; total.unbilled += summary.unbilled;
       return total;
     }, { sale: 0, cost: 0, margin: 0, billed: 0, unbilled: 0 });
+    const consolidatedInvestment = investmentWorks.reduce((total, work) => {
+      const summary = workFinancialSummary(work);
+      total.initial += summary.initialBudget; total.revised += summary.revisedBudget;
+      total.actual += summary.actualCost; total.deviation += summary.deviation;
+      return total;
+    }, { initial: 0, revised: 0, actual: 0, deviation: 0 });
     const warning = overviewState.warnings.length
       ? `<div class="overview-warning">Alguns dados estão indisponíveis: ${escapeHtml(overviewState.warnings.join(" · "))}</div>` : "";
 
@@ -201,7 +249,8 @@ export function createProductionDashboard(options) {
       </section>
       ${["financeiro", "administrativo", "gerencia"].includes(role) ? `<section class="panel overview-consolidated">
         <div class="overview-section-head"><div><p class="eyebrow">TODAS AS OBRAS EM CURSO</p><h2>RESUMO FINANCEIRO CONSOLIDADO</h2></div><span>${scopedWorks.length}</span></div>
-        <div class="overview-work-metrics"><div><span>VENDA</span><strong>${euro.format(consolidated.sale)}</strong></div><div><span>CUSTO DIRETO</span><strong>${euro.format(consolidated.cost)}</strong></div><div><span>MARGEM</span><strong>${euro.format(consolidated.margin)}</strong></div><div><span>FATURADO</span><strong>${euro.format(consolidated.billed)}</strong><small>POR FATURAR ${euro.format(consolidated.unbilled)}</small></div></div>
+        ${clientWorks.length ? `<div class="overview-work-metrics"><div><span>VENDA · CLIENTES</span><strong>${euro.format(consolidated.sale)}</strong></div><div><span>CUSTO DIRETO</span><strong>${euro.format(consolidated.cost)}</strong></div><div><span>MARGEM</span><strong>${euro.format(consolidated.margin)}</strong></div><div><span>FATURADO</span><strong>${euro.format(consolidated.billed)}</strong><small>POR FATURAR ${euro.format(consolidated.unbilled)}</small></div></div>` : ""}
+        ${investmentWorks.length ? `<div class="overview-work-metrics"><div><span>ORÇAMENTO INICIAL · INVESTIMENTOS</span><strong>${euro.format(consolidatedInvestment.initial)}</strong></div><div><span>ORÇAMENTO REVISTO</span><strong>${euro.format(consolidatedInvestment.revised)}</strong></div><div><span>CUSTO REALIZADO</span><strong>${euro.format(consolidatedInvestment.actual)}</strong></div><div><span>DESVIO</span><strong class="${consolidatedInvestment.deviation > 0 ? "negative" : "positive"}">${euro.format(consolidatedInvestment.deviation)}</strong></div></div>` : ""}
       </section>` : ""}
       <section class="overview-grid">
         <article class="panel overview-panel">
@@ -252,7 +301,10 @@ export function createProductionDashboard(options) {
       return;
     }
     const authId = getSession()?.user?.id;
-    const [alerts, profiles, phases, planning, budget, contracts, tees, measurements, subcontracts, consultations] = await Promise.all([
+    const [
+      alerts, profiles, phases, planning, budget, contracts, tees, investments, impacts,
+      measurements, subcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries,
+    ] = await Promise.all([
       query(`alertas?select=*&estado=eq.pendente&data_gatilho=lte.${new Date().toISOString().slice(0, 10)}&order=data_gatilho.asc`, "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
       query("fases?select=id,obra_id,descricao,codigo", "Fases"),
@@ -260,9 +312,16 @@ export function createProductionDashboard(options) {
       query("itens_orcamento?select=*", "Orçamento"),
       query("contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em", "Contratos"),
       query("alteracoes_tee?select=*", "TEEs"),
+      query("investimentos?select=*", "Investimentos"),
+      query("impactos_obra?select=*", "Impactos de obra"),
       query("autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar", "Autos"),
-      query("subempreitadas?select=id,obra_id,estado", "Subempreitadas"),
+      query("subempreitadas?select=id,obra_id,estado,valor_adjudicado", "Subempreitadas"),
       query("consultas_subempreitada?select=id,obra_id,fase_id,estado", "Consultas"),
+      query("pagamentos_subempreitada?select=*", "Pagamentos de subempreitadas"),
+      query("lancamentos_mao_obra?select=*", "Mão de obra"),
+      query("despesas_estaleiro?select=*", "Estaleiro"),
+      query("debitos_diretos?select=id,obra_id", "Débitos diretos"),
+      query("debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor", "Lançamentos de débitos diretos"),
     ]);
     overviewState.alerts = alerts;
     overviewState.profile = profiles[0] || null;
@@ -271,9 +330,16 @@ export function createProductionDashboard(options) {
     overviewState.budget = budget;
     overviewState.contracts = contracts;
     overviewState.tees = tees;
+    overviewState.investments = investments;
+    overviewState.impacts = impacts;
     overviewState.measurements = measurements;
     overviewState.subcontracts = subcontracts;
     overviewState.consultations = consultations;
+    overviewState.payments = payments;
+    overviewState.labor = labor;
+    overviewState.siteExpenses = siteExpenses;
+    overviewState.directDebits = directDebits;
+    overviewState.directDebitEntries = directDebitEntries;
     overviewState.responsibilities = overviewState.profile
       ? await query(`obra_responsaveis?select=obra_id,utilizador_id,papel&utilizador_id=eq.${encodeURIComponent(overviewState.profile.id)}`, "Responsabilidades")
       : [];
@@ -329,6 +395,7 @@ export function createProductionDashboard(options) {
   }
 
   function renderCashFlow(work, data) {
+    const investmentMode = isInvestmentWork(work);
     const todayMonth = monthKey(new Date().toISOString());
     const scheduleRows = [...data.phases, ...data.planning];
     const phaseStarts = scheduleRows.map(plannedStart).filter(Boolean).sort();
@@ -339,8 +406,8 @@ export function createProductionDashboard(options) {
     const debitForecast = directDebitForecastByMonth(data.directDebits || [], scheduleStart, scheduleEnd);
     const contract = selectCurrentContract(data.contracts);
     const values = months.map(month => {
-      const advance = monthKey(contract.data_assinatura) === month ? number(contract.valor_adiantamento) : 0;
-      const incoming = advance + data.measurements.filter(row => monthKey(row.mes_referencia) === month).reduce((total, row) => total + measurementBilledValue(row), 0);
+      const advance = investmentMode ? 0 : monthKey(contract.data_assinatura) === month ? number(contract.valor_adiantamento) : 0;
+      const incoming = investmentMode ? 0 : advance + data.measurements.filter(row => monthKey(row.mes_referencia) === month).reduce((total, row) => total + measurementBilledValue(row), 0);
       const subcontract = data.payments.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor), 0);
       const labor = data.labor.filter(row => monthKey(row.data) === month).reduce((total, row) => total + number(row.horas) * number(row.valor_hora), 0);
       const site = data.siteExpenses.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor_total), 0);
@@ -348,15 +415,17 @@ export function createProductionDashboard(options) {
       const closed = month < todayMonth;
       return { month, incoming: closed ? incoming : 0, outgoing: closed ? subcontract + labor + site + directDebit : 0, directDebitReal: closed ? directDebit : 0, directDebitForecast: closed ? 0 : number(debitForecast.get(month)), forecastIncoming: 0, forecastOutgoing: 0, closed };
     });
-    const approvedTees = data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
-    const totalSale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial) + sum(approvedTees, "valor");
-    const directCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
-      || effectiveDirectCost(data.budget, totalSale);
-    const totalCost = directCost + sum(approvedTees, "preco_custo");
+    const approvedTees = investmentMode ? [] : data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
+    const investment = selectCurrentInvestment(data.investments || []);
+    const totalSale = investmentMode ? 0 : number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial) + sum(approvedTees, "valor");
+    const directCost = investmentMode
+      ? number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva)
+      : number(contract.custo_direto_efetivo || contract.custo_direto_inicial) || effectiveDirectCost(data.budget, totalSale);
+    const totalCost = investmentMode ? directCost : directCost + sum(approvedTees, "preco_custo");
     const remainingMonths = months.filter(month => month >= todayMonth);
     const saleWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: scheduleStart, workEnd: scheduleEnd }, "sale");
     const costWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: scheduleStart, workEnd: scheduleEnd }, "cost");
-    const remainingSale = Math.max(0, totalSale - values.reduce((total, row) => total + row.incoming, 0));
+    const remainingSale = investmentMode ? 0 : Math.max(0, totalSale - values.reduce((total, row) => total + row.incoming, 0));
     const directDebitForecastTotal = values.reduce((total, row) => total + row.directDebitForecast, 0);
     const remainingCost = Math.max(0, totalCost - values.reduce((total, row) => total + row.outgoing, 0) - directDebitForecastTotal);
     const saleWeightTotal = [...saleWeights.values()].reduce((total, value) => total + value, 0) || 1;
@@ -436,7 +505,7 @@ export function createProductionDashboard(options) {
     </div>`;
   }
 
-  function financialProjection(work, data, totalSale, updatedBudgetCost, execution) {
+  function financialProjection(work, data, totalSale, updatedBudgetCost, execution, investmentMode = false) {
     const today = new Date();
     const currentMonth = monthKey(today.toISOString());
     const subcontractPaid = sum(data.payments, "valor");
@@ -444,7 +513,8 @@ export function createProductionDashboard(options) {
     const laborActual = data.labor.reduce((total, row) =>
       total + number(row.valor_total || number(row.horas) * number(row.valor_hora)), 0);
     const siteActual = sum(data.siteExpenses, "valor_total");
-    const actualCost = subcontractPaid + laborActual + siteActual;
+    const directDebitActual = sum(data.directDebitEntries || [], "valor");
+    const actualCost = subcontractPaid + laborActual + siteActual + directDebitActual;
     const remainingCommitments = Math.max(0, subcontractCommitted - subcontractPaid);
     const closedLaborRows = data.labor.filter(row => monthKey(row.data) && monthKey(row.data) < currentMonth);
     const closedLaborMonths = new Set(closedLaborRows.map(row => monthKey(row.data)));
@@ -464,7 +534,7 @@ export function createProductionDashboard(options) {
       : contractualEnd || today;
     const estimatedFinalCost = actualCost + remainingCommitments + monthlyStaffVehicle * remainingMonths;
     return {
-      totalSale, updatedBudgetCost, actualCost, remainingCommitments, monthlyStaffVehicle,
+      totalSale, updatedBudgetCost, actualCost, remainingCommitments, monthlyStaffVehicle, investmentMode,
       remainingMonths, estimatedFinalCost, contractualEnd, projectedFinish, progress, start, dailyProgress,
     };
   }
@@ -517,7 +587,7 @@ export function createProductionDashboard(options) {
             <div><dt>Conclusão projetada</dt><dd data-delay-finish>${prettyDate.format(model.projectedFinish)}</dd></div>
             <div><dt>Custo adicional</dt><dd data-delay-cost>${euro.format(0)}</dd></div>
             <div><dt>Estimativa final com atraso</dt><dd data-delay-final>${euro.format(model.estimatedFinalCost)}</dd></div>
-            <div class="forecast-deviation"><dt>Margem estimada</dt><dd data-delay-margin>${euro.format(model.totalSale - model.estimatedFinalCost)}</dd></div>
+            <div class="forecast-deviation"><dt>${model.investmentMode ? "Desvio projetado" : "Margem estimada"}</dt><dd data-delay-margin>${euro.format(model.investmentMode ? model.estimatedFinalCost - model.updatedBudgetCost : model.totalSale - model.estimatedFinalCost)}</dd></div>
           </dl>
           <div class="delay-warning" data-delay-warning>SEM ATRASO ADICIONAL SIMULADO</div>
         </article>
@@ -537,7 +607,7 @@ export function createProductionDashboard(options) {
       const deviation = estimatedFinal - model.updatedBudgetCost;
       const delayCost = monthly / 30.4375 * delayDays;
       const finalWithDelay = estimatedFinal + delayCost;
-      const margin = model.totalSale - finalWithDelay;
+      const margin = model.investmentMode ? finalWithDelay - model.updatedBudgetCost : model.totalSale - finalWithDelay;
       const finish = addDaysDate(model.projectedFinish, delayDays);
       const write = (selector, value) => { const element = root.querySelector(selector); if (element) element.textContent = value; };
       write("[data-estimated-final]", euro.format(estimatedFinal));
@@ -553,12 +623,12 @@ export function createProductionDashboard(options) {
       const marginElement = root.querySelector("[data-delay-margin]");
       [deviationElement, statusElement].forEach(element => element?.classList.toggle("negative", deviation > 0));
       [deviationElement, statusElement].forEach(element => element?.classList.toggle("positive", deviation <= 0));
-      marginElement?.classList.toggle("negative", margin < 0);
-      marginElement?.classList.toggle("positive", margin >= 0);
+      marginElement?.classList.toggle("negative", model.investmentMode ? margin > 0 : margin < 0);
+      marginElement?.classList.toggle("positive", model.investmentMode ? margin <= 0 : margin >= 0);
       const warning = root.querySelector("[data-delay-warning]");
       if (warning) {
         warning.className = `delay-warning ${delayDays > 60 ? "negative" : delayDays > 0 ? "warning" : ""}`;
-        warning.textContent = delayDays > 60 ? "RISCO ELEVADO DE IMPACTO EM PRAZO E MARGEM"
+        warning.textContent = delayDays > 60 ? `RISCO ELEVADO DE IMPACTO EM PRAZO E ${model.investmentMode ? "ORÇAMENTO" : "MARGEM"}`
           : delayDays > 0 ? "O ATRASO AUMENTA O CUSTO DE ESTRUTURA DA OBRA" : "SEM ATRASO ADICIONAL SIMULADO";
       }
     };
@@ -569,18 +639,23 @@ export function createProductionDashboard(options) {
 
   function renderMeeting() {
     const { work, data, warnings } = meetingState;
+    const investmentMode = isInvestmentWork(work);
     const contract = selectCurrentContract(data.contracts);
-    const approvedTees = data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
-    const pendingTees = data.tees.filter(row => row.estado_aprovacao_cliente === "pendente");
+    const investment = selectCurrentInvestment(data.investments || []);
+    const impacts = data.impacts || [];
+    const approvedTees = investmentMode ? [] : data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
+    const pendingTees = investmentMode ? [] : data.tees.filter(row => row.estado_aprovacao_cliente === "pendente");
     const approvedTeeSale = sum(approvedTees, "valor");
     const approvedTeeCost = sum(approvedTees, "preco_custo");
     const pendingTeeSale = sum(pendingTees, "valor");
     const sale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial);
-    const directCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
+    const initialBudget = number(investment.orcamento_inicial_sem_iva);
+    const revisedBudget = number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva);
+    const directCost = investmentMode ? revisedBudget : number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
       || effectiveDirectCost(data.budget, sale);
     const expectedMargin = sale + approvedTeeSale - directCost - approvedTeeCost;
-    const billed = totalClientBilling(contract, data.measurements);
-    const totalSale = sale + approvedTeeSale;
+    const billed = investmentMode ? 0 : totalClientBilling(contract, data.measurements);
+    const totalSale = investmentMode ? 0 : sale + approvedTeeSale;
     const billingPercent = totalSale ? clampPercent(billed / totalSale * 100) : 0;
     const execution = workExecution(work.id, data.phases, data.planning, data.budget);
     const deadline = deadlinePercent(work);
@@ -590,25 +665,34 @@ export function createProductionDashboard(options) {
     const subcontractPhaseIds = new Set(data.subcontracts.map(row => row.fase_id).filter(Boolean));
     const budgetPhaseIds = new Set(data.budget.map(row => row.fase_id));
     const notConsulted = data.phases.filter(phase => budgetPhaseIds.has(phase.id) && !consultationPhaseIds.has(phase.id) && !subcontractPhaseIds.has(phase.id));
-    const projection = financialProjection(work, data, totalSale, directCost + approvedTeeCost, execution);
+    const projection = financialProjection(work, data, totalSale, directCost + approvedTeeCost, execution, investmentMode);
+    const actualCost = projection.actualCost;
+    const investmentDeviation = actualCost - revisedBudget;
 
     document.querySelector("#meeting-view").innerHTML = `
       <div class="meeting-heading"><button id="meeting-back">← ${meetingReturnView === "works" ? "OBRA" : "VISÃO GERAL"}</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · OBRA ${escapeHtml(work.numero)}</p><h1>${escapeHtml(work.nome)}</h1><span>${escapeHtml(work.cliente || "")}</span></div><em class="work-status ${escapeHtml(work.situacao)}">${escapeHtml(String(work.situacao || "").replace(/_/g, " "))}</em></div>
       ${warnings.length ? `<div class="overview-warning">Dados parciais: ${escapeHtml(warnings.join(" · "))}</div>` : ""}
-      <section class="meeting-kpis">
+      <section class="meeting-kpis">${investmentMode ? `
+        <article><span>ORÇAMENTO INICIAL</span><strong>${euro.format(initialBudget)}</strong><small>sem IVA</small></article>
+        <article><span>ORÇAMENTO REVISTO</span><strong>${euro.format(revisedBudget)}</strong><small>sem IVA</small></article>
+        <article><span>CUSTO REALIZADO</span><strong>${euro.format(actualCost)}</strong><small>custos reais registados</small></article>
+        <article><span>DESVIO</span><strong class="${investmentDeviation > 0 ? "negative" : "positive"}">${euro.format(investmentDeviation)}</strong><small>${investmentDeviation > 0 ? "acima do orçamento" : "dentro do orçamento"}</small></article>` : `
         <article><span>VENDA ATUALIZADA</span><strong>${euro.format(totalSale)}</strong><small>venda efetiva + TEEs aprovados</small></article>
         <article><span>CUSTO DIRETO ATUALIZADO</span><strong>${directCost ? euro.format(directCost + approvedTeeCost) : "—"}</strong><small>contratual + TEEs aprovados</small></article>
         <article><span>MARGEM PREVISTA</span><strong>${directCost ? euro.format(expectedMargin) : "—"}</strong><small>inclui TEEs aprovados</small></article>
-        <article><span>POR FATURAR</span><strong>${euro.format(totalSale - billed)}</strong><small>${Math.round(billingPercent)}% faturado</small></article>
+        <article><span>POR FATURAR</span><strong>${euro.format(totalSale - billed)}</strong><small>${Math.round(billingPercent)}% faturado</small></article>`}
       </section>
       <section class="meeting-two">
-        <article class="panel meeting-card"><div class="meeting-title"><span>RESUMO CONTRATUAL</span></div>
+        ${investmentMode ? `<article class="panel meeting-card"><div class="meeting-title"><span>RESUMO DO INVESTIMENTO</span></div>
+          <dl class="meeting-dl"><div><dt>Orçamento inicial sem IVA</dt><dd>${euro.format(initialBudget)}</dd></div><div><dt>Orçamento inicial com IVA</dt><dd>${euro.format(number(investment.orcamento_inicial_com_iva))}</dd></div><div><dt>Orçamento revisto sem IVA</dt><dd>${euro.format(revisedBudget)}</dd></div><div><dt>Orçamento revisto com IVA</dt><dd>${euro.format(number(investment.orcamento_revisto_com_iva))}</dd></div><div><dt>Impactos registados</dt><dd>${euro.format(sum(impacts, "valor_sem_iva"))}</dd></div><div><dt>Custo realizado</dt><dd>${euro.format(actualCost)}</dd></div></dl>
+          <details><summary>IMPACTOS DA OBRA <b>${impacts.length}</b><em>${euro.format(sum(impacts, "valor_sem_iva"))}</em></summary><div class="meeting-detail-list">${impacts.map(row => `<div><span><strong>${escapeHtml(row.numero)} · ${escapeHtml(row.descricao)}</strong><small>${escapeHtml(row.tipo_impacto || "Impacto")} · ${row.data ? prettyDate.format(safeDate(row.data)) : "SEM DATA"}</small></span><b>${euro.format(number(row.valor_sem_iva))}</b></div>`).join("") || '<div class="overview-empty">SEM IMPACTOS REGISTADOS</div>'}</div></details>
+        </article>` : `<article class="panel meeting-card"><div class="meeting-title"><span>RESUMO CONTRATUAL</span></div>
           <dl class="meeting-dl"><div><dt>Venda inicial</dt><dd>${euro.format(number(contract.venda_contratual_inicial))}</dd></div><div><dt>Venda efetiva</dt><dd>${euro.format(sale)}</dd></div><div><dt>Adiantamento</dt><dd>${euro.format(number(contract.valor_adiantamento))}</dd></div><div><dt>Custo direto efetivo</dt><dd>${euro.format(directCost)}</dd></div><div><dt>TEEs aprovados</dt><dd>${euro.format(approvedTeeSale)}</dd></div><div><dt>Custo TEEs aprovados</dt><dd>${euro.format(approvedTeeCost)}</dd></div></dl>
           <details><summary>TEEs APROVADOS <b>${approvedTees.length}</b><em>${euro.format(approvedTeeSale)}</em></summary>${teeList(approvedTees)}</details>
           <details><summary>EM ELABORAÇÃO / AGUARDA RESPOSTA <b>${pendingTees.length}</b><em>${euro.format(pendingTeeSale)}</em></summary>${teeList(pendingTees)}</details>
-        </article>
-        <article class="panel meeting-card"><div class="meeting-title"><span>FATURAÇÃO E PROGRESSO</span></div>
-          <div class="meeting-progress"><span>FATURADO <b>${Math.round(billingPercent)}%</b></span><div><i style="width:${billingPercent}%"></i></div><small>${euro.format(billed)} de ${euro.format(totalSale)}</small></div>
+        </article>`}
+        <article class="panel meeting-card"><div class="meeting-title"><span>${investmentMode ? "CUSTO E PROGRESSO" : "FATURAÇÃO E PROGRESSO"}</span></div>
+          ${investmentMode ? `<div class="meeting-progress"><span>ORÇAMENTO CONSUMIDO <b>${revisedBudget ? Math.round(clampPercent(actualCost / revisedBudget * 100)) : 0}%</b></span><div><i style="width:${revisedBudget ? clampPercent(actualCost / revisedBudget * 100) : 0}%"></i></div><small>${euro.format(actualCost)} de ${euro.format(revisedBudget)}</small></div>` : `<div class="meeting-progress"><span>FATURADO <b>${Math.round(billingPercent)}%</b></span><div><i style="width:${billingPercent}%"></i></div><small>${euro.format(billed)} de ${euro.format(totalSale)}</small></div>`}
           <div class="meeting-progress"><span>OBRA EXECUTADA <b>${Math.round(execution)}%</b></span><div><i style="width:${execution}%"></i></div><small>ponderação financeira das fases</small></div>
           <div class="meeting-progress deadline"><span>PRAZO CONSUMIDO <b>${Math.round(deadline)}%</b></span><div><i style="width:${deadline}%"></i></div><small>${work.data_inicio ? prettyDate.format(safeDate(work.data_inicio)) : "—"} → ${work.data_fim_prevista ? prettyDate.format(safeDate(work.data_fim_prevista)) : "—"}</small></div>
         </article>
@@ -633,6 +717,7 @@ export function createProductionDashboard(options) {
   async function openMeeting(workId, returnView = "overview") {
     const work = getWorks().find(item => item.id === workId);
     if (!work) return;
+    const investmentMode = isInvestmentWork(work);
     meetingReturnView = returnView;
     showView("meeting");
     document.querySelector("#meeting-view").innerHTML = `<div class="meeting-loading">A CARREGAR REUNIÃO DA OBRA ${escapeHtml(work.numero)}…</div>`;
@@ -647,12 +732,14 @@ export function createProductionDashboard(options) {
     const phaseIds = phases.map(row => row.id);
     const directDebitIds = directDebits.map(row => row.id);
     const [
-      contracts, tees, measurements, planning, budget, consultations,
+      contracts, tees, investments, impacts, measurements, planning, budget, consultations,
       payments, labor, siteExpenses, directDebitEntries,
     ] = await Promise.all([
-      meetingQuery(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encoded}`, "Contrato", warnings),
-      meetingQuery(`alteracoes_tee?select=*&obra_id=eq.${encoded}`, "TEEs", warnings),
-      meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
+      investmentMode ? [] : meetingQuery(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encoded}`, "Contrato", warnings),
+      investmentMode ? [] : meetingQuery(`alteracoes_tee?select=*&obra_id=eq.${encoded}`, "TEEs", warnings),
+      investmentMode ? meetingQuery(`investimentos?select=*&obra_id=eq.${encoded}`, "Investimento", warnings) : [],
+      investmentMode ? meetingQuery(`impactos_obra?select=*&obra_id=eq.${encoded}&order=data.desc`, "Impactos de obra", warnings) : [],
+      investmentMode ? [] : meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
       phaseIds.length ? meetingQuery(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Orçamento", warnings) : [],
       meetingQuery(`consultas_subempreitada?select=*&obra_id=eq.${encoded}`, "Consultas", warnings),
@@ -661,7 +748,7 @@ export function createProductionDashboard(options) {
       meetingQuery(`despesas_estaleiro?select=*&obra_id=eq.${encoded}`, "Estaleiro", warnings),
       directDebitIds.length ? meetingQuery(`debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor&debito_direto_id=in.(${directDebitIds.map(encodeURIComponent).join(",")})`, "Lançamentos de débitos diretos", warnings) : [],
     ]);
-    meetingState = { work, warnings, data: { contracts, tees, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries } };
+    meetingState = { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries } };
     renderMeeting();
   }
 

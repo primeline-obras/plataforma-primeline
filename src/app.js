@@ -1,6 +1,6 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=2";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=10";
+import { createProductionDashboard } from "./production-dashboard.js?v=11";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=4";
@@ -48,7 +48,8 @@ let selectedFinanceTab = "invoices";
 let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
-  contract: null, phases: [], measurements: [], payments: [], consultations: [],
+  contract: null, investment: null, impacts: [], phases: [], measurements: [], payments: [], consultations: [],
+  labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
   billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
   drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
   safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
@@ -1055,7 +1056,7 @@ function renderTeam() {
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
     const boardHead = `<div class="workforce-grid workforce-grid-head"><div>LINHA / OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
       const vacationPeople = operationalPeople.filter(person => teamData.absences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
-      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para marcar férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
+      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para editar os dias de férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
     }).join("")}</div>`;
     const rows = boardRows.map(row => {
       const work = row.work;
@@ -1371,28 +1372,67 @@ async function removeWorkforceAllocation() {
   }
 }
 
-async function saveVacationWeek(personId, week) {
+function openVacationDaysDialog(personId, week) {
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
   const dates = Array.from({ length: 5 }, (_, index) => addDaysIso(week, index));
   const existing = new Set(teamData.absences.filter(item => item.colaborador_id === personId && isVacation(item)).map(item => item.data));
-  const missing = dates.filter(date => !existing.has(date));
-  if (!missing.length) {
-    toast(`${shortPersonName(person.nome)} já está de férias nessa semana.`);
-    return;
+  const weekdayNames = ["SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA"];
+  $("#workflow-dialog-title").textContent = "EDITAR FÉRIAS";
+  $("#workflow-dialog-content").innerHTML = `<form id="workforce-vacation-form" data-person-id="${personId}" data-week="${week}">
+    <p class="dialog-copy"><strong>${safeText(shortPersonName(person.nome))}</strong><br>Marque apenas os dias em que estará de férias.</p>
+    <div class="vacation-days-picker">${dates.map((date, index) => `<label><input type="checkbox" name="vacation_date" value="${date}" ${existing.has(date) ? "checked" : ""}><span><b>${weekdayNames[index]}</b><small>${prettyDate.format(new Date(`${date}T12:00:00`))}</small></span></label>`).join("")}</div>
+    <p class="vacation-help">Pode desmarcar dias já registados. Se não marcar nenhum, as férias desta semana serão removidas.</p>
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">GUARDAR DIAS <span>→</span></button></div>
+  </form>`;
+  $("#workflow-dialog").hidden = false;
+  $("#workforce-vacation-form").addEventListener("submit", saveVacationDays);
+}
+
+async function saveVacationDays(event) {
+  event.preventDefault();
+  const formElement = event.currentTarget;
+  const personId = formElement.dataset.personId;
+  const week = formElement.dataset.week;
+  const person = collaborators.find(item => item.id === personId);
+  const weekDates = Array.from({ length: 5 }, (_, index) => addDaysIso(week, index));
+  const desired = new Set(new FormData(formElement).getAll("vacation_date"));
+  const existingRows = teamData.absences.filter(item => item.colaborador_id === personId && isVacation(item) && weekDates.includes(item.data));
+  const existingDates = new Set(existingRows.map(item => item.data));
+  const missing = [...desired].filter(date => !existingDates.has(date));
+  const removeIds = existingRows.filter(item => !desired.has(item.data)).map(item => item.id);
+  const button = formElement.querySelector('button[type="submit"]');
+  const errorElement = formElement.querySelector(".form-error");
+  button.disabled = true;
+  errorElement.textContent = "";
+  try {
+    if (isSupabaseConfigured && missing.length) {
+      const response = await supabase("ausencias", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify(missing.map(data => ({ colaborador_id: personId, data, tipo: "ferias" }))),
+      });
+      if (!response.ok) throw new Error(await response.text());
+    }
+    if (isSupabaseConfigured && removeIds.length) {
+      const response = await supabase(`ausencias?id=in.(${removeIds.map(encodeURIComponent).join(",")})`, { method: "DELETE" });
+      if (!response.ok) throw new Error(await response.text());
+    }
+    if (!isSupabaseConfigured) {
+      teamData.absences = teamData.absences.filter(item => !removeIds.includes(item.id));
+      teamData.absences.push(...missing.map(data => ({ id: crypto.randomUUID(), colaborador_id: personId, data, tipo: "ferias" })));
+    } else {
+      await loadTeamData(true);
+    }
+    closeWorkflowDialog();
+    renderTeam();
+    $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} continua selecionado. Pode editar outra semana.`;
+    toast(desired.size ? `${desired.size} dia${desired.size === 1 ? "" : "s"} de férias guardado${desired.size === 1 ? "" : "s"}.` : "Férias removidas desta semana.");
+  } catch (error) {
+    errorElement.textContent = `Não foi possível guardar as férias: ${error.message}`;
+  } finally {
+    button.disabled = false;
   }
-  const response = await supabase("ausencias", {
-    method: "POST",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify(missing.map(data => ({ colaborador_id: personId, data, tipo: "ferias" }))),
-  });
-  if (!response.ok) {
-    toast(`Não foi possível marcar as férias: ${await response.text()}`, "error");
-    return;
-  }
-  await loadTeamData(true);
-  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} marcado de férias. O íman continua selecionado.`;
-  toast("Férias registadas de segunda a sexta-feira.");
 }
 
 async function loadTeamData(force = false) {
@@ -1455,7 +1495,8 @@ async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
   workDetails = {
-    contract: null, phases: [], measurements: [], payments: [], consultations: [],
+    contract: null, investment: null, impacts: [], phases: [], measurements: [], payments: [], consultations: [],
+    labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
     billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
     drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
     safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
@@ -1468,6 +1509,7 @@ async function loadWorkDetails(workId) {
   if (!isSupabaseConfigured) {
     workDetails = {
       contract: { venda_contratual_inicial: 553619.19, venda_contratual_efetiva: 472179.26, custo_direto_efetivo: 355023.64, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
+      investment: null, impacts: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
       phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, nome: `Fase ${index + 1}` })),
       measurements: [],
       payments: [
@@ -1501,18 +1543,42 @@ async function loadWorkDetails(workId) {
     renderWorkDetail(work);
     return;
   }
-  const [contractResult, phasesResult, measurementsResult] = await Promise.all([
-    supabase(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encodeURIComponent(workId)}`),
+  const investmentMode = work?.modalidade === "investimento_proprio";
+  const emptyResult = () => Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }));
+  const [contractResult, investmentResult, impactsResult, phasesResult, measurementsResult, laborResult, siteResult, directDebitsResult] = await Promise.all([
+    investmentMode ? emptyResult() : supabase(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encodeURIComponent(workId)}`),
+    investmentMode ? supabase(`investimentos?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
+    investmentMode ? supabase(`impactos_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`) : emptyResult(),
     supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
-    supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
+    investmentMode ? emptyResult() : supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
+    investmentMode ? supabase(`lancamentos_mao_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
+    investmentMode ? supabase(`despesas_estaleiro?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
+    investmentMode ? supabase(`debitos_diretos?select=id,obra_id&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
   ]);
   const detailErrors = [];
   if (contractResult.ok) workDetails.contract = selectCurrentContract(await contractResult.json());
   else detailErrors.push((await contractResult.json().catch(() => ({}))).message || "Contrato indisponível");
+  if (investmentResult.ok) workDetails.investment = (await investmentResult.json())[0] || null;
+  else detailErrors.push((await investmentResult.json().catch(() => ({}))).message || "Investimento indisponível");
+  if (impactsResult.ok) workDetails.impacts = await impactsResult.json();
+  else detailErrors.push((await impactsResult.json().catch(() => ({}))).message || "Impactos indisponíveis");
   if (phasesResult.ok) workDetails.phases = await phasesResult.json();
   else detailErrors.push((await phasesResult.json().catch(() => ({}))).message || "Fases indisponíveis");
   if (measurementsResult.ok) workDetails.measurements = await measurementsResult.json();
   else detailErrors.push((await measurementsResult.json().catch(() => ({}))).message || "Autos de medição indisponíveis");
+  if (laborResult.ok) workDetails.labor = await laborResult.json();
+  else detailErrors.push((await laborResult.json().catch(() => ({}))).message || "Mão de obra indisponível");
+  if (siteResult.ok) workDetails.siteExpenses = await siteResult.json();
+  else detailErrors.push((await siteResult.json().catch(() => ({}))).message || "Estaleiro indisponível");
+  if (directDebitsResult.ok) {
+    workDetails.directDebits = await directDebitsResult.json();
+    if (workDetails.directDebits.length) {
+      const directDebitIds = workDetails.directDebits.map(item => item.id);
+      const entriesResult = await supabase(`debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor&debito_direto_id=in.(${directDebitIds.map(encodeURIComponent).join(",")})`);
+      if (entriesResult.ok) workDetails.directDebitEntries = await entriesResult.json();
+      else detailErrors.push((await entriesResult.json().catch(() => ({}))).message || "Débitos diretos indisponíveis");
+    }
+  } else detailErrors.push((await directDebitsResult.json().catch(() => ({}))).message || "Débitos diretos indisponíveis");
   workDetails.error = detailErrors.join(" · ");
   if (workDetails.measurements.length) {
     const measurementIds = workDetails.measurements.map(item => item.id);
@@ -1607,6 +1673,44 @@ function renderWorkSummary(work) {
   const measuredTotal = totalClientBilling(contract, workDetails.measurements);
   const progress = workProgress(work);
   const sale = Number(contract?.venda_contratual_efetiva || contract?.venda_contratual_inicial || 0);
+  const investmentMode = work.modalidade === "investimento_proprio";
+  const investment = workDetails.investment || {};
+  const initialBudget = Number(investment.orcamento_inicial_sem_iva || 0);
+  const revisedBudget = Number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva || 0);
+  const directDebitIds = new Set(workDetails.directDebits.map(item => item.id));
+  const actualCost = workDetails.payments.reduce((total, row) => total + Number(row.valor || 0), 0)
+    + workDetails.labor.reduce((total, row) => total + Number(row.valor_total || Number(row.horas || 0) * Number(row.valor_hora || 0)), 0)
+    + workDetails.siteExpenses.reduce((total, row) => total + Number(row.valor_total || 0), 0)
+    + workDetails.directDebitEntries.filter(row => directDebitIds.has(row.debito_direto_id)).reduce((total, row) => total + Number(row.valor || 0), 0);
+  const deviation = actualCost - revisedBudget;
+  if (investmentMode) return `
+    <div class="work-kpis">
+      <div><span>ORÇAMENTO INICIAL</span><strong>${euro.format(initialBudget)}</strong><small>sem IVA</small></div>
+      <div><span>ORÇAMENTO REVISTO</span><strong>${euro.format(revisedBudget)}</strong><small>sem IVA</small></div>
+      <div><span>CUSTO REALIZADO</span><strong>${euro.format(actualCost)}</strong></div>
+      <div><span>DESVIO</span><strong class="${deviation > 0 ? "negative" : "positive"}">${euro.format(deviation)}</strong></div>
+    </div>
+    <div class="work-timeline">
+      <div><span>INÍCIO</span><strong>${formatOptionalDate(work.data_inicio)}</strong></div>
+      <div class="timeline-progress"><span>PRAZO DECORRIDO</span><div><i style="width:${progress ?? 0}%"></i></div><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
+      <div><span>FIM PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
+    </div>
+    <div class="work-detail-grid">
+      <section><div class="detail-section-title"><span>INVESTIMENTO</span></div>
+        <dl>
+          <div><dt>Orçamento inicial sem IVA</dt><dd>${euro.format(initialBudget)}</dd></div>
+          <div><dt>Orçamento inicial com IVA</dt><dd>${euro.format(Number(investment.orcamento_inicial_com_iva || 0))}</dd></div>
+          <div><dt>Orçamento revisto sem IVA</dt><dd>${euro.format(revisedBudget)}</dd></div>
+          <div><dt>Orçamento revisto com IVA</dt><dd>${euro.format(Number(investment.orcamento_revisto_com_iva || 0))}</dd></div>
+          <div><dt>Subempreitadas adjudicadas</dt><dd>${euro.format(subcontractTotal)}</dd></div>
+          <div><dt>Desvio ao orçamento</dt><dd class="${deviation > 0 ? "negative" : "positive"}">${euro.format(deviation)}</dd></div>
+        </dl>
+        <details><summary>IMPACTOS DA OBRA <b>${workDetails.impacts.length}</b></summary><div class="meeting-detail-list">${workDetails.impacts.map(row => `<div><span><strong>${safeText(row.numero)} · ${safeText(row.descricao)}</strong><small>${safeText(row.tipo_impacto || "Impacto")}</small></span><b>${euro.format(Number(row.valor_sem_iva || 0))}</b></div>`).join("") || '<div class="work-document-empty">SEM IMPACTOS REGISTADOS</div>'}</div></details>
+      </section>
+      <section><div class="detail-section-title"><span>FASES</span><small>${workDetails.phases.length}</small></div>
+        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.descricao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
+      </section>
+    </div>`;
   return `
     <div class="work-kpis">
       <div><span>VENDA CONTRATADA</span><strong>${sale ? euro.format(sale) : "—"}</strong></div>
@@ -2102,7 +2206,7 @@ $("#team-board").addEventListener("click", async event => {
       toast("Selecione primeiro um íman.", "error");
       return;
     }
-    await saveVacationWeek(selectedWorkforcePersonId, vacationBox.dataset.vacationWeek);
+    openVacationDaysDialog(selectedWorkforcePersonId, vacationBox.dataset.vacationWeek);
     return;
   }
   const magnet = event.target.closest("[data-workforce-person]");

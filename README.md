@@ -226,3 +226,14 @@ Quando o débito está associado a uma obra, os lançamentos entram nas saídas 
 do respetivo cash flow e as ocorrências futuras entram nas saídas previstas. Os
 débitos gerais ficam disponíveis para a futura visão financeira consolidada, sem
 serem somados ao cash flow de nenhuma obra.
+
+## Obras de investimento próprio
+
+`supabase/investimentos_impactos_obra.sql` documenta as tabelas `investimentos` e
+`impactos_obra`, as respetivas políticas RLS e a modalidade da Obra 118. Esta
+migração reflete alterações já aplicadas diretamente na base de produção em
+03/08/2026 e não precisa de ser novamente executada nesse projeto.
+
+Os painéis distinguem `obras.modalidade`: obras `cliente_externo` mantêm contrato,
+TEEs, venda e margem; obras `investimento_proprio` apresentam orçamento inicial e
+revisto, impactos, custo realizado e desvio ao orçamento.
