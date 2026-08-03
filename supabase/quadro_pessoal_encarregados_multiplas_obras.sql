@@ -6,6 +6,18 @@ alter table public.quadro_pessoal_alocacao
 
 drop index if exists public.quadro_pessoal_alocacao_colaborador_data_periodo_key;
 
+alter table public.colaboradores
+  add column if not exists permite_multiplas_obras boolean not null default false;
+
+-- Compatibilidade com a classificação operacional já usada no Quadro.
+-- A coluna permite gerir futuras exceções sem depender do nome da pessoa.
+update public.colaboradores
+set permite_multiplas_obras = true
+where lower(coalesce(funcao, '')) like '%encarregado%'
+   or split_part(lower(trim(nome)), ' ', 1) in (
+     'manuel', 'paulo', 'regivaldo', 'vitor', 'wanderson', 'william', 'alessandro'
+   );
+
 create or replace function public.fn_validar_conflito_quadro_pessoal()
 returns trigger
 language plpgsql
@@ -14,9 +26,10 @@ set search_path = public
 as $$
 declare
   v_funcao text;
+  v_permite_multiplas_obras boolean := false;
 begin
-  select lower(coalesce(c.funcao, ''))
-    into v_funcao
+  select lower(coalesce(c.funcao, '')), coalesce(c.permite_multiplas_obras, false)
+    into v_funcao, v_permite_multiplas_obras
   from public.colaboradores c
   where c.id = new.colaborador_id;
 
@@ -37,7 +50,7 @@ begin
   end if;
 
   -- Encarregados podem acompanhar várias obras simultaneamente.
-  if v_funcao like '%encarregado%' then
+  if v_permite_multiplas_obras or v_funcao like '%encarregado%' then
     return new;
   end if;
 
