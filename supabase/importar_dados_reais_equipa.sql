@@ -16,8 +16,9 @@
 --      4 de setembro de 2027.
 --   6. OFICINA, ESCRITÓRIO, ARO e NRO não são colaboradores: a atribuição fica null.
 --
--- Segurança: o script não cria colaboradores. Se algum nome não tiver exatamente
--- uma correspondência, a transação inteira falha antes de alterar dados.
+-- Segurança: o script não cria colaboradores. Os nomes completos das folhas são
+-- ligados aos UUIDs confirmados pela auditoria da base de 03/08/2026. A transação
+-- inteira falha antes de alterar dados se algum UUID deixar de existir.
 
 begin;
 
@@ -65,6 +66,50 @@ insert into _pl_medicina_real values
   ('Wanderson Marinho de Oliveira', '1990-02-04', '2026-03-05', 'Ficha Aptidão válida', '2027-03-01'),
   ('William Lemes Coimbra', '1987-04-19', '2026-07-02', 'Ficha Aptidão válida', '2027-07-01');
 
+-- Correspondências confirmadas pelos registos já ligados em medicina_trabalho e
+-- viaturas. João Mendes Afonso é o único colaborador ainda sem linha de medicina.
+create temporary table _pl_colaborador_mapa (
+  nome_fonte text primary key,
+  colaborador_id uuid not null unique
+) on commit drop;
+
+insert into _pl_colaborador_mapa values
+  ('Adilson de Jesus Pires Semedo', '0cfb12da-556a-4476-8fc7-46ced62ef9a8'),
+  ('Alessandro Passos Silva', 'bef14c45-e884-4203-a3a4-a0db204a9c4f'),
+  ('Ana Carolina Alves Saraiva', '24fbf97b-bbe3-42b7-b15b-a7500b68e1fe'),
+  ('António João Rosa de Sousa Oliveira', '261b017a-49c1-4f30-811f-046690ca3a4c'),
+  ('Belmira Maria Godinho Quental', 'beeb3b0e-ff3c-4f20-98d5-619572d1dd80'),
+  ('Bonifácio Té', '743fed71-cd3b-447d-ad69-5f5010a2380f'),
+  ('Clayton de Souza Oliveira', 'cc5a58cc-d2ec-47bd-b64b-0952916b2526'),
+  ('Fernando José dos Santos Silva', '4839f1e5-96d9-4706-8d7c-91c784963a77'),
+  ('Genito Nanque', '2195300f-685e-4e60-97e7-a30631d63b71'),
+  ('Gilson Alves de Lima', 'c6bd3641-367d-463c-a01a-ae60ed93c253'),
+  ('Helder Lima Gonçalves', 'daed6a73-4566-4e16-8ee0-2e94cf36e2bf'),
+  ('Henrique Bogéa Gomes', '84e08ca6-35d0-4cdb-914d-6685dd234a04'),
+  ('Iluska Sathler Calili', '60c8a7bf-38c4-4cef-ac86-192f1e8661f7'),
+  ('Inês dos Santos Rosa de Oliveira', '5e04954d-cd4a-4e12-afc0-c1e38896175f'),
+  ('João Mendes Afonso', '81a195a3-d75f-4504-87a7-4060078b9f9e'),
+  ('João Mendes Borges', '0d6af694-8edb-41e0-b405-ad9f27feddc0'),
+  ('Jordane Vieira Silvestre', 'e5476812-ed97-48f7-bb78-2deca9c1f9d5'),
+  ('Jose Ignacio Diaz Travi', '5cde6a7c-323d-4411-99fb-10bb90692bfe'),
+  ('Júlio Natalício Silva Varela Andrade', '1b57c47e-5e3c-4346-97f7-498a68bf74cf'),
+  ('Kamila Batista Gutterres', 'aab9beef-64bd-402f-b82e-e5333e99ebe2'),
+  ('Luís Miguel da Costa Gonçalves', '898ac1af-5445-489d-af30-8cf0a0ed8cb7'),
+  ('Manuel António Gama Costa', 'ed5674f3-b89f-4b86-b3c6-ff16f471b497'),
+  ('Maria da Luz dos Santos Narciso', '11df5f21-883b-4316-9835-986aa2e6816c'),
+  ('Mateus António Hebreus', 'f12ff7f5-61b8-44ee-a419-d29acd319cc3'),
+  ('Mauro Amoriz Dias', 'a441f83a-8de3-4618-94bf-6126326eacf6'),
+  ('Natércia da Conceição Santos I. Rosa Oliveira', 'a18c5ddf-a8f2-4f18-8249-bc477cc50caf'),
+  ('Paulo Manuel de Almeida Natividade', '2654abc0-42f4-43f0-abcb-9d1e91d3709f'),
+  ('Pedro Albuquerque', '449c0089-f152-4ad8-a5f0-99f636072ff5'),
+  ('Rafael Monteiro Barra Pires', '965e746b-7e6e-400b-9a8e-7fb324a3cefc'),
+  ('Regivaldo Rios de Oliveira', '0d271a1c-91f8-47ae-9566-84f1fbc213f3'),
+  ('Ricardo Augusto Brito Martins', '344aaf41-8c6e-4b0e-ad80-09eeff3c8119'),
+  ('Rogério Angelim Frazão', 'd83fe502-135c-4ca2-a6b2-910adfc1c706'),
+  ('Vitor Manuel Almeida Lopes', '5733cf4b-eb73-438f-9f4e-ea237ad496cc'),
+  ('Wanderson Marinho de Oliveira', 'ae4df908-5847-4fcd-bf14-f0fbb441cb74'),
+  ('William Lemes Coimbra', 'b147a0a5-d83d-4cf7-b868-a912a3227700');
+
 create temporary table _pl_viaturas_reais (
   marca_modelo text not null,
   matricula text primary key,
@@ -111,7 +156,9 @@ begin
   select string_agg(s.nome, ', ' order by s.nome)
   into v_invalidos
   from _pl_medicina_real s
-  where (select count(*) from public.colaboradores c where lower(trim(c.nome)) = lower(trim(s.nome))) <> 1;
+  left join _pl_colaborador_mapa x on x.nome_fonte = s.nome
+  left join public.colaboradores c on c.id = x.colaborador_id
+  where c.id is null or c.data_saida is not null;
 
   if v_invalidos is not null then
     raise exception 'Importação cancelada. Colaboradores de medicina sem correspondência única: %', v_invalidos;
@@ -120,8 +167,10 @@ begin
   select string_agg(v.colaborador_nome, ', ' order by v.colaborador_nome)
   into v_invalidos
   from _pl_viaturas_reais v
+  left join _pl_colaborador_mapa x on x.nome_fonte = v.colaborador_nome
+  left join public.colaboradores c on c.id = x.colaborador_id
   where v.colaborador_nome is not null
-    and (select count(*) from public.colaboradores c where lower(trim(c.nome)) = lower(trim(v.colaborador_nome))) <> 1;
+    and (c.id is null or c.data_saida is not null);
 
   if v_invalidos is not null then
     raise exception 'Importação cancelada. Atribuições de viaturas sem correspondência única: %', v_invalidos;
@@ -131,7 +180,8 @@ end $$;
 update public.colaboradores c
 set data_nascimento = s.data_nascimento
 from _pl_medicina_real s
-where lower(trim(c.nome)) = lower(trim(s.nome))
+join _pl_colaborador_mapa x on x.nome_fonte = s.nome
+where c.id = x.colaborador_id
   and c.data_nascimento is distinct from s.data_nascimento;
 
 update public.medicina_trabalho m
@@ -139,17 +189,17 @@ set data_ultima_consulta = s.data_ultima_consulta,
     resultado = s.resultado,
     data_proxima_consulta = s.data_proxima_consulta
 from _pl_medicina_real s
-join public.colaboradores c on lower(trim(c.nome)) = lower(trim(s.nome))
-where m.colaborador_id = c.id;
+join _pl_colaborador_mapa x on x.nome_fonte = s.nome
+where m.colaborador_id = x.colaborador_id;
 
 insert into public.medicina_trabalho (
   colaborador_id, data_ultima_consulta, resultado, data_proxima_consulta
 )
-select c.id, s.data_ultima_consulta, s.resultado, s.data_proxima_consulta
+select x.colaborador_id, s.data_ultima_consulta, s.resultado, s.data_proxima_consulta
 from _pl_medicina_real s
-join public.colaboradores c on lower(trim(c.nome)) = lower(trim(s.nome))
+join _pl_colaborador_mapa x on x.nome_fonte = s.nome
 where not exists (
-  select 1 from public.medicina_trabalho m where m.colaborador_id = c.id
+  select 1 from public.medicina_trabalho m where m.colaborador_id = x.colaborador_id
 );
 
 insert into public.viaturas (
@@ -162,7 +212,7 @@ select
   v.marca_modelo,
   v.matricula,
   v.numero_interno,
-  c.id,
+  x.colaborador_id,
   v.cartao_frota_venc,
   v.iuc_liquidacao,
   v.seguro_data,
@@ -173,7 +223,7 @@ select
   v.kms_inspecao,
   v.chaves_estado
 from _pl_viaturas_reais v
-left join public.colaboradores c on lower(trim(c.nome)) = lower(trim(v.colaborador_nome))
+left join _pl_colaborador_mapa x on x.nome_fonte = v.colaborador_nome
 on conflict (matricula) do update set
   empresa_id = excluded.empresa_id,
   marca_modelo = excluded.marca_modelo,
@@ -193,13 +243,14 @@ select
   (select count(*) from _pl_medicina_real) as fonte_medicina,
   (select count(*)
    from public.medicina_trabalho m
-   join public.colaboradores c on c.id = m.colaborador_id
-   join _pl_medicina_real s on lower(trim(s.nome)) = lower(trim(c.nome))) as medicina_gravada,
+   join _pl_colaborador_mapa x on x.colaborador_id = m.colaborador_id
+   join _pl_medicina_real s on s.nome = x.nome_fonte) as medicina_gravada,
   (select count(*) from _pl_viaturas_reais) as fonte_viaturas,
   (select count(*) from public.viaturas v join _pl_viaturas_reais s on s.matricula = v.matricula) as viaturas_gravadas,
   (select count(*)
    from public.colaboradores c
-   join _pl_medicina_real s on lower(trim(s.nome)) = lower(trim(c.nome))
+   join _pl_colaborador_mapa x on x.colaborador_id = c.id
+   join _pl_medicina_real s on s.nome = x.nome_fonte
    where c.data_nascimento = s.data_nascimento) as aniversarios_gravados;
 
 commit;
