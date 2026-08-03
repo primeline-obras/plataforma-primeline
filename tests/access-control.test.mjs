@@ -12,8 +12,8 @@ const matrix = {
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   financeiro: {
-    views: ["overview", "works", "subcontractors", "finance"],
-    deniedViews: ["invoices", "planning", "documents", "team", "workforce"],
+    views: ["overview", "meeting", "works", "planning", "subcontractors", "finance"],
+    deniedViews: ["invoices", "documents", "team", "workforce"],
     actions: ["payInvoices"],
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },

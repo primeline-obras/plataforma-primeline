@@ -51,7 +51,7 @@ let workDetails = {
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
-let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], entityDocuments: [], loadedWeek: "", error: "" };
+let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let selectedTeamEntity = null;
 const localEntityDocumentFiles = new Map();
@@ -217,6 +217,7 @@ document.querySelector("#root").innerHTML = `
           <button data-team-tab="absences">AUSÊNCIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
+          <button data-team-tab="medicine">MEDICINA DO TRABALHO</button>
           <button data-team-tab="vehicles">VIATURAS</button>
         </nav>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
@@ -234,6 +235,10 @@ document.querySelector("#root").innerHTML = `
         <section class="panel team-tab-panel" data-team-panel="overtime" hidden>
           <div class="team-section-head"><div><p class="eyebrow">PAGAMENTOS</p><h2>HORAS EXTRAORDINÁRIAS</h2></div><span id="team-overtime-count"></span></div>
           <div id="team-overtime"></div>
+        </section>
+        <section class="panel team-tab-panel" data-team-panel="medicine" hidden>
+          <div class="team-section-head"><div><p class="eyebrow">SAÚDE OCUPACIONAL</p><h2>MEDICINA DO TRABALHO</h2></div><span id="team-medicine-count"></span></div>
+          <div id="team-medicine"></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="vehicles" hidden>
           <div class="team-section-head"><div><p class="eyebrow">FROTA</p><h2>VIATURAS</h2></div><span id="team-vehicle-count"></span></div>
@@ -591,7 +596,7 @@ async function loadData() {
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
     [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides] = await Promise.all(results.map(result => result.json()));
     if (hasFullAccess() || isAdministrative()) {
-      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel&data_saida=is.null&order=nome");
+      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
   }
@@ -884,6 +889,14 @@ function renderTeam() {
   const boardRows = workforceRows(activeWorks, allocations);
   const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const currentMonth = Number(todayIso.slice(5, 7));
+  const birthdayPeople = collaborators.filter(person => person.data_nascimento && Number(person.data_nascimento.slice(5, 7)) === currentMonth);
+  const medicineDue = teamData.medicine.filter(item => {
+    if (!item.data_proxima_consulta) return false;
+    const days = Math.ceil((new Date(`${item.data_proxima_consulta}T12:00:00`) - new Date(`${todayIso}T12:00:00`)) / 86400000);
+    return days <= 30;
+  });
 
   $("#team-active-count").textContent = String(collaborators.length).padStart(2, "0");
   $("#team-week").value = selectedTeamWeek;
@@ -978,7 +991,7 @@ function renderTeam() {
     const documentsOpen = selectedTeamEntity?.type === "colaborador" && selectedTeamEntity.id === person.id;
     return `<article class="team-directory-row">
       <span class="team-avatar">${personInitials(person.nome)}</span>
-      <div class="team-person-main"><strong>${person.nome}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
+      <div class="team-person-main"><strong>${person.nome}${birthdayPeople.some(item => item.id === person.id) ? ` <em class="birthday-badge">ANIVERSÁRIO · ${formatOptionalDate(person.data_nascimento).slice(0, 5)}</em>` : ""}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
       <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : safeText(allocationLabel)}</strong></div>
       <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
@@ -992,6 +1005,8 @@ function renderTeam() {
     endingContracts.length ? `<article class="attention"><strong>${endingContracts.length}</strong><span>CONTRATO${endingContracts.length === 1 ? "" : "S"} A TERMINAR EM 30 DIAS</span></article>` : "",
     missingContracts.length ? `<article class="pending"><strong>${missingContracts.length}</strong><span>COLABORADOR${missingContracts.length === 1 ? "" : "ES"} SEM CONTRATO REGISTADO</span></article>` : "",
     absentIds.size ? `<article class="info"><strong>${absentIds.size}</strong><span>AUSENTE${absentIds.size === 1 ? "" : "S"} ESTA SEMANA</span></article>` : "",
+    birthdayPeople.length ? `<article class="info"><strong>${birthdayPeople.length}</strong><span>ANIVERSÁRIO${birthdayPeople.length === 1 ? "" : "S"} ESTE MÊS</span></article>` : "",
+    medicineDue.length ? `<article class="attention"><strong>${medicineDue.length}</strong><span>CONSULTA${medicineDue.length === 1 ? "" : "S"} VENCIDA${medicineDue.length === 1 ? "" : "S"} OU A 30 DIAS</span></article>` : "",
     pendingHours ? `<article class="attention"><strong>${pendingHours.toLocaleString("pt-PT")} h</strong><span>HORAS EXTRA POR PAGAR</span></article>` : "",
   ].filter(Boolean).join("") || `<article class="ok"><strong>✓</strong><span>SEM ALERTAS DE EQUIPA</span></article>`;
 
@@ -1007,6 +1022,18 @@ function renderTeam() {
     const work = workById.get(item.obra_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><em>POR PAGAR</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
+
+  $("#team-medicine-count").textContent = `${teamData.medicine.length} REGISTO${teamData.medicine.length === 1 ? "" : "S"}`;
+  $("#team-medicine").innerHTML = teamData.medicine.length ? teamData.medicine.map(item => {
+    const person = personById.get(item.colaborador_id);
+    const validity = documentValidity({ data_validade: item.data_proxima_consulta });
+    return `<article class="team-detail-row medicine-row">
+      <div><strong>${safeText(person?.nome || "Colaborador não encontrado")}</strong><span>${safeText(item.resultado || "Resultado não indicado")}</span></div>
+      <div><span>ÚLTIMA CONSULTA</span><strong>${formatOptionalDate(item.data_ultima_consulta)}</strong></div>
+      <div><span>PRÓXIMA CONSULTA</span><strong>${formatOptionalDate(item.data_proxima_consulta)}</strong></div>
+      <em class="${validity.state}">${validity.label}</em>
+    </article>`;
+  }).join("") : `<div class="empty-state"><strong>SEM REGISTOS</strong><span>Não existem consultas de medicina do trabalho registadas.</span></div>`;
 
   $("#team-vehicle-count").textContent = `${teamData.vehicles.length} VIATURA${teamData.vehicles.length === 1 ? "" : "S"}`;
   $("#team-vehicles").innerHTML = teamData.vehicles.length ? teamData.vehicles.map(vehicle => {
@@ -1224,7 +1251,7 @@ async function saveVacationWeek(personId, week) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], entityDocuments: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
@@ -1237,16 +1264,17 @@ async function loadTeamData(force = false) {
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
     supabase("viaturas?select=id,empresa_id,marca_modelo,matricula,numero_interno,colaborador_atribuido_id,cartao_frota_venc,iuc_liquidacao,seguro_data,seguro_seguradora,data_revisao,kms_revisao,data_inspecao_proxima,kms_inspecao,chaves_estado,criado_em&order=numero_interno.asc.nullslast,matricula.asc"),
+    supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast"),
     supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc"),
   ]);
-  const names = ["alocações", "ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "documentos de RH"];
+  const names = ["alocações", "ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
-  [teamData.allocations, teamData.absences, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.entityDocuments] = payloads.map(payload => Array.isArray(payload) ? payload : []);
+  [teamData.allocations, teamData.absences, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments] = payloads.map(payload => Array.isArray(payload) ? payload : []);
   const essentialFailures = failures.filter(item => ["alocações", "ausências"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
-  const documentFailures = failures.filter(item => ["viaturas", "documentos de RH"].includes(item.failed));
-  if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Execute a migração de documentos de RH.`;
+  const documentFailures = failures.filter(item => ["viaturas", "medicina do trabalho", "documentos de RH"].includes(item.failed));
+  if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
   renderTeam();
 }
 
