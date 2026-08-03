@@ -14,8 +14,10 @@ set search_path = public
 as $$
   select exists (
     select 1
-    from public.administradores_plataforma
-    where utilizador_id = public.fn_utilizador_atual_id()
+    from public.administradores_plataforma a
+    join public.utilizadores u on u.id = a.utilizador_id
+    where a.utilizador_id = public.fn_utilizador_atual_id()
+      and coalesce(u.ativo, true)
   )
   or exists (
     select 1
@@ -112,7 +114,7 @@ do $$
 declare
   r record;
   v_tables text[] := array[
-    'administradores_plataforma', 'utilizadores', 'obra_responsaveis',
+    'administradores_plataforma', 'utilizadores', 'obra_responsaveis', 'empresas',
     'obras', 'fornecedores', 'contratos', 'fases', 'autos_medicao',
     'alteracoes_tee', 'itens_orcamento', 'planeamento_fases_resumo',
     'planeamento_itens', 'planeamento_itens_dependencias',
