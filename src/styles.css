@@ -728,6 +728,7 @@ button, input, select, textarea,
 .team-directory-row > div > strong { font-size: 10px; text-transform: capitalize; }
 .team-person-main strong { font-size: 11px !important; text-transform: none !important; }
 .team-person-main span { color: var(--text-secondary); font-size: 9px; }
+.birthday-badge { margin-left: 7px; padding: 4px 7px; border: 1px solid var(--info-border); border-radius: 999px; background: var(--info-bg); color: var(--info-text); font-size: 6px; font-style: normal; font-weight: 800; letter-spacing: .5px; white-space: nowrap; }
 .team-directory-row .text-alert { color: var(--neg-text); }
 .directory-toolbar { justify-content: flex-end; }
 .team-alert-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 0 0 18px; }
@@ -749,6 +750,10 @@ button, input, select, textarea,
 .team-detail-row > div:not(:first-child) > span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
 .team-detail-row strong { font-size: 10px; }
 .team-detail-row em { padding: 6px 8px; border: 1px solid var(--warn-border); border-radius: 999px; color: var(--warn-text); background: var(--warn-bg); font-size: 6px; font-style: normal; font-weight: 800; text-align: center; }
+.medicine-row > em.expired { border-color: var(--neg-border); background: var(--neg-bg); color: var(--neg-text); }
+.medicine-row > em.warning { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
+.medicine-row > em.valid { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
+.medicine-row > em.neutral { border-color: var(--card-border); background: var(--card); color: var(--text-secondary); }
 .entity-documents-button { min-height: 34px; padding: 0 11px; border: 1px solid var(--card-border); border-radius: 9px; background: transparent; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .5px; white-space: nowrap; }
 .entity-documents-button b { min-width: 20px; margin-left: 5px; padding: 4px 6px; border-radius: 6px; background: var(--info-bg); color: var(--info-text); display: inline-block; }
 .entity-documents-button:hover, .entity-documents-button.active { border-color: var(--info-text); background: var(--info-bg); color: var(--info-text); }

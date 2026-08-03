@@ -196,6 +196,14 @@ de permissões. A migração reutiliza a tabela `documentos` e o bucket privado
 `documentos`, permite tipos documentais em texto livre e reserva leitura/escrita
 de ficheiros de colaboradores e viaturas a Administrativo/Gerência.
 
+## Dados reais de Equipa
+
+Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,
+de forma idempotente, as 21 viaturas, os 34 registos atuais de medicina do trabalho
+e as respetivas datas de nascimento. O script não cria colaboradores e cancela toda
+a transação se um nome não tiver uma correspondência única. No final deve devolver
+`34 / 34 / 21 / 21 / 34` nas cinco colunas de confirmação.
+
 Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
 com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da
 data indicada. A Visão Geral apresenta apenas alertas cuja data de gatilho já
