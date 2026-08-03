@@ -732,9 +732,14 @@ button, input, select, textarea,
 .team-directory-row .text-alert { color: var(--neg-text); }
 .directory-toolbar { justify-content: flex-end; }
 .team-alert-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 0 0 18px; }
-.team-alert-summary article { min-height: 82px; padding: 18px 22px; border: 1px solid var(--card-border); border-left-width: 3px; border-radius: 10px; background: var(--card); display: flex; align-items: center; gap: 14px; }
-.team-alert-summary article strong { font-size: 25px; }
-.team-alert-summary article span { font-size: 13px; font-weight: 800; letter-spacing: .7px; line-height: 1.5; }
+.team-alert-summary article, .team-alert-summary button { min-height: 82px; padding: 18px 22px; border: 1px solid var(--card-border); border-left-width: 3px; border-radius: 10px; background: var(--card); color: inherit; display: flex; align-items: center; gap: 14px; text-align: left; }
+.team-alert-summary button { width: 100%; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.team-alert-summary button:hover { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.12); }
+.team-alert-summary button.active { outline: 2px solid currentColor; outline-offset: 2px; }
+.team-alert-summary article strong, .team-alert-summary button strong { font-size: 25px; }
+.team-alert-summary article span, .team-alert-summary button span { font-size: 13px; font-weight: 800; letter-spacing: .7px; line-height: 1.5; }
+.team-alert-summary button span { display: grid; gap: 3px; }
+.team-alert-summary button small { opacity: .78; font-size: 10px; font-weight: 800; letter-spacing: .4px; }
 .team-alert-summary .attention { border-left-color: var(--warn-text); background: var(--warn-bg); color: var(--warn-text); }
 .team-alert-summary .pending { border-left-color: var(--neg-text); background: var(--neg-bg); color: var(--neg-text); }
 .team-alert-summary .info { border-left-color: var(--info-text); background: var(--info-bg); color: var(--info-text); }

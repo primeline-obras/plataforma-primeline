@@ -9,6 +9,10 @@ assert(app.includes('renderVehicleDeadline("PRÓXIMA INSPEÇÃO", vehicle.data_i
 assert(app.includes("Última: ${formatOptionalDate(vehicle.data_revisao)}"));
 assert(app.includes("data_proxima_revisao"));
 assert(!app.includes("const dueDates = [vehicle.seguro_data, vehicle.data_revisao, vehicle.data_inspecao_proxima]"));
+assert(app.includes('data-team-alert-filter="missing_contract"'));
+assert(app.includes('data-team-alert-filter="birthday"'));
+assert(app.includes('data-team-alert-filter="medicine_due"'));
+assert(app.includes("function activateTeamTab"));
 
 const tinySizes = [...css.matchAll(/font-size:\s*([5-8])px|font:\s*[^;{}]*?\s([5-8])px(?:[/\s;])/g)];
 assert.equal(tinySizes.length, 0, "A interface não deve voltar a usar tipografia abaixo de 9 px.");
