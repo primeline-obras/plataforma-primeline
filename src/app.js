@@ -720,7 +720,7 @@ async function loadData() {
       directDebitEntries = [];
     }
     if (hasFullAccess() || isAdministrative()) {
-      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento&data_saida=is.null&order=nome");
+      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,permite_multiplas_obras&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
   }
@@ -847,7 +847,7 @@ function fixedWorkTeam(work) {
 }
 
 function isWorkforceForeman(person) {
-  return workforceRoleClass(person) === "foreman";
+  return person?.permite_multiplas_obras === true || workforceRoleClass(person) === "foreman";
 }
 
 function workforceAllocationType(allocation) {
