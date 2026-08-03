@@ -69,6 +69,8 @@ let workforceEditing = false;
 let selectedWorkforcePersonId = "";
 let selectedWorkforceSourceDate = "";
 let selectedWorkforceSourcePeriod = "";
+let selectedWorkforceSourceRowKey = "";
+let selectedWorkforceSourceIds = [];
 let selectedWorkforcePeriod = "dia_inteiro";
 let pendingWorkforceRows = [];
 let settingsModule = null;
@@ -809,6 +811,10 @@ function workforceInitials(name = "") {
 }
 
 function workforceRoleClass(person) {
+  const role = String(person?.funcao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
+  if (role.includes("encarregado")) return "foreman";
+  if (role.includes("pedreiro")) return "mason";
+  if (role.includes("servente")) return "helper";
   const roster = {
     manuel: "foreman", paulo: "foreman", regivaldo: "foreman", vitor: "foreman", wanderson: "foreman", william: "foreman", alessandro: "foreman",
     adilson: "mason", bonifacio: "mason", fernando: "mason", helder: "mason", joao_afonso: "mason", mateus: "mason",
@@ -838,6 +844,10 @@ function fixedWorkTeam(work) {
     if (label && user?.nome && !fixed.some(person => person.label === label && person.name === user.nome)) fixed.push({ label, name: user.nome });
   });
   return fixed;
+}
+
+function isWorkforceForeman(person) {
+  return workforceRoleClass(person) === "foreman";
 }
 
 function workforceAllocationType(allocation) {
@@ -895,8 +905,10 @@ function renderWorkforceMagnet(person, allocation = null) {
   const periodLabel = period === "manha" ? "M" : period === "tarde" ? "T" : "";
   const samePerson = selectedWorkforcePersonId === person.id;
   const selected = samePerson
-    && (!allocation || (selectedWorkforceSourceDate === allocation.data && selectedWorkforceSourcePeriod === period));
-  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
+    && (!allocation || (selectedWorkforceSourceDate === allocation.data
+      && selectedWorkforceSourcePeriod === period
+      && selectedWorkforceSourceRowKey === (allocation.row_key || "")));
+  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" data-source-row-key="${safeText(allocation?.row_key || "")}" data-source-ids="${safeText((allocation?.ids || []).join(","))}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
 }
 
 function effectiveWorkforceForDate(events, date, personById) {
@@ -936,6 +948,8 @@ function effectiveWorkforceForDate(events, date, personById) {
         allocation: {
           data: sameSource || entry.sourceEvents.length === 1 ? entry.sourceEvents[0].data : "",
           periodo: entry.slots.length === 2 ? "dia_inteiro" : entry.slots[0],
+          row_key: rowKey,
+          ids: [...new Set(entry.sourceEvents.map(event => event.id).filter(Boolean))],
         },
       });
     });
@@ -1204,6 +1218,8 @@ function setWorkforceEditing(enabled) {
   selectedWorkforcePersonId = "";
   selectedWorkforceSourceDate = "";
   selectedWorkforceSourcePeriod = "";
+  selectedWorkforceSourceRowKey = "";
+  selectedWorkforceSourceIds = [];
   $("#workforce-edit-banner").hidden = !enabled;
   $("#workforce-roster").hidden = !enabled;
   $("#workforce-new-line").hidden = true;
@@ -1305,25 +1321,26 @@ async function saveWorkforceAllocation(personId, date, target) {
   }
   const dayAllocations = teamData.allocations.filter(item => item.colaborador_id === personId && item.data === date);
   const conflicting = dayAllocations.filter(item => period === "dia_inteiro" || item.periodo === "dia_inteiro" || item.periodo === period);
-  const alreadyThere = conflicting.length === 1 && workforceRowKey(conflicting[0]) === targetKey && conflicting[0].periodo === period;
+  const alreadyThere = conflicting.some(item => workforceRowKey(item) === targetKey && item.periodo === period);
   if (alreadyThere) {
     toast("O colaborador já se encontra nessa posição.");
     return;
   }
-  if (period !== "dia_inteiro" && dayAllocations.some(item => item.periodo === "dia_inteiro")) {
+  const allowsMultipleWorks = isWorkforceForeman(person);
+  if (!allowsMultipleWorks && period !== "dia_inteiro" && dayAllocations.some(item => item.periodo === "dia_inteiro")) {
     toast("Retire primeiro a alocação de dia inteiro antes de dividir o dia.", "error");
     return;
   }
   const currentUser = teamData.users.find(user => user.auth_user_id === session?.user?.id);
   $("#workforce-edit-message").textContent = `A guardar ${shortPersonName(person.nome)}…`;
   let response = null;
-  if (period === "dia_inteiro" && dayAllocations.length) {
+  if (!allowsMultipleWorks && period === "dia_inteiro" && dayAllocations.length) {
     response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}`, { method: "DELETE" });
     if (!response.ok) {
       toast(`Não foi possível alterar o quadro: ${await response.text()}`, "error");
       return;
     }
-  } else if (conflicting.length) {
+  } else if (!allowsMultipleWorks && conflicting.length) {
     response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}&periodo=eq.${period}`, {
       method: "PATCH",
       body: JSON.stringify({ obra_id: workId, tipo_alocacao: type, descricao_livre: description, criado_por: currentUser?.id || null }),
@@ -1331,6 +1348,8 @@ async function saveWorkforceAllocation(personId, date, target) {
     if (response.ok) {
       selectedWorkforceSourceDate = "";
       selectedWorkforceSourcePeriod = "";
+      selectedWorkforceSourceRowKey = "";
+      selectedWorkforceSourceIds = [];
       await loadTeamData(true);
       $("#remove-workforce-allocation").hidden = true;
       $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
@@ -1352,6 +1371,8 @@ async function saveWorkforceAllocation(personId, date, target) {
   }
   selectedWorkforceSourceDate = "";
   selectedWorkforceSourcePeriod = "";
+  selectedWorkforceSourceRowKey = "";
+  selectedWorkforceSourceIds = [];
   await loadTeamData(true);
   $("#remove-workforce-allocation").hidden = true;
   $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
@@ -1360,12 +1381,18 @@ async function saveWorkforceAllocation(personId, date, target) {
 
 async function removeWorkforceAllocation() {
   if (!selectedWorkforcePersonId || !selectedWorkforceSourceDate || !selectedWorkforceSourcePeriod) return;
-  const response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(selectedWorkforcePersonId)}&data=eq.${selectedWorkforceSourceDate}&periodo=eq.${selectedWorkforceSourcePeriod}`, { method: "DELETE" });
+  const sourceIds = selectedWorkforceSourceIds.filter(Boolean);
+  const query = sourceIds.length
+    ? `quadro_pessoal_alocacao?id=in.(${sourceIds.map(encodeURIComponent).join(",")})`
+    : `quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(selectedWorkforcePersonId)}&data=eq.${selectedWorkforceSourceDate}&periodo=eq.${selectedWorkforceSourcePeriod}`;
+  const response = await supabase(query, { method: "DELETE" });
   if (!response.ok) {
     toast(`Não foi possível retirar a alocação: ${await response.text()}`, "error");
   } else {
     selectedWorkforceSourceDate = "";
     selectedWorkforceSourcePeriod = "";
+    selectedWorkforceSourceRowKey = "";
+    selectedWorkforceSourceIds = [];
     $("#remove-workforce-allocation").hidden = true;
     await loadTeamData(true);
     toast("Alocação retirada.");
@@ -2214,6 +2241,8 @@ $("#team-board").addEventListener("click", async event => {
     selectedWorkforcePersonId = magnet.dataset.workforcePerson;
     selectedWorkforceSourceDate = magnet.dataset.sourceDate || "";
     selectedWorkforceSourcePeriod = magnet.dataset.sourcePeriod || "";
+    selectedWorkforceSourceRowKey = magnet.dataset.sourceRowKey || "";
+    selectedWorkforceSourceIds = (magnet.dataset.sourceIds || "").split(",").filter(Boolean);
     $("#remove-workforce-allocation").hidden = !selectedWorkforceSourceDate;
     const person = collaborators.find(item => item.id === selectedWorkforcePersonId);
     $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Clique no dia e obra de destino.`;
@@ -2243,6 +2272,8 @@ $("#workforce-roster").addEventListener("click", event => {
   selectedWorkforcePersonId = magnet.dataset.workforcePerson;
   selectedWorkforceSourceDate = "";
   selectedWorkforceSourcePeriod = "";
+  selectedWorkforceSourceRowKey = "";
+  selectedWorkforceSourceIds = [];
   $("#remove-workforce-allocation").hidden = true;
   const person = collaborators.find(item => item.id === selectedWorkforcePersonId);
   $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} selecionado. Escolha o período e clique no dia/obra.`;
