@@ -721,7 +721,7 @@ button, input, select, textarea,
 .absence-card time { color: var(--brand-amber); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
 .absence-card strong { font-size: 11px; }
 .absence-card span { color: var(--neg-text); font-size: 8px; font-weight: 800; text-transform: uppercase; }
-.team-directory-row { min-height: 76px; padding: 13px 22px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 36px minmax(210px, 1.4fr) repeat(3, minmax(130px, 1fr)); align-items: center; gap: 14px; }
+.team-directory-row { min-height: 76px; padding: 13px 22px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 36px minmax(190px, 1.35fr) repeat(3, minmax(105px, .75fr)) auto; align-items: center; gap: 14px; }
 .team-directory-row:last-child { border-bottom: 0; }
 .team-avatar { width: 32px; height: 32px; font-size: 8px; }
 .team-directory-row > div { display: grid; gap: 5px; }
@@ -749,6 +749,37 @@ button, input, select, textarea,
 .team-detail-row > div:not(:first-child) > span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .8px; }
 .team-detail-row strong { font-size: 10px; }
 .team-detail-row em { padding: 6px 8px; border: 1px solid var(--warn-border); border-radius: 999px; color: var(--warn-text); background: var(--warn-bg); font-size: 6px; font-style: normal; font-weight: 800; text-align: center; }
+.entity-documents-button { min-height: 34px; padding: 0 11px; border: 1px solid var(--card-border); border-radius: 9px; background: transparent; color: var(--text-secondary); font-size: 7px; font-weight: 800; letter-spacing: .5px; white-space: nowrap; }
+.entity-documents-button b { min-width: 20px; margin-left: 5px; padding: 4px 6px; border-radius: 6px; background: var(--info-bg); color: var(--info-text); display: inline-block; }
+.entity-documents-button:hover, .entity-documents-button.active { border-color: var(--info-text); background: var(--info-bg); color: var(--info-text); }
+.entity-documents-panel { padding: 18px 22px 22px; border-bottom: 1px solid var(--card-border); background: color-mix(in srgb, var(--info-bg) 35%, var(--card)); box-shadow: inset 0 1px 0 var(--card-border); }
+.entity-documents-panel > header { margin-bottom: 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.entity-documents-panel > header span { color: var(--info-text); font-size: 7px; font-weight: 800; letter-spacing: .9px; }
+.entity-documents-panel > header h3 { margin: 5px 0 0; font-size: 14px; }
+.entity-documents-panel > header button { min-height: 30px; padding: 0 9px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--text-secondary); font-size: 7px; font-weight: 800; }
+.entity-document-list { overflow: hidden; margin-bottom: 14px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); }
+.entity-document-row { min-height: 64px; padding: 10px 13px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 36px minmax(190px, 1fr) minmax(95px, .45fr) minmax(125px, .55fr) auto; align-items: center; gap: 12px; }
+.entity-document-row:last-child { border-bottom: 0; }
+.entity-document-icon { width: 34px; height: 34px; border: 1px solid var(--info-border); border-radius: 9px; background: var(--info-bg); color: var(--info-text); display: grid; place-items: center; font-size: 6px; font-weight: 900; }
+.entity-document-row > div { min-width: 0; display: grid; gap: 4px; }
+.entity-document-row > div strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.entity-document-row > div small, .entity-document-row > div span { color: var(--text-muted); font-size: 6px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+.entity-document-row > em, .team-vehicle-row em { justify-self: start; padding: 5px 7px; border: 1px solid var(--card-border); border-radius: 999px; background: var(--bg); color: var(--text-muted); font-size: 6px; font-style: normal; font-weight: 800; white-space: nowrap; }
+.entity-document-row > em.expired, .team-vehicle-row em.expired { border-color: var(--neg-border); background: var(--neg-bg); color: var(--neg-text); }
+.entity-document-row > em.warning, .team-vehicle-row em.warning { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
+.entity-document-row > em.valid, .team-vehicle-row em.valid { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
+.entity-document-row > button { min-height: 32px; padding: 0 10px; border: 1px solid var(--card-border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-size: 6px; font-weight: 800; }
+.entity-document-upload { padding: 14px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); display: grid; grid-template-columns: minmax(210px, 1.4fr) minmax(150px, .8fr) repeat(2, minmax(125px, .65fr)) auto; align-items: end; gap: 11px; }
+.entity-document-upload label, .entity-document-file { display: grid; gap: 6px; color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .6px; }
+.entity-document-upload input { min-width: 0; min-height: 38px; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--bg); color: var(--text-primary); font-size: 8px; }
+.entity-document-upload input[type="file"] { padding: 7px; }
+.entity-document-upload button { min-height: 38px; padding: 0 13px; border: 1px solid var(--sidebar-bg); border-radius: 8px; background: var(--sidebar-bg); color: #fff; font-size: 7px; font-weight: 800; white-space: nowrap; }
+.entity-document-upload .form-error { grid-column: 1 / -1; margin: 0; color: var(--neg-text); font-size: 8px; }
+.team-vehicle-row { min-height: 78px; padding: 13px 22px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: minmax(230px, 1.2fr) minmax(180px, .8fr) minmax(170px, .7fr) auto; align-items: center; gap: 16px; }
+.team-vehicle-row > div { min-width: 0; display: grid; gap: 5px; }
+.team-vehicle-row > div > span, .team-vehicle-identity > span { color: var(--text-muted); font-size: 7px; font-weight: 800; letter-spacing: .7px; }
+.team-vehicle-row strong { font-size: 10px; }
+.team-vehicle-identity small { color: var(--text-secondary); font-size: 8px; }
 .workforce-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
 .workforce-heading-actions { display: grid; justify-items: end; gap: 14px; }
 .workforce-heading-actions .outline-action.active { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
@@ -983,8 +1014,12 @@ button, input, select, textarea,
   .team-kpis { grid-template-columns: repeat(2, 1fr); }
   .team-kpis article:nth-child(2) { border-right: 0; }
   .team-kpis article:nth-child(-n+2) { border-bottom: 1px solid var(--card-border); }
-  .team-directory-row { grid-template-columns: 36px minmax(180px, 1.4fr) repeat(2, minmax(115px, 1fr)); }
-  .team-directory-row > div:last-child { display: none; }
+  .team-directory-row { grid-template-columns: 36px minmax(180px, 1.4fr) repeat(2, minmax(115px, 1fr)) auto; }
+  .team-directory-row > div:nth-of-type(4) { display: none; }
+  .entity-document-upload { grid-template-columns: 1fr 1fr; }
+  .entity-document-file { grid-column: 1 / -1; }
+  .entity-document-row { grid-template-columns: 36px minmax(180px, 1fr) minmax(110px, .55fr) auto; }
+  .entity-document-row > div:nth-of-type(2) { display: none; }
   .team-board-panel { overflow: hidden; }
   .planning-panel { overflow-x: auto; }
   #planning-content { min-width: 980px; }
@@ -1002,7 +1037,16 @@ button, input, select, textarea,
   .team-work-name { border-right: 0; border-bottom: 1px solid var(--card-border); }
   .team-directory-row { grid-template-columns: 32px 1fr; }
   .team-directory-row > div:not(.team-person-main) { grid-column: 2; }
-  .team-directory-row > div:last-child { display: grid; }
+  .team-directory-row > div:nth-of-type(4) { display: grid; }
+  .team-directory-row .entity-documents-button { grid-column: 2; justify-self: start; }
+  .entity-documents-panel { padding: 16px; }
+  .entity-documents-panel > header { flex-direction: column; }
+  .entity-document-upload, .team-vehicle-row { grid-template-columns: 1fr; }
+  .entity-document-file { grid-column: auto; }
+  .entity-document-row { grid-template-columns: 34px 1fr; }
+  .entity-document-row > div:nth-of-type(2) { display: grid; }
+  .entity-document-row > div, .entity-document-row > em, .entity-document-row > button { grid-column: 2; }
+  .team-vehicle-row .entity-documents-button { justify-self: start; }
   .team-detail-row { grid-template-columns: 1fr 1fr; }
   .team-detail-row > div:first-child { grid-column: 1 / -1; }
   .workforce-heading-actions { justify-items: start; }

@@ -619,6 +619,18 @@ with check (
   ))
 );
 
+-- Arquivo pessoal de RH e viaturas: apenas Administrativo/Gerência.
+create policy pl_documentos_rh
+on public.documentos for all to authenticated
+using (
+  entidade_tipo in ('colaborador', 'viatura')
+  and public.fn_e_administrativo()
+)
+with check (
+  entidade_tipo in ('colaborador', 'viatura')
+  and public.fn_e_administrativo()
+);
+
 -- Documentos por obra: Administrativo também pode enviar, mas não ganha edição operacional.
 create policy pl_documentos_obra_insert
 on public.documentos_obra for insert to authenticated
@@ -639,12 +651,15 @@ $$;
 revoke all on function public.fn_pode_editar_documentos_obra(uuid) from public, anon;
 grant execute on function public.fn_pode_editar_documentos_obra(uuid) to authenticated;
 
--- Alertas: cada responsável vê os da sua obra; Administrativo/Financeiro veem os globais.
+-- Alertas: cada responsável vê os da sua obra; os globais respeitam o destinatário.
 create policy pl_alertas_select
 on public.alertas for select to authenticated
 using (
   public.fn_e_administrativo()
-  or public.fn_e_financeiro()
+  or (
+    public.fn_e_financeiro()
+    and destinatario_role in ('financeiro', 'tesouraria')
+  )
   or (obra_id is not null and public.fn_pode_ver_obra(obra_id))
 );
 
@@ -683,6 +698,8 @@ drop policy if exists faturas_read_authenticated on storage.objects;
 drop policy if exists faturas_upload_authenticated on storage.objects;
 drop policy if exists documentos_storage_select on storage.objects;
 drop policy if exists documentos_storage_insert on storage.objects;
+drop policy if exists documentos_rh_storage_select on storage.objects;
+drop policy if exists documentos_rh_storage_insert on storage.objects;
 
 create policy faturas_read_authenticated
 on storage.objects for select to authenticated
@@ -729,6 +746,26 @@ with check (
     public.fn_pode_editar_obra(((storage.foldername(name))[1])::uuid)
     or public.fn_e_administrativo()
   )
+);
+
+create policy documentos_rh_storage_select
+on storage.objects for select to authenticated
+using (
+  bucket_id = 'documentos'
+  and (storage.foldername(name))[1] = 'rh'
+  and (storage.foldername(name))[2] in ('colaborador', 'viatura')
+  and (storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'
+  and public.fn_e_administrativo()
+);
+
+create policy documentos_rh_storage_insert
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'documentos'
+  and (storage.foldername(name))[1] = 'rh'
+  and (storage.foldername(name))[2] in ('colaborador', 'viatura')
+  and (storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'
+  and public.fn_e_administrativo()
 );
 
 commit;
