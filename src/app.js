@@ -53,6 +53,7 @@ let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
 let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
+let teamQuickFilter = "";
 let selectedTeamEntity = null;
 let selectedVehicleEditId = "";
 const localEntityDocumentFiles = new Map();
@@ -995,12 +996,18 @@ function renderTeam() {
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
 
   const contractByPerson = new Map(teamData.contracts.map(item => [item.colaborador_id, item]));
+  const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
+  const missingContractIds = new Set(missingContracts.map(person => person.id));
   const hoursByPerson = new Map();
   teamData.overtime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
   const visiblePeople = collaborators.filter(person => {
     const allocation = currentAllocations.find(item => item.colaborador_id === person.id);
     const work = workById.get(allocation?.obra_id);
-    return !directorySearch || `${person.nome} ${person.funcao || ""} ${person.nivel || ""} ${work?.numero || ""} ${work?.nome || ""} ${allocation?.descricao_livre || ""} ${allocation?.tipo_alocacao || ""}`.toLocaleLowerCase("pt-PT").includes(directorySearch);
+    const matchesQuickFilter = teamQuickFilter === "missing_contract" ? missingContractIds.has(person.id)
+      : teamQuickFilter === "birthday" ? birthdayPeople.some(item => item.id === person.id)
+        : true;
+    const matchesSearch = !directorySearch || `${person.nome} ${person.funcao || ""} ${person.nivel || ""} ${work?.numero || ""} ${work?.nome || ""} ${allocation?.descricao_livre || ""} ${allocation?.tipo_alocacao || ""}`.toLocaleLowerCase("pt-PT").includes(directorySearch);
+    return matchesQuickFilter && matchesSearch;
   });
   $("#team-result-count").textContent = `${visiblePeople.length} COLABORADOR${visiblePeople.length === 1 ? "" : "ES"} · ${pendingHours.toLocaleString("pt-PT")} H EXTRA POR PAGAR`;
   $("#team-directory").innerHTML = visiblePeople.length ? visiblePeople.map(person => {
@@ -1024,18 +1031,18 @@ function renderTeam() {
   }).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`;
 
   const endingContracts = teamData.contracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
-  const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
   $("#team-alert-summary").innerHTML = [
-    endingContracts.length ? `<article class="attention"><strong>${endingContracts.length}</strong><span>CONTRATO${endingContracts.length === 1 ? "" : "S"} A TERMINAR EM 30 DIAS</span></article>` : "",
-    missingContracts.length ? `<article class="pending"><strong>${missingContracts.length}</strong><span>COLABORADOR${missingContracts.length === 1 ? "" : "ES"} SEM CONTRATO REGISTADO</span></article>` : "",
-    absentIds.size ? `<article class="info"><strong>${absentIds.size}</strong><span>AUSENTE${absentIds.size === 1 ? "" : "S"} ESTA SEMANA</span></article>` : "",
-    birthdayPeople.length ? `<article class="info"><strong>${birthdayPeople.length}</strong><span>ANIVERSÁRIO${birthdayPeople.length === 1 ? "" : "S"} ESTE MÊS</span></article>` : "",
-    medicineDue.length ? `<article class="attention"><strong>${medicineDue.length}</strong><span>CONSULTA${medicineDue.length === 1 ? "" : "S"} VENCIDA${medicineDue.length === 1 ? "" : "S"} OU A 30 DIAS</span></article>` : "",
-    pendingHours ? `<article class="attention"><strong>${pendingHours.toLocaleString("pt-PT")} h</strong><span>HORAS EXTRA POR PAGAR</span></article>` : "",
+    endingContracts.length ? `<button type="button" data-team-alert-filter="ending_contract" data-team-alert-tab="contracts" class="attention ${teamQuickFilter === "ending_contract" ? "active" : ""}"><strong>${endingContracts.length}</strong><span>CONTRATO${endingContracts.length === 1 ? "" : "S"} A TERMINAR EM 30 DIAS<small>VER PESSOAS →</small></span></button>` : "",
+    missingContracts.length ? `<button type="button" data-team-alert-filter="missing_contract" data-team-alert-tab="collaborators" class="pending ${teamQuickFilter === "missing_contract" ? "active" : ""}"><strong>${missingContracts.length}</strong><span>COLABORADOR${missingContracts.length === 1 ? "" : "ES"} SEM CONTRATO REGISTADO<small>VER PESSOAS →</small></span></button>` : "",
+    absentIds.size ? `<button type="button" data-team-alert-filter="absent" data-team-alert-tab="absences" class="info ${teamQuickFilter === "absent" ? "active" : ""}"><strong>${absentIds.size}</strong><span>AUSENTE${absentIds.size === 1 ? "" : "S"} ESTA SEMANA<small>VER PESSOAS →</small></span></button>` : "",
+    birthdayPeople.length ? `<button type="button" data-team-alert-filter="birthday" data-team-alert-tab="collaborators" class="info ${teamQuickFilter === "birthday" ? "active" : ""}"><strong>${birthdayPeople.length}</strong><span>ANIVERSÁRIO${birthdayPeople.length === 1 ? "" : "S"} ESTE MÊS<small>VER PESSOAS →</small></span></button>` : "",
+    medicineDue.length ? `<button type="button" data-team-alert-filter="medicine_due" data-team-alert-tab="medicine" class="attention ${teamQuickFilter === "medicine_due" ? "active" : ""}"><strong>${medicineDue.length}</strong><span>CONSULTA${medicineDue.length === 1 ? "" : "S"} VENCIDA${medicineDue.length === 1 ? "" : "S"} OU A 30 DIAS<small>VER PESSOAS →</small></span></button>` : "",
+    pendingHours ? `<button type="button" data-team-alert-filter="overtime" data-team-alert-tab="overtime" class="attention ${teamQuickFilter === "overtime" ? "active" : ""}"><strong>${pendingHours.toLocaleString("pt-PT")} h</strong><span>HORAS EXTRA POR PAGAR<small>VER PESSOAS →</small></span></button>` : "",
   ].filter(Boolean).join("") || `<article class="ok"><strong>✓</strong><span>SEM ALERTAS DE EQUIPA</span></article>`;
 
-  $("#team-contract-count").textContent = `${teamData.contracts.length} CONTRATOS ATIVOS`;
-  $("#team-contracts").innerHTML = teamData.contracts.length ? teamData.contracts.map(contract => {
+  $("#team-contract-count").textContent = teamQuickFilter === "ending_contract" ? `${endingContracts.length} A TERMINAR · ${teamData.contracts.length} ATIVOS` : `${teamData.contracts.length} CONTRATOS ATIVOS`;
+  const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : teamData.contracts;
+  $("#team-contracts").innerHTML = visibleContracts.length ? visibleContracts.map(contract => {
     const person = personById.get(contract.colaborador_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " ")}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><em>${contract.estado || "ativo"}</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM CONTRATOS</strong><span>Não existem contratos ativos registados.</span></div>`;
@@ -1047,8 +1054,9 @@ function renderTeam() {
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><em>POR PAGAR</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
 
-  $("#team-medicine-count").textContent = `${teamData.medicine.length} REGISTO${teamData.medicine.length === 1 ? "" : "S"}`;
-  $("#team-medicine").innerHTML = teamData.medicine.length ? teamData.medicine.map(item => {
+  $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${teamData.medicine.length} REGISTOS` : `${teamData.medicine.length} REGISTO${teamData.medicine.length === 1 ? "" : "S"}`;
+  const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : teamData.medicine;
+  $("#team-medicine").innerHTML = visibleMedicine.length ? visibleMedicine.map(item => {
     const person = personById.get(item.colaborador_id);
     const validity = documentValidity({ data_validade: item.data_proxima_consulta });
     return `<article class="team-detail-row medicine-row">
@@ -2025,12 +2033,27 @@ $("#workforce-roster").addEventListener("change", event => {
   const select = event.target.closest("[data-workforce-period]");
   if (select) selectedWorkforcePeriod = select.value;
 });
-document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventListener("click", () => {
-  selectedTeamTab = button.dataset.teamTab;
+function activateTeamTab(tab, preserveFilter = false) {
+  selectedTeamTab = tab;
+  if (!preserveFilter) teamQuickFilter = "";
   document.querySelectorAll("[data-team-tab]").forEach(item => item.classList.toggle("active", item.dataset.teamTab === selectedTeamTab));
   document.querySelectorAll("[data-team-panel]").forEach(panel => { panel.hidden = panel.dataset.teamPanel !== selectedTeamTab; });
+}
+
+document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventListener("click", () => {
+  activateTeamTab(button.dataset.teamTab);
+  renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const alertButton = event.target.closest("[data-team-alert-filter]");
+  if (alertButton) {
+    const nextFilter = alertButton.dataset.teamAlertFilter;
+    teamQuickFilter = teamQuickFilter === nextFilter ? "" : nextFilter;
+    activateTeamTab(alertButton.dataset.teamAlertTab, true);
+    renderTeam();
+    document.querySelector(`[data-team-panel="${selectedTeamTab}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
   const editVehicleButton = event.target.closest("[data-edit-vehicle]");
   if (editVehicleButton) {
     if (!canManageTeam()) return toast("A edição da frota está reservada ao Administrativo e à Gerência.", "error");
