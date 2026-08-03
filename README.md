@@ -201,8 +201,13 @@ de ficheiros de colaboradores e viaturas a Administrativo/Gerência.
 Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,
 de forma idempotente, as 21 viaturas, os 34 registos atuais de medicina do trabalho
 e as respetivas datas de nascimento. O script não cria colaboradores e cancela toda
-a transação se um nome não tiver uma correspondência única. No final deve devolver
+a transação se algum UUID confirmado pela auditoria não existir ou estiver inativo. No final deve devolver
 `34 / 34 / 21 / 21 / 34` nas cinco colunas de confirmação.
+
+Executar também `supabase/viaturas_prazos_edicao.sql` para distinguir a data da
+última revisão (`data_revisao`) da próxima revisão programada
+(`data_proxima_revisao`). A área Equipa mostra seguro, inspeção e revisão
+separadamente e permite a Administrativo/Gerência atualizar estes dados.
 
 Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
 com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da

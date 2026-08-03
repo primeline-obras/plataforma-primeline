@@ -54,6 +54,7 @@ let selectedTeamWeek = mondayIso(new Date());
 let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let selectedTeamEntity = null;
+let selectedVehicleEditId = "";
 const localEntityDocumentFiles = new Map();
 let workforceEditing = false;
 let selectedWorkforcePersonId = "";
@@ -415,6 +416,10 @@ function hasFullAccess() {
 
 function isAdministrative() {
   return effectiveRole() === "administrativo";
+}
+
+function canManageTeam() {
+  return hasFullAccess() || isAdministrative();
 }
 
 function isFinancial() {
@@ -843,6 +848,25 @@ function documentValidity(documentItem) {
   return { state: "valid", label: `VÁLIDO ATÉ ${formatOptionalDate(documentItem.data_validade)}` };
 }
 
+function renderVehicleDeadline(label, date) {
+  const validity = documentValidity({ data_validade: date });
+  return `<div class="vehicle-deadline"><span>${label}</span><strong>${formatOptionalDate(date)}</strong><em class="${validity.state}">${date ? validity.label : "SEM DATA"}</em></div>`;
+}
+
+function renderVehicleEditForm(vehicle) {
+  const peopleOptions = collaborators.map(person => `<option value="${person.id}" ${person.id === vehicle.colaborador_atribuido_id ? "selected" : ""}>${safeText(person.nome)}</option>`).join("");
+  return `<form class="vehicle-edit-form" data-vehicle-edit-form data-vehicle-id="${vehicle.id}">
+    <div class="vehicle-edit-title"><span>ATUALIZAR FROTA</span><strong>${safeText(vehicle.marca_modelo)} · ${safeText(vehicle.matricula)}</strong></div>
+    <label>ATRIBUÍDA A<select name="colaborador_atribuido_id"><option value="">Sem atribuição</option>${peopleOptions}</select></label>
+    <label>SEGURO ATÉ<input name="seguro_data" type="date" value="${vehicle.seguro_data || ""}"></label>
+    <label>PRÓXIMA INSPEÇÃO<input name="data_inspecao_proxima" type="date" value="${vehicle.data_inspecao_proxima || ""}"></label>
+    <label>ÚLTIMA REVISÃO<input name="data_revisao" type="date" value="${vehicle.data_revisao || ""}"></label>
+    <label>PRÓXIMA REVISÃO<input name="data_proxima_revisao" type="date" value="${vehicle.data_proxima_revisao || ""}"></label>
+    <div class="vehicle-edit-actions"><button type="submit">GUARDAR</button><button type="button" data-cancel-vehicle-edit>CANCELAR</button></div>
+    <p class="form-error"></p>
+  </form>`;
+}
+
 function renderEntityDocuments(entityType, entity) {
   const documents = entityDocuments(entityType, entity.id);
   const title = entityType === "colaborador" ? entity.nome : `${entity.marca_modelo || "Viatura"} · ${entity.matricula || "sem matrícula"}`;
@@ -1040,15 +1064,14 @@ function renderTeam() {
     const assigned = personById.get(vehicle.colaborador_atribuido_id);
     const documents = entityDocuments("viatura", vehicle.id);
     const documentsOpen = selectedTeamEntity?.type === "viatura" && selectedTeamEntity.id === vehicle.id;
-    const dueDates = [vehicle.seguro_data, vehicle.data_revisao, vehicle.data_inspecao_proxima].filter(Boolean).sort();
-    const nextDate = dueDates[0] || null;
-    const validity = documentValidity({ data_validade: nextDate });
     return `<article class="team-vehicle-row">
       <div class="team-vehicle-identity"><span>${vehicle.numero_interno != null ? `VIATURA ${vehicle.numero_interno}` : "VIATURA"}</span><strong>${safeText(vehicle.marca_modelo || "Modelo não indicado")}</strong><small>${safeText(vehicle.matricula || "Matrícula não indicada")}</small></div>
       <div><span>ATRIBUÍDA A</span><strong>${safeText(assigned?.nome || "Sem atribuição")}</strong></div>
-      <div><span>PRÓXIMA DATA</span><strong>${formatOptionalDate(nextDate)}</strong><em class="${validity.state}">${nextDate ? validity.label : "SEM DATA"}</em></div>
-      <button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="viatura" data-entity-id="${vehicle.id}">DOCUMENTOS <b>${documents.length}</b></button>
-    </article>${documentsOpen ? renderEntityDocuments("viatura", vehicle) : ""}`;
+      ${renderVehicleDeadline("SEGURO ATÉ", vehicle.seguro_data)}
+      ${renderVehicleDeadline("PRÓXIMA INSPEÇÃO", vehicle.data_inspecao_proxima)}
+      <div class="vehicle-revision"><span>REVISÃO</span><strong>Última: ${formatOptionalDate(vehicle.data_revisao)}</strong>${vehicle.data_proxima_revisao ? `<small>Próxima: ${formatOptionalDate(vehicle.data_proxima_revisao)}</small>` : "<small>Próxima não definida</small>"}</div>
+      <div class="vehicle-row-actions">${canManageTeam() ? `<button class="vehicle-edit-button" type="button" data-edit-vehicle="${vehicle.id}">${selectedVehicleEditId === vehicle.id ? "A EDITAR" : "EDITAR"}</button>` : ""}<button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="viatura" data-entity-id="${vehicle.id}">DOCUMENTOS <b>${documents.length}</b></button></div>
+    </article>${selectedVehicleEditId === vehicle.id ? renderVehicleEditForm(vehicle) : ""}${documentsOpen ? renderEntityDocuments("viatura", vehicle) : ""}`;
   }).join("") : `<div class="empty-state"><strong>SEM VIATURAS</strong><span>Não existem viaturas registadas.</span></div>`;
 }
 
@@ -1263,7 +1286,7 @@ async function loadTeamData(force = false) {
     supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
-    supabase("viaturas?select=id,empresa_id,marca_modelo,matricula,numero_interno,colaborador_atribuido_id,cartao_frota_venc,iuc_liquidacao,seguro_data,seguro_seguradora,data_revisao,kms_revisao,data_inspecao_proxima,kms_inspecao,chaves_estado,criado_em&order=numero_interno.asc.nullslast,matricula.asc"),
+    supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc"),
     supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast"),
     supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc"),
   ]);
@@ -2008,6 +2031,18 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   document.querySelectorAll("[data-team-panel]").forEach(panel => { panel.hidden = panel.dataset.teamPanel !== selectedTeamTab; });
 }));
 $("#team-view").addEventListener("click", async event => {
+  const editVehicleButton = event.target.closest("[data-edit-vehicle]");
+  if (editVehicleButton) {
+    if (!canManageTeam()) return toast("A edição da frota está reservada ao Administrativo e à Gerência.", "error");
+    selectedVehicleEditId = selectedVehicleEditId === editVehicleButton.dataset.editVehicle ? "" : editVehicleButton.dataset.editVehicle;
+    renderTeam();
+    return;
+  }
+  if (event.target.closest("[data-cancel-vehicle-edit]")) {
+    selectedVehicleEditId = "";
+    renderTeam();
+    return;
+  }
   const openButton = event.target.closest("[data-open-entity-documents]");
   if (openButton) {
     const next = { type: openButton.dataset.openEntityDocuments, id: openButton.dataset.entityId };
@@ -2042,6 +2077,49 @@ $("#team-view").addEventListener("click", async event => {
   }
 });
 $("#team-view").addEventListener("submit", async event => {
+  const vehicleForm = event.target.closest("[data-vehicle-edit-form]");
+  if (vehicleForm) {
+    event.preventDefault();
+    if (!canManageTeam()) return toast("A edição da frota está reservada ao Administrativo e à Gerência.", "error");
+    const vehicle = teamData.vehicles.find(item => item.id === vehicleForm.dataset.vehicleId);
+    if (!vehicle) return;
+    const submitButton = vehicleForm.querySelector('button[type="submit"]');
+    const errorNode = vehicleForm.querySelector(".form-error");
+    submitButton.disabled = true;
+    errorNode.textContent = "";
+    const payload = {
+      colaborador_atribuido_id: vehicleForm.elements.colaborador_atribuido_id.value || null,
+      seguro_data: vehicleForm.elements.seguro_data.value || null,
+      data_inspecao_proxima: vehicleForm.elements.data_inspecao_proxima.value || null,
+      data_revisao: vehicleForm.elements.data_revisao.value || null,
+      data_proxima_revisao: vehicleForm.elements.data_proxima_revisao.value || null,
+    };
+    try {
+      if (isSupabaseConfigured) {
+        const response = await supabase(`viaturas?id=eq.${vehicle.id}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.message || detail.details || "Não foi possível atualizar a viatura.");
+        }
+        const [saved] = await response.json();
+        Object.assign(vehicle, saved || payload);
+      } else {
+        Object.assign(vehicle, payload);
+      }
+      selectedVehicleEditId = "";
+      renderTeam();
+      toast("Dados da viatura atualizados.");
+    } catch (error) {
+      errorNode.textContent = error.message || "Não foi possível atualizar a viatura.";
+    } finally {
+      submitButton.disabled = false;
+    }
+    return;
+  }
   const uploadForm = event.target.closest("[data-entity-document-upload]");
   if (!uploadForm) return;
   event.preventDefault();
