@@ -229,7 +229,7 @@ export async function downloadInvoicePdf(objectPath) {
 
 const WORK_DOCUMENT_EXTENSIONS = new Set([
   "pdf", "jpg", "jpeg", "png", "webp", "heic",
-  "xls", "xlsx", "doc", "docx", "mpp", "dwg", "dxf", "zip", "txt",
+  "xls", "xlsx", "csv", "doc", "docx", "mpp", "dwg", "dxf", "zip", "txt",
 ]);
 
 export async function uploadWorkDocument(file, obraId, documentType) {
@@ -244,6 +244,35 @@ export async function uploadWorkDocument(file, obraId, documentType) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-140) || `documento.${extension || "bin"}`;
   const safeType = String(documentType || "outro").replace(/[^a-z0-9_-]/gi, "-");
   const objectPath = `${obraId}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
+  const response = await fetch(storageBucketUrl("documentos", objectPath), {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": file.type || "application/octet-stream",
+      "x-upsert": "false",
+    },
+    body: file,
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.message || payload.error || "Não foi possível enviar o documento.");
+  return objectPath;
+}
+
+export async function uploadEntityDocument(file, entityType, entityId, documentType) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  if (!['colaborador', 'viatura'].includes(entityType)) throw new Error("Tipo de entidade inválido.");
+  const extension = file.name.split(".").pop()?.toLowerCase() || "";
+  if (!WORK_DOCUMENT_EXTENSIONS.has(extension)) {
+    throw new Error("Formato não suportado. Use PDF, imagem, Excel/CSV, Word ou outro formato documental permitido.");
+  }
+  if (file.size > 25 * 1024 * 1024) throw new Error("O documento excede o limite de 25 MB.");
+  const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-140) || `documento.${extension || "bin"}`;
+  const safeType = String(documentType || "outro").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]/gi, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "outro";
+  const objectPath = `rh/${entityType}/${entityId}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
   const response = await fetch(storageBucketUrl("documentos", objectPath), {
     method: "POST",
     headers: {

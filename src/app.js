@@ -1,6 +1,6 @@
-import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js";
+import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=2";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=8";
+import { createProductionDashboard } from "./production-dashboard.js?v=9";
 import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=2";
@@ -51,8 +51,10 @@ let workDetails = {
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
-let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], loadedWeek: "", error: "" };
+let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], entityDocuments: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
+let selectedTeamEntity = null;
+const localEntityDocumentFiles = new Map();
 let workforceEditing = false;
 let selectedWorkforcePersonId = "";
 let selectedWorkforceSourceDate = "";
@@ -202,7 +204,7 @@ document.querySelector("#root").innerHTML = `
       </div>
       <div class="page team-view" id="team-view" hidden>
         <div class="page-heading">
-          <div><p class="eyebrow">GESTÃO DE PESSOAS</p><h1>EQUIPA</h1><p>Colaboradores, ausências, contratos e horas extraordinárias.</p></div>
+          <div><p class="eyebrow">GESTÃO DE PESSOAS</p><h1>EQUIPA</h1><p>Colaboradores, frota, documentos, ausências e contratos.</p></div>
           <div class="heading-stat"><span>ATIVOS</span><strong id="team-active-count">00</strong></div>
         </div>
         <div class="team-toolbar directory-toolbar">
@@ -215,6 +217,7 @@ document.querySelector("#root").innerHTML = `
           <button data-team-tab="absences">AUSÊNCIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
+          <button data-team-tab="vehicles">VIATURAS</button>
         </nav>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
           <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>AUSÊNCIAS DA SEMANA</h2></div></div>
@@ -231,6 +234,10 @@ document.querySelector("#root").innerHTML = `
         <section class="panel team-tab-panel" data-team-panel="overtime" hidden>
           <div class="team-section-head"><div><p class="eyebrow">PAGAMENTOS</p><h2>HORAS EXTRAORDINÁRIAS</h2></div><span id="team-overtime-count"></span></div>
           <div id="team-overtime"></div>
+        </section>
+        <section class="panel team-tab-panel" data-team-panel="vehicles" hidden>
+          <div class="team-section-head"><div><p class="eyebrow">FROTA</p><h2>VIATURAS</h2></div><span id="team-vehicle-count"></span></div>
+          <div id="team-vehicles"></div>
         </section>
       </div>
       <div class="page workforce-view" id="workforce-view" hidden>
@@ -817,6 +824,47 @@ function isVacation(absence) {
   return String(absence?.tipo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT").includes("ferias");
 }
 
+function entityDocuments(entityType, entityId) {
+  return teamData.entityDocuments.filter(item => item.entidade_tipo === entityType && item.entidade_id === entityId);
+}
+
+function documentValidity(documentItem) {
+  if (!documentItem.data_validade) return { state: "neutral", label: "SEM VALIDADE" };
+  const today = new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00`);
+  const expiry = new Date(`${documentItem.data_validade}T12:00:00`);
+  const days = Math.ceil((expiry - today) / 86400000);
+  if (days < 0) return { state: "expired", label: `VENCIDO HÁ ${Math.abs(days)} DIA${Math.abs(days) === 1 ? "" : "S"}` };
+  if (days <= 30) return { state: "warning", label: days === 0 ? "VENCE HOJE" : `VENCE EM ${days} DIA${days === 1 ? "" : "S"}` };
+  return { state: "valid", label: `VÁLIDO ATÉ ${formatOptionalDate(documentItem.data_validade)}` };
+}
+
+function renderEntityDocuments(entityType, entity) {
+  const documents = entityDocuments(entityType, entity.id);
+  const title = entityType === "colaborador" ? entity.nome : `${entity.marca_modelo || "Viatura"} · ${entity.matricula || "sem matrícula"}`;
+  const suggestions = ["certificado", "contrato_trabalho", "seguro", "cartao_cidadao", "carta_conducao", "ficha_aptidao", "outro"];
+  return `<section class="entity-documents-panel" data-entity-documents-panel>
+    <header><div><span>ARQUIVO PRIVADO</span><h3>DOCUMENTOS · ${safeText(title)}</h3></div><button type="button" data-close-entity-documents>FECHAR ×</button></header>
+    <div class="entity-document-list">${documents.length ? documents.map(documentItem => {
+      const validity = documentValidity(documentItem);
+      return `<article class="entity-document-row">
+        <span class="entity-document-icon">DOC</span>
+        <div><strong>${safeText(documentItem.nome_arquivo || "Documento")}</strong><small>${safeText(String(documentItem.tipo_documento || "outro").replace(/_/g, " "))}</small></div>
+        <div><span>EMISSÃO</span><strong>${formatOptionalDate(documentItem.data_emissao)}</strong></div>
+        <em class="${validity.state}">${validity.label}</em>
+        <button type="button" data-entity-document-download="${encodeURIComponent(documentItem.url_arquivo || "")}" data-document-name="${safeText(documentItem.nome_arquivo || "documento")}">DESCARREGAR</button>
+      </article>`;
+    }).join("") : `<div class="work-document-empty">AINDA NÃO EXISTEM DOCUMENTOS ASSOCIADOS</div>`}</div>
+    <form class="entity-document-upload" data-entity-document-upload data-entity-type="${entityType}" data-entity-id="${entity.id}">
+      <div class="entity-document-file"><span>FICHEIRO</span><input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.csv,.doc,.docx" required></div>
+      <label>TIPO DE DOCUMENTO<input name="tipo_documento" list="document-types-${entity.id}" maxlength="80" placeholder="Ex.: certificado" required><datalist id="document-types-${entity.id}">${suggestions.map(item => `<option value="${item}">`).join("")}</datalist></label>
+      <label>DATA DE EMISSÃO<input name="data_emissao" type="date"></label>
+      <label>DATA DE VALIDADE<input name="data_validade" type="date"></label>
+      <button type="submit">ANEXAR DOCUMENTO</button>
+      <p class="form-error"></p>
+    </form>
+  </section>`;
+}
+
 function renderTeam() {
   renderWorkforceLineEditor();
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
@@ -926,13 +974,16 @@ function renderTeam() {
     const allocationLabel = workforceAllocationType(allocation) === "obra"
       ? work ? `Obra ${work.numero || "—"}` : "Sem alocação"
       : `${workforceAllocationType(allocation) === "garantia" ? "Garantia" : "Pontual"} · ${allocation?.descricao_livre || "Sem nome"}`;
+    const documents = entityDocuments("colaborador", person.id);
+    const documentsOpen = selectedTeamEntity?.type === "colaborador" && selectedTeamEntity.id === person.id;
     return `<article class="team-directory-row">
       <span class="team-avatar">${personInitials(person.nome)}</span>
       <div class="team-person-main"><strong>${person.nome}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
       <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : safeText(allocationLabel)}</strong></div>
       <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
-    </article>`;
+      <button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="colaborador" data-entity-id="${person.id}">DOCUMENTOS <b>${documents.length}</b></button>
+    </article>${documentsOpen ? renderEntityDocuments("colaborador", person) : ""}`;
   }).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`;
 
   const endingContracts = teamData.contracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
@@ -956,6 +1007,22 @@ function renderTeam() {
     const work = workById.get(item.obra_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><em>POR PAGAR</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
+
+  $("#team-vehicle-count").textContent = `${teamData.vehicles.length} VIATURA${teamData.vehicles.length === 1 ? "" : "S"}`;
+  $("#team-vehicles").innerHTML = teamData.vehicles.length ? teamData.vehicles.map(vehicle => {
+    const assigned = personById.get(vehicle.colaborador_atribuido_id);
+    const documents = entityDocuments("viatura", vehicle.id);
+    const documentsOpen = selectedTeamEntity?.type === "viatura" && selectedTeamEntity.id === vehicle.id;
+    const dueDates = [vehicle.seguro_data, vehicle.data_revisao, vehicle.data_inspecao_proxima].filter(Boolean).sort();
+    const nextDate = dueDates[0] || null;
+    const validity = documentValidity({ data_validade: nextDate });
+    return `<article class="team-vehicle-row">
+      <div class="team-vehicle-identity"><span>${vehicle.numero_interno != null ? `VIATURA ${vehicle.numero_interno}` : "VIATURA"}</span><strong>${safeText(vehicle.marca_modelo || "Modelo não indicado")}</strong><small>${safeText(vehicle.matricula || "Matrícula não indicada")}</small></div>
+      <div><span>ATRIBUÍDA A</span><strong>${safeText(assigned?.nome || "Sem atribuição")}</strong></div>
+      <div><span>PRÓXIMA DATA</span><strong>${formatOptionalDate(nextDate)}</strong><em class="${validity.state}">${nextDate ? validity.label : "SEM DATA"}</em></div>
+      <button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="viatura" data-entity-id="${vehicle.id}">DOCUMENTOS <b>${documents.length}</b></button>
+    </article>${documentsOpen ? renderEntityDocuments("viatura", vehicle) : ""}`;
+  }).join("") : `<div class="empty-state"><strong>SEM VIATURAS</strong><span>Não existem viaturas registadas.</span></div>`;
 }
 
 function setWorkforceEditing(enabled) {
@@ -1157,7 +1224,7 @@ async function saveVacationWeek(personId, week) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], entityDocuments: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
@@ -1169,13 +1236,17 @@ async function loadTeamData(force = false) {
     supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
+    supabase("viaturas?select=id,empresa_id,marca_modelo,matricula,numero_interno,colaborador_atribuido_id,cartao_frota_venc,iuc_liquidacao,seguro_data,seguro_seguradora,data_revisao,kms_revisao,data_inspecao_proxima,kms_inspecao,chaves_estado,criado_em&order=numero_interno.asc.nullslast,matricula.asc"),
+    supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc"),
   ]);
-  const names = ["alocações", "ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores"];
+  const names = ["alocações", "ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "documentos de RH"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
-  [teamData.allocations, teamData.absences, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users] = payloads.map(payload => Array.isArray(payload) ? payload : []);
+  [teamData.allocations, teamData.absences, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.entityDocuments] = payloads.map(payload => Array.isArray(payload) ? payload : []);
   const essentialFailures = failures.filter(item => ["alocações", "ausências"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
+  const documentFailures = failures.filter(item => ["viaturas", "documentos de RH"].includes(item.failed));
+  if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Execute a migração de documentos de RH.`;
   renderTeam();
 }
 
@@ -1908,6 +1979,97 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   document.querySelectorAll("[data-team-tab]").forEach(item => item.classList.toggle("active", item.dataset.teamTab === selectedTeamTab));
   document.querySelectorAll("[data-team-panel]").forEach(panel => { panel.hidden = panel.dataset.teamPanel !== selectedTeamTab; });
 }));
+$("#team-view").addEventListener("click", async event => {
+  const openButton = event.target.closest("[data-open-entity-documents]");
+  if (openButton) {
+    const next = { type: openButton.dataset.openEntityDocuments, id: openButton.dataset.entityId };
+    selectedTeamEntity = selectedTeamEntity?.type === next.type && selectedTeamEntity.id === next.id ? null : next;
+    renderTeam();
+    return;
+  }
+  if (event.target.closest("[data-close-entity-documents]")) {
+    selectedTeamEntity = null;
+    renderTeam();
+    return;
+  }
+  const downloadButton = event.target.closest("[data-entity-document-download]");
+  if (!downloadButton) return;
+  const path = decodeURIComponent(downloadButton.dataset.entityDocumentDownload || "");
+  if (!path) return toast("Este documento não tem ficheiro associado.", "error");
+  downloadButton.disabled = true;
+  try {
+    const blob = localEntityDocumentFiles.get(path) || await downloadWorkDocument(path);
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = downloadButton.dataset.documentName || "documento";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  } catch (error) {
+    toast(error.message || "Não foi possível descarregar o documento.", "error");
+  } finally {
+    downloadButton.disabled = false;
+  }
+});
+$("#team-view").addEventListener("submit", async event => {
+  const uploadForm = event.target.closest("[data-entity-document-upload]");
+  if (!uploadForm) return;
+  event.preventDefault();
+  const file = uploadForm.elements.arquivo.files[0];
+  const documentType = uploadForm.elements.tipo_documento.value.trim();
+  const entityType = uploadForm.dataset.entityType;
+  const entityId = uploadForm.dataset.entityId;
+  const submitButton = uploadForm.querySelector('button[type="submit"]');
+  const errorNode = uploadForm.querySelector(".form-error");
+  if (!file || !documentType) return;
+  submitButton.disabled = true;
+  errorNode.textContent = "";
+  try {
+    let savedDocument;
+    if (isSupabaseConfigured) {
+      const objectPath = await uploadEntityDocument(file, entityType, entityId, documentType);
+      const response = await supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          empresa_id: PRIMELINE_COMPANY_ID,
+          entidade_tipo: entityType,
+          entidade_id: entityId,
+          tipo_documento: documentType,
+          nome_arquivo: file.name,
+          url_arquivo: objectPath,
+          data_emissao: uploadForm.elements.data_emissao.value || null,
+          data_validade: uploadForm.elements.data_validade.value || null,
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.message || detail.details || "O ficheiro foi enviado, mas não foi possível registar o documento.");
+      }
+      [savedDocument] = await response.json();
+    } else {
+      const localPath = `local:${crypto.randomUUID()}`;
+      localEntityDocumentFiles.set(localPath, file);
+      savedDocument = {
+        id: crypto.randomUUID(), empresa_id: PRIMELINE_COMPANY_ID,
+        entidade_tipo: entityType, entidade_id: entityId,
+        tipo_documento: documentType, nome_arquivo: file.name, url_arquivo: localPath,
+        data_emissao: uploadForm.elements.data_emissao.value || null,
+        data_validade: uploadForm.elements.data_validade.value || null,
+        criado_em: new Date().toISOString(),
+      };
+    }
+    teamData.entityDocuments.unshift(savedDocument);
+    renderTeam();
+    toast("Documento associado com sucesso.");
+  } catch (error) {
+    errorNode.textContent = error.message || "Não foi possível anexar o documento.";
+  } finally {
+    submitButton.disabled = false;
+  }
+});
 $("#team-week").addEventListener("change", event => {
   selectedTeamWeek = mondayIso(event.target.value);
   loadTeamData(true);

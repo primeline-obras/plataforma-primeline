@@ -251,7 +251,7 @@ export function createProductionDashboard(options) {
     }
     const authId = getSession()?.user?.id;
     const [alerts, profiles, phases, planning, budget, contracts, tees, measurements, subcontracts, consultations] = await Promise.all([
-      query("alertas?select=*&estado=eq.pendente&order=data_gatilho.asc", "Alertas"),
+      query(`alertas?select=*&estado=eq.pendente&data_gatilho=lte.${new Date().toISOString().slice(0, 10)}&order=data_gatilho.asc`, "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
       query("fases?select=id,obra_id,descricao,codigo", "Fases"),
       query("planeamento_fases_resumo?select=*", "Planeamento"),

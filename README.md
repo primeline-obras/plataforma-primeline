@@ -188,3 +188,15 @@ sugestões editáveis; o Administrativo confirma-as antes de gravar em
 `faturas_itens`. O comparativo não usa catálogo: pesquisa parcialmente com
 `ILIKE` em `faturas_itens.designacao` e `despesas_estaleiro.designacao`, agrupando
 os resultados por fornecedor.
+
+## Documentos de RH e viaturas
+
+Executar `supabase/documentos_rh_ativos.sql` no SQL Editor, depois da matriz final
+de permissões. A migração reutiliza a tabela `documentos` e o bucket privado
+`documentos`, permite tipos documentais em texto livre e reserva leitura/escrita
+de ficheiros de colaboradores e viaturas a Administrativo/Gerência.
+
+Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
+com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da
+data indicada. A Visão Geral apresenta apenas alertas cuja data de gatilho já
+tenha chegado.
