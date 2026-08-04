@@ -37,16 +37,20 @@ begin
     raise exception 'Uma tarefa concluída não pode ficar impedida.';
   end if;
 
-  select pi, f.obra_id
-    into v_item, v_obra_id
+  select pi.*
+    into v_item
   from public.planeamento_itens pi
-  join public.fases f on f.id = pi.fase_id
   where pi.id = p_item_id
-  for update of pi;
+  for update;
 
   if not found then
     raise exception 'Tarefa de planeamento não encontrada.';
   end if;
+
+  select f.obra_id
+    into v_obra_id
+  from public.fases f
+  where f.id = v_item.fase_id;
 
   if not public.fn_e_encarregado_da_obra(v_obra_id) then
     raise exception 'Sem permissão para atualizar esta tarefa.';
