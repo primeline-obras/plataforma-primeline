@@ -971,6 +971,61 @@ button, input, select, textarea,
 .planning-work-picker label { color: var(--text-muted); font-size: 11px; font-weight: 800; letter-spacing: 1.2px; }
 .planning-work-picker select { min-height: 44px; padding: 0 38px 0 13px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-primary); font-weight: 700; }
 .planning-panel { margin-top: 24px; overflow: hidden; }
+.planning-module-shell { min-height: 560px; display: grid; grid-template-columns: 205px minmax(0,1fr); }
+.planning-layer-nav { padding: 20px 0; border-right: 1px solid var(--card-border); background: var(--sidebar-bg); }
+.planning-layer-nav > span { display: block; padding: 0 18px 11px; color: var(--text-muted); font-size: 9px; font-weight: 900; letter-spacing: 1.2px; }
+.planning-layer-nav button { width: 100%; min-height: 58px; padding: 9px 15px; border: 0; border-left: 3px solid transparent; border-radius: 0; background: transparent; color: var(--text-secondary); display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: center; text-align: left; }
+.planning-layer-nav button:hover { background: rgba(255,255,255,.04); color: #fff; }
+.planning-layer-nav button.active { border-left-color: var(--brand-amber); background: var(--card); color: #fff; }
+.planning-layer-nav button > b { color: var(--brand-amber); font-size: 10px; }
+.planning-layer-nav button > span { display: grid; gap: 3px; font-size: 10px; font-weight: 900; letter-spacing: .4px; }
+.planning-layer-nav button small { color: var(--text-muted); font-size: 9px; font-weight: 700; }
+.planning-layer-content { min-width: 0; background: var(--card); }
+.planning-layer-content > header { min-height: 76px; padding: 17px 20px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.planning-layer-content > header h2 { font-size: 15px; }
+.planning-effective-toolbar { padding: 14px 18px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-soft); }
+.planning-effective-toolbar > div { display: flex; gap: 8px; }
+.planning-effective-toolbar button { min-height: 38px; padding: 0 13px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-secondary); font-size: 9px; font-weight: 900; letter-spacing: .6px; }
+.planning-effective-toolbar button.primary { border-color: var(--brand-amber); background: var(--brand-amber); color: #20242b; }
+.planning-effective-toolbar > span { color: var(--text-muted); font-size: 9px; font-weight: 900; }
+.planning-editor-wrap { max-height: 520px; overflow: auto; border-bottom: 1px solid var(--card-border); }
+.planning-editor-head, .planning-editor-row { min-width: 1490px; display: grid; grid-template-columns: 160px 90px minmax(220px,1fr) 150px 125px 125px 125px 85px 85px 135px 175px; }
+.planning-editor-head { position: sticky; z-index: 4; top: 0; min-height: 34px; background: var(--sidebar-bg); color: #fff; }
+.planning-editor-head span { padding: 10px 8px; border-right: 1px solid rgba(255,255,255,.09); font-size: 9px; font-weight: 900; letter-spacing: .5px; }
+.planning-editor-row { border-bottom: 1px solid var(--card-border); background: var(--card); }
+.planning-editor-row.new { box-shadow: inset 3px 0 var(--brand-amber); background: color-mix(in srgb,var(--brand-amber) 4%,var(--card)); }
+.planning-editor-row > input, .planning-editor-row > select { width: 100%; min-width: 0; height: 40px; margin: 0; padding: 0 8px; border: 0; border-right: 1px solid var(--card-border); border-radius: 0; background: transparent; color: var(--text-primary); font-size: 10px; }
+.planning-editor-row > input:focus, .planning-editor-row > select:focus { position: relative; z-index: 2; outline: 2px solid var(--brand-amber); outline-offset: -2px; background: var(--bg); }
+.planning-editor-row > div:nth-of-type(1) { padding: 5px; display: flex; gap: 5px; }
+.planning-editor-row > div:nth-of-type(1) button { flex: 1; border: 1px solid var(--info-border); background: var(--info-bg); color: var(--info-text); font-size: 9px; font-weight: 900; }
+.planning-editor-row > div:nth-of-type(1) button.remove { border-color: var(--neg-border); background: transparent; color: var(--neg-text); }
+.planning-editor-row > section { grid-column: 1 / -1; padding: 7px 10px; border-top: 1px dashed var(--card-border); }
+.planning-dependency-editor { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.planning-dependency-editor > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.planning-dependency-editor > div span { padding: 4px 5px 4px 8px; border-radius: 999px; background: var(--bg-soft); color: var(--text-secondary); font-size: 9px; font-weight: 800; }
+.planning-dependency-editor > div button { margin-left: 5px; border: 0; background: none; color: var(--neg-text); }
+.planning-dependency-editor small { color: var(--text-muted); font-size: 9px; font-weight: 800; }
+.planning-dependency-editor label { margin: 0; display: flex; align-items: center; gap: 5px; }
+.planning-dependency-editor select { width: 260px; height: 30px; margin: 0; font-size: 9px; }
+.planning-dependency-editor label button { height: 30px; border: 1px solid var(--card-border); background: var(--card); color: var(--text-secondary); font-size: 9px; font-weight: 900; }
+.planning-import-panel { margin: 15px; border: 1px solid var(--card-border); border-radius: 9px; background: var(--bg-soft); overflow: hidden; }
+.planning-import-panel > header { padding: 13px 15px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; }
+.planning-import-panel > header div { display: grid; gap: 4px; }.planning-import-panel > header strong { font-size: 11px; }.planning-import-panel > header span { color: var(--text-muted); font-size: 10px; }
+.planning-import-panel > header button { border: 0; background: none; color: var(--text-muted); font-size: 20px; }
+.planning-import-inputs { padding: 14px; display: grid; grid-template-columns: minmax(0,1fr) 230px; gap: 12px; }
+.planning-import-inputs label { margin: 0; color: var(--text-muted); font-size: 9px; }
+.planning-import-inputs textarea { width: 100%; margin-top: 7px; padding: 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--card); color: var(--text-primary); font: 10px/1.5 ui-monospace,Consolas,monospace; resize: vertical; }
+.planning-import-file { min-height: 112px; padding: 14px; border: 1px dashed var(--card-border); border-radius: 7px; display: grid !important; place-items: center; text-align: center; cursor: pointer; }
+.planning-import-file input { display: none; }.planning-import-file span { color: var(--info-text); font-size: 9px; font-weight: 900; }
+.planning-import-panel > p { margin: 0; padding: 0 14px 14px; color: var(--text-muted); font-size: 9px; }
+.planning-import-preview { padding: 14px; border-top: 1px solid var(--card-border); }
+.planning-import-preview > div { display: grid; grid-template-columns: repeat(4,1fr); }
+.planning-import-preview article { padding: 10px; border-right: 1px solid var(--card-border); display: grid; gap: 4px; }.planning-import-preview article:last-child { border: 0; }
+.planning-import-preview article span { color: var(--text-muted); font-size: 9px; font-weight: 900; }.planning-import-preview article strong { font-size: 18px; }.planning-import-preview article.error strong { color: var(--neg-text); }
+.planning-import-preview ul { margin: 10px 0; padding: 10px 25px; background: var(--neg-bg); color: var(--neg-text); font-size: 9px; line-height: 1.6; }
+.planning-import-preview > button { width: 100%; min-height: 38px; border: 0; background: var(--brand-amber); color: #20242b; font-size: 9px; font-weight: 900; }
+.planning-import-preview > button:disabled { opacity: .45; }
+.planning-gantt-title { padding: 17px 18px 10px; }.planning-gantt-title > div { display: grid; gap: 3px; }.planning-gantt-title strong { font-size: 11px; }.planning-gantt-title span { color: var(--text-muted); font-size: 9px; }
 .planning-panel-head { padding: 22px 24px; border-bottom: 1px solid var(--card-border); display: flex; align-items: end; justify-content: space-between; gap: 20px; }
 .planning-panel-head h2 { margin: 5px 0 0; font-size: 18px; }
 .planning-legend { display: flex; flex-wrap: wrap; gap: 15px; }

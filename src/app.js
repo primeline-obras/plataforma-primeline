@@ -1,7 +1,7 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=2";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=11";
-import { createPlanningModule } from "./planning.js?v=1";
+import { createPlanningModule } from "./planning.js?v=2";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=5";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
@@ -194,10 +194,6 @@ document.querySelector("#root").innerHTML = `
           <div class="planning-work-picker"><label>OBRA</label><div class="select-wrap"><select id="planning-work"></select><b>⌄</b></div></div>
         </div>
         <section class="panel planning-panel">
-          <div class="planning-panel-head">
-            <div><p class="eyebrow">CRONOGRAMA DETALHADO</p><h2>FASES E TAREFAS</h2></div>
-            <div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span></div>
-          </div>
           <div id="planning-content"></div>
         </section>
       </div>
@@ -735,7 +731,7 @@ async function loadData() {
     directDebitEntries = [];
   } else {
     const results = await Promise.all([
-      supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id&order=numero.desc"),
+      supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
       supabase("fornecedores?select=id,nome&order=nome"),
       supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
@@ -2596,7 +2592,7 @@ $("#work-form").addEventListener("submit", async event => {
       templateResult = await response.json();
       Object.assign(payload, templateResult.obra);
     } else {
-      const response = await supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id", {
+      const response = await supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em", {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify(payload),
