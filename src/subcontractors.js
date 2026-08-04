@@ -247,20 +247,25 @@ export function createSubcontractorsModule({
   }
 
   function renderPriceRows(rows) {
-    if (state.priceLoading) return `<tr><td colspan="6"><div class="subcontract-empty">A PESQUISAR PREÇOS…</div></td></tr>`;
-    if (!state.priceSearch.trim()) return `<tr><td colspan="6"><div class="subcontract-empty">ESCREVA UMA PALAVRA-CHAVE PARA PESQUISAR</div></td></tr>`;
-    if (!rows.length) return `<tr><td colspan="6"><div class="subcontract-empty">SEM PREÇOS PARA A PALAVRA PESQUISADA</div></td></tr>`;
+    if (state.priceLoading) return `<tr><td colspan="8"><div class="subcontract-empty">A PESQUISAR PREÇOS…</div></td></tr>`;
+    if (!state.priceSearch.trim()) return `<tr><td colspan="8"><div class="subcontract-empty">ESCREVA UMA PALAVRA-CHAVE PARA PESQUISAR</div></td></tr>`;
+    if (!rows.length) return `<tr><td colspan="8"><div class="subcontract-empty">SEM PREÇOS PARA A PALAVRA PESQUISADA</div></td></tr>`;
     let previousSupplier = null;
     return rows.map(row => {
       const supplier = supplierName(row.fornecedor_id);
       const group = supplier !== previousSupplier
-        ? `<tr class="price-supplier-group"><td colspan="6">${escapeHtml(supplier)}</td></tr>` : "";
+        ? `<tr class="price-supplier-group"><td colspan="8">${escapeHtml(supplier)}</td></tr>` : "";
       previousSupplier = supplier;
+      const discount = row.desconto_percentual != null
+        ? `${Number(row.desconto_percentual).toFixed(2).replace(".", ",")}%`
+        : Number(row.valor_desconto) > 0 ? euro.format(Number(row.valor_desconto)) : "SEM DESCONTO";
       return `${group}<tr>
         <td><strong>${escapeHtml(supplier)}</strong></td>
         <td>${escapeHtml(row.artigo || "Sem designação")}</td>
         <td>${escapeHtml(row.unidade || "—")}</td>
-        <td><strong>${euro.format(Number(row.preco_unitario || 0))}</strong></td>
+        <td>${euro.format(Number(row.preco_bruto || 0))}</td>
+        <td>${escapeHtml(discount)}</td>
+        <td><strong>${euro.format(Number(row.preco_liquido || 0))}</strong></td>
         <td>${escapeHtml(isoDate(row.data) || "—")}</td>
         <td><span class="price-origin ${row.origem === "Material" ? "material" : "estaleiro"}">${escapeHtml(row.origem)}</span></td>
       </tr>`;
@@ -274,7 +279,7 @@ export function createSubcontractorsModule({
     return `${renderModuleTabs()}
       <section class="price-comparison-panel">
         <div class="price-comparison-head"><div><p class="eyebrow">HISTÓRICO DE COMPRAS</p><h2>COMPARATIVO DE PREÇOS</h2>
-          <span>Pesquisa parcial por designação em faturas de material e despesas de estaleiro, agrupada por fornecedor.</span></div>
+          <span>Pesquisa parcial por designação. O preço bruto, o desconto e o preço líquido unitário são apresentados separadamente.</span></div>
           <strong>${rows.length} REGISTOS</strong></div>
         ${state.priceError ? `<div class="subcontract-price-warning">${escapeHtml(state.priceError)}</div>` : ""}
         <div class="price-comparison-filters">
@@ -284,7 +289,7 @@ export function createSubcontractorsModule({
           </select><b>⌄</b></div></label>
         </div>
         <div class="price-comparison-table-wrap"><table class="price-comparison-table">
-          <thead><tr><th>FORNECEDOR</th><th>ARTIGO</th><th>UNIDADE</th><th>PREÇO UNITÁRIO</th><th>DATA</th><th>ORIGEM</th></tr></thead>
+          <thead><tr><th>FORNECEDOR</th><th>ARTIGO</th><th>UNIDADE</th><th>PREÇO BRUTO/UN.</th><th>DESCONTO</th><th>PREÇO LÍQUIDO/UN.</th><th>DATA</th><th>ORIGEM</th></tr></thead>
           <tbody>${renderPriceRows(rows)}</tbody>
         </table></div>
       </section>`;
@@ -380,25 +385,43 @@ export function createSubcontractorsModule({
     const invoiceById = new Map(materialInvoices.map(item => [item.id, item]));
     state.priceRows = invoiceItems.map(item => {
       const invoice = invoiceById.get(item.fatura_id) || {};
+      const quantity = Number(item.quantidade || 0);
+      const grossUnit = Number(item.valor_unitario ?? item.preco_unitario ?? 0);
+      const discountPercent = item.desconto_percentual == null ? null : Number(item.desconto_percentual);
+      const discountValue = item.valor_desconto == null ? null : Number(item.valor_desconto);
+      const storedTotal = item.valor_total ?? item.preco_total;
+      const netUnit = quantity > 0 && storedTotal != null
+        ? Number(storedTotal) / quantity
+        : grossUnit - (discountValue != null && quantity > 0
+          ? discountValue / quantity
+          : grossUnit * Number(discountPercent || 0) / 100);
       return {
         fornecedor_id: invoice.fornecedor_id || item.fornecedor_id,
         artigo: item.designacao,
         unidade: item.unidade,
-        preco_unitario: item.valor_unitario ?? item.preco_unitario,
+        preco_bruto: grossUnit,
+        preco_liquido: Math.max(0, netUnit),
+        desconto_percentual: discountPercent,
+        valor_desconto: discountValue,
         data: invoice.data_fatura || item.data || item.criado_em,
         origem: "Material",
       };
-    }).filter(item => item.artigo && Number.isFinite(Number(item.preco_unitario)))
+    }).filter(item => item.artigo && Number.isFinite(Number(item.preco_liquido)))
       .concat(expenses.map(item => ({
         fornecedor_id: item.fornecedor_id,
         artigo: item.designacao,
         unidade: item.unidade,
-        preco_unitario: item.preco_unitario ?? item.valor_unitario ?? (
+        preco_bruto: item.preco_unitario ?? item.valor_unitario ?? (
           Number(item.quantidade) ? Number(item.valor_total || item.valor) / Number(item.quantidade) : item.valor_total || item.valor
         ),
+        preco_liquido: item.preco_unitario ?? item.valor_unitario ?? (
+          Number(item.quantidade) ? Number(item.valor_total || item.valor) / Number(item.quantidade) : item.valor_total || item.valor
+        ),
+        desconto_percentual: null,
+        valor_desconto: null,
         data: item.data_pagamento || item.data || item.criado_em,
         origem: "Estaleiro",
-      })).filter(item => item.artigo && Number.isFinite(Number(item.preco_unitario))));
+      })).filter(item => item.artigo && Number.isFinite(Number(item.preco_liquido))));
     state.priceError = results.some(result => result.status === "rejected")
       ? "Algumas origens ainda não estão disponíveis para esta pesquisa."
       : "";

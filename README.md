@@ -246,3 +246,16 @@ passa a vir diretamente dessa tabela; as entradas reais usam
 `faturacao.data_recebimento/valor_recebido` e as saídas reais incluem as faturas
 pagas de materiais, usando `faturas_itens` quando existe detalhe e o valor da
 fatura como alternativa.
+
+## Regras de TEEs e descontos de materiais
+
+Um TEE transversal a várias fases deve usar a fase Estaleiro (`F01`) como
+`fase_id`; não existe nem é necessária uma relação TEE–múltiplas fases. O
+frontend ainda não possui um formulário de criação/edição de TEEs, pelo que a
+opção visual “sem fase específica” deverá aplicar esta regra quando esse
+formulário for construído.
+
+Executar `supabase/faturas_materiais_descontos.sql` para acrescentar
+`desconto_percentual` e `valor_desconto` aos artigos das faturas. Na captura de
+materiais, `valor_unitario` representa o preço bruto e `valor_total` o total
+líquido da linha; o comparativo apresenta ambos separadamente.

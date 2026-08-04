@@ -3,8 +3,8 @@ import { actualCashFlowByMonth, materialInvoiceValue } from "../src/production-d
 
 const detailedInvoice = { id: "material-1", valor: 999, data_pagamento: "2026-03-20" };
 const invoiceItems = [
-  { fatura_id: "material-1", preco_total: 70 },
-  { fatura_id: "material-1", quantidade: 2, preco_unitario: 15, preco_total: null },
+  { fatura_id: "material-1", valor_total: 70, valor_desconto: 10 },
+  { fatura_id: "material-1", quantidade: 2, valor_unitario: 15, valor_total: null },
 ];
 assert.equal(materialInvoiceValue(detailedInvoice, invoiceItems), 100);
 assert.equal(materialInvoiceValue({ id: "material-2", valor: 131.67 }, invoiceItems), 131.67);
