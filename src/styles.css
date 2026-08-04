@@ -46,7 +46,19 @@ svg { width: 19px; height: 19px; display: block; }
 .brand-mark span:nth-child(1) { height: 20px; }.brand-mark span:nth-child(2) { height: 27px; }.brand-mark span:nth-child(3) { height: 34px; }
 .brand strong { font: 800 18px/1 "Manrope"; letter-spacing: 2.4px; display: block; }
 .brand small { color: #aeb2b4; font-size: 10px; letter-spacing: 1.5px; display: block; margin-top: 7px; }
-.sidebar nav { margin-top: 58px; }
+.sidebar nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 30px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #697075 transparent;
+}
+.sidebar nav::-webkit-scrollbar { width: 7px; }
+.sidebar nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar nav::-webkit-scrollbar-thumb { border-radius: 999px; background: #697075; }
 .sidebar nav p { color: #777e82; font-size: 12px; letter-spacing: 1.7px; margin: 28px 13px 10px; font-weight: 700; }
 .sidebar nav button {
   color: #b7bbbd; background: none; border: 0; width: 100%; display: flex; align-items: center; gap: 13px;
@@ -55,7 +67,7 @@ svg { width: 19px; height: 19px; display: block; }
 .sidebar nav button > span { flex: 1; }
 .sidebar nav button:hover { color: white; background: #30363a; }
 .sidebar nav button.active { color: white; background: #373d40; border-left-color: var(--accent); }
-.sidebar-user { border-top: 1px solid #42484b; margin-top: auto; padding: 22px 8px 0; display: flex; gap: 11px; align-items: center; }
+.sidebar-user { flex: 0 0 auto; border-top: 1px solid #42484b; margin-top: 10px; padding: 18px 8px 0; display: flex; gap: 11px; align-items: center; }
 .sidebar-user > span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #777d80; font-size: 14px; }
 .sidebar-user strong { display: block; font-size: 13px; letter-spacing: .5px; }.sidebar-user small { font-size: 11px; color: #909598; letter-spacing: .8px; }
 .logout-button { margin-left: auto; border: 0; background: none; color: #8f9598; font-size: 17px; padding: 5px; }
