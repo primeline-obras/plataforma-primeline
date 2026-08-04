@@ -139,7 +139,7 @@ document.querySelector("#root").innerHTML = `
               <label>VALOR (EUR)<div class="money-input"><input name="valor" type="number" min="0.01" step="0.01" placeholder="0,00" required><span>€</span></div></label>
               <section class="material-items-editor" id="material-items-editor" hidden>
                 <div class="material-items-head"><div><span>DETALHE DA FATURA</span><strong>ARTIGOS / MATERIAIS</strong></div><button type="button" id="add-material-item">＋ ARTIGO</button></div>
-                <div class="material-items-columns"><span>DESIGNAÇÃO</span><span>UNIDADE</span><span>QUANTIDADE</span><span>PREÇO UNIT.</span><span>TOTAL</span><span></span></div>
+                <div class="material-items-columns"><span>DESIGNAÇÃO</span><span>UNIDADE</span><span>QUANTIDADE</span><span>PREÇO BRUTO</span><span>DESC. %</span><span>DESC. €</span><span>TOTAL LÍQUIDO</span><span></span></div>
                 <div id="material-items-list"></div>
                 <p>O valor total da fatura continua a ser o valor final com IVA incluído.</p>
               </section>
@@ -353,11 +353,13 @@ form.data_fatura.value = new Date().toISOString().slice(0, 10);
 function materialItemRow(item = {}) {
   const id = item.id || crypto.randomUUID();
   return `<div class="material-item-row" data-material-item="${id}">
-    <input data-item-field="designacao" value="${safeText(item.designacao || "")}" required placeholder="Ex.: Cimento cola">
-    <input data-item-field="unidade" value="${safeText(item.unidade || "")}" required placeholder="un., kg, m²">
-    <input data-item-field="quantidade" type="number" min="0.001" step="0.001" value="${item.quantidade ?? ""}" required placeholder="0">
-    <input data-item-field="preco_unitario" type="number" min="0" step="0.0001" value="${item.preco_unitario ?? ""}" required placeholder="0,00">
-    <output data-item-total>${euro.format(Number(item.preco_total || 0))}</output>
+    <input data-item-field="designacao" value="${safeText(item.designacao || "")}" required placeholder="Ex.: Cimento cola" aria-label="Designação">
+    <input data-item-field="unidade" value="${safeText(item.unidade || "")}" required placeholder="un., kg, m²" aria-label="Unidade">
+    <input data-item-field="quantidade" type="number" min="0.001" step="0.001" value="${item.quantidade ?? ""}" required placeholder="Quantidade" aria-label="Quantidade">
+    <input data-item-field="preco_unitario" type="number" min="0" step="0.0001" value="${item.preco_unitario ?? ""}" required placeholder="Preço bruto" aria-label="Preço unitário bruto">
+    <input data-item-field="desconto_percentual" type="number" min="0" max="100" step="0.01" value="${item.desconto_percentual ?? ""}" placeholder="Desc. %" aria-label="Desconto percentual">
+    <input data-item-field="valor_desconto" type="number" min="0" step="0.01" value="${item.valor_desconto ?? ""}" placeholder="Desc. €" aria-label="Valor do desconto">
+    <output data-item-total aria-label="Total líquido">${euro.format(Number(item.preco_total || 0))}</output>
     <button type="button" data-remove-material-item aria-label="Remover artigo">×</button>
   </div>`;
 }
@@ -387,10 +389,28 @@ function showExtractedMaterialItems(items) {
   extractedMaterialItemsApplied = true;
 }
 
-function updateMaterialItemTotal(row) {
+function updateMaterialItemTotal(row, changedField = "") {
   const quantity = Number(row.querySelector('[data-item-field="quantidade"]').value || 0);
   const unitPrice = Number(row.querySelector('[data-item-field="preco_unitario"]').value || 0);
-  row.querySelector("[data-item-total]").textContent = euro.format(quantity * unitPrice);
+  const percentInput = row.querySelector('[data-item-field="desconto_percentual"]');
+  const discountInput = row.querySelector('[data-item-field="valor_desconto"]');
+  const gross = quantity * unitPrice;
+  let percent = Number(percentInput.value || 0);
+  let discount = Number(discountInput.value || 0);
+  if (changedField === "valor_desconto") {
+    discount = Math.min(gross, Math.max(0, discount));
+    percent = gross ? discount / gross * 100 : 0;
+    percentInput.value = percent ? percent.toFixed(2) : "";
+  } else if (changedField === "desconto_percentual" || percentInput.value !== "") {
+    discount = gross * percent / 100;
+    discountInput.value = discount ? discount.toFixed(2) : "";
+  } else if (discountInput.value !== "") {
+    discount = Math.min(gross, Math.max(0, discount));
+    percent = gross ? discount / gross * 100 : 0;
+    percentInput.value = percent ? percent.toFixed(2) : "";
+  }
+  discount = Math.min(gross, Math.max(0, discount));
+  row.querySelector("[data-item-total]").textContent = euro.format(Math.max(0, gross - discount));
 }
 
 function collectMaterialItems() {
@@ -398,12 +418,18 @@ function collectMaterialItems() {
     const value = field => row.querySelector(`[data-item-field="${field}"]`).value;
     const quantity = Number(value("quantidade"));
     const unitPrice = Number(value("preco_unitario"));
+    const discountPercent = value("desconto_percentual") === "" ? null : Number(value("desconto_percentual"));
+    const discountValue = value("valor_desconto") === "" ? null : Number(value("valor_desconto"));
+    const gross = quantity * unitPrice;
+    const effectiveDiscount = discountValue ?? (discountPercent == null ? 0 : gross * discountPercent / 100);
     return {
       designacao: value("designacao").trim(),
       unidade: value("unidade").trim(),
       quantidade: quantity,
       preco_unitario: unitPrice,
-      preco_total: quantity * unitPrice,
+      desconto_percentual: discountPercent,
+      valor_desconto: discountValue,
+      preco_total: Math.max(0, gross - effectiveDiscount),
     };
   }).filter(item => item.designacao || item.unidade || item.quantidade || item.preco_unitario);
 }
@@ -2166,7 +2192,7 @@ document.querySelectorAll("[data-type]").forEach(button => button.addEventListen
 $("#add-material-item").addEventListener("click", () => addMaterialItem());
 $("#material-items-list").addEventListener("input", event => {
   const row = event.target.closest("[data-material-item]");
-  if (row) updateMaterialItemTotal(row);
+  if (row) updateMaterialItemTotal(row, event.target.dataset.itemField || "");
 });
 $("#material-items-list").addEventListener("click", event => {
   const removeButton = event.target.closest("[data-remove-material-item]");
@@ -3027,6 +3053,8 @@ function findMaterialItems(rows) {
     quantityX: pdfHeaderColumn(row, [/quantidade/i, /\bqtd\.?\b/i, /\bqt\.?\b/i]),
     unitX: pdfHeaderColumn(row, [/\bunidade\b/i, /\bun\.?\b/i]),
     unitPriceX: pdfHeaderColumn(row, [/pre[cç]o\s+unit[aá]rio/i, /valor\s+unit[aá]rio/i, /\bp\.?\s*unit\.?\b/i]),
+    discountX: pdfHeaderColumn(row, [/desconto/i, /\bdesc\.?\s*%?/i]),
+    discountIsPercent: /(?:desconto|desc\.?).{0,8}%|%.{0,8}(?:desconto|desc\.?)/i.test(row.text),
     totalX: pdfHeaderColumn(row, [/pre[cç]o\s+total/i, /valor\s+total/i, /\btotal\b/i]),
   })).filter(candidate => candidate.designationX !== null
     && [candidate.quantityX, candidate.unitX, candidate.unitPriceX, candidate.totalX].filter(value => value !== null).length >= 2);
@@ -3036,7 +3064,7 @@ function findMaterialItems(rows) {
   for (const header of headers) {
     const columns = [
       ["designacao", header.designationX], ["quantidade", header.quantityX], ["unidade", header.unitX],
-      ["preco_unitario", header.unitPriceX], ["preco_total", header.totalX],
+      ["preco_unitario", header.unitPriceX], ["desconto", header.discountX], ["preco_total", header.totalX],
     ].filter(([, x]) => x !== null).sort((a, b) => a[1] - b[1]);
     const boundaries = columns.slice(0, -1).map((column, index) => (column[1] + columns[index + 1][1]) / 2);
     const bodyRows = rows.filter(row => row.pageNumber === header.row.pageNumber && row.y < header.row.y)
@@ -3055,16 +3083,33 @@ function findMaterialItems(rows) {
       const quantity = parsePdfNumber((cells.quantidade || []).join(" "));
       const unit = (cells.unidade || []).join(" ").trim();
       let unitPrice = parsePdfNumber((cells.preco_unitario || []).join(" "));
+      const discountText = (cells.desconto || []).join(" ").trim();
+      let discountPercent = (header.discountIsPercent || /%/.test(discountText)) ? parsePdfNumber(discountText) : null;
+      let discountValue = discountText && discountPercent === null ? parsePdfNumber(discountText) : null;
       let total = parsePdfNumber((cells.preco_total || []).join(" "));
       if (!(quantity > 0) && unitPrice === null && total === null) {
         pendingDesignation = `${pendingDesignation} ${designation}`.trim();
         continue;
       }
       if (pendingDesignation) designation = `${pendingDesignation} ${designation}`.trim();
-      if (unitPrice === null && quantity > 0 && total !== null) unitPrice = total / quantity;
-      if (total === null && quantity > 0 && unitPrice !== null) total = quantity * unitPrice;
+      if (unitPrice === null && quantity > 0 && total !== null) {
+        if (discountPercent !== null && discountPercent < 100) unitPrice = total / (1 - discountPercent / 100) / quantity;
+        else if (discountValue !== null) unitPrice = (total + discountValue) / quantity;
+        else unitPrice = total / quantity;
+      }
+      const gross = quantity > 0 && unitPrice !== null ? quantity * unitPrice : null;
+      if (gross !== null && discountPercent !== null) discountValue = gross * discountPercent / 100;
+      if (gross !== null && discountValue !== null && discountPercent === null) discountPercent = gross ? discountValue / gross * 100 : 0;
+      if (total === null && gross !== null) total = Math.max(0, gross - Number(discountValue || 0));
+      if (gross !== null && total !== null && discountValue === null && total < gross) {
+        discountValue = gross - total;
+        discountPercent = gross ? discountValue / gross * 100 : 0;
+      }
       if (!(quantity > 0) || unitPrice === null || total === null) continue;
-      extracted.push({ designacao: designation, unidade: unit, quantidade: quantity, preco_unitario: unitPrice, preco_total: total });
+      extracted.push({
+        designacao: designation, unidade: unit, quantidade: quantity, preco_unitario: unitPrice,
+        desconto_percentual: discountPercent, valor_desconto: discountValue, preco_total: total,
+      });
       pendingDesignation = "";
     }
     if (extracted.length) break;
@@ -3285,7 +3330,9 @@ form.addEventListener("submit", async event => {
   if (payload.tipo_origem === "material") {
     const invalidItem = materialItems.find(item =>
       !item.designacao || !item.unidade || !Number.isFinite(item.quantidade)
-      || !(item.quantidade > 0) || !Number.isFinite(item.preco_unitario) || item.preco_unitario < 0);
+      || !(item.quantidade > 0) || !Number.isFinite(item.preco_unitario) || item.preco_unitario < 0
+      || (item.desconto_percentual != null && (!Number.isFinite(item.desconto_percentual) || item.desconto_percentual < 0 || item.desconto_percentual > 100))
+      || (item.valor_desconto != null && (!Number.isFinite(item.valor_desconto) || item.valor_desconto < 0 || item.valor_desconto > item.quantidade * item.preco_unitario)));
     if (!materialItems.length || invalidItem) {
       toast("Preencha pelo menos um artigo com designação, unidade, quantidade e preço unitário.", "error");
       return;
@@ -3336,6 +3383,8 @@ form.addEventListener("submit", async event => {
             quantidade: item.quantidade,
             valor_unitario: item.preco_unitario,
             valor_total: item.preco_total,
+            desconto_percentual: item.desconto_percentual,
+            valor_desconto: item.valor_desconto,
           }))),
         });
         if (!itemResult.ok) {

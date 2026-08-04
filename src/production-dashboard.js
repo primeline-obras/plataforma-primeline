@@ -27,7 +27,8 @@ export const materialInvoiceValue = (invoice, items = []) => {
   const invoiceItems = items.filter(item => item.fatura_id === invoice.id);
   if (!invoiceItems.length) return number(invoice.valor);
   return invoiceItems.reduce((total, item) => total + number(
-    item.preco_total ?? number(item.quantidade) * number(item.preco_unitario)
+    item.valor_total ?? item.preco_total
+      ?? number(item.quantidade) * number(item.valor_unitario ?? item.preco_unitario)
   ), 0);
 };
 export function actualCashFlowByMonth(data = {}) {
@@ -768,7 +769,7 @@ export function createProductionDashboard(options) {
     ]);
     const materialInvoiceIds = materialInvoices.map(row => row.id);
     const materialInvoiceItems = materialInvoiceIds.length
-      ? await meetingQuery(`faturas_itens?select=id,fatura_id,quantidade,preco_unitario,preco_total&fatura_id=in.(${materialInvoiceIds.map(encodeURIComponent).join(",")})`, "Itens das faturas de materiais", warnings)
+      ? await meetingQuery(`faturas_itens?select=*&fatura_id=in.(${materialInvoiceIds.map(encodeURIComponent).join(",")})`, "Itens das faturas de materiais", warnings)
       : [];
     meetingState = { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems } };
     renderMeeting();
