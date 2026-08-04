@@ -20,7 +20,10 @@ export function createSettingsModule({
   toggleTv,
   syncPreferences,
 }) {
-  const state = { loaded: false, users: [], responsibilities: [], admins: [], company: null };
+  const state = {
+    loaded: false, users: [], responsibilities: [], admins: [], company: null,
+    adminTab: "management", audit: [], auditLoaded: false, auditLoading: false,
+  };
 
   function shell() {
     root.innerHTML = `
@@ -31,7 +34,11 @@ export function createSettingsModule({
       </div>
       <section id="settings-admin" class="settings-admin" hidden>
         <div class="settings-divider"><span>ADMINISTRAÇÃO DA PLATAFORMA</span></div>
-        <div class="settings-grid">
+        <nav class="settings-admin-tabs" aria-label="Áreas de administração">
+          <button type="button" class="active" data-settings-admin-tab="management">GESTÃO</button>
+          <button type="button" data-settings-admin-tab="audit">AUDITORIA</button>
+        </nav>
+        <div class="settings-grid" data-settings-admin-panel="management">
           <section class="panel settings-card settings-wide"><header><div><p class="eyebrow">ACESSOS</p><h2>GESTÃO DE UTILIZADORES</h2></div><span id="settings-user-count"></span></header>
             <form id="settings-user-form" class="settings-inline-form"><label>NOME<input name="nome" required maxlength="160"></label><label>EMAIL<input name="email" type="email" required maxlength="240"></label><label>FUNÇÃO<select name="funcao">${roleOptions(ROLES, "diretor_obra")}</select></label><button type="submit">＋ CRIAR REGISTO</button></form>
             <div id="settings-users" class="settings-list"></div>
@@ -47,6 +54,17 @@ export function createSettingsModule({
             <form id="settings-company-form" class="settings-stack-form"><label>NOME<input name="nome" required></label><label>NIF<input name="nif" maxlength="20"></label><label>MORADA<textarea name="morada" rows="3"></textarea></label><button type="submit">GUARDAR DADOS</button></form>
           </section>
         </div>
+        <section class="panel settings-card settings-audit" data-settings-admin-panel="audit" hidden>
+          <header><div><p class="eyebrow">RASTREABILIDADE</p><h2>HISTÓRICO DE ALTERAÇÕES</h2></div><div class="settings-audit-head"><span id="settings-audit-count"></span><button type="button" data-refresh-audit>ATUALIZAR</button></div></header>
+          <div class="settings-audit-filters">
+            <label>TABELA<select data-audit-table><option value="">Todas as tabelas</option></select></label>
+            <label>UTILIZADOR<select data-audit-user><option value="">Todos os utilizadores</option></select></label>
+            <label>CAMPO<input type="search" data-audit-field placeholder="Pesquisar campo…"></label>
+            <label>DESDE<input type="date" data-audit-from></label>
+            <label>ATÉ<input type="date" data-audit-to></label>
+          </div>
+          <div id="settings-audit-list" class="settings-audit-list"><div class="settings-empty">ABRA O SEPARADOR PARA CARREGAR O HISTÓRICO</div></div>
+        </section>
       </section>`;
     bindEvents();
   }
@@ -108,10 +126,102 @@ export function createSettingsModule({
     form.elements.morada.value = company.morada || "";
   }
 
+  function auditTableLabel(value) {
+    const table = String(value || "").replace(/^public\./, "");
+    return ({
+      planeamento_itens: "Tarefas de planeamento", faturas: "Faturas",
+      faturas_itens: "Artigos de fatura", faturacao: "Faturação",
+      pagamentos_subempreitada: "Pagamentos de subempreitada",
+      subempreitadas: "Subempreitadas", obras: "Obras", utilizadores: "Utilizadores",
+      obra_responsaveis: "Responsáveis por obra", quadro_pessoal_alocacao: "Quadro de pessoal",
+      debitos_diretos: "Débitos diretos", debitos_diretos_lancamentos: "Lançamentos de débitos",
+      autos_medicao: "Autos de medição", alteracoes_tee: "TEEs",
+    })[table] || table.replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+
+  function auditOperation(item) {
+    if (item.campo === "__INSERT__") return ["CRIAÇÃO", "created"];
+    if (item.campo === "__DELETE__") return ["ELIMINAÇÃO", "deleted"];
+    return ["ALTERAÇÃO", "changed"];
+  }
+
+  function auditValue(value) {
+    if (value === null || value === undefined || value === "null") return "—";
+    try {
+      const parsed = JSON.parse(value);
+      if (typeof parsed === "string") return parsed || "—";
+      return JSON.stringify(parsed, null, 2);
+    } catch { return String(value); }
+  }
+
+  function renderAudit() {
+    const list = root.querySelector("#settings-audit-list");
+    if (!list) return;
+    const table = root.querySelector("[data-audit-table]")?.value || "";
+    const userId = root.querySelector("[data-audit-user]")?.value || "";
+    const field = root.querySelector("[data-audit-field]")?.value.trim().toLocaleLowerCase("pt-PT") || "";
+    const from = root.querySelector("[data-audit-from]")?.value || "";
+    const to = root.querySelector("[data-audit-to]")?.value || "";
+    const filtered = state.audit.filter(item =>
+      (!table || item.tabela_afetada === table)
+      && (!userId || (userId === "__system__" ? !item.utilizador_id : item.utilizador_id === userId))
+      && (!field || String(item.campo || "").toLocaleLowerCase("pt-PT").includes(field))
+      && (!from || String(item.criado_em).slice(0, 10) >= from)
+      && (!to || String(item.criado_em).slice(0, 10) <= to));
+    root.querySelector("#settings-audit-count").textContent = `${filtered.length} DE ${state.audit.length} EVENTOS`;
+    if (state.auditLoading) {
+      list.innerHTML = `<div class="settings-empty">A CARREGAR HISTÓRICO…</div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(item => {
+      const user = state.users.find(row => row.id === item.utilizador_id);
+      const [operation, operationClass] = auditOperation(item);
+      const before = auditValue(item.valor_anterior);
+      const after = auditValue(item.valor_novo);
+      const fieldLabel = item.campo.startsWith("__") ? "REGISTO COMPLETO" : item.campo.replaceAll("_", " ").toUpperCase();
+      const date = new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.criado_em));
+      return `<details class="settings-audit-row ${operationClass}">
+        <summary><time>${escapeHtml(date)}</time><span><strong>${escapeHtml(auditTableLabel(item.tabela_afetada))}</strong><small>${escapeHtml(fieldLabel)} · ${escapeHtml(item.registo_id)}</small></span><b>${escapeHtml(user?.nome || "Sistema / utilizador não identificado")}</b><em>${operation}</em></summary>
+        <div class="settings-audit-change"><section><span>VALOR ANTERIOR</span><pre>${escapeHtml(before)}</pre></section><i>→</i><section><span>VALOR NOVO</span><pre>${escapeHtml(after)}</pre></section></div>
+      </details>`;
+    }).join("") || `<div class="settings-empty">SEM EVENTOS NESTE FILTRO</div>`;
+  }
+
+  function renderAuditFilters() {
+    const tables = [...new Set(state.audit.map(item => item.tabela_afetada))].sort();
+    const tableSelect = root.querySelector("[data-audit-table]");
+    const userSelect = root.querySelector("[data-audit-user]");
+    const selectedTable = tableSelect.value;
+    const selectedUser = userSelect.value;
+    tableSelect.innerHTML = `<option value="">Todas as tabelas</option>${tables.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(auditTableLabel(value))}</option>`).join("")}`;
+    userSelect.innerHTML = `<option value="">Todos os utilizadores</option>${state.users.map(user => `<option value="${user.id}">${escapeHtml(user.nome)}</option>`).join("")}<option value="__system__">Sistema / não identificado</option>`;
+    tableSelect.value = selectedTable;
+    userSelect.value = selectedUser;
+  }
+
+  async function loadAudit(force = false) {
+    if (!isAdmin() || state.auditLoading || (state.auditLoaded && !force)) return;
+    state.auditLoading = true; renderAudit();
+    try {
+      state.audit = await request("log_auditoria?select=id,tabela_afetada,registo_id,campo,valor_anterior,valor_novo,utilizador_id,criado_em&order=criado_em.desc&limit=200", {}, "Não foi possível carregar a auditoria");
+      state.auditLoaded = true;
+      renderAuditFilters();
+    } catch (error) { toast(error.message, "error"); }
+    finally { state.auditLoading = false; renderAudit(); }
+  }
+
+  function activateAdminTab(tab) {
+    state.adminTab = tab;
+    root.querySelectorAll("[data-settings-admin-tab]").forEach(button => button.classList.toggle("active", button.dataset.settingsAdminTab === tab));
+    root.querySelectorAll("[data-settings-admin-panel]").forEach(panel => { panel.hidden = panel.dataset.settingsAdminPanel !== tab; });
+    if (tab === "audit") loadAudit();
+  }
+
   function renderAdmin() {
     root.querySelector("#settings-admin").hidden = !isAdmin();
     if (!isAdmin()) return;
     renderUsers(); renderResponsibilities(); renderAdmins(); renderCompany();
+    activateAdminTab(state.adminTab);
   }
 
   async function request(path, options, failureMessage) {
@@ -160,6 +270,10 @@ export function createSettingsModule({
       if (tv) return toggleTv();
       const password = event.target.closest("[data-settings-password]");
       if (password) return withButton(password, async () => { await requestPasswordReset(getProfile()?.email || getSession()?.user?.email); toast("Ligação para alterar a palavra-passe enviada por email."); });
+      const adminTab = event.target.closest("[data-settings-admin-tab]");
+      if (adminTab) return activateAdminTab(adminTab.dataset.settingsAdminTab);
+      const refreshAudit = event.target.closest("[data-refresh-audit]");
+      if (refreshAudit) return withButton(refreshAudit, () => loadAudit(true));
       const saveRole = event.target.closest("[data-save-user-role]");
       if (saveRole) return withButton(saveRole, async () => {
         const id = saveRole.dataset.saveUserRole;
@@ -186,6 +300,13 @@ export function createSettingsModule({
         await request(`administradores_plataforma?id=eq.${id}`, { method: "DELETE", headers: { Prefer: "return=minimal" } }, "Não foi possível remover o administrador");
         state.admins = state.admins.filter(item => item.id !== id); renderAdmins(); toast("Acesso total removido.");
       });
+    });
+
+    root.addEventListener("input", event => {
+      if (event.target.matches("[data-audit-table], [data-audit-user], [data-audit-field], [data-audit-from], [data-audit-to]")) renderAudit();
+    });
+    root.addEventListener("change", event => {
+      if (event.target.matches("[data-audit-table], [data-audit-user], [data-audit-from], [data-audit-to]")) renderAudit();
     });
 
     root.addEventListener("submit", event => {
