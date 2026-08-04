@@ -5,6 +5,7 @@ import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from
 import { isoDate } from "../src/planning.js";
 
 const planning = await readFile(new URL("../src/planning.js", import.meta.url), "utf8");
+const planningStyles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("a colagem do Sheets preserva cabeçalhos e células tabulares", () => {
   const rows = csvRows("Código\tDescrição\tResponsável\tPeso (%)\t% Executado\nF01.1\tMontagem, estaleiro\tJoão\t12,5%\t40%");
@@ -26,6 +27,15 @@ test("datas, percentagens e estados do formato português são normalizados", ()
 test("datas calculadas das vistas de resumo e controlo são apresentáveis", () => {
   assert.equal(isoDate(new Date("2026-08-04T00:00:00Z")), "2026-08-04");
   assert.equal(isoDate("2026-08-05"), "2026-08-05");
+});
+
+test("planeamento inicial e resumo por fase têm grelhas visuais completas", () => {
+  assert.match(planningStyles, /\.planning-baseline-head,\s*\.planning-baseline-row/);
+  assert.match(planningStyles, /\.planning-baseline-track\s*>\s*i/);
+  assert.match(planningStyles, /\.planning-summary-kpis/);
+  assert.match(planningStyles, /\.planning-summary-head,\s*\.planning-summary-row/);
+  assert.match(planningStyles, /\.planning-summary-track\s*>\s*i\.baseline/);
+  assert.match(planningStyles, /\.planning-summary-track\s*>\s*i\.effective/);
 });
 
 test("o planeamento oferece pré-visualização, criação, atualização e dependências", () => {
