@@ -24,6 +24,18 @@ test("datas, percentagens e estados do formato português são normalizados", ()
 
 test("o planeamento oferece pré-visualização, criação, atualização e dependências", () => {
   assert.match(planning, /data-open-import/);
+  assert.match(planning, /querySelector\("\[data-open-import\]"\).*addEventListener\("click"/s);
+  assert.match(planning, /function openImportPanel\(\)/);
+  assert.match(planning, /planning-import-panel.*scrollIntoView/s);
+  assert.match(planning, /querySelector\("\[data-new-task\]"\).*addEventListener\("click"/s);
+  assert.match(planning, /function addNewTask\(\)/);
+  assert.match(planning, /em_atraso:\s*"EM ATRASO"/);
+  assert.match(planning, /plannedEnd\s*&&\s*plannedEnd\s*<\s*currentDay/);
+  assert.match(planning, /data_inicio_real/);
+  assert.match(planning, /baseline-planned/);
+  assert.match(planning, /baseline-real/);
+  assert.match(planning, /planned-real/);
+  assert.match(planning, /ATRASO CRÍTICO/);
   assert.match(planning, /data-confirm-import/);
   assert.match(planning, /A CRIAR/);
   assert.match(planning, /A ATUALIZAR/);

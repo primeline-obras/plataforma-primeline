@@ -40,14 +40,27 @@ function stateLabel(state) {
     concluido: "CONCLUÍDO",
     em_execucao: "EM EXECUÇÃO",
     por_iniciar: "POR INICIAR",
+    em_atraso: "EM ATRASO",
   }[state] || "SEM ESTADO";
+}
+
+function visualState(item, today = new Date()) {
+  if (item.estado === "concluido") return "concluido";
+  const plannedEnd = dateValue(item.data_fim_prevista);
+  const currentDay = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  return plannedEnd && plannedEnd < currentDay ? "em_atraso" : (item.estado || "por_iniciar");
+}
+
+function isPastDay(date, today = new Date()) {
+  const currentDay = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  return Boolean(date && date < currentDay);
 }
 
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, toast }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [],
     expanded: new Set(), loaded: false, view: "effective",
-    importOpen: false, importRows: [], importErrors: [], saving: new Set(),
+    importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
   };
 
   const workSelect = document.querySelector("#planning-work");
@@ -142,7 +155,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const bar = position(effectiveDate(item, "start"), effectiveDate(item, "end"), scale);
     if (!bar) return `<span class="planning-no-dates">DATAS NÃO DEFINIDAS</span>`;
     const progress = Math.max(0, Math.min(100, Number(item.percentual_executado || 0)));
-    return `<div class="planning-bar ${escapeHtml(item.estado || "por_iniciar")} ${item.impedido ? "impedido" : ""}" style="left:${bar.left}%;width:${bar.width}%">
+    return `<div class="planning-bar ${escapeHtml(visualState(item))} ${item.impedido ? "impedido" : ""}" style="left:${bar.left}%;width:${bar.width}%">
       <i style="width:${progress}%"></i><span>${progress}%</span>
     </div>`;
   }
@@ -152,7 +165,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     if (!window) return `<span class="planning-no-dates">DATAS NÃO DEFINIDAS</span>`;
     const bar = position(window.start, window.end, scale);
     const progress = phaseProgress(items) || 0;
-    const phaseState = progress >= 100 ? "concluido" : progress > 0 ? "em_execucao" : "por_iniciar";
+    const phaseState = progress >= 100 ? "concluido" : isPastDay(window.end) ? "em_atraso" : progress > 0 ? "em_execucao" : "por_iniciar";
     return `${todayLine(scale)}<div class="planning-phase-bar ${phaseState}" style="left:${bar.left}%;width:${bar.width}%"><i style="width:${progress}%"></i></div>`;
   }
 
@@ -177,7 +190,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function renderEditor() {
     return `<div class="planning-editor-wrap"><div class="planning-editor-head">
-      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>INÍCIO</span><span>FIM PREV.</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO</span><span>AÇÕES</span>
+      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>INÍCIO PREV.</span><span>FIM PREV.</span><span>INÍCIO REAL</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO</span><span>AÇÕES</span>
     </div>${state.items.map(item => `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
       <select name="fase_id">${phaseOptions(item.fase_id)}</select>
       <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1">
@@ -185,6 +198,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável">
       <input name="data_inicio_prevista" type="date" value="${isoDate(item.data_inicio_prevista)}">
       <input name="data_fim_prevista" type="date" value="${isoDate(item.data_fim_prevista)}">
+      <input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}">
       <input name="data_fim_real" type="date" value="${isoDate(item.data_fim_real)}">
       <input name="peso_percentual" type="number" min="0" step="0.01" value="${item.peso_percentual ?? ""}">
       <input name="percentual_executado" type="number" min="0" max="100" step="1" value="${item.percentual_executado ?? 0}">
@@ -200,7 +214,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const updates = state.importRows.filter(row => row._existing && !row._error).length;
     return `<section class="planning-import-panel"><header><div><strong>IMPORTAR TAREFAS</strong><span>Cole uma tabela do Excel/Sheets ou selecione um ficheiro .xlsx/.csv.</span></div><button type="button" data-close-import>×</button></header>
       <div class="planning-import-inputs"><label>COLAR CÉLULAS<textarea data-import-paste rows="6" placeholder="Código&#9;Descrição&#9;Responsável&#9;Data Início&#9;Data Fim Prevista…"></textarea></label><label class="planning-import-file">FICHEIRO<input data-import-file type="file" accept=".xlsx,.xls,.csv,.tsv"><span>SELECIONAR .XLSX OU .CSV</span></label></div>
-      <p>Colunas reconhecidas: Código, Descrição, Responsável, Data Início, Data Fim Prevista, Data Fim Real, Peso (%), % Executado e Estado. A fase é identificada pelo prefixo do código.</p>
+      <p>Colunas reconhecidas: Código, Descrição, Responsável, Data Início, Data Fim Prevista, Data Início Real, Data Fim Real, Peso (%), % Executado e Estado. A fase é identificada pelo prefixo do código.</p>
       ${state.importRows.length || state.importErrors.length ? `<div class="planning-import-preview"><div><article><span>LINHAS VÁLIDAS</span><strong>${creates + updates}</strong></article><article><span>A CRIAR</span><strong>${creates}</strong></article><article><span>A ATUALIZAR</span><strong>${updates}</strong></article><article class="${state.importErrors.length ? "error" : ""}"><span>COM ERRO</span><strong>${state.importErrors.length}</strong></article></div>
         ${state.importErrors.length ? `<ul>${state.importErrors.slice(0, 8).map(error => `<li>${escapeHtml(error)}</li>`).join("")}</ul>` : ""}
         <button type="button" data-confirm-import ${state.importErrors.length || !(creates + updates) ? "disabled" : ""}>CONFIRMAR IMPORTAÇÃO · ${creates + updates} TAREFAS</button></div>` : ""}
@@ -236,7 +250,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
               ${item.impedido ? `<em class="planning-blocked-note"><b>IMPEDIDA</b>${escapeHtml(item.observacao_impedimento || "Sem observação")}</em>` : ""}</div>
             <div>${escapeHtml(item.responsavel || "Não definido")}<small>${predecessorCount[item.id] || 0} PREDECESSORAS</small></div>
             <div class="planning-track" style="--months:${scale.months.length}">${todayLine(scale)}${effectiveTaskBar(item, scale)}</div>
-            <div><span class="planning-state ${item.impedido ? "impedido" : escapeHtml(item.estado || "por_iniciar")}">${item.impedido ? "IMPEDIDA" : stateLabel(item.estado)}</span>
+            <div><span class="planning-state ${item.impedido ? "impedido" : escapeHtml(visualState(item))}">${item.impedido ? "IMPEDIDA" : stateLabel(visualState(item))}</span>
               <small>${isoDate(effectiveDate(item, "start")) || "—"} → ${isoDate(effectiveDate(item, "end")) || "—"}</small></div>
           </article>`).join("") : `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</div>
       </section>`;
@@ -300,11 +314,51 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <div class="planning-summary-legend"><span><i class="baseline"></i>BASELINE</span><span><i class="effective"></i>EFETIVO</span><strong>A LINHA VERMELHA MARCA HOJE</strong></div></div>`;
   }
 
+  function controlSource(item, source, type) {
+    if (source === "baseline") return baselineDate(item, type);
+    if (source === "planned") return item[type === "start" ? "data_inicio_prevista" : "data_fim_prevista"];
+    return item[type === "start" ? "data_inicio_real" : "data_fim_real"];
+  }
+
+  function controlClassification(days) {
+    if (days === null) return { key: "no-data", label: "SEM DADOS" };
+    if (days < 0) return { key: "anticipated", label: "ANTECIPADO" };
+    if (days === 0) return { key: "unchanged", label: "SEM ALTERAÇÃO" };
+    if (days <= 7) return { key: "slight", label: "ATRASO LIGEIRO" };
+    if (days <= 15) return { key: "moderate", label: "ATRASO MODERADO" };
+    if (days <= 30) return { key: "high", label: "ATRASO ELEVADO" };
+    return { key: "critical", label: "ATRASO CRÍTICO" };
+  }
+
+  function renderControl() {
+    const [from, to] = state.controlMode.split("-");
+    const rows = state.phases.map(phase => {
+      const items = state.items.filter(item => item.fase_id === phase.id);
+      const reference = windowFor(items, (item, type) => controlSource(item, from, type));
+      const comparison = windowFor(items, (item, type) => controlSource(item, to, type));
+      const startDays = reference && comparison ? daysBetween(reference.start, comparison.start) : null;
+      const endDays = reference && comparison ? daysBetween(reference.end, comparison.end) : null;
+      const worstDays = startDays === null || endDays === null ? null : Math.max(startDays, endDays);
+      return { phase, reference, comparison, startDays, endDays, worstDays, classification: controlClassification(worstDays) };
+    });
+    const dayText = value => value === null ? "—" : `${value > 0 ? "+" : ""}${value} dias`;
+    return `<div class="planning-control-toolbar"><div><strong>COMPARAR DATAS</strong><span>A classificação considera o pior desvio entre o início e o fim.</span></div><select data-control-mode>
+      <option value="baseline-planned" ${state.controlMode === "baseline-planned" ? "selected" : ""}>Inicial × Previsto</option>
+      <option value="baseline-real" ${state.controlMode === "baseline-real" ? "selected" : ""}>Inicial × Real</option>
+      <option value="planned-real" ${state.controlMode === "planned-real" ? "selected" : ""}>Previsto × Real</option>
+    </select></div>
+    <div class="planning-control-criteria"><span class="anticipated">ANTECIPADO · &lt; 0</span><span class="unchanged">SEM ALTERAÇÃO · 0</span><span class="slight">LIGEIRO · 1–7</span><span class="moderate">MODERADO · 8–15</span><span class="high">ELEVADO · 16–30</span><span class="critical">CRÍTICO · &gt; 30 DIAS</span></div>
+    <div class="planning-control-table"><div class="planning-control-head"><span>FASE</span><span>PERÍODO DE REFERÊNCIA</span><span>PERÍODO COMPARADO</span><span>DESVIO INÍCIO</span><span>DESVIO FIM</span><span>CLASSIFICAÇÃO</span></div>
+      ${rows.map(row => `<article><div><strong>${escapeHtml(row.phase.codigo || "—")}</strong><span>${escapeHtml(row.phase.descricao || "Fase")}</span></div><div>${displayDate(row.reference?.start)}<b>→</b>${displayDate(row.reference?.end)}</div><div>${displayDate(row.comparison?.start)}<b>→</b>${displayDate(row.comparison?.end)}</div><div>${dayText(row.startDays)}</div><div>${dayText(row.endDays)}</div><div><em class="${row.classification.key}">${row.classification.label}</em></div></article>`).join("")}
+    </div>`;
+  }
+
   function viewMeta() {
     return {
       baseline: ["PLANEAMENTO INICIAL", "Baseline contratual apenas para consulta"],
       effective: ["PLANEAMENTO EFETIVO", "Tarefas, dependências, progresso e datas atuais"],
       summary: ["RESUMO POR FASE", "Comparação entre o plano original e o efetivo"],
+      control: ["CONTROLO DE PLANEAMENTO", "Classificação dos desvios entre datas iniciais, previstas e reais"],
     }[state.view];
   }
 
@@ -321,7 +375,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const aliases = {
       codigo: ["codigo", "cod"], descricao: ["descricao", "designacao"], responsavel: ["responsavel"],
       data_inicio_prevista: ["data inicio", "inicio", "data inicio prevista"], data_fim_prevista: ["data fim prevista", "fim previsto"],
-      data_fim_real: ["data fim real", "fim real"], peso_percentual: ["peso %", "peso", "peso percentual"],
+      data_inicio_real: ["data inicio real", "inicio real"], data_fim_real: ["data fim real", "fim real"], peso_percentual: ["peso %", "peso", "peso percentual"],
       percentual_executado: ["% executado", "executado %", "percentual executado", "execucao %"], estado: ["estado"], fase: ["fase"],
     };
     const positions = Object.fromEntries(Object.entries(aliases).map(([field, names]) => [field, headers.findIndex(header => names.includes(header))]));
@@ -336,7 +390,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const item = {
         fase_id: phase?.id, codigo, descricao, responsavel: String(get("responsavel") || "").trim() || null,
         data_inicio_prevista: parsedDate(get("data_inicio_prevista")), data_fim_prevista: parsedDate(get("data_fim_prevista")),
-        data_fim_real: parsedDate(get("data_fim_real")), peso_percentual: parsedNumber(get("peso_percentual")),
+        data_inicio_real: parsedDate(get("data_inicio_real")), data_fim_real: parsedDate(get("data_fim_real")), peso_percentual: parsedNumber(get("peso_percentual")),
         percentual_executado: progress, estado: parsedState(get("estado"), progress),
       };
       const rowErrors = [];
@@ -361,7 +415,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const payload = {
       fase_id: value("fase_id"), codigo: value("codigo").trim() || null, descricao: value("descricao").trim(),
       responsavel: value("responsavel").trim() || null, data_inicio_prevista: value("data_inicio_prevista") || null,
-      data_fim_prevista: value("data_fim_prevista") || null, data_fim_real: value("data_fim_real") || null,
+      data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
       peso_percentual: parsedNumber(value("peso_percentual")), percentual_executado: parsedNumber(value("percentual_executado"), 0),
       estado: value("estado"),
     };
@@ -428,16 +482,43 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       return;
     }
     const [title, description] = viewMeta();
-    const body = state.view === "baseline" ? renderBaseline() : state.view === "summary" ? renderSummary() : renderEffective();
+    const body = state.view === "baseline" ? renderBaseline() : state.view === "summary" ? renderSummary() : state.view === "control" ? renderControl() : renderEffective();
     content.innerHTML = `<div class="planning-module-shell">
       <aside class="planning-layer-nav" aria-label="Camadas do planeamento">
         <span>CAMADAS</span>
         <button type="button" data-planning-view="baseline" class="${state.view === "baseline" ? "active" : ""}"><b>01</b><span>PLANEAMENTO INICIAL<small>Baseline original</small></span></button>
         <button type="button" data-planning-view="effective" class="${state.view === "effective" ? "active" : ""}"><b>02</b><span>PLANEAMENTO EFETIVO<small>Execução atual</small></span></button>
         <button type="button" data-planning-view="summary" class="${state.view === "summary" ? "active" : ""}"><b>03</b><span>RESUMO POR FASE<small>Desvios agregados</small></span></button>
+        <button type="button" data-planning-view="control" class="${state.view === "control" ? "active" : ""}"><b>04</b><span>CONTROLO<small>Classificação dos desvios</small></span></button>
       </aside>
-      <section class="planning-layer-content"><header><div><p class="eyebrow">${title}</p><h2>${description}</h2></div>${state.view === "effective" ? `<div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span></div>` : ""}</header>${body}</section>
+      <section class="planning-layer-content"><header><div><p class="eyebrow">${title}</p><h2>${description}</h2></div>${state.view === "effective" ? `<div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span><span><i class="late"></i>EM ATRASO</span></div>` : ""}</header>${body}</section>
     </div>`;
+
+    // Bind the primary import action directly too. This keeps it reliable in
+    // embedded browsers where a delegated toolbar click may be swallowed.
+    content.querySelector("[data-open-import]")?.addEventListener("click", event => {
+      event.stopPropagation();
+      openImportPanel();
+    });
+    content.querySelector("[data-new-task]")?.addEventListener("click", event => {
+      event.stopPropagation();
+      addNewTask();
+    });
+  }
+
+  function openImportPanel() {
+    state.importOpen = true;
+    state.importRows = [];
+    state.importErrors = [];
+    render();
+    content.querySelector(".planning-import-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function addNewTask() {
+    const firstPhase = state.phases[0];
+    state.items.unshift({ id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", percentual_executado: 0, estado: "por_iniciar", _new: true });
+    render();
+    content.querySelector("[data-edit-item] input[name='codigo']")?.focus();
   }
 
   async function load(workId = state.workId) {
@@ -482,12 +563,10 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   workSelect.addEventListener("change", () => { state.expanded.clear(); load(workSelect.value); });
   content.addEventListener("click", event => {
-    if (event.target.closest("[data-open-import]")) { state.importOpen = true; state.importRows = []; state.importErrors = []; render(); return; }
+    if (event.target.closest("[data-open-import]")) { openImportPanel(); return; }
     if (event.target.closest("[data-close-import]")) { state.importOpen = false; state.importRows = []; state.importErrors = []; render(); return; }
     if (event.target.closest("[data-new-task]")) {
-      const firstPhase = state.phases[0];
-      state.items.unshift({ id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", percentual_executado: 0, estado: "por_iniciar", _new: true });
-      render(); content.querySelector("[data-edit-item] input[name='codigo']")?.focus(); return;
+      addNewTask(); return;
     }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
@@ -506,6 +585,11 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     if (event.target.matches("[data-import-paste]")) prepareImport(csvRows(event.target.value));
   });
   content.addEventListener("change", async event => {
+    if (event.target.matches("[data-control-mode]")) {
+      state.controlMode = event.target.value;
+      render();
+      return;
+    }
     if (!event.target.matches("[data-import-file]")) return;
     const file = event.target.files?.[0]; if (!file) return;
     try {
