@@ -237,3 +237,12 @@ migração reflete alterações já aplicadas diretamente na base de produção 
 Os painéis distinguem `obras.modalidade`: obras `cliente_externo` mantêm contrato,
 TEEs, venda e margem; obras `investimento_proprio` apresentam orçamento inicial e
 revisto, impactos, custo realizado e desvio ao orçamento.
+
+## Fontes do cash flow
+
+Executar `supabase/rls_cashflow_fontes_reais.sql` para permitir a leitura da
+`previsao_financeira_mensal` e dos recebimentos reais no painel. A previsão mensal
+passa a vir diretamente dessa tabela; as entradas reais usam
+`faturacao.data_recebimento/valor_recebido` e as saídas reais incluem as faturas
+pagas de materiais, usando `faturas_itens` quando existe detalhe e o valor da
+fatura como alternativa.

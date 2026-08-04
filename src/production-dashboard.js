@@ -1,5 +1,3 @@
-import { directDebitForecastByMonth } from "./direct-debits.js?v=1";
-
 const number = value => Number(value || 0);
 const sum = (rows, field) => rows.reduce((total, row) => total + number(row[field]), 0);
 const DAY_MS = 86400000;
@@ -25,6 +23,59 @@ export const investmentFinancialValues = (investment = {}, actualCost = 0) => {
   const revisedBudget = number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva);
   return { initialBudget, revisedBudget, actualCost: number(actualCost), deviation: number(actualCost) - revisedBudget };
 };
+export const materialInvoiceValue = (invoice, items = []) => {
+  const invoiceItems = items.filter(item => item.fatura_id === invoice.id);
+  if (!invoiceItems.length) return number(invoice.valor);
+  return invoiceItems.reduce((total, item) => total + number(
+    item.preco_total ?? number(item.quantidade) * number(item.preco_unitario)
+  ), 0);
+};
+export function actualCashFlowByMonth(data = {}) {
+  const months = new Map();
+  const bucket = value => {
+    const key = monthKey(value);
+    if (!key) return null;
+    if (!months.has(key)) months.set(key, { incoming: 0, outgoing: 0, subcontract: 0, materials: 0, labor: 0, site: 0, directDebit: 0 });
+    return months.get(key);
+  };
+  (data.billings || []).forEach(row => {
+    const month = bucket(row.data_recebimento);
+    if (month) month.incoming += number(row.valor_recebido);
+  });
+  (data.payments || []).forEach(row => {
+    const month = bucket(row.data_pagamento);
+    if (!month) return;
+    month.subcontract += number(row.valor);
+    month.outgoing += number(row.valor);
+  });
+  (data.materialInvoices || []).forEach(invoice => {
+    const month = bucket(invoice.data_pagamento || invoice.data_fatura);
+    if (!month) return;
+    const value = materialInvoiceValue(invoice, data.materialInvoiceItems || []);
+    month.materials += value;
+    month.outgoing += value;
+  });
+  (data.labor || []).forEach(row => {
+    const month = bucket(row.data);
+    if (!month) return;
+    const value = number(row.valor_total ?? number(row.horas) * number(row.valor_hora));
+    month.labor += value;
+    month.outgoing += value;
+  });
+  (data.siteExpenses || []).forEach(row => {
+    const month = bucket(row.data_pagamento);
+    if (!month) return;
+    month.site += number(row.valor_total);
+    month.outgoing += number(row.valor_total);
+  });
+  (data.directDebitEntries || []).forEach(row => {
+    const month = bucket(row.data);
+    if (!month) return;
+    month.directDebit += number(row.valor);
+    month.outgoing += number(row.valor);
+  });
+  return months;
+}
 const budgetItemCost = row => number(
   row?.custo_direto ?? row?.custo_previsto ?? row?.compra_prevista
   ?? row?.preco_custo ?? row?.valor_custo ?? row?.custo_total
@@ -370,71 +421,35 @@ export function createProductionDashboard(options) {
     return result;
   }
 
-  function monthSpan(startValue, endValue) {
-    return Math.max(1, buildMonths(startValue, endValue).length);
-  }
-
-  function plannedMonthlyWeights(months, data, field) {
-    const phaseItems = new Map();
-    data.budget.forEach(item => {
-      const value = field === "sale" ? number(item.venda_prevista) : budgetItemCost(item);
-      phaseItems.set(item.fase_id, (phaseItems.get(item.fase_id) || 0) + value);
-    });
-    const weights = new Map(months.map(month => [month, 0]));
-    data.phases.forEach(phase => {
-      const plan = { ...phase, ...(data.planning.find(row => row.fase_id === phase.id) || {}) };
-      const start = plannedStart(plan) || data.workStart;
-      const end = plannedEnd(plan) || data.workEnd;
-      const monthly = number(phaseItems.get(phase.id)) / monthSpan(start, end);
-      months.forEach(month => {
-        if (month >= monthKey(start) && month <= monthKey(end)) weights.set(month, weights.get(month) + monthly);
-      });
-    });
-    if (![...weights.values()].some(Boolean)) months.forEach(month => weights.set(month, 1));
-    return weights;
-  }
-
   function renderCashFlow(work, data) {
-    const investmentMode = isInvestmentWork(work);
     const todayMonth = monthKey(new Date().toISOString());
     const scheduleRows = [...data.phases, ...data.planning];
     const phaseStarts = scheduleRows.map(plannedStart).filter(Boolean).sort();
     const phaseEnds = scheduleRows.map(plannedEnd).filter(Boolean).sort();
-    const scheduleStart = work.data_inicio || phaseStarts[0] || new Date();
-    const scheduleEnd = work.data_fim_prevista || phaseEnds.at(-1) || new Date();
-    const months = buildMonths(scheduleStart, scheduleEnd);
-    const debitForecast = directDebitForecastByMonth(data.directDebits || [], scheduleStart, scheduleEnd);
-    const contract = selectCurrentContract(data.contracts);
+    const actuals = actualCashFlowByMonth(data);
+    const forecastByMonth = new Map((data.monthlyForecast || []).map(row => [monthKey(row.mes), row]));
+    const monthCandidates = [
+      monthKey(work.data_inicio || phaseStarts[0]),
+      monthKey(work.data_fim_prevista || phaseEnds.at(-1)),
+      ...actuals.keys(),
+      ...forecastByMonth.keys(),
+      todayMonth,
+    ].filter(Boolean).sort();
+    const months = buildMonths(monthCandidates[0] || new Date(), monthCandidates.at(-1) || new Date());
     const values = months.map(month => {
-      const advance = investmentMode ? 0 : monthKey(contract.data_assinatura) === month ? number(contract.valor_adiantamento) : 0;
-      const incoming = investmentMode ? 0 : advance + data.measurements.filter(row => monthKey(row.mes_referencia) === month).reduce((total, row) => total + measurementBilledValue(row), 0);
-      const subcontract = data.payments.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor), 0);
-      const labor = data.labor.filter(row => monthKey(row.data) === month).reduce((total, row) => total + number(row.horas) * number(row.valor_hora), 0);
-      const site = data.siteExpenses.filter(row => monthKey(row.data_pagamento) === month).reduce((total, row) => total + number(row.valor_total), 0);
-      const directDebit = (data.directDebitEntries || []).filter(row => monthKey(row.data) === month).reduce((total, row) => total + number(row.valor), 0);
-      const closed = month < todayMonth;
-      return { month, incoming: closed ? incoming : 0, outgoing: closed ? subcontract + labor + site + directDebit : 0, directDebitReal: closed ? directDebit : 0, directDebitForecast: closed ? 0 : number(debitForecast.get(month)), forecastIncoming: 0, forecastOutgoing: 0, closed };
-    });
-    const approvedTees = investmentMode ? [] : data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
-    const investment = selectCurrentInvestment(data.investments || []);
-    const totalSale = investmentMode ? 0 : number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial) + sum(approvedTees, "valor");
-    const directCost = investmentMode
-      ? number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva)
-      : number(contract.custo_direto_efetivo || contract.custo_direto_inicial) || effectiveDirectCost(data.budget, totalSale);
-    const totalCost = investmentMode ? directCost : directCost + sum(approvedTees, "preco_custo");
-    const remainingMonths = months.filter(month => month >= todayMonth);
-    const saleWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: scheduleStart, workEnd: scheduleEnd }, "sale");
-    const costWeights = plannedMonthlyWeights(remainingMonths, { ...data, workStart: scheduleStart, workEnd: scheduleEnd }, "cost");
-    const remainingSale = investmentMode ? 0 : Math.max(0, totalSale - values.reduce((total, row) => total + row.incoming, 0));
-    const directDebitForecastTotal = values.reduce((total, row) => total + row.directDebitForecast, 0);
-    const remainingCost = Math.max(0, totalCost - values.reduce((total, row) => total + row.outgoing, 0) - directDebitForecastTotal);
-    const saleWeightTotal = [...saleWeights.values()].reduce((total, value) => total + value, 0) || 1;
-    const costWeightTotal = [...costWeights.values()].reduce((total, value) => total + value, 0) || 1;
-    values.forEach(row => {
-      if (row.month >= todayMonth) {
-        row.forecastIncoming = remainingSale * (saleWeights.get(row.month) || 0) / saleWeightTotal;
-        row.forecastOutgoing = remainingCost * (costWeights.get(row.month) || 0) / costWeightTotal + row.directDebitForecast;
-      }
+      const actual = actuals.get(month) || {};
+      const forecast = forecastByMonth.get(month) || {};
+      const closed = forecast.fechado === true || month < todayMonth;
+      return {
+        month,
+        incoming: closed ? number(actual.incoming) : 0,
+        outgoing: closed ? number(actual.outgoing) : 0,
+        directDebitReal: closed ? number(actual.directDebit) : 0,
+        materialsReal: closed ? number(actual.materials) : 0,
+        forecastIncoming: closed ? 0 : number(forecast.entradas_previstas),
+        forecastOutgoing: closed ? 0 : number(forecast.saidas_previstas_com_iva ?? forecast.saidas_previstas_sem_iva),
+        closed,
+      };
     });
     let balance = 0;
     values.forEach(row => {
@@ -455,8 +470,8 @@ export function createProductionDashboard(options) {
           <header><strong>${monthLabel(row.month)}</strong><span class="${(row.closed ? row.incoming - row.outgoing : row.forecastIncoming - row.forecastOutgoing) < 0 ? "negative" : "positive"}">${euro.format(row.closed ? row.incoming - row.outgoing : row.forecastIncoming - row.forecastOutgoing)}</span></header>
           <dl>
             ${row.closed
-              ? `<div><dt>Entradas reais</dt><dd class="incoming">${euro.format(row.incoming)}</dd></div><div><dt>Saídas reais</dt><dd class="outgoing">${euro.format(row.outgoing)}</dd></div>${row.directDebitReal ? `<div><dt>Inclui débitos diretos</dt><dd>${euro.format(row.directDebitReal)}</dd></div>` : ""}`
-              : `<div><dt>Entradas previstas</dt><dd class="forecast">${euro.format(row.forecastIncoming)}</dd></div><div><dt>Saídas previstas</dt><dd class="forecast">${euro.format(row.forecastOutgoing)}</dd></div>${row.directDebitForecast ? `<div><dt>Inclui débitos diretos</dt><dd>${euro.format(row.directDebitForecast)}</dd></div>` : ""}`}
+              ? `<div><dt>Entradas reais</dt><dd class="incoming">${euro.format(row.incoming)}</dd></div><div><dt>Saídas reais</dt><dd class="outgoing">${euro.format(row.outgoing)}</dd></div>${row.materialsReal ? `<div><dt>Inclui materiais</dt><dd>${euro.format(row.materialsReal)}</dd></div>` : ""}${row.directDebitReal ? `<div><dt>Inclui débitos diretos</dt><dd>${euro.format(row.directDebitReal)}</dd></div>` : ""}`
+              : `<div><dt>Entradas previstas</dt><dd class="forecast">${euro.format(row.forecastIncoming)}</dd></div><div><dt>Saídas previstas</dt><dd class="forecast">${euro.format(row.forecastOutgoing)}</dd></div>`}
             <div><dt>Saldo acumulado</dt><dd>${euro.format(row.balance)}</dd></div>
           </dl>
           <small class="cash-state">${row.closed ? "✓ REAL" : row.current ? "● MÊS EM ABERTO · PREVISÃO" : "PREVISÃO"}</small>
@@ -733,7 +748,7 @@ export function createProductionDashboard(options) {
     const directDebitIds = directDebits.map(row => row.id);
     const [
       contracts, tees, investments, impacts, measurements, planning, budget, consultations,
-      payments, labor, siteExpenses, directDebitEntries,
+      payments, labor, siteExpenses, directDebitEntries, billings, monthlyForecast, materialInvoices,
     ] = await Promise.all([
       investmentMode ? [] : meetingQuery(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encoded}`, "Contrato", warnings),
       investmentMode ? [] : meetingQuery(`alteracoes_tee?select=*&obra_id=eq.${encoded}`, "TEEs", warnings),
@@ -747,8 +762,15 @@ export function createProductionDashboard(options) {
       meetingQuery(`lancamentos_mao_obra?select=*&obra_id=eq.${encoded}`, "Mão de obra", warnings),
       meetingQuery(`despesas_estaleiro?select=*&obra_id=eq.${encoded}`, "Estaleiro", warnings),
       directDebitIds.length ? meetingQuery(`debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor&debito_direto_id=in.(${directDebitIds.map(encodeURIComponent).join(",")})`, "Lançamentos de débitos diretos", warnings) : [],
+      meetingQuery(`faturacao?select=id,obra_id,data_recebimento,valor_recebido&obra_id=eq.${encoded}&data_recebimento=not.is.null`, "Recebimentos reais", warnings),
+      meetingQuery(`previsao_financeira_mensal?select=obra_id,mes,tipo,entradas_reais,entradas_previstas,saidas_reais_sem_iva,saidas_reais_com_iva,saidas_previstas_sem_iva,saidas_previstas_com_iva,fechado&obra_id=eq.${encoded}&tipo=eq.previsao&order=mes.asc`, "Previsão financeira mensal", warnings),
+      meetingQuery(`faturas?select=id,obra_id,tipo_origem,valor,data_fatura,data_pagamento,estado_aprovacao,estado_pagamento&obra_id=eq.${encoded}&tipo_origem=eq.material&estado_pagamento=eq.pago`, "Faturas de materiais", warnings),
     ]);
-    meetingState = { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries } };
+    const materialInvoiceIds = materialInvoices.map(row => row.id);
+    const materialInvoiceItems = materialInvoiceIds.length
+      ? await meetingQuery(`faturas_itens?select=id,fatura_id,quantidade,preco_unitario,preco_total&fatura_id=in.(${materialInvoiceIds.map(encodeURIComponent).join(",")})`, "Itens das faturas de materiais", warnings)
+      : [];
+    meetingState = { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems } };
     renderMeeting();
   }
 
