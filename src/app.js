@@ -331,6 +331,11 @@ document.querySelector("#root").innerHTML = `
           <div class="form-row"><label>CLIENTE<input name="cliente" maxlength="160"></label><label>DIRETOR DE OBRA<div class="select-wrap"><select name="diretor_obra_id"><option value="">Não definido</option></select><b>⌄</b></div></label></div>
           <label>MORADA<input name="morada" maxlength="240"></label>
           <div class="form-row"><label>TIPO<input name="tipo" maxlength="80" placeholder="Ex. Construção nova"></label><label>MODALIDADE<input name="modalidade" maxlength="80" placeholder="Ex. Empreitada geral"></label></div>
+          <fieldset class="work-template-fieldset"><legend>MODELO DE ESTRUTURA</legend>
+            <label>BASEAR NESTA OBRA<div class="select-wrap"><select name="modelo_obra_id"><option value="">Começar sem modelo</option></select><b>⌄</b></div></label>
+            <label class="work-template-check"><input name="copiar_orcamento" type="checkbox" checked><span><strong>COPIAR CATEGORIAS DO ORÇAMENTO</strong><small>Replica designações e unidades, sempre sem quantidades, custos ou preços.</small></span></label>
+            <p>O modelo copia fases e categorias comuns. Não copia cliente, responsáveis, contratos, documentos, fornecedores, tarefas, valores realizados ou movimentos financeiros.</p>
+          </fieldset>
           <div class="form-row"><label>DATA DE INÍCIO<input name="data_inicio" type="date"></label><label>FIM PREVISTO<input name="data_fim_prevista" type="date"></label></div>
           <p class="form-error" id="work-form-error"></p>
           <div class="dialog-actions"><button class="outline-action" id="cancel-work" type="button">CANCELAR</button><button class="primary-button" type="submit">CRIAR OBRA <span>→</span></button></div>
@@ -772,6 +777,16 @@ function renderWorkDirectors() {
   const select = $("#work-form")?.diretor_obra_id;
   if (!select) return;
   select.innerHTML = `<option value="">Não definido</option>${collaborators.map(person => `<option value="${person.id}">${person.nome}${person.funcao ? ` — ${person.funcao}` : ""}</option>`).join("")}`;
+}
+
+function renderWorkTemplates() {
+  const select = $("#work-form")?.modelo_obra_id;
+  if (!select) return;
+  const selected = select.value;
+  select.innerHTML = `<option value="">Começar sem modelo</option>${[...works]
+    .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }))
+    .map(work => `<option value="${work.id}">Obra ${escapeHtml(work.numero)} — ${escapeHtml(work.nome)}</option>`).join("")}`;
+  select.value = selected;
 }
 
 function workSituationLabel(value) {
@@ -2512,6 +2527,7 @@ function closeWorkDialog() {
 $("#new-work").addEventListener("click", () => {
   if (!hasFullAccess()) return toast("A criação de obras está reservada à Gerência.", "error");
   renderWorkDirectors();
+  renderWorkTemplates();
   $("#work-dialog").hidden = false;
   $("#work-form").numero.focus();
 });
@@ -2551,8 +2567,34 @@ $("#work-form").addEventListener("submit", async event => {
   };
   button.disabled = true;
   try {
+    let templateResult = null;
     if (!isSupabaseConfigured) {
       payload.id = crypto.randomUUID();
+      templateResult = fields.modelo_obra_id ? { fases_copiadas: 0, itens_orcamento_copiados: 0 } : null;
+    } else if (fields.modelo_obra_id) {
+      const response = await supabase("rpc/fn_criar_obra_de_modelo", {
+        method: "POST",
+        body: JSON.stringify({
+          p_modelo_obra_id: fields.modelo_obra_id,
+          p_numero: payload.numero,
+          p_nome: payload.nome,
+          p_cliente: payload.cliente,
+          p_morada: payload.morada,
+          p_tipo: payload.tipo,
+          p_modalidade: payload.modalidade,
+          p_diretor_obra_id: payload.diretor_obra_id,
+          p_situacao: payload.situacao,
+          p_data_inicio: payload.data_inicio,
+          p_data_fim_prevista: payload.data_fim_prevista,
+          p_copiar_orcamento: workForm.elements.copiar_orcamento.checked,
+        }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.message || detail.details || "Não foi possível criar a obra a partir do modelo.");
+      }
+      templateResult = await response.json();
+      Object.assign(payload, templateResult.obra);
     } else {
       const response = await supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id", {
         method: "POST",
@@ -2570,7 +2612,9 @@ $("#work-form").addEventListener("submit", async event => {
     renderWorks();
     workForm.reset();
     closeWorkDialog();
-    toast(`Obra ${payload.numero} criada com sucesso.`);
+    toast(templateResult
+      ? `Obra ${payload.numero} criada com ${templateResult.fases_copiadas} fases e ${templateResult.itens_orcamento_copiados} categorias de orçamento.`
+      : `Obra ${payload.numero} criada com sucesso.`);
     await loadWorkDetails(payload.id);
   } catch (error) {
     $("#work-form-error").textContent = error.message || "Não foi possível criar a obra.";
