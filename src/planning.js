@@ -96,7 +96,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const left = Math.min(100, daysBetween(scale.start, start) / scale.totalDays * 100);
     const width = Math.max(1.4, daysBetween(start, end) / scale.totalDays * 100);
     const progress = Math.max(0, Math.min(100, Number(item.percentual_executado || 0)));
-    return `<div class="planning-bar ${escapeHtml(item.estado || "por_iniciar")}" style="left:${left}%;width:${Math.min(width, 100 - left)}%">
+    return `<div class="planning-bar ${escapeHtml(item.estado || "por_iniciar")} ${item.impedido ? "impedido" : ""}" style="left:${left}%;width:${Math.min(width, 100 - left)}%">
       <i style="width:${progress}%"></i><span>${progress}%</span>
     </div>`;
   }
@@ -183,18 +183,19 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
             <div><em>${progress === null ? "—" : `${progress}%`}</em></div>
           </button>
           <div class="planning-tasks" ${expanded ? "" : "hidden"}>
-            ${items.length ? items.map(item => `<article class="planning-grid planning-task-row">
+            ${items.length ? items.map(item => `<article class="planning-grid planning-task-row ${item.impedido ? "planning-task-blocked" : ""}">
               <div>
                 <strong>${escapeHtml(item.codigo || "SUB")}</strong>
                 <span>${escapeHtml(item.descricao)}</span>
                 ${item.recalculado_automaticamente ? `<small title="${item.recalculado_em ? `Em ${escapeHtml(item.recalculado_em)}` : ""}">↻ RECALCULADO AUTOMATICAMENTE</small>` : ""}
+                ${item.impedido ? `<em class="planning-blocked-note"><b>IMPEDIDA</b>${escapeHtml(item.observacao_impedimento || "Sem observação")}</em>` : ""}
               </div>
               <div>${escapeHtml(item.responsavel || "Não definido")}<small>${predecessorCount[item.id] || 0} PREDECESSORAS</small></div>
               <div class="planning-track" style="--months:${scale.months.length}">
                 ${todayPosition === null ? "" : `<i class="planning-today" style="left:${todayPosition}%"></i>`}
                 ${taskBar(item, scale)}
               </div>
-              <div><span class="planning-state ${escapeHtml(item.estado || "por_iniciar")}">${stateLabel(item.estado)}</span>
+              <div><span class="planning-state ${item.impedido ? "impedido" : escapeHtml(item.estado || "por_iniciar")}">${item.impedido ? "IMPEDIDA" : stateLabel(item.estado)}</span>
                 <small>${isoDate(item.data_inicio_prevista) || "—"} → ${isoDate(item.data_fim_prevista) || "—"}</small>
               </div>
             </article>`).join("") : `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}

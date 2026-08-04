@@ -985,6 +985,12 @@ button, input, select, textarea,
 .planning-state { width: fit-content; padding: 5px 8px; border: 1px solid var(--info-border); border-radius: 999px; background: var(--info-bg); color: var(--info-text); font-size: 10px; font-weight: 850; letter-spacing: .4px; }
 .planning-state.concluido { border-color: var(--pos-border); background: var(--pos-bg); color: var(--pos-text); }
 .planning-state.em_execucao { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
+.planning-state.impedido { color: var(--neg-text); background: var(--neg-bg); border-color: var(--neg-border); }
+.planning-task-blocked { border-left: 4px solid var(--neg-text); background: color-mix(in srgb, var(--neg-bg) 70%, var(--card)); }
+.planning-bar.impedido { border-color: var(--neg-text); background: var(--neg-bg); }
+.planning-bar.impedido > i { background: var(--neg-text); }
+.planning-blocked-note { grid-column: 1 / -1; margin-top: 4px; padding: 6px 8px; border-radius: 6px; background: var(--neg-bg); color: var(--neg-text); display: grid; gap: 2px; font-size: 10px; font-style: normal; line-height: 1.35; }
+.planning-blocked-note b { font-size: 9px; letter-spacing: .7px; }
 .planning-phase-empty { padding: 25px 48px; background: var(--card); color: var(--text-muted); font-size: 11px; font-weight: 800; letter-spacing: .7px; }
 
 /* Diretório global de subempreiteiros */
@@ -1344,6 +1350,54 @@ button, input, select, textarea,
   .procurement-form-row, .procurement-candidate-form, .procurement-candidate-form > div, .procurement-candidate-action, [data-adjudicate] { grid-template-columns: 1fr; }
   .procurement-budget-head { align-items: stretch; flex-direction: column; }
   .procurement-budget-head input { max-width: none; }
+}
+
+/* Plano de ação do encarregado. */
+.action-heading { margin-bottom: 22px; }
+.action-layout { display: grid; grid-template-columns: minmax(500px, 1.25fr) minmax(360px, .9fr); gap: 18px; align-items: start; }
+.action-calendar, .action-week, .action-overdue { overflow: hidden; }
+.action-calendar > header, .action-week > header, .action-overdue > header { min-height: 76px; padding: 17px 20px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.action-calendar h2, .action-week h2, .action-overdue h2 { margin: 4px 0 0; font-size: 17px; }
+.action-calendar > header button { width: 34px; height: 34px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--text-primary); }
+.action-week > header > span { color: var(--text-secondary); font-size: 10px; font-weight: 700; }
+.action-overdue { margin-bottom: 18px; border-left: 4px solid var(--neg-text); }
+.action-overdue > header > strong { width: 30px; height: 30px; border-radius: 50%; background: var(--neg-bg); color: var(--neg-text); display: grid; place-items: center; }
+.action-weekdays, .action-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.action-weekdays { min-height: 34px; background: var(--sidebar-bg); color: #fff; }
+.action-weekdays b { display: grid; place-items: center; border-right: 1px solid rgba(255,255,255,.1); font-size: 9px; letter-spacing: .6px; }
+.action-day { min-height: 82px; padding: 7px; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 4px; }
+.action-day:nth-child(7n) { border-right: 0; }
+.action-day > span { color: var(--text-secondary); font-size: 10px; font-weight: 800; }
+.action-day > i { overflow: hidden; padding: 3px 4px; border-radius: 4px; background: var(--info-bg); color: var(--info-text); font-size: 9px; font-style: normal; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.action-day > i.completed { background: var(--pos-bg); color: var(--pos-text); text-decoration: line-through; }
+.action-day > small { color: var(--text-muted); font-size: 9px; }
+.action-day.outside { opacity: .35; background: var(--bg); }
+.action-day.blocked { box-shadow: inset 0 3px 0 var(--neg-text); }
+.action-day.blocked > i { background: var(--neg-bg); color: var(--neg-text); }
+.action-task { min-height: 78px; padding: 12px 16px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; align-items: center; gap: 11px; }
+.action-task:last-child { border-bottom: 0; }
+.action-task.blocked { background: var(--neg-bg); }
+.action-task.completed { opacity: .68; }
+.action-task > div { min-width: 0; display: grid; gap: 3px; }
+.action-task small { color: var(--brand-amber); font-size: 9px; font-weight: 800; letter-spacing: .55px; }
+.action-task strong { font-size: 12px; }
+.action-task span { color: var(--text-secondary); font-size: 10px; }
+.action-task em { margin-top: 3px; color: var(--neg-text); font-size: 10px; font-style: normal; font-weight: 700; }
+.action-check { width: 27px; height: 27px; border: 2px solid var(--pos-text); border-radius: 50%; background: var(--card); color: var(--pos-text); font-weight: 900; }
+.action-task.completed .action-check { background: var(--pos-text); color: #fff; }
+.action-state { padding: 5px 7px; border-radius: 999px; background: var(--info-bg); color: var(--info-text); font-size: 9px; white-space: nowrap; }
+.action-task.blocked .action-state { background: var(--card); color: var(--neg-text); }
+.action-block { min-height: 32px; padding: 0 9px; color: var(--neg-text); font-size: 9px; white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .action-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .action-calendar { overflow-x: auto; }
+  .action-calendar > header, .action-week > header, .action-overdue > header { min-width: 620px; }
+  .action-weekdays, .action-calendar-grid { min-width: 620px; }
+  .action-task { grid-template-columns: 30px 1fr auto; }
+  .action-block { grid-column: 2 / -1; justify-self: start; }
 }
 
 @media (max-width: 1180px) {
