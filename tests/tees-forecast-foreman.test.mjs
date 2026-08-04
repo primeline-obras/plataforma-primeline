@@ -3,6 +3,12 @@ import { readFile } from "node:fs/promises";
 
 const migration = await readFile(new URL("../supabase/tees_previsao_encarregados.sql", import.meta.url), "utf8");
 
+assert.doesNotMatch(
+  migration,
+  /data_fim_execucao\s*<\s*current_date\s+then\s+'concluido'/i,
+  "A data prevista do TEE não pode concluir automaticamente a tarefa de planeamento.",
+);
+
 assert.match(migration, /add column if not exists data_inicio_execucao date/i);
 assert.match(migration, /add column if not exists data_fim_execucao date/i);
 assert.match(migration, /add column if not exists tee_id uuid/i);

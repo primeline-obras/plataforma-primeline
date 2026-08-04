@@ -90,7 +90,6 @@ begin
     new.data_inicio_execucao,
     new.data_fim_execucao,
     case
-      when new.data_fim_execucao < current_date then 'concluido'
       when new.data_inicio_execucao <= current_date then 'em_execucao'
       else 'por_iniciar'
     end
