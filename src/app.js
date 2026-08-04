@@ -5,7 +5,7 @@ import { createPlanningModule } from "./planning.js?v=1";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=5";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
-import { createSettingsModule } from "./settings.js?v=2";
+import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=1";
 
