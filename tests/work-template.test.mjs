@@ -4,6 +4,7 @@ import test from "node:test";
 
 const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
 const sql = await readFile(new URL("../supabase/modelo_nova_obra.sql", import.meta.url), "utf8");
+const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("o formulário permite escolher uma obra-modelo e copiar o orçamento estrutural", () => {
   assert.match(app, /name="modelo_obra_id"/);
@@ -37,4 +38,11 @@ test("não replica dados operacionais ou financeiros de outras tabelas", () => {
   for (const table of ["contratos", "investimentos", "planeamento_itens", "subempreitadas", "faturas", "pagamentos_subempreitada", "documentos_obra", "obra_responsaveis"]) {
     assert.doesNotMatch(sql, new RegExp(`insert\\s+into\\s+public\\.${table}`, "i"));
   }
+});
+
+test("os formulários longos mantêm uma barra de rolagem lateral visível", () => {
+  const modalScrollRule = styles.match(/\.dialog-backdrop\s*>\s*\.work-dialog-card\s*\{([\s\S]*?)\}/)?.[1] || "";
+  assert.match(modalScrollRule, /overflow-y:\s*scroll/);
+  assert.match(modalScrollRule, /scrollbar-gutter:\s*stable/);
+  assert.match(styles, /\.dialog-backdrop\s*>\s*\.work-dialog-card::\-webkit-scrollbar/);
 });

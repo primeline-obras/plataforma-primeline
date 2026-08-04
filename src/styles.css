@@ -682,6 +682,18 @@ button, input, select, textarea,
   border-radius: 12px;
   overflow: hidden;
 }
+/* Os cartões dos modais longos têm de conservar uma rolagem visível. Esta
+   regra fica depois da geometria comum para não ser anulada por overflow:hidden. */
+.dialog-backdrop > .work-dialog-card {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #8f9699 #e7e8e5;
+}
+.dialog-backdrop > .work-dialog-card::-webkit-scrollbar { width: 12px; }
+.dialog-backdrop > .work-dialog-card::-webkit-scrollbar-track { background: #e7e8e5; }
+.dialog-backdrop > .work-dialog-card::-webkit-scrollbar-thumb { border: 3px solid #e7e8e5; border-radius: 999px; background: #8f9699; }
 .work-list-item, .overview-work-list button,
 .overview-actions > button, .overview-actions > div:not(.overview-empty),
 .meeting-table > div, .meeting-detail-list > div, .phase-timeline-row {
