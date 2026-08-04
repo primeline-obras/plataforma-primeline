@@ -36,6 +36,8 @@ test("o planeamento oferece pré-visualização, criação, atualização e depe
   assert.match(planning, /baseline-real/);
   assert.match(planning, /planned-real/);
   assert.match(planning, /ATRASO CRÍTICO/);
+  assert.match(planning, /querySelectorAll\("\[data-planning-view\]"\)/);
+  assert.match(planning, /state\.view\s*=\s*button\.dataset\.planningView/);
   assert.match(planning, /data-confirm-import/);
   assert.match(planning, /A CRIAR/);
   assert.match(planning, /A ATUALIZAR/);

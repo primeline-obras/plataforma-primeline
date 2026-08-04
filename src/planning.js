@@ -504,6 +504,13 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       event.stopPropagation();
       addNewTask();
     });
+    content.querySelectorAll("[data-planning-view]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        state.view = button.dataset.planningView;
+        render();
+      });
+    });
   }
 
   function openImportPanel() {
