@@ -1,8 +1,8 @@
-const ROLES = ["gerencia", "diretor_obra", "preparador", "administrativo", "financeiro"];
-const RESPONSIBILITY_ROLES = ["diretor_obra", "adjunto", "preparador"];
+const ROLES = ["gerencia", "diretor_obra", "preparador", "encarregado", "administrativo", "financeiro"];
+const RESPONSIBILITY_ROLES = ["diretor_obra", "adjunto", "preparador", "encarregado"];
 
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-const roleLabel = value => ({ gerencia: "Gerência", diretor_obra: "Diretor de obra", adjunto: "Adjunto", preparador: "Preparador", administrativo: "Administrativo", financeiro: "Financeiro" })[value] || value || "—";
+const roleLabel = value => ({ gerencia: "Gerência", diretor_obra: "Diretor de obra", adjunto: "Adjunto", preparador: "Preparador", encarregado: "Encarregado", administrativo: "Administrativo", financeiro: "Financeiro" })[value] || value || "—";
 const roleOptions = (values, selected = "") => values.map(value => `<option value="${value}" ${value === selected ? "selected" : ""}>${roleLabel(value)}</option>`).join("");
 
 export function createSettingsModule({
