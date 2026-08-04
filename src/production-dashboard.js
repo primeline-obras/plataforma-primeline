@@ -207,7 +207,7 @@ export function createProductionDashboard(options) {
       : overviewState.profile?.funcao || access.role || (isSupabaseConfigured ? "administrativo" : "gerencia");
     document.body.dataset.userRole = role;
     const responsibleWorkIds = new Set(overviewState.responsibilities.map(row => row.obra_id));
-    const isProductionRole = ["diretor_obra", "preparador"].includes(role);
+    const isProductionRole = ["diretor_obra", "preparador", "encarregado"].includes(role);
     const readOnly = role === "administrativo";
     const canApprove = ["diretor_obra", "preparador", "gerencia"].includes(role);
     const canPay = ["financeiro", "gerencia"].includes(role);

@@ -44,6 +44,14 @@ const ACCESS_BY_ROLE = {
     editWork: true,
     createWorks: false,
   },
+  encarregado: {
+    views: ["overview", "meeting", "works", "planning", "documents", "settings"],
+    insertInvoices: false,
+    approveInvoices: false,
+    payInvoices: false,
+    editWork: false,
+    createWorks: false,
+  },
 };
 
 const NO_ACCESS = {
