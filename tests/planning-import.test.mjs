@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from "../src/planning-import.js";
+import { isoDate } from "../src/planning.js";
 
 const planning = await readFile(new URL("../src/planning.js", import.meta.url), "utf8");
 
@@ -22,6 +23,11 @@ test("datas, percentagens e estados do formato português são normalizados", ()
   assert.equal(parsedState("", 100), "concluido");
 });
 
+test("datas calculadas das vistas de resumo e controlo são apresentáveis", () => {
+  assert.equal(isoDate(new Date("2026-08-04T00:00:00Z")), "2026-08-04");
+  assert.equal(isoDate("2026-08-05"), "2026-08-05");
+});
+
 test("o planeamento oferece pré-visualização, criação, atualização e dependências", () => {
   assert.match(planning, /data-open-import/);
   assert.match(planning, /querySelector\("\[data-open-import\]"\).*addEventListener\("click"/s);
@@ -38,6 +44,8 @@ test("o planeamento oferece pré-visualização, criação, atualização e depe
   assert.match(planning, /ATRASO CRÍTICO/);
   assert.match(planning, /querySelectorAll\("\[data-planning-view\]"\)/);
   assert.match(planning, /state\.view\s*=\s*button\.dataset\.planningView/);
+  assert.match(planning, /value\s+instanceof\s+Date/);
+  assert.match(planning, /value\.toISOString\(\)\.slice\(0,\s*10\)/);
   assert.match(planning, /data-confirm-import/);
   assert.match(planning, /A CRIAR/);
   assert.match(planning, /A ATUALIZAR/);

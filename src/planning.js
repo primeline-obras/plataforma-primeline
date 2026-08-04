@@ -2,7 +2,10 @@ import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from
 
 const DAY_MS = 86400000;
 
-function isoDate(value) {
+export function isoDate(value) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? "" : value.toISOString().slice(0, 10);
+  }
   return value ? String(value).slice(0, 10) : "";
 }
 
