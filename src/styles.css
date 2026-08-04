@@ -165,6 +165,15 @@ input::placeholder { color: #acb0b1; }
 .work-dialog-card { width: min(690px, 100%); max-height: calc(100vh - 48px); overflow: auto; background: var(--paper); border: 1px solid #555b5e; box-shadow: 0 22px 70px rgba(0,0,0,.28); }
 .work-dialog-card .panel-title button { border: 0; background: none; color: white; font-size: 24px; font-weight: 300; }
 .work-dialog-card form { padding: 25px; }
+.work-template-fieldset { margin: 3px 0 18px; padding: 17px 18px 15px; border: 1px solid #d8dad7; background: #f5f5f2; }
+.work-template-fieldset legend { padding: 0 7px; color: #72797c; font: 700 10px "Manrope"; letter-spacing: 1.2px; }
+.work-template-fieldset > label:first-of-type { margin-bottom: 13px; }
+.work-template-check { display: flex; align-items: flex-start; gap: 10px; margin: 0; color: #343a3d; cursor: pointer; }
+.work-template-check input { width: 17px; height: 17px; margin: 1px 0 0; accent-color: var(--charcoal); flex: 0 0 auto; }
+.work-template-check span { display: flex; flex-direction: column; gap: 3px; }
+.work-template-check strong { font: 700 10px "Manrope"; letter-spacing: .7px; }
+.work-template-check small, .work-template-fieldset p { color: #777e80; font-size: 11px; line-height: 1.45; }
+.work-template-fieldset p { margin: 12px 0 0; padding-top: 11px; border-top: 1px solid #dedfdd; }
 .form-error { min-height: 16px; color: #985353; font-size: 13px; margin: -4px 0 12px; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .dialog-actions .primary-button { flex: 0 0 190px; height: 41px; }
