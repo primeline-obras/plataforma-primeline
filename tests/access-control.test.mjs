@@ -3,11 +3,11 @@ import { accessFor } from "../src/access-control.js";
 
 const matrix = {
   gerencia: {
-    views: ["finance", "team", "workforce", "planning", "settings"],
+    views: ["finance", "team", "workforce", "planning", "rnc", "settings"],
     actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   administrativo: {
-    views: ["finance", "team", "workforce", "planning", "documents", "settings"],
+    views: ["finance", "team", "workforce", "planning", "documents", "rnc", "settings"],
     actions: ["insertInvoices"],
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
@@ -18,19 +18,19 @@ const matrix = {
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },
   diretor_obra: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "settings"],
+    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "settings"],
     deniedViews: ["finance", "team", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   preparador: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "settings"],
+    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "settings"],
     deniedViews: ["finance", "team", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "settings"],
+    views: ["action-plan", "planning", "documents", "rnc", "settings"],
     deniedViews: ["overview", "meeting", "works", "invoices", "finance", "subcontractors", "team", "workforce"],
     actions: [],
     deniedActions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],

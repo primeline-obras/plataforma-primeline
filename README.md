@@ -89,6 +89,14 @@ conteúdo de `supabase/autos_faturacao_workflow.sql`. A migração cria a relaç
 autos e faturas, permite associar os PDFs através de `documentos` e mantém o papel
 `anon` sem acesso.
 
+## RNC e anexos de validação
+
+Executar `supabase/rnc_workflow.sql` no SQL Editor para ativar a numeração sequencial
+segura das RNC por obra, as transições de estado, os anexos de evidência, os anexos
+opcionais das avaliações de subempreiteiros e os anexos adicionais de faturas. O
+encarregado pode criar e consultar RNC nas suas obras; só a equipa técnica pode
+definir ações corretivas, verificar e fechar.
+
 ## Planeamento detalhado
 
 Executar `supabase/planeamento_detalhado.sql` no SQL Editor para criar as tarefas de
