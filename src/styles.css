@@ -1645,7 +1645,7 @@ button, input, select, textarea,
 .rnc-file-picker { border: 1px dashed var(--border); border-radius: 10px; padding: 14px; }
 .rnc-board { display: grid; grid-template-columns: repeat(4,minmax(260px,1fr)); gap: 15px; align-items: start; overflow-x: auto; }
 .rnc-column { min-width: 260px; }.rnc-column > header { display:flex; justify-content:space-between; align-items:center; background:#20242b; color:#fff; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
-.rnc-column > header h2 { font-size:.86rem; margin:0; text-transform:uppercase; }.rnc-column > header b { background:#fff; color:#20242b; border-radius:99px; min-width:25px; text-align:center; padding:3px 7px; }
+.rnc-column > header h2 { color:#fff; font-size:.86rem; margin:0; text-transform:uppercase; }.rnc-column > header b { background:#fff; color:#20242b; border-radius:99px; min-width:25px; text-align:center; padding:3px 7px; }
 .rnc-card { background:var(--card); border:1px solid var(--border); border-left:4px solid #d7b34a; border-radius:12px; padding:15px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.16); }
 .rnc-card.severity-critica { border-left-color:#d9443f; }.rnc-card.severity-maior { border-left-color:#d67a22; }.rnc-card.severity-menor { border-left-color:#d7b34a; }
 .rnc-card > header { display:flex; justify-content:space-between; gap:10px; }.rnc-card h3 { margin:4px 0 0; font-size:1rem; }.rnc-card > p { line-height:1.5; }
