@@ -3,13 +3,14 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=11";
 import { createPlanningModule } from "./planning.js?v=6";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=7";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=8";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=2";
 import { createDocumentsModule } from "./documents.js?v=1";
 import { createRncModule } from "./rnc.js?v=1";
+import { createConsolidatedView } from "./consolidated-view.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -113,7 +114,7 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
         <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
@@ -124,6 +125,7 @@ document.querySelector("#root").innerHTML = `
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button">${icon("bell")}<i>3</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
+      <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
       <div class="page" id="invoice-view" hidden>
@@ -492,6 +494,11 @@ const documentsModule = createDocumentsModule({
 const rncModule = createRncModule({
   root: $("#rnc-view"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getRole: effectiveRole, uploadWorkDocument, downloadWorkDocument, toast,
+});
+const consolidatedView = createConsolidatedView({
+  root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, getInvoices: () => financeInvoices.length ? financeInvoices : invoices,
+  euro, toast,
 });
 const subcontractorsModule = createSubcontractorsModule({
   supabase,
@@ -2206,6 +2213,7 @@ function switchView(view) {
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
+  $("#consolidated-view").hidden = view !== "consolidated";
   $("#action-plan-view").hidden = view !== "action-plan";
   $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
@@ -2218,8 +2226,8 @@ function switchView(view) {
   $("#settings-view").hidden = view !== "settings";
   $("#documents-view").hidden = view !== "documents";
   $("#rnc-view").hidden = view !== "rnc";
-  $("#placeholder-view").hidden = ["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view);
-  if (!["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -2235,6 +2243,7 @@ function switchView(view) {
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
   if (view === "overview") productionDashboard.refreshOverview();
+  if (view === "consolidated") consolidatedView.show();
   closeSidebar();
 }
 

@@ -5,7 +5,7 @@ const FULL_VIEWS = [
 
 const ACCESS_BY_ROLE = {
   gerencia: {
-    views: FULL_VIEWS,
+    views: [...FULL_VIEWS, "consolidated"],
     insertInvoices: true,
     approveInvoices: true,
     payInvoices: true,
