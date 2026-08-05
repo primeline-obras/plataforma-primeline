@@ -1,4 +1,5 @@
 const label = value => String(value || "—").replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+const rncCode = (work, numero) => `RNC-${String(work?.numero || "OBRA").trim()}-${String(numero).padStart(3, "0")}`;
 
 async function imageData(blob) {
   return new Promise((resolve, reject) => {
@@ -30,7 +31,7 @@ export async function generateRncPdf({ rnc, work, phase, subcontract, reporter, 
   pdf.setFillColor(23, 26, 31); pdf.rect(0, 0, width, 30, "F");
   pdf.setTextColor(255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.text("/// PRIMELINE", margin, 13);
   pdf.setFontSize(8); pdf.text("RELATÓRIO DE NÃO CONFORMIDADE", margin, 21);
-  pdf.setFontSize(12); pdf.text(`RNC ${String(rnc.numero).padStart(3, "0")}`, 194, 17, { align: "right" });
+  pdf.setFontSize(12); pdf.text(rncCode(work, rnc.numero), 194, 17, { align: "right" });
   y = 40;
   heading("Identificação");
   field("Obra", `${work.numero} · ${work.nome}`); field("Data de deteção", rnc.data_deteccao); field("Fase", phase ? `${phase.codigo || ""} · ${phase.descricao}` : "Sem fase");

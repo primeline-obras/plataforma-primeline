@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { rncCode } from "../src/rnc.js";
 
 const read = path => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const moduleSource = read("../src/rnc.js");
@@ -26,5 +27,8 @@ assert.match(app, /ANEXOS ADICIONAIS/);
 assert.match(app, /não substitui a guia de remessa obrigatória/);
 assert.match(app, /uploadInvoiceAttachment/);
 assert.match(styles, /\.rnc-column > header h2 \{ color:#fff;/);
+assert.equal(rncCode({ numero: 120 }, 1), "RNC-120-001");
+assert.match(moduleSource, /CÓDIGO DA RNC/);
+assert.match(pdfSource, /pdf\.text\(rncCode\(work, rnc\.numero\)/);
 
 console.log("Módulo RNC, prova de verificação, PDF e anexos opcionais validados.");

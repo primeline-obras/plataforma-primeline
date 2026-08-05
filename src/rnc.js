@@ -1,8 +1,9 @@
-import { generateRncPdf } from "./rnc-pdf.js?v=1";
+import { generateRncPdf } from "./rnc-pdf.js?v=2";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[c]);
 const today = () => new Date().toISOString().slice(0, 10);
 const labels = { aberto: "Aberto", em_correcao: "Em correção", verificado: "Verificado", fechado: "Fechado", critica: "Crítica", maior: "Maior", menor: "Menor", execucao_propria: "Execução própria", subempreiteiro: "Subempreiteiro", material: "Material", projeto_especificacao: "Projeto / Especificação", outro: "Outro" };
+export const rncCode = (work, numero) => `RNC-${String(work?.numero || "OBRA").trim()}-${String(numero).padStart(3, "0")}`;
 
 export function createRncModule({ root, supabase, isConfigured, getWorks, getRole, uploadWorkDocument, downloadWorkDocument, toast }) {
   const state = { workId: "", rows: [], annexes: [], phases: [], subcontracts: [], users: [], canEdit: false, loading: false, openForm: false };
@@ -22,7 +23,7 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
   function newForm() {
     if (!state.openForm || !canCreate()) return "";
     return `<form class="rnc-form" data-rnc-create>
-      <div class="rnc-form-grid"><label>NÚMERO<input value="Gerado automaticamente" disabled></label><label>DATA DE DETEÇÃO<input type="date" name="data_deteccao" value="${today()}" required></label>
+      <div class="rnc-form-grid"><label>CÓDIGO DA RNC<input value="RNC-${esc(work()?.numero || "OBRA")}-[automático]" disabled></label><label>DATA DE DETEÇÃO<input type="date" name="data_deteccao" value="${today()}" required></label>
       <label>FASE<select name="fase_id"><option value="">Sem fase</option>${state.phases.map(item => `<option value="${item.id}">${esc(item.codigo || "")} · ${esc(item.descricao)}</option>`).join("")}</select></label><label>LOCAL DA OCORRÊNCIA<input name="local_ocorrencia" maxlength="240"></label>
       <label>ORIGEM<select name="origem" required>${["execucao_propria", "subempreiteiro", "material", "projeto_especificacao", "outro"].map(value => `<option value="${value}">${labels[value]}</option>`).join("")}</select></label>
       <label>GRAVIDADE<select name="gravidade" required><option value="critica">Crítica</option><option value="maior">Maior</option><option value="menor">Menor</option></select></label>
@@ -44,7 +45,7 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
   function card(row) {
     const evidence = annexesFor(row.id);
     const sub = subcontract(row.subempreitada_id);
-    return `<article class="rnc-card severity-${row.gravidade}"><header><div><span>RNC ${String(row.numero).padStart(3, "0")}</span><h3>${esc(row.local_ocorrencia || "Não conformidade")}</h3></div><span class="rnc-severity ${row.gravidade}">${labels[row.gravidade]}</span></header>
+    return `<article class="rnc-card severity-${row.gravidade}"><header><div><span>${esc(rncCode(work(), row.numero))}</span><h3>${esc(row.local_ocorrencia || "Não conformidade")}</h3></div><span class="rnc-severity ${row.gravidade}">${labels[row.gravidade]}</span></header>
       <p>${esc(row.descricao)}</p><dl><div><dt>Deteção</dt><dd>${esc(row.data_deteccao)}</dd></div><div><dt>Fase</dt><dd>${esc(phase(row.fase_id)?.descricao || "—")}</dd></div><div><dt>Origem</dt><dd>${labels[row.origem] || esc(row.origem)}</dd></div>${sub ? `<div><dt>Subempreitada</dt><dd>${esc(sub.especialidade)}</dd></div>` : ""}</dl>
       ${row.acao_corretiva ? `<div class="rnc-correction"><strong>AÇÃO CORRETIVA</strong><p>${esc(row.acao_corretiva)}</p><small>${esc(row.responsavel_correcao)} · prazo ${esc(row.prazo_correcao)}</small></div>` : ""}
       ${row.observacao_verificacao ? `<div class="rnc-verification-note"><strong>VERIFICAÇÃO</strong><p>${esc(row.observacao_verificacao)}</p></div>` : ""}
@@ -93,7 +94,7 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
     const payload = { p_obra_id: state.workId, p_data_deteccao: fields.data_deteccao, p_fase_id: fields.fase_id || null, p_local_ocorrencia: fields.local_ocorrencia || null, p_descricao: fields.descricao, p_origem: fields.origem, p_subempreitada_id: fields.origem === "subempreiteiro" ? fields.subempreitada_id || null : null, p_gravidade: fields.gravidade };
     const row = isConfigured ? await api("rpc/fn_criar_rnc", { method: "POST", body: JSON.stringify(payload) }) : { id: crypto.randomUUID(), numero: state.rows.length + 1, obra_id: state.workId, estado: "aberto", ...Object.fromEntries(Object.entries(payload).map(([key, value]) => [key.replace(/^p_/, ""), value])) };
     const files = [...form.elements.anexos.files]; if (isConfigured && files.length) await uploadAnnexes(row.id, files);
-    state.openForm = false; toast(`RNC ${String(row.numero).padStart(3, "0")} registada.`); await load(true);
+    state.openForm = false; toast(`${rncCode(work(), row.numero)} registada.`); await load(true);
   }
 
   async function evaluate(row) {
