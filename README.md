@@ -65,6 +65,14 @@ documento, data, valor e fornecedor. O fornecedor só é preenchido quando o nom
 corresponde exatamente a um registo já existente; nunca são criados fornecedores
 automaticamente. A subempreitada nunca é pré-selecionada.
 
+## Centro documental por obra
+
+A opção lateral **Documentos** organiza o arquivo técnico em Articulado,
+Desenhos, PDEs/PAMEs e Atas, com upload para o bucket privado `documentos`.
+Execute `supabase/centro_documentos_encarregado.sql` para permitir ao encarregado
+da obra consultar e descarregar apenas estas categorias operacionais, mantendo
+contratos e os restantes documentos reservados aos papéis já autorizados.
+
 ## Módulo Obras
 
 A aba Obras apresenta a lista de obras e um detalhe com contrato, fases,

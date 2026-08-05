@@ -8,6 +8,7 @@ import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDeb
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=2";
+import { createDocumentsModule } from "./documents.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -313,6 +314,7 @@ document.querySelector("#root").innerHTML = `
         </section>
       </div>
       <div class="page settings-view" id="settings-view" hidden></div>
+      <div class="page documents-view" id="documents-view" hidden></div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
@@ -467,6 +469,23 @@ const actionPlanModule = createActionPlanModule({
   getRole: effectiveRole,
   toast,
   onPlanningChanged: () => planningModule.refresh(),
+});
+const documentsModule = createDocumentsModule({
+  root: $("#documents-view"),
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getWorks: () => works,
+  getProfile: () => accessContext.profile,
+  getRole: effectiveRole,
+  uploadWorkDocument,
+  downloadWorkDocument,
+  prettyDate,
+  toast,
+  previewBlob: (blob, name) => {
+    if (openedPdfUrl) URL.revokeObjectURL(openedPdfUrl);
+    openedPdfUrl = URL.createObjectURL(blob);
+    openPdfModal(openedPdfUrl, name);
+  },
 });
 const subcontractorsModule = createSubcontractorsModule({
   supabase,
@@ -2182,10 +2201,10 @@ function switchView(view) {
   $("#team-view").hidden = view !== "team";
   $("#workforce-view").hidden = view !== "workforce";
   $("#settings-view").hidden = view !== "settings";
-  $("#placeholder-view").hidden = ["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce", "settings"].includes(view);
-  if (!["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce", "settings"].includes(view)) {
-    const labels = { documents: "DOCUMENTOS" };
-    $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
+  $("#documents-view").hidden = view !== "documents";
+  $("#placeholder-view").hidden = ["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "team", "workforce", "settings"].includes(view);
+  if (!["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "team", "workforce", "settings"].includes(view)) {
+    $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
     renderWorks();
@@ -2194,6 +2213,7 @@ function switchView(view) {
   if (view === "finance") renderFinance();
   if (view === "planning") planningModule.show();
   if (view === "action-plan") actionPlanModule.show();
+  if (view === "documents") documentsModule.show();
   if (view === "subcontractors") subcontractorsModule.show();
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
