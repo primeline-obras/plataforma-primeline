@@ -6,6 +6,7 @@ const moduleSource = read("../src/rnc.js");
 const pdfSource = read("../src/rnc-pdf.js");
 const migration = read("../supabase/rnc_workflow.sql");
 const app = read("../src/app.js");
+const styles = read("../src/styles.css");
 
 assert.match(moduleSource, /fn_criar_rnc/);
 assert.match(moduleSource, /fn_definir_acao_rnc/);
@@ -24,5 +25,6 @@ assert.match(migration, /avaliacoes_subempreiteiro_anexos_insert/);
 assert.match(app, /ANEXOS ADICIONAIS/);
 assert.match(app, /não substitui a guia de remessa obrigatória/);
 assert.match(app, /uploadInvoiceAttachment/);
+assert.match(styles, /\.rnc-column > header h2 \{ color:#fff;/);
 
 console.log("Módulo RNC, prova de verificação, PDF e anexos opcionais validados.");
