@@ -9,7 +9,7 @@ import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=2";
 import { createDocumentsModule } from "./documents.js?v=1";
-import { createRncModule } from "./rnc.js?v=1";
+import { createRncModule } from "./rnc.js?v=2";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
