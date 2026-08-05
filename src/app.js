@@ -3,11 +3,11 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=11";
 import { createPlanningModule } from "./planning.js?v=6";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=5";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=6";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
-import { createActionPlanModule } from "./action-plan.js?v=1";
+import { createActionPlanModule } from "./action-plan.js?v=2";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -530,6 +530,13 @@ function allowedViews() {
   return new Set(accessFor(accessContext).views);
 }
 
+function defaultViewForCurrentUser() {
+  const permitted = accessFor(accessContext).views;
+  if (permitted.includes("action-plan")) return "action-plan";
+  if (permitted.includes("overview")) return "overview";
+  return permitted[0] || "settings";
+}
+
 function applyAccessVisibility() {
   const permitted = allowedViews();
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => {
@@ -538,7 +545,7 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   document.body.dataset.userRole = effectiveRole() || "sem_perfil";
-  if (!permitted.has(activeView)) switchView("overview");
+  if (!permitted.has(activeView)) switchView(defaultViewForCurrentUser());
   renderUser();
 }
 
@@ -2160,7 +2167,7 @@ function renderWorkDetail(work) {
 function switchView(view) {
   if (!allowedViews().has(view)) {
     toast("Não tem permissão para aceder a esta área.", "error");
-    view = "overview";
+    view = defaultViewForCurrentUser();
   }
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));

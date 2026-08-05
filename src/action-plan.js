@@ -38,6 +38,11 @@ function stateLabel(item) {
   return { concluido: "CONCLUÍDA", em_execucao: "EM EXECUÇÃO", por_iniciar: "POR INICIAR" }[item.estado] || "SEM ESTADO";
 }
 
+function calendarTaskLabel(item) {
+  const words = String(item.descricao || "Tarefa").trim().split(/\s+/).filter(Boolean);
+  return words.slice(0, 4).join(" ") || "Tarefa";
+}
+
 export function createActionPlanModule({ root, supabase, isConfigured, getWorks, getRole, toast, onPlanningChanged }) {
   const state = { items: [], phases: [], month: new Date(), loading: false, error: "" };
 
@@ -74,7 +79,11 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
         const dayItems = state.items.filter(item => overlapsDay(item, day));
         const outside = day.getUTCMonth() !== month;
         return `<div class="action-day ${outside ? "outside" : ""} ${dayItems.some(item => item.impedido) ? "blocked" : ""}"><span>${day.getUTCDate()}</span>
-          ${dayItems.slice(0, 3).map(item => `<i class="${item.estado === "concluido" ? "completed" : ""}" title="${escapeHtml(item.descricao)}">${escapeHtml(workFor(item)?.numero || "—")} · ${escapeHtml(item.codigo || "T")}</i>`).join("")}
+          ${dayItems.slice(0, 3).map(item => {
+            const work = workFor(item);
+            const context = `Obra ${work?.numero || "—"} · ${item.codigo || "Tarefa"} · ${item.descricao || ""}`;
+            return `<i class="${item.estado === "concluido" ? "completed" : ""}" title="${escapeHtml(context)}">${escapeHtml(calendarTaskLabel(item))}</i>`;
+          }).join("")}
           ${dayItems.length > 3 ? `<small>+${dayItems.length - 3}</small>` : ""}</div>`;
       }).join("")}</div></section>`;
   }
@@ -94,9 +103,13 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
       return date && date >= weekStart && date <= weekEnd && !overdue.includes(item);
     }).sort((a, b) => taskDate(a) - taskDate(b));
     root.innerHTML = `<div class="page-heading action-heading"><div><p class="eyebrow">EXECUÇÃO EM OBRA</p><h1>PLANO DE AÇÃO</h1><p>Tarefas das obras sob a sua responsabilidade.</p></div><div class="heading-stat"><span>EM ABERTO</span><strong>${String(open.length).padStart(2, "0")}</strong></div></div>
-      ${overdue.length ? `<section class="panel action-overdue"><header><div><p class="eyebrow">PRIORIDADE</p><h2>ATRASADAS</h2></div><strong>${overdue.length}</strong></header>${overdue.map(item => taskCard(item)).join("")}</section>` : ""}
-      <div class="action-layout">${calendar()}<section class="panel action-week"><header><div><p class="eyebrow">SEMANA ATUAL</p><h2>TAREFAS DA SEMANA</h2></div><span>${isoDate(weekStart)} → ${isoDate(weekEnd)}</span></header>
-        ${weekly.length ? weekly.map(item => taskCard(item)).join("") : `<div class="empty-state"><strong>SEM TAREFAS NESTA SEMANA</strong></div>`}</section></div>`;
+      <div class="action-priority-grid">
+        <section class="panel action-overdue"><header><div><p class="eyebrow">PRIORIDADE</p><h2>ATRASADAS</h2></div><strong>${overdue.length}</strong></header>
+          ${overdue.length ? overdue.map(item => taskCard(item)).join("") : `<div class="empty-state"><strong>SEM TAREFAS ATRASADAS</strong></div>`}</section>
+        <section class="panel action-week"><header><div><p class="eyebrow">SEMANA ATUAL</p><h2>TAREFAS DA SEMANA</h2></div><span>${isoDate(weekStart)} → ${isoDate(weekEnd)}</span></header>
+          ${weekly.length ? weekly.map(item => taskCard(item)).join("") : `<div class="empty-state"><strong>SEM TAREFAS NESTA SEMANA</strong></div>`}</section>
+      </div>
+      ${calendar()}`;
   }
 
   async function load() {
