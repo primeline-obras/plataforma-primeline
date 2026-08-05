@@ -1,14 +1,16 @@
-import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=2";
+import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=11";
 import { createPlanningModule } from "./planning.js?v=6";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=6";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=8";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=2";
 import { createDocumentsModule } from "./documents.js?v=1";
+import { createRncModule } from "./rnc.js?v=1";
+import { createConsolidatedView } from "./consolidated-view.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -34,7 +36,7 @@ const icon = (name) => {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
 
-let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], collaborators = [];
+let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], invoiceAttachments = [], collaborators = [];
 let directDebits = [], directDebitEntries = [];
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
@@ -112,8 +114,8 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -123,6 +125,7 @@ document.querySelector("#root").innerHTML = `
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button">${icon("bell")}<i>3</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
+      <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
       <div class="page" id="invoice-view" hidden>
@@ -315,6 +318,7 @@ document.querySelector("#root").innerHTML = `
       </div>
       <div class="page settings-view" id="settings-view" hidden></div>
       <div class="page documents-view" id="documents-view" hidden></div>
+      <div class="page rnc-view" id="rnc-view" hidden></div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
@@ -487,6 +491,15 @@ const documentsModule = createDocumentsModule({
     openPdfModal(openedPdfUrl, name);
   },
 });
+const rncModule = createRncModule({
+  root: $("#rnc-view"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, getRole: effectiveRole, uploadWorkDocument, downloadWorkDocument, toast,
+});
+const consolidatedView = createConsolidatedView({
+  root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, getInvoices: () => financeInvoices.length ? financeInvoices : invoices,
+  euro, toast,
+});
 const subcontractorsModule = createSubcontractorsModule({
   supabase,
   isSupabaseConfigured,
@@ -635,6 +648,7 @@ function renderInvoices() {
     const supplier = suppliers.find(s => s.id === invoice.fornecedor_id)?.nome || "Fornecedor";
     const work = works.find(w => w.id === invoice.obra_id);
     const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+    const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
     const hasGuide = guides.length > 0;
     const actionable = canApproveInvoices();
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
@@ -648,6 +662,10 @@ function renderInvoices() {
           </label>
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
+        <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substitui a guia de remessa obrigatória</small></div>
+          ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
+          <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
+        </div>
         ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
@@ -659,12 +677,14 @@ function financeCard(invoice) {
   const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
   const work = works.find(item => item.id === invoice.obra_id);
   const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+  const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
   const today = new Date().toISOString().slice(0, 10);
   return `<article class="finance-card">
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
+    <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
     ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
     <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
   </article>`;
@@ -753,6 +773,7 @@ async function loadData() {
     financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado")
       .map(invoice => ({ ...invoice, condicao_pagamento: invoice.condicao_pagamento || "imediato", estado_pagamento: invoice.estado_pagamento || (invoice.data_pagamento ? "pago" : "por_pagar") }));
     invoiceGuides = [];
+    invoiceAttachments = [];
     directDebits = [];
     directDebitEntries = [];
   } else {
@@ -763,10 +784,11 @@ async function loadData() {
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
       supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
       supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
+      supabase("faturas_anexos?select=*&order=criado_em.asc"),
     ]);
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
-    [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides] = await Promise.all(results.map(result => result.json()));
+    [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides, invoiceAttachments] = await Promise.all(results.map(result => result.json()));
     if (allowedViews().has("finance")) {
       const [debitsResult, entriesResult] = await Promise.all([
         supabase("debitos_diretos?select=id,obra_id,descricao,categoria,valor_previsto,recorrencia,dia_mes,data_inicio,data_fim,ativo,criado_por,criado_em&order=descricao"),
@@ -2166,7 +2188,7 @@ function renderWorkDetail(work) {
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
       <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
-      <div class="work-detail-actions"><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span></div>
+      <div class="work-detail-actions"><button type="button" data-open-rnc="${work.id}">RNC →</button><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span></div>
     </div>
     <div class="work-location">${work.morada || "Morada não indicada"}</div>
     ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
@@ -2191,6 +2213,7 @@ function switchView(view) {
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
+  $("#consolidated-view").hidden = view !== "consolidated";
   $("#action-plan-view").hidden = view !== "action-plan";
   $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
@@ -2202,8 +2225,9 @@ function switchView(view) {
   $("#workforce-view").hidden = view !== "workforce";
   $("#settings-view").hidden = view !== "settings";
   $("#documents-view").hidden = view !== "documents";
-  $("#placeholder-view").hidden = ["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "team", "workforce", "settings"].includes(view);
-  if (!["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "team", "workforce", "settings"].includes(view)) {
+  $("#rnc-view").hidden = view !== "rnc";
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -2214,10 +2238,12 @@ function switchView(view) {
   if (view === "planning") planningModule.show();
   if (view === "action-plan") actionPlanModule.show();
   if (view === "documents") documentsModule.show();
+  if (view === "rnc") rncModule.show(selectedWorkId);
   if (view === "subcontractors") subcontractorsModule.show();
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
   if (view === "overview") productionDashboard.refreshOverview();
+  if (view === "consolidated") consolidatedView.show();
   closeSidebar();
 }
 
@@ -2919,6 +2945,8 @@ $("#work-detail").addEventListener("submit", async event => {
   }
 });
 $("#work-detail").addEventListener("click", async event => {
+  const rncButton = event.target.closest("[data-open-rnc]");
+  if (rncButton) { selectedWorkId = rncButton.dataset.openRnc; switchView("rnc"); return; }
   const meetingButton = event.target.closest("[data-open-meeting]");
   if (meetingButton) return productionDashboard.openMeeting(meetingButton.dataset.openMeeting, "works");
   const tabButton = event.target.closest("[data-work-tab]");
@@ -3497,14 +3525,14 @@ form.addEventListener("submit", async event => {
 });
 
 $("#invoice-list").addEventListener("click", async event => {
-  const pdfButton = event.target.closest("[data-pdf], [data-guide]");
+  const pdfButton = event.target.closest("[data-pdf], [data-guide], [data-invoice-attachment]");
   if (pdfButton) {
     pdfButton.disabled = true;
     try {
-      const objectPath = decodeURIComponent(pdfButton.dataset.pdf || pdfButton.dataset.guide);
+      const objectPath = decodeURIComponent(pdfButton.dataset.pdf || pdfButton.dataset.guide || pdfButton.dataset.invoiceAttachment);
       const blob = await downloadInvoicePdf(objectPath);
       openedPdfUrl = URL.createObjectURL(blob);
-      openPdfModal(openedPdfUrl, pdfButton.dataset.guide ? "GUIA DE REMESSA" : "FATURA");
+      openPdfModal(openedPdfUrl, pdfButton.dataset.guide ? "GUIA DE REMESSA" : pdfButton.dataset.invoiceAttachment ? "ANEXO ADICIONAL" : "FATURA");
     } catch (error) {
       toast(error.message || "Não foi possível abrir o PDF.", "error");
     } finally {
@@ -3564,6 +3592,24 @@ $("#invoice-list").addEventListener("click", async event => {
 });
 
 $("#invoice-list").addEventListener("change", event => {
+  const attachmentInput = event.target.closest("[data-invoice-attachment-input]");
+  if (attachmentInput) {
+    const files = [...attachmentInput.files];
+    if (!files.length) return;
+    const invoice = invoices.find(item => String(item.id) === attachmentInput.dataset.invoiceAttachmentInput);
+    if (!invoice) return;
+    attachmentInput.disabled = true;
+    (async () => {
+      for (const file of files) {
+        const path = await uploadInvoiceAttachment(file, invoice.obra_id, invoice.id);
+        const response = await supabase("faturas_anexos?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: path, nome_arquivo: file.name }) });
+        if (!response.ok) throw new Error(await response.text());
+        invoiceAttachments.push((await response.json())[0]);
+      }
+      toast("Anexos adicionais enviados."); renderInvoices();
+    })().catch(error => toast(error.message || "Não foi possível enviar os anexos.", "error")).finally(() => { attachmentInput.disabled = false; });
+    return;
+  }
   const input = event.target.closest("[data-guide-input]");
   if (!input) return;
   const files = [...(input.files || [])];
@@ -3589,14 +3635,15 @@ $("#invoice-list").addEventListener("change", event => {
 });
 
 $("#finance-board").addEventListener("click", async event => {
-  const guideButton = event.target.closest("[data-guide]");
+  const guideButton = event.target.closest("[data-guide], [data-invoice-attachment]");
   if (guideButton) {
     try {
-      const path = decodeURIComponent(guideButton.dataset.guide);
-      if (path.startsWith("blob:")) return openPdfModal(path, "GUIA DE REMESSA");
+      const path = decodeURIComponent(guideButton.dataset.guide || guideButton.dataset.invoiceAttachment);
+      const title = guideButton.dataset.guide ? "GUIA DE REMESSA" : "ANEXO ADICIONAL";
+      if (path.startsWith("blob:")) return openPdfModal(path, title);
       const blob = await downloadInvoicePdf(path);
       openedPdfUrl = URL.createObjectURL(blob);
-      openPdfModal(openedPdfUrl, "GUIA DE REMESSA");
+      openPdfModal(openedPdfUrl, title);
     } catch (error) { toast(error.message || "Não foi possível abrir a guia.", "error"); }
     return;
   }

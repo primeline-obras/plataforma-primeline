@@ -45,9 +45,9 @@ test("Plano de Ação oferece calendário, atrasadas, conclusão e impedimentos"
   assert.match(planning, /planning-task-blocked/i);
 });
 
-test("encarregado vê apenas as quatro áreas autorizadas e o fallback é seguro", () => {
+test("encarregado vê apenas as cinco áreas autorizadas e o fallback é seguro", () => {
   const foremanAccess = access.match(/encarregado:\s*\{[\s\S]*?\n\s*\},/i)?.[0] || "";
-  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"settings"\]/i);
+  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"settings"\]/i);
   assert.doesNotMatch(foremanAccess, /"overview"|"meeting"|"works"/i);
   assert.match(app, /function defaultViewForCurrentUser\(\)/i);
   assert.match(app, /permitted\.includes\("action-plan"\)/i);
