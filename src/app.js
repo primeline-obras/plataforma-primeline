@@ -122,7 +122,7 @@ document.querySelector("#root").innerHTML = `
     </aside>
     <main>
       <header class="topbar"><button class="mobile-menu" id="menu">${icon("menu")}</button><div class="mobile-brand">${brand()}</div>
-        <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button">${icon("bell")}<i>3</i></button></div>
+        <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button" id="notification-button" type="button" aria-label="Ver alertas pendentes">${icon("bell")}<i>0</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
       <div class="page consolidated-view" id="consolidated-view" hidden></div>
@@ -806,7 +806,7 @@ async function loadData() {
       directDebitEntries = [];
     }
     if (hasFullAccess() || isAdministrative()) {
-      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,permite_multiplas_obras&data_saida=is.null&order=nome");
+      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
   }
@@ -1128,23 +1128,27 @@ function renderTeam() {
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
   const personById = new Map(collaborators.map(person => [person.id, person]));
+  const activeAbsences = teamData.absences.filter(item => personById.has(item.colaborador_id));
+  const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
+  const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
+  const activeMedicine = teamData.medicine.filter(item => personById.has(item.colaborador_id));
   const operationalPeople = collaborators.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
   const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id) && workforceRoleClass(personById.get(item.colaborador_id)));
   const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
-  const currentAbsences = teamData.absences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
+  const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = works
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const boardRows = workforceRows(activeWorks, allocations);
   const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
-  const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
+  const pendingHours = activeOvertime.reduce((total, item) => total + Number(item.horas || 0), 0);
   const todayIso = new Date().toISOString().slice(0, 10);
   const currentMonth = Number(todayIso.slice(5, 7));
   const birthdayPeople = collaborators.filter(person => person.data_nascimento && Number(person.data_nascimento.slice(5, 7)) === currentMonth);
-  const medicineDue = teamData.medicine.filter(item => {
+  const medicineDue = activeMedicine.filter(item => {
     if (!item.data_proxima_consulta) return false;
     const days = Math.ceil((new Date(`${item.data_proxima_consulta}T12:00:00`) - new Date(`${todayIso}T12:00:00`)) / 86400000);
     return days <= 30;
@@ -1166,7 +1170,7 @@ function renderTeam() {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
     const boardHead = `<div class="workforce-grid workforce-grid-head"><div>LINHA / OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
-      const vacationPeople = operationalPeople.filter(person => teamData.absences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
+      const vacationPeople = operationalPeople.filter(person => activeAbsences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
       return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para editar os dias de férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
     }).join("")}</div>`;
     const rows = boardRows.map(row => {
@@ -1221,12 +1225,13 @@ function renderTeam() {
     const person = personById.get(item.colaborador_id);
     return `<article class="absence-card"><time>${formatOptionalDate(item.data)}</time><strong>${person?.nome || "Colaborador"}</strong><span>${String(item.tipo || "Ausência").replace(/_/g, " ")}</span></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
+  $("#team-absences").insertAdjacentHTML("afterbegin", `<section class="team-vacation-roster"><header><strong>REGISTAR / EDITAR FÉRIAS</strong><span>Todos os colaboradores ativos ficam disponíveis logo após a admissão.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></section>`);
 
-  const contractByPerson = new Map(teamData.contracts.map(item => [item.colaborador_id, item]));
+  const contractByPerson = new Map(activeContracts.map(item => [item.colaborador_id, item]));
   const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
   const missingContractIds = new Set(missingContracts.map(person => person.id));
   const hoursByPerson = new Map();
-  teamData.overtime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
+  activeOvertime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
   const visiblePeople = collaborators.filter(person => {
     const allocation = currentAllocations.find(item => item.colaborador_id === person.id);
     const work = workById.get(allocation?.obra_id);
@@ -1257,7 +1262,7 @@ function renderTeam() {
     </article>${documentsOpen ? renderEntityDocuments("colaborador", person) : ""}`;
   }).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`;
 
-  const endingContracts = teamData.contracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
+  const endingContracts = activeContracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
   $("#team-alert-summary").innerHTML = [
     endingContracts.length ? `<button type="button" data-team-alert-filter="ending_contract" data-team-alert-tab="contracts" class="attention ${teamQuickFilter === "ending_contract" ? "active" : ""}"><strong>${endingContracts.length}</strong><span>CONTRATO${endingContracts.length === 1 ? "" : "S"} A TERMINAR EM 30 DIAS<small>VER PESSOAS →</small></span></button>` : "",
     missingContracts.length ? `<button type="button" data-team-alert-filter="missing_contract" data-team-alert-tab="collaborators" class="pending ${teamQuickFilter === "missing_contract" ? "active" : ""}"><strong>${missingContracts.length}</strong><span>COLABORADOR${missingContracts.length === 1 ? "" : "ES"} SEM CONTRATO REGISTADO<small>VER PESSOAS →</small></span></button>` : "",
@@ -1267,22 +1272,22 @@ function renderTeam() {
     pendingHours ? `<button type="button" data-team-alert-filter="overtime" data-team-alert-tab="overtime" class="attention ${teamQuickFilter === "overtime" ? "active" : ""}"><strong>${pendingHours.toLocaleString("pt-PT")} h</strong><span>HORAS EXTRA POR PAGAR<small>VER PESSOAS →</small></span></button>` : "",
   ].filter(Boolean).join("") || `<article class="ok"><strong>✓</strong><span>SEM ALERTAS DE EQUIPA</span></article>`;
 
-  $("#team-contract-count").textContent = teamQuickFilter === "ending_contract" ? `${endingContracts.length} A TERMINAR · ${teamData.contracts.length} ATIVOS` : `${teamData.contracts.length} CONTRATOS ATIVOS`;
-  const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : teamData.contracts;
+  $("#team-contract-count").textContent = teamQuickFilter === "ending_contract" ? `${endingContracts.length} A TERMINAR · ${activeContracts.length} ATIVOS` : `${activeContracts.length} CONTRATOS ATIVOS`;
+  const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : activeContracts;
   $("#team-contracts").innerHTML = visibleContracts.length ? visibleContracts.map(contract => {
     const person = personById.get(contract.colaborador_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " ")}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><em>${contract.estado || "ativo"}</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM CONTRATOS</strong><span>Não existem contratos ativos registados.</span></div>`;
 
   $("#team-overtime-count").textContent = `${pendingHours.toLocaleString("pt-PT")} H POR PAGAR`;
-  $("#team-overtime").innerHTML = teamData.overtime.length ? teamData.overtime.map(item => {
+  $("#team-overtime").innerHTML = activeOvertime.length ? activeOvertime.map(item => {
     const person = personById.get(item.colaborador_id);
     const work = workById.get(item.obra_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><em>POR PAGAR</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
 
-  $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${teamData.medicine.length} REGISTOS` : `${teamData.medicine.length} REGISTO${teamData.medicine.length === 1 ? "" : "S"}`;
-  const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : teamData.medicine;
+  $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${activeMedicine.length} REGISTOS` : `${activeMedicine.length} REGISTO${activeMedicine.length === 1 ? "" : "S"}`;
+  const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : activeMedicine;
   $("#team-medicine").innerHTML = visibleMedicine.length ? visibleMedicine.map(item => {
     const person = personById.get(item.colaborador_id);
     const validity = documentValidity({ data_validade: item.data_proxima_consulta });
@@ -1781,10 +1786,18 @@ async function loadWorkDetails(workId) {
   else safetyFailures.push("incidentes");
   if (inspectionsResult?.ok) workDetails.safetyInspections = await inspectionsResult.json();
   else safetyFailures.push("inspeções");
-  if (safetyPeopleResult?.ok) workDetails.safetyCollaborators = await safetyPeopleResult.json();
+  if (safetyPeopleResult?.ok) {
+    workDetails.safetyCollaborators = await safetyPeopleResult.json();
+    const activeSafetyIds = new Set(workDetails.safetyCollaborators.map(person => person.id));
+    workDetails.safetyIncidents = workDetails.safetyIncidents.filter(item => !item.colaborador_id || activeSafetyIds.has(item.colaborador_id));
+    workDetails.safetyInspections = workDetails.safetyInspections.filter(item => !item.responsavel_id || activeSafetyIds.has(item.responsavel_id));
+  }
   else safetyFailures.push("colaboradores");
   if (safetyPermissionResult?.ok) workDetails.canEditSafety = Boolean(await safetyPermissionResult.json());
-  if (episResult?.ok) workDetails.epis = await episResult.json();
+  if (episResult?.ok) {
+    const activeSafetyIds = new Set(workDetails.safetyCollaborators.map(person => person.id));
+    workDetails.epis = (await episResult.json()).filter(item => activeSafetyIds.has(item.colaborador_id));
+  }
   else if (hasFullAccess() || isAdministrative()) safetyFailures.push("EPI's");
   if (safetyFailures.length) workDetails.safetyError = `Não foi possível consultar: ${safetyFailures.join(", ")}.`;
   renderWorkDetail(work);
@@ -2399,6 +2412,12 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const vacationPerson = event.target.closest("[data-team-vacation-person]");
+  if (vacationPerson) {
+    if (!canManageTeam()) return toast("A gestão de férias está reservada ao Administrativo e à Gerência.", "error");
+    openVacationDaysDialog(vacationPerson.dataset.teamVacationPerson, selectedTeamWeek);
+    return;
+  }
   const alertButton = event.target.closest("[data-team-alert-filter]");
   if (alertButton) {
     const nextFilter = alertButton.dataset.teamAlertFilter;
