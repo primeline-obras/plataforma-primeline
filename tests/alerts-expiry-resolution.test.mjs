@@ -6,8 +6,12 @@ const dashboard = fs.readFileSync(new URL("../src/production-dashboard.js", impo
 const migration = fs.readFileSync(new URL("../supabase/alertas_vencimentos_resolucao_corrigido.sql", import.meta.url), "utf8");
 
 assert.match(app, /id="notification-button"/);
+assert.match(app, /id="notification-drawer"/);
 assert.match(dashboard, /data-resolve-alert/);
 assert.match(dashboard, /rpc\/fn_resolver_alerta/);
+assert.match(dashboard, /openNotificationDrawer/);
+assert.match(dashboard, /data-notification-view/);
+assert.doesNotMatch(dashboard, /notification-button[^\n]*showView\("overview"\)/);
 assert.doesNotMatch(dashboard, /alertas\?id=.*method:\s*["']PATCH/);
 assert.match(migration, /create or replace function public\.fn_resolver_alerta/);
 assert.match(migration, /resolvido_por = v_utilizador_id/);
