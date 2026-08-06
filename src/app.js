@@ -1,13 +1,16 @@
-import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=2";
+import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=11";
-import { createPlanningModule } from "./planning.js?v=6";
+import { createProductionDashboard } from "./production-dashboard.js?v=13";
+import { createPlanningModule } from "./planning.js?v=7";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=5";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=8";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
-import { createActionPlanModule } from "./action-plan.js?v=1";
+import { createActionPlanModule } from "./action-plan.js?v=2";
+import { createDocumentsModule } from "./documents.js?v=1";
+import { createRncModule } from "./rnc.js?v=2";
+import { createConsolidatedView } from "./consolidated-view.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -33,7 +36,7 @@ const icon = (name) => {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
 
-let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], collaborators = [];
+let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], invoiceAttachments = [], collaborators = [];
 let directDebits = [], directDebitEntries = [];
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
@@ -111,8 +114,8 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -122,6 +125,7 @@ document.querySelector("#root").innerHTML = `
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button" id="notification-button" type="button" aria-label="Ver alertas pendentes">${icon("bell")}<i>0</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
+      <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
       <div class="page" id="invoice-view" hidden>
@@ -313,6 +317,8 @@ document.querySelector("#root").innerHTML = `
         </section>
       </div>
       <div class="page settings-view" id="settings-view" hidden></div>
+      <div class="page documents-view" id="documents-view" hidden></div>
+      <div class="page rnc-view" id="rnc-view" hidden></div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
@@ -450,7 +456,7 @@ const productionDashboard = createProductionDashboard({
   prettyDate,
   toast,
   getAccessContext: () => accessContext,
-  showView: view => switchView(view),
+  showView: (view, context) => switchView(view, context),
 });
 productionDashboard.bind();
 const planningModule = createPlanningModule({
@@ -467,6 +473,32 @@ const actionPlanModule = createActionPlanModule({
   getRole: effectiveRole,
   toast,
   onPlanningChanged: () => planningModule.refresh(),
+});
+const documentsModule = createDocumentsModule({
+  root: $("#documents-view"),
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getWorks: () => works,
+  getProfile: () => accessContext.profile,
+  getRole: effectiveRole,
+  uploadWorkDocument,
+  downloadWorkDocument,
+  prettyDate,
+  toast,
+  previewBlob: (blob, name) => {
+    if (openedPdfUrl) URL.revokeObjectURL(openedPdfUrl);
+    openedPdfUrl = URL.createObjectURL(blob);
+    openPdfModal(openedPdfUrl, name);
+  },
+});
+const rncModule = createRncModule({
+  root: $("#rnc-view"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, getRole: effectiveRole, uploadWorkDocument, downloadWorkDocument, toast,
+});
+const consolidatedView = createConsolidatedView({
+  root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, getInvoices: () => financeInvoices.length ? financeInvoices : invoices,
+  euro, toast,
 });
 const subcontractorsModule = createSubcontractorsModule({
   supabase,
@@ -530,6 +562,13 @@ function allowedViews() {
   return new Set(accessFor(accessContext).views);
 }
 
+function defaultViewForCurrentUser() {
+  const permitted = accessFor(accessContext).views;
+  if (permitted.includes("action-plan")) return "action-plan";
+  if (permitted.includes("overview")) return "overview";
+  return permitted[0] || "settings";
+}
+
 function applyAccessVisibility() {
   const permitted = allowedViews();
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => {
@@ -538,7 +577,7 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   document.body.dataset.userRole = effectiveRole() || "sem_perfil";
-  if (!permitted.has(activeView)) switchView("overview");
+  if (!permitted.has(activeView)) switchView(defaultViewForCurrentUser());
   renderUser();
 }
 
@@ -609,6 +648,7 @@ function renderInvoices() {
     const supplier = suppliers.find(s => s.id === invoice.fornecedor_id)?.nome || "Fornecedor";
     const work = works.find(w => w.id === invoice.obra_id);
     const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+    const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
     const hasGuide = guides.length > 0;
     const actionable = canApproveInvoices();
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
@@ -622,6 +662,10 @@ function renderInvoices() {
           </label>
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
+        <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substitui a guia de remessa obrigatória</small></div>
+          ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
+          <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
+        </div>
         ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
@@ -633,12 +677,14 @@ function financeCard(invoice) {
   const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
   const work = works.find(item => item.id === invoice.obra_id);
   const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
+  const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
   const today = new Date().toISOString().slice(0, 10);
   return `<article class="finance-card">
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
+    <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
     ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
     <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
   </article>`;
@@ -727,6 +773,7 @@ async function loadData() {
     financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado")
       .map(invoice => ({ ...invoice, condicao_pagamento: invoice.condicao_pagamento || "imediato", estado_pagamento: invoice.estado_pagamento || (invoice.data_pagamento ? "pago" : "por_pagar") }));
     invoiceGuides = [];
+    invoiceAttachments = [];
     directDebits = [];
     directDebitEntries = [];
   } else {
@@ -737,10 +784,11 @@ async function loadData() {
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
       supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
       supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
+      supabase("faturas_anexos?select=*&order=criado_em.asc"),
     ]);
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
-    [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides] = await Promise.all(results.map(result => result.json()));
+    [works, suppliers, subcontracts, invoices, financeInvoices, invoiceGuides, invoiceAttachments] = await Promise.all(results.map(result => result.json()));
     if (allowedViews().has("finance")) {
       const [debitsResult, entriesResult] = await Promise.all([
         supabase("debitos_diretos?select=id,obra_id,descricao,categoria,valor_previsto,recorrencia,dia_mes,data_inicio,data_fim,ativo,criado_por,criado_em&order=descricao"),
@@ -758,7 +806,7 @@ async function loadData() {
       directDebitEntries = [];
     }
     if (hasFullAccess() || isAdministrative()) {
-      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,permite_multiplas_obras&data_saida=is.null&order=nome");
+      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
   }
@@ -1080,23 +1128,27 @@ function renderTeam() {
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
   const personById = new Map(collaborators.map(person => [person.id, person]));
+  const activeAbsences = teamData.absences.filter(item => personById.has(item.colaborador_id));
+  const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
+  const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
+  const activeMedicine = teamData.medicine.filter(item => personById.has(item.colaborador_id));
   const operationalPeople = collaborators.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
   const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id) && workforceRoleClass(personById.get(item.colaborador_id)));
   const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
-  const currentAbsences = teamData.absences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
+  const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = works
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const boardRows = workforceRows(activeWorks, allocations);
   const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
-  const pendingHours = teamData.overtime.reduce((total, item) => total + Number(item.horas || 0), 0);
+  const pendingHours = activeOvertime.reduce((total, item) => total + Number(item.horas || 0), 0);
   const todayIso = new Date().toISOString().slice(0, 10);
   const currentMonth = Number(todayIso.slice(5, 7));
   const birthdayPeople = collaborators.filter(person => person.data_nascimento && Number(person.data_nascimento.slice(5, 7)) === currentMonth);
-  const medicineDue = teamData.medicine.filter(item => {
+  const medicineDue = activeMedicine.filter(item => {
     if (!item.data_proxima_consulta) return false;
     const days = Math.ceil((new Date(`${item.data_proxima_consulta}T12:00:00`) - new Date(`${todayIso}T12:00:00`)) / 86400000);
     return days <= 30;
@@ -1118,7 +1170,7 @@ function renderTeam() {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
     const boardHead = `<div class="workforce-grid workforce-grid-head"><div>LINHA / OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
-      const vacationPeople = operationalPeople.filter(person => teamData.absences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
+      const vacationPeople = operationalPeople.filter(person => activeAbsences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
       return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para editar os dias de férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
     }).join("")}</div>`;
     const rows = boardRows.map(row => {
@@ -1173,12 +1225,13 @@ function renderTeam() {
     const person = personById.get(item.colaborador_id);
     return `<article class="absence-card"><time>${formatOptionalDate(item.data)}</time><strong>${person?.nome || "Colaborador"}</strong><span>${String(item.tipo || "Ausência").replace(/_/g, " ")}</span></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
+  $("#team-absences").insertAdjacentHTML("afterbegin", `<section class="team-vacation-roster"><header><strong>REGISTAR / EDITAR FÉRIAS</strong><span>Todos os colaboradores ativos ficam disponíveis logo após a admissão.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></section>`);
 
-  const contractByPerson = new Map(teamData.contracts.map(item => [item.colaborador_id, item]));
+  const contractByPerson = new Map(activeContracts.map(item => [item.colaborador_id, item]));
   const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
   const missingContractIds = new Set(missingContracts.map(person => person.id));
   const hoursByPerson = new Map();
-  teamData.overtime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
+  activeOvertime.forEach(item => hoursByPerson.set(item.colaborador_id, (hoursByPerson.get(item.colaborador_id) || 0) + Number(item.horas || 0)));
   const visiblePeople = collaborators.filter(person => {
     const allocation = currentAllocations.find(item => item.colaborador_id === person.id);
     const work = workById.get(allocation?.obra_id);
@@ -1209,7 +1262,7 @@ function renderTeam() {
     </article>${documentsOpen ? renderEntityDocuments("colaborador", person) : ""}`;
   }).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`;
 
-  const endingContracts = teamData.contracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
+  const endingContracts = activeContracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
   $("#team-alert-summary").innerHTML = [
     endingContracts.length ? `<button type="button" data-team-alert-filter="ending_contract" data-team-alert-tab="contracts" class="attention ${teamQuickFilter === "ending_contract" ? "active" : ""}"><strong>${endingContracts.length}</strong><span>CONTRATO${endingContracts.length === 1 ? "" : "S"} A TERMINAR EM 30 DIAS<small>VER PESSOAS →</small></span></button>` : "",
     missingContracts.length ? `<button type="button" data-team-alert-filter="missing_contract" data-team-alert-tab="collaborators" class="pending ${teamQuickFilter === "missing_contract" ? "active" : ""}"><strong>${missingContracts.length}</strong><span>COLABORADOR${missingContracts.length === 1 ? "" : "ES"} SEM CONTRATO REGISTADO<small>VER PESSOAS →</small></span></button>` : "",
@@ -1219,22 +1272,22 @@ function renderTeam() {
     pendingHours ? `<button type="button" data-team-alert-filter="overtime" data-team-alert-tab="overtime" class="attention ${teamQuickFilter === "overtime" ? "active" : ""}"><strong>${pendingHours.toLocaleString("pt-PT")} h</strong><span>HORAS EXTRA POR PAGAR<small>VER PESSOAS →</small></span></button>` : "",
   ].filter(Boolean).join("") || `<article class="ok"><strong>✓</strong><span>SEM ALERTAS DE EQUIPA</span></article>`;
 
-  $("#team-contract-count").textContent = teamQuickFilter === "ending_contract" ? `${endingContracts.length} A TERMINAR · ${teamData.contracts.length} ATIVOS` : `${teamData.contracts.length} CONTRATOS ATIVOS`;
-  const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : teamData.contracts;
+  $("#team-contract-count").textContent = teamQuickFilter === "ending_contract" ? `${endingContracts.length} A TERMINAR · ${activeContracts.length} ATIVOS` : `${activeContracts.length} CONTRATOS ATIVOS`;
+  const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : activeContracts;
   $("#team-contracts").innerHTML = visibleContracts.length ? visibleContracts.map(contract => {
     const person = personById.get(contract.colaborador_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " ")}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><em>${contract.estado || "ativo"}</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM CONTRATOS</strong><span>Não existem contratos ativos registados.</span></div>`;
 
   $("#team-overtime-count").textContent = `${pendingHours.toLocaleString("pt-PT")} H POR PAGAR`;
-  $("#team-overtime").innerHTML = teamData.overtime.length ? teamData.overtime.map(item => {
+  $("#team-overtime").innerHTML = activeOvertime.length ? activeOvertime.map(item => {
     const person = personById.get(item.colaborador_id);
     const work = workById.get(item.obra_id);
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><em>POR PAGAR</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
 
-  $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${teamData.medicine.length} REGISTOS` : `${teamData.medicine.length} REGISTO${teamData.medicine.length === 1 ? "" : "S"}`;
-  const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : teamData.medicine;
+  $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${activeMedicine.length} REGISTOS` : `${activeMedicine.length} REGISTO${activeMedicine.length === 1 ? "" : "S"}`;
+  const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : activeMedicine;
   $("#team-medicine").innerHTML = visibleMedicine.length ? visibleMedicine.map(item => {
     const person = personById.get(item.colaborador_id);
     const validity = documentValidity({ data_validade: item.data_proxima_consulta });
@@ -1733,10 +1786,18 @@ async function loadWorkDetails(workId) {
   else safetyFailures.push("incidentes");
   if (inspectionsResult?.ok) workDetails.safetyInspections = await inspectionsResult.json();
   else safetyFailures.push("inspeções");
-  if (safetyPeopleResult?.ok) workDetails.safetyCollaborators = await safetyPeopleResult.json();
+  if (safetyPeopleResult?.ok) {
+    workDetails.safetyCollaborators = await safetyPeopleResult.json();
+    const activeSafetyIds = new Set(workDetails.safetyCollaborators.map(person => person.id));
+    workDetails.safetyIncidents = workDetails.safetyIncidents.filter(item => !item.colaborador_id || activeSafetyIds.has(item.colaborador_id));
+    workDetails.safetyInspections = workDetails.safetyInspections.filter(item => !item.responsavel_id || activeSafetyIds.has(item.responsavel_id));
+  }
   else safetyFailures.push("colaboradores");
   if (safetyPermissionResult?.ok) workDetails.canEditSafety = Boolean(await safetyPermissionResult.json());
-  if (episResult?.ok) workDetails.epis = await episResult.json();
+  if (episResult?.ok) {
+    const activeSafetyIds = new Set(workDetails.safetyCollaborators.map(person => person.id));
+    workDetails.epis = (await episResult.json()).filter(item => activeSafetyIds.has(item.colaborador_id));
+  }
   else if (hasFullAccess() || isAdministrative()) safetyFailures.push("EPI's");
   if (safetyFailures.length) workDetails.safetyError = `Não foi possível consultar: ${safetyFailures.join(", ")}.`;
   renderWorkDetail(work);
@@ -2140,7 +2201,7 @@ function renderWorkDetail(work) {
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
       <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
-      <div class="work-detail-actions"><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span></div>
+      <div class="work-detail-actions"><button type="button" data-open-rnc="${work.id}">RNC →</button><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span></div>
     </div>
     <div class="work-location">${work.morada || "Morada não indicada"}</div>
     ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
@@ -2157,14 +2218,15 @@ function renderWorkDetail(work) {
   if (selectedWorkTab === "subcontracts") procurementModule?.show(work);
 }
 
-function switchView(view) {
+function switchView(view, context = {}) {
   if (!allowedViews().has(view)) {
     toast("Não tem permissão para aceder a esta área.", "error");
-    view = "overview";
+    view = defaultViewForCurrentUser();
   }
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
+  $("#consolidated-view").hidden = view !== "consolidated";
   $("#action-plan-view").hidden = view !== "action-plan";
   $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
@@ -2175,22 +2237,26 @@ function switchView(view) {
   $("#team-view").hidden = view !== "team";
   $("#workforce-view").hidden = view !== "workforce";
   $("#settings-view").hidden = view !== "settings";
-  $("#placeholder-view").hidden = ["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce", "settings"].includes(view);
-  if (!["action-plan", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "team", "workforce", "settings"].includes(view)) {
-    const labels = { documents: "DOCUMENTOS" };
-    $("#placeholder-title").textContent = labels[view] || "MÓDULO EM PREPARAÇÃO";
+  $("#documents-view").hidden = view !== "documents";
+  $("#rnc-view").hidden = view !== "rnc";
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view)) {
+    $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
     renderWorks();
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
   if (view === "finance") renderFinance();
-  if (view === "planning") planningModule.show();
+  if (view === "planning") planningModule.show(context);
   if (view === "action-plan") actionPlanModule.show();
+  if (view === "documents") documentsModule.show();
+  if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
   if (view === "subcontractors") subcontractorsModule.show();
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
   if (view === "overview") productionDashboard.refreshOverview();
+  if (view === "consolidated") consolidatedView.show();
   closeSidebar();
 }
 
@@ -2346,6 +2412,12 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const vacationPerson = event.target.closest("[data-team-vacation-person]");
+  if (vacationPerson) {
+    if (!canManageTeam()) return toast("A gestão de férias está reservada ao Administrativo e à Gerência.", "error");
+    openVacationDaysDialog(vacationPerson.dataset.teamVacationPerson, selectedTeamWeek);
+    return;
+  }
   const alertButton = event.target.closest("[data-team-alert-filter]");
   if (alertButton) {
     const nextFilter = alertButton.dataset.teamAlertFilter;
@@ -2892,6 +2964,8 @@ $("#work-detail").addEventListener("submit", async event => {
   }
 });
 $("#work-detail").addEventListener("click", async event => {
+  const rncButton = event.target.closest("[data-open-rnc]");
+  if (rncButton) { selectedWorkId = rncButton.dataset.openRnc; switchView("rnc"); return; }
   const meetingButton = event.target.closest("[data-open-meeting]");
   if (meetingButton) return productionDashboard.openMeeting(meetingButton.dataset.openMeeting, "works");
   const tabButton = event.target.closest("[data-work-tab]");
@@ -3470,14 +3544,14 @@ form.addEventListener("submit", async event => {
 });
 
 $("#invoice-list").addEventListener("click", async event => {
-  const pdfButton = event.target.closest("[data-pdf], [data-guide]");
+  const pdfButton = event.target.closest("[data-pdf], [data-guide], [data-invoice-attachment]");
   if (pdfButton) {
     pdfButton.disabled = true;
     try {
-      const objectPath = decodeURIComponent(pdfButton.dataset.pdf || pdfButton.dataset.guide);
+      const objectPath = decodeURIComponent(pdfButton.dataset.pdf || pdfButton.dataset.guide || pdfButton.dataset.invoiceAttachment);
       const blob = await downloadInvoicePdf(objectPath);
       openedPdfUrl = URL.createObjectURL(blob);
-      openPdfModal(openedPdfUrl, pdfButton.dataset.guide ? "GUIA DE REMESSA" : "FATURA");
+      openPdfModal(openedPdfUrl, pdfButton.dataset.guide ? "GUIA DE REMESSA" : pdfButton.dataset.invoiceAttachment ? "ANEXO ADICIONAL" : "FATURA");
     } catch (error) {
       toast(error.message || "Não foi possível abrir o PDF.", "error");
     } finally {
@@ -3537,6 +3611,24 @@ $("#invoice-list").addEventListener("click", async event => {
 });
 
 $("#invoice-list").addEventListener("change", event => {
+  const attachmentInput = event.target.closest("[data-invoice-attachment-input]");
+  if (attachmentInput) {
+    const files = [...attachmentInput.files];
+    if (!files.length) return;
+    const invoice = invoices.find(item => String(item.id) === attachmentInput.dataset.invoiceAttachmentInput);
+    if (!invoice) return;
+    attachmentInput.disabled = true;
+    (async () => {
+      for (const file of files) {
+        const path = await uploadInvoiceAttachment(file, invoice.obra_id, invoice.id);
+        const response = await supabase("faturas_anexos?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: path, nome_arquivo: file.name }) });
+        if (!response.ok) throw new Error(await response.text());
+        invoiceAttachments.push((await response.json())[0]);
+      }
+      toast("Anexos adicionais enviados."); renderInvoices();
+    })().catch(error => toast(error.message || "Não foi possível enviar os anexos.", "error")).finally(() => { attachmentInput.disabled = false; });
+    return;
+  }
   const input = event.target.closest("[data-guide-input]");
   if (!input) return;
   const files = [...(input.files || [])];
@@ -3562,14 +3654,15 @@ $("#invoice-list").addEventListener("change", event => {
 });
 
 $("#finance-board").addEventListener("click", async event => {
-  const guideButton = event.target.closest("[data-guide]");
+  const guideButton = event.target.closest("[data-guide], [data-invoice-attachment]");
   if (guideButton) {
     try {
-      const path = decodeURIComponent(guideButton.dataset.guide);
-      if (path.startsWith("blob:")) return openPdfModal(path, "GUIA DE REMESSA");
+      const path = decodeURIComponent(guideButton.dataset.guide || guideButton.dataset.invoiceAttachment);
+      const title = guideButton.dataset.guide ? "GUIA DE REMESSA" : "ANEXO ADICIONAL";
+      if (path.startsWith("blob:")) return openPdfModal(path, title);
       const blob = await downloadInvoicePdf(path);
       openedPdfUrl = URL.createObjectURL(blob);
-      openPdfModal(openedPdfUrl, "GUIA DE REMESSA");
+      openPdfModal(openedPdfUrl, title);
     } catch (error) { toast(error.message || "Não foi possível abrir a guia.", "error"); }
     return;
   }

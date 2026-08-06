@@ -65,6 +65,14 @@ documento, data, valor e fornecedor. O fornecedor só é preenchido quando o nom
 corresponde exatamente a um registo já existente; nunca são criados fornecedores
 automaticamente. A subempreitada nunca é pré-selecionada.
 
+## Centro documental por obra
+
+A opção lateral **Documentos** organiza o arquivo técnico em Articulado,
+Desenhos, PDEs/PAMEs e Atas, com upload para o bucket privado `documentos`.
+Execute `supabase/centro_documentos_encarregado.sql` para permitir ao encarregado
+da obra consultar e descarregar apenas estas categorias operacionais, mantendo
+contratos e os restantes documentos reservados aos papéis já autorizados.
+
 ## Módulo Obras
 
 A aba Obras apresenta a lista de obras e um detalhe com contrato, fases,
@@ -80,6 +88,14 @@ O fluxo de autos de medição, faturação ao cliente e recebimentos é ativado 
 conteúdo de `supabase/autos_faturacao_workflow.sql`. A migração cria a relação entre
 autos e faturas, permite associar os PDFs através de `documentos` e mantém o papel
 `anon` sem acesso.
+
+## RNC e anexos de validação
+
+Executar `supabase/rnc_workflow.sql` no SQL Editor para ativar a numeração sequencial
+segura das RNC por obra, as transições de estado, os anexos de evidência, os anexos
+opcionais das avaliações de subempreiteiros e os anexos adicionais de faturas. O
+encarregado pode criar e consultar RNC nas suas obras; só a equipa técnica pode
+definir ações corretivas, verificar e fechar.
 
 ## Planeamento detalhado
 
@@ -208,6 +224,19 @@ Executar também `supabase/viaturas_prazos_edicao.sql` para distinguir a data da
 última revisão (`data_revisao`) da próxima revisão programada
 (`data_proxima_revisao`). A área Equipa mostra seguro, inspeção e revisão
 separadamente e permite a Administrativo/Gerência atualizar estes dados.
+
+Executar `supabase/alerta_primeira_consulta_medicina.sql` para ativar a primeira
+versão do lembrete dos colaboradores que completaram 30 dias desde
+`data_admissao` sem registo em `medicina_trabalho`. A migração posterior
+`supabase/alertas_vencimentos_resolucao.sql` consolida esta verificação no job
+diário de baseline, acrescenta documentos, EPI, consultas e inspeções e elimina
+o job separado criado inicialmente.
+
+Os alertas permanecem pendentes quando são vistos. Apenas a ação explícita
+“Marcar como resolvido”, através de `fn_resolver_alerta`, altera o estado. A
+migração de vencimentos usa `viaturas.data_inspecao_proxima` com 15 dias de
+antecedência, 30 dias para documentos pessoais/EPI/Medicina e os limiares 15,
+7 e 3 dias para documentos da empresa.
 
 Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
 com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da
