@@ -1,3 +1,5 @@
+import { directDebitOccurrences } from "./direct-debits.js?v=1";
+
 const number = value => Number(value || 0);
 const sum = (rows, field) => rows.reduce((total, row) => total + number(row[field]), 0);
 const DAY_MS = 86400000;
@@ -98,6 +100,40 @@ const selectCurrentInvestment = investments => [...investments].sort((a, b) =>
   || String(b.criado_em || "").localeCompare(String(a.criado_em || ""))
 )[0] || {};
 
+const localIso = date => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+export function upcomingDirectDebitRows(debits = [], entries = [], startDate = new Date(), days = 7) {
+  const start = safeDate(startDate) || new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + days); end.setHours(23, 59, 59, 999);
+  const settled = new Set(entries.map(row => `${row.debito_direto_id}|${String(row.data || "").slice(0, 10)}`));
+  return debits.flatMap(debit => {
+    const recurring = directDebitOccurrences(debit, localIso(start), localIso(end));
+    if (recurring.length || debit.recorrencia || !debit.ativo) return recurring;
+    const due = safeDate(debit.data_inicio);
+    return due && due >= start && due <= end ? [{ debito_direto_id: debit.id, data: localIso(due), valor: number(debit.valor_previsto), descricao: debit.descricao, obra_id: debit.obra_id || null }] : [];
+  }).filter(row => !settled.has(`${row.debito_direto_id}|${row.data}`)).sort((a, b) => a.data.localeCompare(b.data));
+}
+
+export function planningBaselineDelays(work, phases = [], items = []) {
+  if (!work?.planeamento_baseline_congelado) return [];
+  return phases.filter(phase => phase.obra_id === work.id).map(phase => {
+    const rows = items.filter(item => item.fase_id === phase.id);
+    const baselineDates = rows.map(item => safeDate(item.data_fim_baseline)).filter(Boolean);
+    const effectiveDates = rows.map(item => safeDate(item.data_fim_real || item.data_fim_prevista)).filter(Boolean);
+    if (!baselineDates.length || !effectiveDates.length) return null;
+    const baselineEnd = new Date(Math.max(...baselineDates.map(date => date.getTime())));
+    const effectiveEnd = new Date(Math.max(...effectiveDates.map(date => date.getTime())));
+    const days = Math.round((effectiveEnd - baselineEnd) / DAY_MS);
+    return days > 0 ? { phase, days, baselineEnd, effectiveEnd } : null;
+  }).filter(Boolean).sort((a, b) => b.days - a.days);
+}
+
 export function createProductionDashboard(options) {
   const {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
@@ -106,7 +142,8 @@ export function createProductionDashboard(options) {
   const emptyOverviewState = () => ({
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
     contracts: [], tees: [], investments: [], impacts: [], measurements: [], subcontracts: [], consultations: [],
-    payments: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [], warnings: [],
+    payments: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
+    planningItems: [], rncs: [], evaluations: [], incidents: [], inspections: [], epis: [], activeCollaborators: [], warnings: [],
   });
   let overviewState = emptyOverviewState();
   let meetingState = null;
@@ -199,7 +236,43 @@ export function createProductionDashboard(options) {
     };
   }
 
-  function overviewWorkSection(work, pendingInvoices, readOnly) {
+  const rncCode = (work, row) => `RNC-${String(work?.numero || "OBRA")}-${String(row?.numero || 0).padStart(3, "0")}`;
+  const criticalRnc = row => row.gravidade === "critica";
+  const compliantInspection = row => row.conformidade === true || ["true", "conforme", "sim"].includes(String(row.conformidade).toLowerCase());
+
+  function technicalWorkData(work) {
+    const phaseIds = new Set(overviewState.phases.filter(phase => phase.obra_id === work.id).map(phase => phase.id));
+    const blocked = overviewState.planningItems.filter(item => phaseIds.has(item.fase_id) && item.impedido === true);
+    const rncs = overviewState.rncs.filter(row => row.obra_id === work.id && row.estado !== "fechado")
+      .sort((a, b) => Number(criticalRnc(b)) - Number(criticalRnc(a)) || String(b.data_deteccao || "").localeCompare(String(a.data_deteccao || "")));
+    const recentLimit = new Date(); recentLimit.setDate(recentLimit.getDate() - 30);
+    const incidents = overviewState.incidents.filter(row => row.obra_id === work.id && safeDate(row.data) >= recentLimit)
+      .sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
+    const inspections = overviewState.inspections.filter(row => row.obra_id === work.id && safeDate(row.data) >= recentLimit && !compliantInspection(row))
+      .sort((a, b) => String(b.data || "").localeCompare(String(a.data || "")));
+    return { blocked, rncs, incidents, inspections, delays: planningBaselineDelays(work, overviewState.phases, overviewState.planningItems) };
+  }
+
+  function technicalWorkOverview(work, technical) {
+    const blockedRows = technical.blocked.slice(0, 5).map(item => {
+      const phase = overviewState.phases.find(row => row.id === item.fase_id);
+      return `<button data-planning-work="${work.id}"><span><strong>${escapeHtml(item.codigo || phase?.codigo || "Tarefa")}</strong><small>${escapeHtml(item.descricao || "Tarefa impedida")}</small></span><em>${escapeHtml(item.observacao_impedimento || "Sem observação registada")}</em></button>`;
+    }).join("");
+    const rncRows = technical.rncs.slice(0, 5).map(row => `<button class="${criticalRnc(row) ? "critical" : "attention"}" data-rnc-work="${work.id}"><span><strong>${escapeHtml(rncCode(work, row))}</strong><small>${escapeHtml(row.local_ocorrencia || row.descricao || "Não conformidade")}</small></span><em>${escapeHtml(row.gravidade || "—").toUpperCase()}</em></button>`).join("");
+    const safetyRows = [
+      ...technical.incidents.slice(0, 4).map(row => ({ date: row.data, title: row.tipo || "Incidente", detail: row.descricao || row.gravidade || "Sem descrição", urgent: ["grave", "critica", "crítica"].includes(String(row.gravidade).toLowerCase()) })),
+      ...technical.inspections.slice(0, 3).map(row => ({ date: row.data, title: "Inspeção não conforme", detail: row.observacoes || "Requer atenção", urgent: false })),
+    ].sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))).slice(0, 5);
+    const delayRows = technical.delays.slice(0, 4).map(row => `<div><span><strong>${escapeHtml(row.phase.codigo || "Fase")}</strong><small>${escapeHtml(row.phase.descricao || "")}</small></span><em>+${row.days} DIAS</em></div>`).join("");
+    return `${technical.blocked.length ? `<section class="overview-blocked-priority"><header><span>TAREFAS IMPEDIDAS · URGENTE</span><b>${technical.blocked.length}</b></header><div>${blockedRows}</div></section>` : ""}
+      <div class="overview-technical-grid">
+        <section class="overview-technical-card"><header><span>RNCs ABERTAS</span><b class="${technical.rncs.some(criticalRnc) ? "critical" : ""}">${technical.rncs.length}</b></header><div>${rncRows || '<p class="overview-empty">SEM RNCs ABERTAS</p>'}</div></section>
+        <section class="overview-technical-card"><header><span>SEGURANÇA · ÚLTIMOS 30 DIAS</span><b class="${safetyRows.some(row => row.urgent) ? "critical" : ""}">${technical.incidents.length + technical.inspections.length}</b></header><div>${safetyRows.map(row => `<div class="${row.urgent ? "critical" : "attention"}"><time>${row.date ? prettyDate.format(safeDate(row.date)) : "—"}</time><span><strong>${escapeHtml(row.title)}</strong><small>${escapeHtml(row.detail)}</small></span></div>`).join("") || '<p class="overview-empty">SEM OCORRÊNCIAS RECENTES</p>'}</div></section>
+        <section class="overview-technical-card"><header><span>DESVIO FACE À BASELINE</span><b class="${technical.delays.length ? "attention" : ""}">${technical.delays.length}</b></header><div>${delayRows || '<p class="overview-empty">SEM FASES ATRASADAS</p>'}</div><button class="overview-planning-link" data-planning-summary="${work.id}">VER RESUMO POR FASE →</button></section>
+      </div>`;
+  }
+
+  function overviewWorkSection(work, pendingInvoices, readOnly, technicalRole = false) {
     const summary = workFinancialSummary(work);
     const workInvoices = pendingInvoices.filter(invoice => invoice.obra_id === work.id);
     const progress = workExecution(work.id);
@@ -216,8 +289,10 @@ export function createProductionDashboard(options) {
         <span><strong>${escapeHtml(invoice.numero_doc || "Fatura")}</strong><small>${invoice.data_fatura ? prettyDate.format(safeDate(invoice.data_fatura)) : "SEM DATA"}</small></span>
         <b>${euro.format(number(invoice.valor))}</b><em>${readOnly ? "PENDENTE" : "REVER"}</em>
       </${readOnly ? "div" : "button"}>`).join("");
+    const technical = technicalRole ? technicalWorkData(work) : null;
     return `<article class="panel overview-work-detail">
       <header><div><p class="eyebrow">OBRA ${escapeHtml(work.numero || "—")}</p><h2>${escapeHtml(work.nome || "Obra sem designação")}</h2></div><button data-meeting-work="${work.id}">REUNIÃO SEMANAL →</button></header>
+      ${technical ? technicalWorkOverview(work, technical) : ""}
       <div class="overview-work-metrics">${summary.mode === "investment" ? `
         <div><span>ORÇAMENTO INICIAL</span><strong>${euro.format(summary.initialBudget)}</strong></div>
         <div><span>ORÇAMENTO REVISTO</span><strong>${euro.format(summary.revisedBudget)}</strong></div>
@@ -259,9 +334,9 @@ export function createProductionDashboard(options) {
       : overviewState.profile?.funcao || access.role || (isSupabaseConfigured ? "administrativo" : "gerencia");
     document.body.dataset.userRole = role;
     const responsibleWorkIds = new Set(overviewState.responsibilities.map(row => row.obra_id));
-    const isProductionRole = ["diretor_obra", "preparador", "encarregado"].includes(role);
+    const isProductionRole = ["diretor_obra", "adjunto", "preparador"].includes(role);
     const readOnly = role === "administrativo";
-    const canApprove = ["diretor_obra", "preparador", "gerencia"].includes(role);
+    const canApprove = ["diretor_obra", "adjunto", "preparador", "gerencia"].includes(role);
     const canPay = ["financeiro", "gerencia"].includes(role);
     const scopedWorks = isProductionRole ? activeWorks.filter(work => responsibleWorkIds.has(work.id)) : activeWorks;
     const approvalActions = role === "gerencia" || readOnly
@@ -284,6 +359,32 @@ export function createProductionDashboard(options) {
       total.actual += summary.actualCost; total.deviation += summary.deviation;
       return total;
     }, { initial: 0, revised: 0, actual: 0, deviation: 0 });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const epiLimit = new Date(today); epiLimit.setDate(epiLimit.getDate() + 30);
+    const activeCollaboratorIds = new Set(overviewState.activeCollaborators.map(row => row.id));
+    const monthIncidents = overviewState.incidents.filter(row => safeDate(row.data) >= monthStart);
+    const monthNoncompliantInspections = overviewState.inspections.filter(row => safeDate(row.data) >= monthStart && !compliantInspection(row));
+    const expiringEpis = overviewState.epis.filter(row => {
+      const validity = safeDate(row.data_validade || row.data_renovacao || row.validade);
+      return validity && validity >= today && validity <= epiLimit && (!activeCollaboratorIds.size || activeCollaboratorIds.has(row.colaborador_id));
+    });
+    const dueDirectDebits = upcomingDirectDebitRows(overviewState.directDebits, overviewState.directDebitEntries, today, 7);
+    const evaluatedSubcontracts = new Set(overviewState.evaluations.map(row => row.subempreitada_id).filter(Boolean));
+    const unassessedRncs = overviewState.rncs.filter(row => row.estado === "fechado" && row.subempreitada_id && !evaluatedSubcontracts.has(row.subempreitada_id));
+    const administrativeCards = role === "administrativo" ? `<section class="overview-role-kpis">
+      <article class="attention"><span>INCIDENTES ESTE MÊS</span><strong>${monthIncidents.length}</strong><small>${monthNoncompliantInspections.length} inspeções não conformes</small></article>
+      <article class="${expiringEpis.length ? "attention" : ""}"><span>EPIs A VENCER · 30 DIAS</span><strong>${expiringEpis.length}</strong><small>colaboradores ativos</small></article>
+      <article class="${dueDirectDebits.length ? "attention" : ""}"><span>DÉBITOS DIRETOS · 7 DIAS</span><strong>${dueDirectDebits.length}</strong><small>${euro.format(sum(dueDirectDebits, "valor"))} · empresa e obras</small></article>
+    </section>` : "";
+    const financialCards = role === "financeiro" ? `<section class="overview-role-kpis financial">
+      <article class="${dueDirectDebits.length ? "attention" : ""}"><span>DÉBITOS DIRETOS · 7 DIAS</span><strong>${dueDirectDebits.length}</strong><small>${euro.format(sum(dueDirectDebits, "valor"))} previstos</small></article>
+      <article class="${unassessedRncs.length ? "urgent" : ""}"><span>RNCs SEM AVALIAÇÃO</span><strong>${unassessedRncs.length}</strong><small>fechadas e ligadas a subempreitadas</small></article>
+    </section>` : "";
+    const financialRncs = role === "financeiro" && unassessedRncs.length ? `<section class="panel overview-financial-rncs">
+      <div class="overview-section-head"><div><p class="eyebrow">CONTROLO DE FORNECEDORES</p><h2>RNCs FECHADAS SEM AVALIAÇÃO</h2></div><span>${unassessedRncs.length}</span></div>
+      <div>${unassessedRncs.map(row => { const work = works.find(item => item.id === row.obra_id); return `<article><span><strong>${escapeHtml(rncCode(work, row))}</strong><small>OBRA ${escapeHtml(work?.numero || "—")} · ${escapeHtml(work?.nome || "")}</small></span><em>${row.data_fecho ? prettyDate.format(safeDate(row.data_fecho)) : "SEM DATA"}</em><b>AVALIAÇÃO EM FALTA</b></article>`; }).join("")}</div>
+    </section>` : "";
     const warning = overviewState.warnings.length
       ? `<div class="overview-warning">Alguns dados estão indisponíveis: ${escapeHtml(overviewState.warnings.join(" · "))}</div>` : "";
 
@@ -299,6 +400,7 @@ export function createProductionDashboard(options) {
         <article><span>ALERTAS PENDENTES</span><strong>${overviewState.alerts.length}</strong><small>por resolver</small></article>
         <article class="money"><span>POR PAGAR ESTA SEMANA</span><strong>${euro.format(sum(unpaid, "valor"))}</strong><small>faturas aprovadas</small></article>
       </section>
+      ${administrativeCards}${financialCards}${financialRncs}
       ${["financeiro", "administrativo", "gerencia"].includes(role) ? `<section class="panel overview-consolidated">
         <div class="overview-section-head"><div><p class="eyebrow">TODAS AS OBRAS EM CURSO</p><h2>RESUMO FINANCEIRO CONSOLIDADO</h2></div><span>${scopedWorks.length}</span></div>
         ${clientWorks.length ? `<div class="overview-work-metrics"><div><span>VENDA · CLIENTES</span><strong>${euro.format(consolidated.sale)}</strong></div><div><span>CUSTO DIRETO</span><strong>${euro.format(consolidated.cost)}</strong></div><div><span>MARGEM</span><strong>${euro.format(consolidated.margin)}</strong></div><div><span>FATURADO</span><strong>${euro.format(consolidated.billed)}</strong><small>POR FATURAR ${euro.format(consolidated.unbilled)}</small></div></div>` : ""}
@@ -339,8 +441,8 @@ export function createProductionDashboard(options) {
             </button>`;
           }).join("") : `<div class="overview-empty">NÃO EXISTEM OBRAS EM CURSO</div>`}</div>
       </section>
-      ${["diretor_obra", "preparador", "administrativo", "gerencia"].includes(role)
-        ? `<section class="overview-work-sections">${scopedWorks.map(work => overviewWorkSection(work, pendingInvoices, readOnly)).join("")}</section>` : ""}`;
+      ${["diretor_obra", "adjunto", "preparador", "administrativo", "gerencia"].includes(role)
+        ? `<section class="overview-work-sections">${scopedWorks.map(work => overviewWorkSection(work, pendingInvoices, readOnly, isProductionRole)).join("")}</section>` : ""}`;
   }
 
   async function refreshOverview() {
@@ -353,9 +455,16 @@ export function createProductionDashboard(options) {
       return;
     }
     const authId = getSession()?.user?.id;
+    const access = typeof getAccessContext === "function" ? getAccessContext() : {};
+    const requestedRole = access.isAdmin || access.role === "gerencia" ? "gerencia" : access.role || "";
+    const technicalRole = ["diretor_obra", "adjunto", "preparador"].includes(requestedRole);
+    const administrativeRole = requestedRole === "administrativo";
+    const financialRole = requestedRole === "financeiro";
+    const needsDirectDebits = requestedRole !== "encarregado";
     const [
       alerts, profiles, phases, planning, budget, contracts, tees, investments, impacts,
       measurements, subcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries,
+      planningItems, rncs, evaluations, incidents, inspections, epis, activeCollaborators,
     ] = await Promise.all([
       query(`alertas?select=*&estado=eq.pendente&data_gatilho=lte.${new Date().toISOString().slice(0, 10)}&order=data_gatilho.asc`, "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
@@ -372,8 +481,15 @@ export function createProductionDashboard(options) {
       query("pagamentos_subempreitada?select=*", "Pagamentos de subempreitadas"),
       query("lancamentos_mao_obra?select=*", "Mão de obra"),
       query("despesas_estaleiro?select=*", "Estaleiro"),
-      query("debitos_diretos?select=id,obra_id", "Débitos diretos"),
-      query("debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor", "Lançamentos de débitos diretos"),
+      needsDirectDebits ? query("debitos_diretos?select=id,obra_id,descricao,categoria,valor_previsto,recorrencia,dia_mes,data_inicio,data_fim,ativo", "Débitos diretos") : [],
+      needsDirectDebits ? query("debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor", "Lançamentos de débitos diretos") : [],
+      technicalRole ? query("planeamento_itens?select=id,fase_id,codigo,descricao,data_inicio_prevista,data_fim_prevista,data_fim_real,data_inicio_baseline,data_fim_baseline,estado,impedido,observacao_impedimento", "Tarefas do planeamento") : [],
+      technicalRole || financialRole ? query("rnc?select=id,obra_id,numero,subempreitada_id,data_deteccao,data_fecho,local_ocorrencia,descricao,gravidade,estado", "RNCs") : [],
+      financialRole ? query("avaliacoes_subempreiteiro?select=id,subempreitada_id", "Avaliações de subempreiteiros") : [],
+      technicalRole || administrativeRole ? query("seguranca_incidentes?select=id,obra_id,data,tipo,gravidade,descricao", "Incidentes de segurança") : [],
+      technicalRole || administrativeRole ? query("seguranca_inspecoes?select=id,obra_id,data,conformidade,observacoes", "Inspeções de segurança") : [],
+      administrativeRole ? query("epis?select=*", "EPIs") : [],
+      administrativeRole ? query("colaboradores?select=id&data_saida=is.null", "Colaboradores ativos") : [],
     ]);
     overviewState.alerts = alerts;
     overviewState.profile = profiles[0] || null;
@@ -392,6 +508,13 @@ export function createProductionDashboard(options) {
     overviewState.siteExpenses = siteExpenses;
     overviewState.directDebits = directDebits;
     overviewState.directDebitEntries = directDebitEntries;
+    overviewState.planningItems = planningItems;
+    overviewState.rncs = rncs;
+    overviewState.evaluations = evaluations;
+    overviewState.incidents = incidents;
+    overviewState.inspections = inspections;
+    overviewState.epis = epis;
+    overviewState.activeCollaborators = activeCollaborators;
     overviewState.responsibilities = overviewState.profile
       ? await query(`obra_responsaveis?select=obra_id,utilizador_id,papel&utilizador_id=eq.${encodeURIComponent(overviewState.profile.id)}`, "Responsabilidades")
       : [];
@@ -781,6 +904,12 @@ export function createProductionDashboard(options) {
       if (meetingButton) return openMeeting(meetingButton.dataset.meetingWork);
       const actionButton = event.target.closest("[data-action-view]");
       if (actionButton) showView(actionButton.dataset.actionView);
+      const planningSummary = event.target.closest("[data-planning-summary]");
+      if (planningSummary) return showView("planning", { workId: planningSummary.dataset.planningSummary, view: "summary" });
+      const planningWork = event.target.closest("[data-planning-work]");
+      if (planningWork) return showView("planning", { workId: planningWork.dataset.planningWork, view: "effective" });
+      const rncWork = event.target.closest("[data-rnc-work]");
+      if (rncWork) return showView("rnc", { workId: rncWork.dataset.rncWork });
     });
   }
 

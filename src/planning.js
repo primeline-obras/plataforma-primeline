@@ -614,7 +614,11 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   });
 
   return {
-    show() { renderWorkOptions(); load(state.workId || workSelect.value); },
+    show(options = {}) {
+      if (options.workId) state.workId = options.workId;
+      if (["baseline", "effective", "summary", "control"].includes(options.view)) state.view = options.view;
+      renderWorkOptions(); load(state.workId || workSelect.value);
+    },
     refresh: load,
   };
 }

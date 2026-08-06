@@ -1,7 +1,7 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=11";
-import { createPlanningModule } from "./planning.js?v=6";
+import { createProductionDashboard } from "./production-dashboard.js?v=12";
+import { createPlanningModule } from "./planning.js?v=7";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=8";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
@@ -456,7 +456,7 @@ const productionDashboard = createProductionDashboard({
   prettyDate,
   toast,
   getAccessContext: () => accessContext,
-  showView: view => switchView(view),
+  showView: (view, context) => switchView(view, context),
 });
 productionDashboard.bind();
 const planningModule = createPlanningModule({
@@ -2205,7 +2205,7 @@ function renderWorkDetail(work) {
   if (selectedWorkTab === "subcontracts") procurementModule?.show(work);
 }
 
-function switchView(view) {
+function switchView(view, context = {}) {
   if (!allowedViews().has(view)) {
     toast("Não tem permissão para aceder a esta área.", "error");
     view = defaultViewForCurrentUser();
@@ -2235,10 +2235,10 @@ function switchView(view) {
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
   if (view === "finance") renderFinance();
-  if (view === "planning") planningModule.show();
+  if (view === "planning") planningModule.show(context);
   if (view === "action-plan") actionPlanModule.show();
   if (view === "documents") documentsModule.show();
-  if (view === "rnc") rncModule.show(selectedWorkId);
+  if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
   if (view === "subcontractors") subcontractorsModule.show();
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
