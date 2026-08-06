@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const app = fs.readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+const access = fs.readFileSync(new URL("../src/access-control.js", import.meta.url), "utf8");
+const sql = fs.readFileSync(new URL("../supabase/horas_extraordinarias_permissoes_corrigido.sql", import.meta.url), "utf8");
+assert(app.includes("canManageOvertime()"));
+assert(app.includes('id="overtime-entry-form"'));
+assert(app.includes('name="autorizado_por"'));
+assert(app.includes("item.autorizado_por"));
+assert(access.includes("adjunto:"));
+assert(sql.includes("r.papel in ('diretor_obra', 'adjunto', 'preparador')"));
+assert(sql.includes("fn_validar_autorizacao_horas_extra"));
+assert(sql.includes("horas_extraordinarias_select_tecnica"));
+assert(sql.includes("horas_extraordinarias_insert_tecnica"));
+console.log("overtime workflow tests passed");
