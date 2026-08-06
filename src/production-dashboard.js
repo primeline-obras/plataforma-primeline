@@ -409,7 +409,7 @@ export function createProductionDashboard(options) {
     const monthNoncompliantInspections = overviewState.inspections.filter(row => safeDate(row.data) >= monthStart && !compliantInspection(row));
     const expiringEpis = overviewState.epis.filter(row => {
       const validity = safeDate(row.data_validade || row.data_renovacao || row.validade);
-      return validity && validity >= today && validity <= epiLimit && (!activeCollaboratorIds.size || activeCollaboratorIds.has(row.colaborador_id));
+      return validity && validity >= today && validity <= epiLimit && activeCollaboratorIds.has(row.colaborador_id);
     });
     const dueDirectDebits = upcomingDirectDebitRows(overviewState.directDebits, overviewState.directDebitEntries, today, 7);
     const administrativeCards = role === "administrativo" ? `<section class="overview-role-kpis">

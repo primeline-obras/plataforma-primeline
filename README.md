@@ -225,6 +225,12 @@ Executar também `supabase/viaturas_prazos_edicao.sql` para distinguir a data da
 (`data_proxima_revisao`). A área Equipa mostra seguro, inspeção e revisão
 separadamente e permite a Administrativo/Gerência atualizar estes dados.
 
+Executar `supabase/alerta_primeira_consulta_medicina.sql` para agendar, através
+de `pg_cron`, a verificação diária dos colaboradores ativos que completaram 30
+dias desde `data_admissao` sem qualquer registo em `medicina_trabalho`. O script
+cria o alerta para o papel Administrativo, evita duplicados e falha de forma
+explícita se `pg_cron` não estiver ativo.
+
 Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
 com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da
 data indicada. A Visão Geral apresenta apenas alertas cuja data de gatilho já
