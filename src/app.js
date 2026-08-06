@@ -323,6 +323,11 @@ document.querySelector("#root").innerHTML = `
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
     </main>
+    <button class="notification-scrim" id="notification-scrim" type="button" aria-label="Fechar alertas" hidden></button>
+    <aside class="notification-drawer" id="notification-drawer" aria-hidden="true" aria-labelledby="notification-drawer-title">
+      <header><div><p>NOTIFICAÇÕES</p><h2 id="notification-drawer-title">ALERTAS PENDENTES</h2></div><button type="button" id="notification-close" aria-label="Fechar alertas">×</button></header>
+      <div class="notification-drawer-list" id="notification-drawer-list"></div>
+    </aside>
     <div id="toast"></div>
     <div class="dialog-backdrop" id="work-dialog" hidden>
       <section class="work-dialog-card" role="dialog" aria-modal="true" aria-labelledby="work-dialog-title">
@@ -2253,6 +2258,7 @@ function switchView(view, context = {}) {
   if (view === "documents") documentsModule.show();
   if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
   if (view === "subcontractors") subcontractorsModule.show();
+  if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
   if (view === "overview") productionDashboard.refreshOverview();

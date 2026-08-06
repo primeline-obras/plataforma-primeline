@@ -367,6 +367,7 @@ export function createProductionDashboard(options) {
   function renderOverview() {
     const notificationCount = document.querySelector("#notification-button i");
     if (notificationCount) notificationCount.textContent = String(overviewState.alerts.length);
+    renderNotificationDrawer();
     const works = getWorks();
     const pendingInvoices = getPendingInvoices();
     const financeInvoices = getFinanceInvoices();
@@ -483,6 +484,64 @@ export function createProductionDashboard(options) {
       </section>`}
       ${["diretor_obra", "adjunto", "preparador", "administrativo", "gerencia"].includes(role)
         ? `<section class="overview-work-sections">${scopedWorks.map(work => overviewWorkSection(work, pendingInvoices, readOnly, isProductionRole)).join("")}</section>` : ""}`;
+  }
+
+  function alertDestination(alert) {
+    if (["consulta_medicina", "primeira_consulta_medicina"].includes(alert.tipo)) return { view: "team", teamTab: "medicine" };
+    if (alert.tipo === "inspecao_viatura") return { view: "team", teamTab: "vehicles" };
+    if (["validade_epi", "validade_documento"].includes(alert.tipo)) return { view: "team", teamTab: "collaborators" };
+    if (alert.obra_id) return { view: "works" };
+    return { view: "overview" };
+  }
+
+  function closeNotificationDrawer() {
+    const drawer = document.querySelector("#notification-drawer");
+    const scrim = document.querySelector("#notification-scrim");
+    drawer?.classList.remove("open");
+    drawer?.setAttribute("aria-hidden", "true");
+    if (scrim) scrim.hidden = true;
+  }
+
+  function openNotificationDrawer() {
+    const drawer = document.querySelector("#notification-drawer");
+    const scrim = document.querySelector("#notification-scrim");
+    renderNotificationDrawer();
+    drawer?.classList.add("open");
+    drawer?.setAttribute("aria-hidden", "false");
+    if (scrim) scrim.hidden = false;
+    document.querySelector("#notification-close")?.focus();
+  }
+
+  function renderNotificationDrawer() {
+    const list = document.querySelector("#notification-drawer-list");
+    if (!list) return;
+    list.innerHTML = overviewState.alerts.length ? overviewState.alerts.map(alert => {
+      const destination = alertDestination(alert);
+      return `<article class="notification-drawer-item alert-${alertSeverity(alert)}">
+        <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em></div>
+        <strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong>
+        <p>${escapeHtml(alert.descricao || "")}</p>
+        <footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>
+      </article>`;
+    }).join("") : `<div class="notification-drawer-empty"><strong>TUDO EM DIA</strong><span>Não existem alertas pendentes.</span></div>`;
+  }
+
+  async function resolveAlert(alertId, resolveButton) {
+    resolveButton.disabled = true;
+    if (isSupabaseConfigured) {
+      const response = await supabase("rpc/fn_resolver_alerta", {
+        method: "POST",
+        body: JSON.stringify({ p_alerta_id: alertId }),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        resolveButton.disabled = false;
+        return toast(detail.message || "Não foi possível resolver o alerta.", "error");
+      }
+    }
+    overviewState.alerts = overviewState.alerts.filter(alert => alert.id !== alertId);
+    renderOverview();
+    toast("Alerta marcado como resolvido.");
   }
 
   async function refreshOverview() {
@@ -936,29 +995,26 @@ export function createProductionDashboard(options) {
   }
 
   function bind() {
-    document.querySelector("#notification-button")?.addEventListener("click", () => showView("overview"));
+    document.querySelector("#notification-button")?.addEventListener("click", openNotificationDrawer);
+    document.querySelector("#notification-close")?.addEventListener("click", closeNotificationDrawer);
+    document.querySelector("#notification-scrim")?.addEventListener("click", closeNotificationDrawer);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeNotificationDrawer();
+    });
+    document.querySelector("#notification-drawer")?.addEventListener("click", event => {
+      const viewButton = event.target.closest("[data-notification-view]");
+      if (viewButton) {
+        closeNotificationDrawer();
+        showView(viewButton.dataset.notificationView, { teamTab: viewButton.dataset.notificationTab || undefined });
+        return;
+      }
+      const resolveButton = event.target.closest("[data-resolve-alert]");
+      if (resolveButton) resolveAlert(resolveButton.dataset.resolveAlert, resolveButton);
+    });
     document.querySelector("#overview-view").addEventListener("click", event => {
       const resolveButton = event.target.closest("[data-resolve-alert]");
       if (resolveButton) {
-        resolveButton.disabled = true;
-        const alertId = resolveButton.dataset.resolveAlert;
-        const resolve = async () => {
-          if (isSupabaseConfigured) {
-            const response = await supabase("rpc/fn_resolver_alerta", {
-              method: "POST",
-              body: JSON.stringify({ p_alerta_id: alertId }),
-            });
-            if (!response.ok) {
-              const detail = await response.json().catch(() => ({}));
-              resolveButton.disabled = false;
-              return toast(detail.message || "Não foi possível resolver o alerta.", "error");
-            }
-          }
-          overviewState.alerts = overviewState.alerts.filter(alert => alert.id !== alertId);
-          renderOverview();
-          toast("Alerta marcado como resolvido.");
-        };
-        resolve();
+        resolveAlert(resolveButton.dataset.resolveAlert, resolveButton);
         return;
       }
       const meetingButton = event.target.closest("[data-meeting-work]");
