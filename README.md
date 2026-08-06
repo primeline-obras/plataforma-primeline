@@ -225,11 +225,18 @@ Executar também `supabase/viaturas_prazos_edicao.sql` para distinguir a data da
 (`data_proxima_revisao`). A área Equipa mostra seguro, inspeção e revisão
 separadamente e permite a Administrativo/Gerência atualizar estes dados.
 
-Executar `supabase/alerta_primeira_consulta_medicina.sql` para agendar, através
-de `pg_cron`, a verificação diária dos colaboradores ativos que completaram 30
-dias desde `data_admissao` sem qualquer registo em `medicina_trabalho`. O script
-cria o alerta para o papel Administrativo, evita duplicados e falha de forma
-explícita se `pg_cron` não estiver ativo.
+Executar `supabase/alerta_primeira_consulta_medicina.sql` para ativar a primeira
+versão do lembrete dos colaboradores que completaram 30 dias desde
+`data_admissao` sem registo em `medicina_trabalho`. A migração posterior
+`supabase/alertas_vencimentos_resolucao.sql` consolida esta verificação no job
+diário de baseline, acrescenta documentos, EPI, consultas e inspeções e elimina
+o job separado criado inicialmente.
+
+Os alertas permanecem pendentes quando são vistos. Apenas a ação explícita
+“Marcar como resolvido”, através de `fn_resolver_alerta`, altera o estado. A
+migração de vencimentos usa `viaturas.data_inspecao_proxima` com 15 dias de
+antecedência, 30 dias para documentos pessoais/EPI/Medicina e os limiares 15,
+7 e 3 dias para documentos da empresa.
 
 Os objetos são guardados sob `rh/{entidade_tipo}/{entidade_id}/...`. Documentos
 com validade geram um alerta para `administrativo`, com gatilho 30 dias antes da

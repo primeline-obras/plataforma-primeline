@@ -365,6 +365,8 @@ export function createProductionDashboard(options) {
   }
 
   function renderOverview() {
+    const notificationCount = document.querySelector("#notification-button i");
+    if (notificationCount) notificationCount.textContent = String(overviewState.alerts.length);
     const works = getWorks();
     const pendingInvoices = getPendingInvoices();
     const financeInvoices = getFinanceInvoices();
@@ -447,7 +449,7 @@ export function createProductionDashboard(options) {
           <div class="overview-alerts">${overviewState.alerts.length ? overviewState.alerts.map(alert => `
             <div class="alert-${alertSeverity(alert)}"><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
               <span><strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong><small>${escapeHtml(alert.descricao || "")}</small></span>
-              <em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em>
+              <span class="overview-alert-actions"><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></span>
             </div>`).join("") : `<div class="overview-empty">SEM ALERTAS PENDENTES</div>`}</div>
         </article>
         <article class="panel overview-panel">
@@ -527,7 +529,7 @@ export function createProductionDashboard(options) {
       administrativeRole ? query("epis?select=*", "EPIs") : [],
       administrativeRole ? query("colaboradores?select=id&data_saida=is.null", "Colaboradores ativos") : [],
     ]);
-    overviewState.alerts = alerts;
+      overviewState.alerts = alerts;
     overviewState.profile = profiles[0] || null;
     overviewState.phases = phases;
     overviewState.planning = planning;
@@ -934,7 +936,31 @@ export function createProductionDashboard(options) {
   }
 
   function bind() {
+    document.querySelector("#notification-button")?.addEventListener("click", () => showView("overview"));
     document.querySelector("#overview-view").addEventListener("click", event => {
+      const resolveButton = event.target.closest("[data-resolve-alert]");
+      if (resolveButton) {
+        resolveButton.disabled = true;
+        const alertId = resolveButton.dataset.resolveAlert;
+        const resolve = async () => {
+          if (isSupabaseConfigured) {
+            const response = await supabase("rpc/fn_resolver_alerta", {
+              method: "POST",
+              body: JSON.stringify({ p_alerta_id: alertId }),
+            });
+            if (!response.ok) {
+              const detail = await response.json().catch(() => ({}));
+              resolveButton.disabled = false;
+              return toast(detail.message || "Não foi possível resolver o alerta.", "error");
+            }
+          }
+          overviewState.alerts = overviewState.alerts.filter(alert => alert.id !== alertId);
+          renderOverview();
+          toast("Alerta marcado como resolvido.");
+        };
+        resolve();
+        return;
+      }
       const meetingButton = event.target.closest("[data-meeting-work]");
       if (meetingButton) return openMeeting(meetingButton.dataset.meetingWork);
       const actionButton = event.target.closest("[data-action-view]");
