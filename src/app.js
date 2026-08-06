@@ -292,7 +292,7 @@ document.querySelector("#root").innerHTML = `
       <div class="page workforce-view" id="workforce-view" hidden>
         <div class="page-heading">
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
-          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div>
+          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><div class="workforce-heading-buttons"><button class="outline-action" id="workforce-movements" type="button">VER MOVIMENTAÇÕES DO MÊS</button><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div></div>
         </div>
         <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="add-workforce-line" type="button">＋ NOVA LINHA</button><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
         <form class="workforce-new-line" id="workforce-new-line" hidden>
@@ -543,6 +543,17 @@ function canManageOvertime() {
   return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
 }
 
+function canManageWorkforce() {
+  return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
+}
+
+function canManageWorkforceWork(workId) {
+  if (canManageTeam()) return true;
+  return Boolean(workId && teamData.responsibles.some(item => item.obra_id === workId
+    && item.utilizador_id === accessContext.profile?.id
+    && ["diretor_obra", "adjunto", "preparador"].includes(item.papel)));
+}
+
 function canOpenTeamTab(tab) {
   if (canManageTeam()) return true;
   if (canManageOvertime()) return ["absences", "overtime"].includes(tab);
@@ -591,6 +602,7 @@ function applyAccessVisibility() {
   });
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
+  $("#edit-workforce").hidden = !canManageWorkforce();
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
@@ -1383,6 +1395,10 @@ function renderTeam() {
 }
 
 function setWorkforceEditing(enabled) {
+  if (enabled && !canManageWorkforce()) {
+    toast("A edição do quadro está reservada à equipa técnica, ao Administrativo e à Gerência.", "error");
+    return;
+  }
   workforceEditing = enabled;
   selectedWorkforcePersonId = "";
   selectedWorkforceSourceDate = "";
@@ -1477,6 +1493,10 @@ async function saveWorkforceAllocation(personId, date, target) {
   const type = ["garantia", "pontual"].includes(target?.type) ? target.type : "obra";
   const workId = type === "obra" ? target?.workId || null : null;
   const description = type === "obra" ? null : String(target?.description || "").trim();
+  if (!canManageWorkforceWork(workId)) {
+    toast(type === "obra" ? "Só pode alterar o quadro das obras pelas quais é responsável." : "As linhas de garantia e trabalhos pontuais são geridas pelo Administrativo ou pela Gerência.", "error");
+    return;
+  }
   const targetKey = workforceRowKey({ obra_id: workId, tipo_alocacao: type, descricao_livre: description });
   if (!targetKey || (type !== "obra" && !description)) {
     toast("A linha de destino não está corretamente identificada.", "error");
@@ -1659,6 +1679,54 @@ async function loadTeamData(force = false) {
   const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
   renderTeam();
+}
+
+function workforceMovementPlace(rows) {
+  return [...new Set(rows.map(item => {
+    if (item.obra_id) {
+      const work = works.find(entry => entry.id === item.obra_id);
+      return work ? `Obra ${work.numero} · ${work.nome}` : "Obra não encontrada";
+    }
+    return `${item.tipo_alocacao === "garantia" ? "Garantia" : "Pontual"} · ${item.descricao_livre || "Sem designação"}`;
+  }))].join(" / ") || "Sem colocação";
+}
+
+async function openWorkforceMovements() {
+  const anchor = new Date(`${selectedTeamWeek}T12:00:00`);
+  const monthStart = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}-01`;
+  const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12).toISOString().slice(0, 10);
+  const historyStart = addDaysIso(monthStart, -35);
+  $("#workflow-dialog-title").textContent = "MOVIMENTAÇÕES DO MÊS";
+  $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><div class="empty-state">A CARREGAR MOVIMENTAÇÕES…</div></div>`;
+  $("#workflow-dialog").hidden = false;
+  try {
+    let rows = teamData.allocations.filter(item => item.data >= historyStart && item.data <= monthEnd);
+    if (isSupabaseConfigured) {
+      const response = await supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,data,periodo,criado_por,criado_em&data=gte.${historyStart}&data=lte.${monthEnd}&order=colaborador_id,data,criado_em`);
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar as movimentações."));
+      rows = await response.json();
+    }
+    const byPersonDate = new Map();
+    rows.forEach(item => { const key = `${item.colaborador_id}|${item.data}`; if (!byPersonDate.has(key)) byPersonDate.set(key, []); byPersonDate.get(key).push(item); });
+    const movements = [];
+    collaborators.forEach(person => {
+      const snapshots = [...byPersonDate.entries()].filter(([key]) => key.startsWith(`${person.id}|`)).map(([key, items]) => ({ date: key.split("|")[1], items })).sort((a, b) => a.date.localeCompare(b.date));
+      let previous = null;
+      snapshots.forEach(snapshot => {
+        const signature = snapshot.items.map(item => `${item.obra_id || item.tipo_alocacao}:${item.descricao_livre || ""}:${item.periodo}`).sort().join("|");
+        if (previous && signature !== previous.signature && snapshot.date >= monthStart) {
+          const latest = [...snapshot.items].sort((a, b) => String(b.criado_em || "").localeCompare(String(a.criado_em || "")))[0];
+          movements.push({ person, date: snapshot.date, from: workforceMovementPlace(previous.items), to: workforceMovementPlace(snapshot.items), user: teamData.users.find(item => item.id === latest?.criado_por), createdAt: latest?.criado_em });
+        }
+        previous = { ...snapshot, signature };
+      });
+    });
+    movements.sort((a, b) => b.date.localeCompare(a.date) || a.person.nome.localeCompare(b.person.nome, "pt-PT"));
+    const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(anchor);
+    $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><header><div><span>PERÍODO</span><strong>${safeText(monthLabel.toUpperCase())}</strong></div><b>${movements.length} MUDANÇA${movements.length === 1 ? "" : "S"}</b></header>${movements.length ? movements.map(item => `<article><time>${formatOptionalDate(item.date)}</time><div><strong>${safeText(shortPersonName(item.person.nome))}</strong><span>${safeText(item.from)} <b>→</b> ${safeText(item.to)}</span></div><div><span>ALTERADO POR</span><strong>${safeText(item.user?.nome || "Utilizador não identificado")}</strong><small>${item.createdAt ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt)) : "Hora não registada"}</small></div></article>`).join("") : `<div class="empty-state"><strong>SEM MOVIMENTAÇÕES</strong><span>Não foram detetadas mudanças de obra neste mês.</span></div>`}<div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
+  } catch (error) {
+    $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><div class="empty-state"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><span>${safeText(error.message)}</span></div><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
+  }
 }
 
 async function saveAbsenceAttachment(absenceId, file) {
@@ -2458,6 +2526,7 @@ $("#work-status-filter").addEventListener("change", renderWorks);
 $("#team-search").addEventListener("input", renderTeam);
 $("#team-directory-search").addEventListener("input", renderTeam);
 $("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
+$("#workforce-movements").addEventListener("click", openWorkforceMovements);
 $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
 $("#remove-workforce-allocation").addEventListener("click", removeWorkforceAllocation);
 $("#add-workforce-line").addEventListener("click", () => toggleWorkforceLineForm($("#workforce-new-line").hidden));
