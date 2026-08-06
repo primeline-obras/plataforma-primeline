@@ -63,7 +63,7 @@ let workDetails = {
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
-let teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: "", error: "" };
+let teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let teamQuickFilter = "";
 let selectedTeamEntity = null;
@@ -581,6 +581,15 @@ function applyAccessVisibility() {
   });
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
+  document.querySelectorAll("[data-team-tab]").forEach(button => {
+    button.hidden = !canManageTeam() && button.dataset.teamTab !== "absences";
+  });
+  if (!canManageTeam()) {
+    selectedTeamTab = "absences";
+    $("#team-directory-search").closest(".team-toolbar").hidden = true;
+  } else {
+    $("#team-directory-search").closest(".team-toolbar").hidden = false;
+  }
   document.body.dataset.userRole = effectiveRole() || "sem_perfil";
   if (!permitted.has(activeView)) switchView(defaultViewForCurrentUser());
   renderUser();
@@ -617,6 +626,15 @@ window.addEventListener("primeline:session-expired", () => {
 function toast(message, kind = "success") {
   $("#toast").innerHTML = `<div class="toast ${kind}"><span>${icon(kind === "error" ? "x" : "check")}</span>${message}</div>`;
   setTimeout(() => { $("#toast").innerHTML = ""; }, 4200);
+}
+
+async function friendlyApiError(response, fallback) {
+  const payload = await response.json().catch(async () => ({ message: await response.text().catch(() => "") }));
+  const detail = payload.message || payload.details || payload.hint || fallback;
+  if (/férias|ferias|ausente|ausência|ausencia/i.test(detail)) {
+    return "Este colaborador está de férias/ausente nesta data.";
+  }
+  return detail || fallback;
 }
 
 function optionList(items, label, emptyLabel) {
@@ -1225,12 +1243,31 @@ function renderTeam() {
     $("#workforce-roster").innerHTML = `<div class="roster-intro"><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div class="roster-magnets">${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div><label class="roster-period">PERÍODO<select data-workforce-period><option value="dia_inteiro" ${selectedWorkforcePeriod === "dia_inteiro" ? "selected" : ""}>Dia inteiro</option><option value="manha" ${selectedWorkforcePeriod === "manha" ? "selected" : ""}>Manhã</option><option value="tarde" ${selectedWorkforcePeriod === "tarde" ? "selected" : ""}>Tarde</option></select></label>${selectedWorkforceSourceDate ? '<button class="roster-remove" type="button" data-remove-workforce>RETIRAR ALOCAÇÃO</button>' : ""}`;
   }
 
+  const absenceTypeLabels = {
+    ferias: "Férias", falta_injustificada: "Falta injustificada",
+    falta_justificada_sem_remuneracao: "Falta justificada sem remuneração",
+    falta_justificada_com_remuneracao: "Falta justificada com remuneração",
+  };
+  const absenceStateLabels = { ausente_pendente: "Justificação pendente", justificada: "Justificada", confirmada: "Confirmada" };
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
-  $("#team-absences").innerHTML = absences.length ? absences.map(item => {
+  const absenceForm = canManageTeam() ? `<form class="absence-entry-form" id="absence-entry-form">
+    <div><label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
+    <label>TIPO<select name="tipo" required><option value="ferias">Férias</option><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
+    <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
+    <label>ANEXO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label></div>
+    <button class="primary-button" type="submit">REGISTAR AUSÊNCIA <span>→</span></button><p class="form-error"></p>
+  </form><details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · AUSÊNCIAS DOS COLABORADORES DISTRIBUÍDOS PELAS SUAS OBRAS</div>`;
+  const absenceRows = absences.length ? absences.map(item => {
     const person = personById.get(item.colaborador_id);
-    return `<article class="absence-card"><time>${formatOptionalDate(item.data)}</time><strong>${person?.nome || "Colaborador"}</strong><span>${String(item.tipo || "Ausência").replace(/_/g, " ")}</span></article>`;
+    const attachments = teamData.absenceAttachments.filter(file => file.ausencia_id === item.id);
+    return `<article class="absence-card detailed">
+      <time>${formatOptionalDate(item.data)}</time><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${absenceTypeLabels[item.tipo] || String(item.tipo || "Ausência").replace(/_/g, " ")}</span>${item.comentario ? `<small>${safeText(item.comentario)}</small>` : ""}</div>
+      <em class="absence-state ${item.estado || "confirmada"}">${absenceStateLabels[item.estado] || item.estado || "Confirmada"}</em>
+      ${canManageTeam() ? `<div class="absence-attachments">${attachments.map(file => `<button type="button" data-absence-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${safeText(file.nome_arquivo)}">ANEXO · ${safeText(file.nome_arquivo)}</button>`).join("")}</div>` : ""}
+      ${canManageTeam() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
+    </article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
-  $("#team-absences").insertAdjacentHTML("afterbegin", `<section class="team-vacation-roster"><header><strong>REGISTAR / EDITAR FÉRIAS</strong><span>Todos os colaboradores ativos ficam disponíveis logo após a admissão.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></section>`);
+  $("#team-absences").innerHTML = `${absenceForm}${absenceRows}`;
 
   const contractByPerson = new Map(activeContracts.map(item => [item.colaborador_id, item]));
   const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
@@ -1444,7 +1481,7 @@ async function saveWorkforceAllocation(personId, date, target) {
   if (!allowsMultipleWorks && period === "dia_inteiro" && dayAllocations.length) {
     response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}`, { method: "DELETE" });
     if (!response.ok) {
-      toast(`Não foi possível alterar o quadro: ${await response.text()}`, "error");
+      toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
       return;
     }
   } else if (!allowsMultipleWorks && conflicting.length) {
@@ -1472,7 +1509,7 @@ async function saveWorkforceAllocation(personId, date, target) {
     });
   }
   if (!response.ok) {
-    toast(`Não foi possível alterar o quadro: ${await response.text()}`, "error");
+    toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
     $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões e tente novamente.";
     return;
   }
@@ -1571,31 +1608,116 @@ async function saveVacationDays(event) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const results = await Promise.all([
     supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
-    supabase(`ausencias?select=id,colaborador_id,data,tipo&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
-    supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo"),
-    supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar"),
+    supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
+    canManageTeam() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar") : Promise.resolve(new Response("[]", { status: 200 })),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
-    supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc"),
-    supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast"),
-    supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc"),
+    canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
   ]);
-  const names = ["alocações", "ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH"];
+  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
-  [teamData.allocations, teamData.absences, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments] = payloads.map(payload => Array.isArray(payload) ? payload : []);
+  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments] = payloads.map(payload => Array.isArray(payload) ? payload : []);
   const essentialFailures = failures.filter(item => ["alocações", "ausências"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
-  const documentFailures = failures.filter(item => ["viaturas", "medicina do trabalho", "documentos de RH"].includes(item.failed));
+  const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
   renderTeam();
+}
+
+async function saveAbsenceAttachment(absenceId, file) {
+  if (!file) return null;
+  if (!isSupabaseConfigured) {
+    const localPath = `local:${crypto.randomUUID()}`;
+    localEntityDocumentFiles.set(localPath, file);
+    const attachment = { id: crypto.randomUUID(), ausencia_id: absenceId, arquivo_url: localPath, nome_arquivo: file.name, criado_em: new Date().toISOString() };
+    teamData.absenceAttachments.unshift(attachment);
+    return attachment;
+  }
+  const objectPath = await uploadEntityDocument(file, "ausencia", absenceId, "comprovativo");
+  const response = await supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ ausencia_id: absenceId, arquivo_url: objectPath, nome_arquivo: file.name }),
+  });
+  if (!response.ok) throw new Error(await friendlyApiError(response, "O ficheiro foi enviado, mas não foi possível associá-lo à ausência."));
+  const [attachment] = await response.json();
+  teamData.absenceAttachments.unshift(attachment);
+  return attachment;
+}
+
+async function createAbsence(formElement) {
+  const button = formElement.querySelector('button[type="submit"]');
+  const errorNode = formElement.querySelector(".form-error");
+  const file = formElement.elements.arquivo.files[0];
+  const payload = {
+    colaborador_id: formElement.elements.colaborador_id.value,
+    tipo: formElement.elements.tipo.value,
+    data: formElement.elements.data.value,
+    estado: ["ferias", "falta_justificada_com_remuneracao"].includes(formElement.elements.tipo.value) ? "confirmada" : "ausente_pendente",
+  };
+  button.disabled = true;
+  errorNode.textContent = "";
+  try {
+    let saved;
+    if (isSupabaseConfigured) {
+      const response = await supabase("ausencias?select=id,colaborador_id,data,tipo,estado,comentario", {
+        method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const message = await friendlyApiError(response, "Não foi possível registar a ausência.");
+        throw new Error(/duplicate key|ausencias_colaborador_id_data_key/i.test(message) ? "Já existe uma ausência para este colaborador nesta data." : message);
+      }
+      [saved] = await response.json();
+    } else saved = { id: crypto.randomUUID(), ...payload, comentario: null };
+    teamData.absences.push(saved);
+    if (file) await saveAbsenceAttachment(saved.id, file);
+    renderTeam();
+    toast(file ? "Ausência e anexo registados." : "Ausência registada.");
+  } catch (error) {
+    errorNode.textContent = error.message || "Não foi possível registar a ausência.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function justifyAbsence(formElement) {
+  const absenceId = formElement.dataset.justifyAbsence;
+  const absence = teamData.absences.find(item => item.id === absenceId);
+  if (!absence) return;
+  const button = formElement.querySelector('button[type="submit"]');
+  const errorNode = formElement.querySelector(".form-error");
+  const comment = formElement.elements.comentario.value.trim();
+  const file = formElement.elements.arquivo.files[0];
+  button.disabled = true;
+  errorNode.textContent = "";
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase(`ausencias?id=eq.${encodeURIComponent(absenceId)}&select=id,colaborador_id,data,tipo,estado,comentario`, {
+        method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ estado: "justificada", comentario: comment }),
+      });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível justificar a ausência."));
+      Object.assign(absence, (await response.json())[0]);
+    } else Object.assign(absence, { estado: "justificada", comentario: comment });
+    if (file) await saveAbsenceAttachment(absenceId, file);
+    renderTeam();
+    toast("Ausência marcada como justificada.");
+  } catch (error) {
+    errorNode.textContent = error.message || "Não foi possível justificar a ausência.";
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function selectCurrentContract(contracts = []) {
@@ -2258,7 +2380,8 @@ function switchView(view, context = {}) {
   if (view === "documents") documentsModule.show();
   if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
   if (view === "subcontractors") subcontractorsModule.show();
-  if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);
+  if (view === "team" && !canManageTeam()) activateTeamTab("absences");
+  else if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
   if (view === "overview") productionDashboard.refreshOverview();
@@ -2407,6 +2530,7 @@ $("#workforce-roster").addEventListener("change", event => {
   if (select) selectedWorkforcePeriod = select.value;
 });
 function activateTeamTab(tab, preserveFilter = false) {
+  if (!canManageTeam() && tab !== "absences") tab = "absences";
   selectedTeamTab = tab;
   if (!preserveFilter) teamQuickFilter = "";
   document.querySelectorAll("[data-team-tab]").forEach(item => item.classList.toggle("active", item.dataset.teamTab === selectedTeamTab));
@@ -2418,6 +2542,23 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const absenceDownload = event.target.closest("[data-absence-download]");
+  if (absenceDownload) {
+    const path = decodeURIComponent(absenceDownload.dataset.absenceDownload || "");
+    absenceDownload.disabled = true;
+    try {
+      const blob = localEntityDocumentFiles.get(path) || await downloadWorkDocument(path);
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = absenceDownload.dataset.fileName || "comprovativo";
+      document.body.appendChild(link);
+      link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    } catch (error) { toast(error.message || "Não foi possível descarregar o comprovativo.", "error"); }
+    finally { absenceDownload.disabled = false; }
+    return;
+  }
   const vacationPerson = event.target.closest("[data-team-vacation-person]");
   if (vacationPerson) {
     if (!canManageTeam()) return toast("A gestão de férias está reservada ao Administrativo e à Gerência.", "error");
@@ -2479,6 +2620,20 @@ $("#team-view").addEventListener("click", async event => {
   }
 });
 $("#team-view").addEventListener("submit", async event => {
+  const absenceForm = event.target.closest("#absence-entry-form");
+  if (absenceForm) {
+    event.preventDefault();
+    if (!canManageTeam()) return toast("A gestão de ausências está reservada ao Administrativo e à Gerência.", "error");
+    await createAbsence(absenceForm);
+    return;
+  }
+  const justificationForm = event.target.closest("[data-justify-absence]");
+  if (justificationForm) {
+    event.preventDefault();
+    if (!canManageTeam()) return toast("A justificação de ausências está reservada ao Administrativo e à Gerência.", "error");
+    await justifyAbsence(justificationForm);
+    return;
+  }
   const vehicleForm = event.target.closest("[data-vehicle-edit-form]");
   if (vehicleForm) {
     event.preventDefault();

@@ -281,7 +281,7 @@ export async function uploadWorkDocument(file, obraId, documentType) {
 export async function uploadEntityDocument(file, entityType, entityId, documentType) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
-  if (!['colaborador', 'viatura'].includes(entityType)) throw new Error("Tipo de entidade inválido.");
+  if (!['colaborador', 'viatura', 'ausencia'].includes(entityType)) throw new Error("Tipo de entidade inválido.");
   const extension = file.name.split(".").pop()?.toLowerCase() || "";
   if (!WORK_DOCUMENT_EXTENSIONS.has(extension)) {
     throw new Error("Formato não suportado. Use PDF, imagem, Excel/CSV, Word ou outro formato documental permitido.");
