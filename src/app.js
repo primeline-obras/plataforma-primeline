@@ -119,7 +119,7 @@ document.querySelector("#root").innerHTML = `
     </aside>
     <main>
       <header class="topbar"><button class="mobile-menu" id="menu">${icon("menu")}</button><div class="mobile-brand">${brand()}</div>
-        <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button">${icon("bell")}<i>3</i></button></div>
+        <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button" id="notification-button" type="button" aria-label="Ver alertas pendentes">${icon("bell")}<i>0</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
