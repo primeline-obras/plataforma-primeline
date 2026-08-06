@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { planningBaselineDelays, upcomingDirectDebitRows } from "../src/production-dashboard.js";
+import { clientFinancialComposition, planningBaselineDelays, upcomingDirectDebitRows } from "../src/production-dashboard.js";
 
 const source = fs.readFileSync(new URL("../src/production-dashboard.js", import.meta.url), "utf8");
 const planning = fs.readFileSync(new URL("../src/planning.js", import.meta.url), "utf8");
@@ -21,13 +21,27 @@ assert.equal(delayed.length, 1);
 assert.equal(delayed[0].days, 10);
 assert.deepEqual(planningBaselineDelays({ ...work, planeamento_baseline_congelado: false }, phases, []), []);
 
+const composition = clientFinancialComposition({
+  venda_contratual_inicial: 1000,
+  venda_contratual_efetiva: 1200,
+  custo_direto_inicial: 700,
+  custo_direto_efetivo: 800,
+}, [{ valor: -100, preco_custo: -60 }, { valor: 300, preco_custo: 150 }]);
+assert.deepEqual(composition.sale, [1000, 1200, 200, 1400]);
+assert.deepEqual(composition.cost, [700, 800, 90, 890]);
+assert.deepEqual(composition.margin, [300, 400, 110, 510]);
+assert.deepEqual(composition.fixedCosts, [59.5, 68, 7.65, 75.65]);
+
 assert.match(source, /INCIDENTES ESTE MÊS/);
 assert.match(source, /EPIs A VENCER · 30 DIAS/);
 assert.match(source, /DÉBITOS DIRETOS · 7 DIAS/);
-assert.match(source, /RNCs FECHADAS SEM AVALIAÇÃO/);
+assert.doesNotMatch(source, /RNCs FECHADAS SEM AVALIAÇÃO/);
+assert.match(source, /MAPA DE COMPOSIÇÃO DOS TOTAIS/);
+assert.match(source, /CUSTOS FIXOS \(TOTAL C\.D\. × 8,5%\)/);
+assert.match(source, /ORÇAMENTO INICIAL/);
 assert.match(source, /TAREFAS IMPEDIDAS · URGENTE/);
 assert.match(source, /VER RESUMO POR FASE/);
-assert.match(source, /technicalRole \|\| financialRole \? query\("rnc/);
+assert.match(source, /technicalRole \? query\("rnc/);
 assert.match(planning, /options\.workId/);
 assert.match(planning, /options\.view/);
 assert.match(app, /planningModule\.show\(context\)/);
