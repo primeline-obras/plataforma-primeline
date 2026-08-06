@@ -930,6 +930,18 @@ button, input, select, textarea,
 .vehicle-edit-form .form-error { grid-column: 1 / -1; margin: 0; color: var(--neg-text); font-size: 13px; }
 .workforce-legend { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
 .workforce-heading-actions { display: grid; justify-items: end; gap: 14px; }
+.workforce-heading-buttons { display: flex; align-items: center; gap: 8px; }
+.workforce-movements { padding: 24px; }
+.workforce-movements > header { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--card-border); }
+.workforce-movements > header div { display: grid; gap: 5px; }
+.workforce-movements > header span, .workforce-movements article div:last-child span { color: var(--text-secondary); font-size: 9px; font-weight: 800; letter-spacing: 1px; }
+.workforce-movements > header b { color: var(--accent); font-size: 11px; letter-spacing: 1px; }
+.workforce-movements article { display: grid; grid-template-columns: 95px minmax(260px, 1fr) minmax(180px, .55fr); gap: 18px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--card-border); }
+.workforce-movements article time { color: var(--accent); font-size: 12px; font-weight: 800; }
+.workforce-movements article > div { display: grid; gap: 5px; }
+.workforce-movements article span { color: var(--text-secondary); font-size: 12px; }
+.workforce-movements article small { color: var(--text-secondary); font-size: 10px; }
+@media (max-width: 800px) { .workforce-heading-buttons { flex-direction: column; align-items: stretch; }.workforce-movements article { grid-template-columns: 1fr; } }
 .workforce-heading-actions .outline-action.active { background: var(--sidebar-bg); border-color: var(--sidebar-bg); color: #fff; }
 .workforce-edit-banner { margin: 20px 0 -8px; padding: 12px 16px; border: 1px solid var(--info-border); border-left: 3px solid var(--info-text); border-radius: 10px; background: var(--info-bg); color: var(--info-text); display: flex; align-items: center; gap: 14px; box-shadow: 0 3px 10px rgba(0,0,0,.12); }
 .workforce-edit-banner[hidden] { display: none; }
