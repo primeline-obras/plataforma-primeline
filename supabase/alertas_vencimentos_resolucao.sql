@@ -137,7 +137,13 @@ begin
   select
     v_empresa_id, 'validade_epi', 'epis', e.id,
     'EPI a vencer: ' || c.nome,
-    coalesce(e.tipo_equipamento, 'EPI') || ' · validade em ' || to_char(e.data_validade, 'DD/MM/YYYY'),
+    coalesce(
+      to_jsonb(e) ->> 'tipo_epi',
+      to_jsonb(e) ->> 'tipo_equipamento',
+      to_jsonb(e) ->> 'tipo',
+      to_jsonb(e) ->> 'equipamento',
+      'EPI'
+    ) || ' · validade em ' || to_char(e.data_validade, 'DD/MM/YYYY'),
     e.data_validade, 30, e.data_validade - 30, 'administrativo', 'pendente'
   from public.epis e
   join public.colaboradores c on c.id = e.colaborador_id and c.data_saida is null
