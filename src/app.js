@@ -539,6 +539,16 @@ function canManageTeam() {
   return hasFullAccess() || isAdministrative();
 }
 
+function canManageOvertime() {
+  return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
+}
+
+function canOpenTeamTab(tab) {
+  if (canManageTeam()) return true;
+  if (canManageOvertime()) return ["absences", "overtime"].includes(tab);
+  return tab === "absences";
+}
+
 function isFinancial() {
   return effectiveRole() === "financeiro";
 }
@@ -582,8 +592,9 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   document.querySelectorAll("[data-team-tab]").forEach(button => {
-    button.hidden = !canManageTeam() && button.dataset.teamTab !== "absences";
+    button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
+  if (!canOpenTeamTab(selectedTeamTab)) selectedTeamTab = "absences";
   if (!canManageTeam()) {
     selectedTeamTab = "absences";
     $("#team-directory-search").closest(".team-toolbar").hidden = true;
@@ -1321,12 +1332,26 @@ function renderTeam() {
     return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " ")}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><em>${contract.estado || "ativo"}</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM CONTRATOS</strong><span>Não existem contratos ativos registados.</span></div>`;
 
+  const manageableWorkIds = canManageTeam()
+    ? new Set(works.map(work => work.id))
+    : new Set(teamData.responsibles.filter(item => item.utilizador_id === accessContext.profile?.id && ["diretor_obra", "adjunto", "preparador"].includes(item.papel)).map(item => item.obra_id));
+  const manageableWorks = works.filter(work => manageableWorkIds.has(work.id));
+  const overtimeForm = canManageOvertime() ? `<form class="overtime-entry-form" id="overtime-entry-form">
+    <div><label>OBRA<select name="obra_id" required><option value="">Selecionar obra</option>${manageableWorks.map(work => `<option value="${work.id}">Obra ${safeText(work.numero)} · ${safeText(work.nome)}</option>`).join("")}</select></label>
+    <label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
+    <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
+    <label>HORAS<input name="horas" type="number" min="0.25" max="24" step="0.25" required></label>
+    <label>MOTIVO OPCIONAL<input name="motivo" maxlength="500" placeholder="Motivo das horas extraordinárias"></label>
+    <label>AUTORIZADO POR<select name="autorizado_por" disabled><option value="">Selecionar primeiro a obra</option></select></label></div>
+    <button class="primary-button" type="submit">REGISTAR HORAS <span>→</span></button><p class="form-error"></p>
+  </form>` : `<div class="readonly-note">CONSULTA · HORAS EXTRAORDINÁRIAS DAS SUAS OBRAS</div>`;
   $("#team-overtime-count").textContent = `${pendingHours.toLocaleString("pt-PT")} H POR PAGAR`;
-  $("#team-overtime").innerHTML = activeOvertime.length ? activeOvertime.map(item => {
+  $("#team-overtime").innerHTML = overtimeForm + (activeOvertime.length ? activeOvertime.map(item => {
     const person = personById.get(item.colaborador_id);
     const work = workById.get(item.obra_id);
-    return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><em>POR PAGAR</em></article>`;
-  }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`;
+    const authorizer = teamData.users.find(user => user.id === item.autorizado_por);
+    return `<article class="team-detail-row overtime-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}${item.motivo ? ` · ${safeText(item.motivo)}` : ""}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><div><span>AUTORIZADO POR</span><strong>${safeText(authorizer?.nome || "Não indicado")}</strong></div><em>POR PAGAR</em></article>`;
+  }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`);
 
   $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${activeMedicine.length} REGISTOS` : `${activeMedicine.length} REGISTO${activeMedicine.length === 1 ? "" : "S"}`;
   const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : activeMedicine;
@@ -1618,7 +1643,7 @@ async function loadTeamData(force = false) {
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     canManageTeam() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
-    canManageTeam() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,estado_pagamento&estado_pagamento=eq.por_pagar") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageOvertime() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,motivo,autorizado_por,estado_pagamento&estado_pagamento=eq.por_pagar&order=data.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
@@ -2530,7 +2555,7 @@ $("#workforce-roster").addEventListener("change", event => {
   if (select) selectedWorkforcePeriod = select.value;
 });
 function activateTeamTab(tab, preserveFilter = false) {
-  if (!canManageTeam() && tab !== "absences") tab = "absences";
+  if (!canOpenTeamTab(tab)) tab = "absences";
   selectedTeamTab = tab;
   if (!preserveFilter) teamQuickFilter = "";
   document.querySelectorAll("[data-team-tab]").forEach(item => item.classList.toggle("active", item.dataset.teamTab === selectedTeamTab));
@@ -2619,7 +2644,45 @@ $("#team-view").addEventListener("click", async event => {
     downloadButton.disabled = false;
   }
 });
+$("#team-view").addEventListener("change", event => {
+  const workSelect = event.target.closest('#overtime-entry-form [name="obra_id"]');
+  if (!workSelect) return;
+  const form = workSelect.closest("form");
+  const authorizerSelect = form.elements.autorizado_por;
+  const allowedRoles = new Set(["diretor_obra", "adjunto", "preparador"]);
+  const eligible = teamData.responsibles
+    .filter(item => item.obra_id === workSelect.value && allowedRoles.has(item.papel))
+    .map(item => ({ assignment: item, user: teamData.users.find(user => user.id === item.utilizador_id) }))
+    .filter(item => item.user);
+  authorizerSelect.innerHTML = `<option value="">Não indicado</option>${eligible.map(item => `<option value="${item.user.id}">${safeText(item.user.nome)} · ${String(item.assignment.papel).replaceAll("_", " ")}</option>`).join("")}`;
+  authorizerSelect.disabled = !workSelect.value;
+});
 $("#team-view").addEventListener("submit", async event => {
+  const overtimeForm = event.target.closest("#overtime-entry-form");
+  if (overtimeForm) {
+    event.preventDefault();
+    if (!canManageOvertime()) return toast("Não tem permissão para lançar horas extraordinárias.", "error");
+    const fields = Object.fromEntries(new FormData(overtimeForm));
+    const button = overtimeForm.querySelector('button[type="submit"]');
+    const errorNode = overtimeForm.querySelector(".form-error");
+    button.disabled = true;
+    errorNode.textContent = "";
+    const payload = { colaborador_id: fields.colaborador_id, obra_id: fields.obra_id, data: fields.data, horas: Number(fields.horas), motivo: fields.motivo?.trim() || null, autorizado_por: fields.autorizado_por || null };
+    try {
+      if (isSupabaseConfigured) {
+        const response = await supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,motivo,autorizado_por,estado_pagamento", {
+          method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível registar as horas extraordinárias."));
+        const [saved] = await response.json();
+        teamData.overtime.unshift(saved);
+      } else teamData.overtime.unshift({ id: crypto.randomUUID(), estado_pagamento: "por_pagar", ...payload });
+      renderTeam();
+      toast("Horas extraordinárias registadas.");
+    } catch (error) { errorNode.textContent = error.message; }
+    finally { button.disabled = false; }
+    return;
+  }
   const absenceForm = event.target.closest("#absence-entry-form");
   if (absenceForm) {
     event.preventDefault();
