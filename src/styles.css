@@ -1713,7 +1713,7 @@ button, input, select, textarea,
 
 /* Visão Geral por papel · prioridades de 2026 */
 .overview-role-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0 0 20px; }
-.overview-role-kpis.financial { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.overview-role-kpis.financial { grid-template-columns:minmax(0,1fr); }
 .overview-role-kpis article { min-height:104px; padding:20px 22px; border:1px solid var(--card-border,var(--line)); border-left:4px solid var(--info-text,#2f6fb8); border-radius:12px; background:var(--card,var(--paper)); box-shadow:0 1px 3px rgba(0,0,0,.15); display:flex; flex-direction:column; justify-content:center; }
 .overview-role-kpis article.attention { border-left-color:var(--warn-text,#a66f00); background:var(--warn-bg,#fff7dd); }
 .overview-role-kpis article.urgent { border-left-color:var(--neg-text,#bd302b); background:var(--neg-bg,#fff0ef); }
@@ -1735,3 +1735,23 @@ button, input, select, textarea,
 .overview-technical-card .overview-empty { min-height:65px; margin:0; display:grid; place-items:center; }.overview-planning-link { width:calc(100% - 20px); min-height:34px; margin:10px; border:1px solid var(--card-border,var(--line)); border-radius:8px; background:transparent; color:var(--info-text,#2f6fb8); font:800 9px "Manrope"; letter-spacing:.5px; }
 @media (max-width:1100px) { .overview-technical-grid { grid-template-columns:1fr 1fr; }.overview-technical-grid > section:last-child { grid-column:1/-1; } }
 @media (max-width:760px) { .overview-role-kpis,.overview-role-kpis.financial,.overview-technical-grid { grid-template-columns:1fr; }.overview-technical-grid > section:last-child { grid-column:auto; }.overview-financial-rncs article { grid-template-columns:1fr auto; }.overview-financial-rncs article b { grid-column:1/-1; justify-self:start; }.overview-blocked-priority > div { grid-template-columns:1fr; }.overview-blocked-priority button { border-right:0; border-bottom:1px solid var(--neg-border,#e7b9b5); } }
+
+/* Visão Geral Financeiro · composição dos totais por obra */
+.overview-financial-composition { overflow:hidden; margin-top:18px; padding:20px; }
+.overview-composition-list { display:grid; gap:16px; margin-top:12px; }
+.overview-composition-work { overflow:hidden; border:1px solid var(--card-border,var(--line)); border-radius:11px; background:var(--card,var(--paper)); }
+.overview-composition-work > header { min-height:60px; padding:12px 16px; border-bottom:1px solid var(--card-border,var(--line)); display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.overview-composition-work > header div { display:grid; gap:3px; }.overview-composition-work > header span { color:var(--accent-value,#2f6fb8); font:800 9px "Manrope"; letter-spacing:.8px; }.overview-composition-work > header h3 { margin:0; color:var(--text-primary,var(--ink)); font-size:15px; }.overview-composition-work > header em { padding:6px 9px; border-radius:999px; background:var(--info-bg,#e7f2fa); color:var(--info-text,#2f6fb8); font:800 9px "Manrope"; font-style:normal; letter-spacing:.5px; }
+.overview-composition-work.investment > header em { background:var(--warn-bg,#fff7dd); color:var(--warn-text,#a66f00); }
+.overview-composition-scroll { overflow-x:auto; }
+.overview-composition-work table { width:100%; min-width:760px; border-collapse:collapse; table-layout:fixed; }
+.overview-composition-work th,.overview-composition-work td { height:48px; padding:10px 13px; border-right:1px solid var(--card-border,var(--line)); border-bottom:1px solid var(--card-border,var(--line)); text-align:right; }
+.overview-composition-work tr > *:last-child { border-right:0; }.overview-composition-work tbody tr:last-child > * { border-bottom:0; }
+.overview-composition-work thead th { height:42px; background:var(--sidebar,#20242b); color:#f5f7fa; font:800 9px "Manrope"; letter-spacing:.55px; }
+.overview-composition-work thead th:first-child,.overview-composition-work tbody th { width:24%; text-align:left; }
+.overview-composition-work tbody th { color:var(--text-secondary,var(--muted)); font:800 10px "Manrope"; letter-spacing:.35px; }
+.overview-composition-work tbody td { color:var(--text-primary,var(--ink)); font:800 12px "Manrope"; }
+.overview-composition-work tbody tr.margin { background:color-mix(in srgb,var(--info-bg,#e7f2fa) 45%,transparent); }.overview-composition-work tbody tr.margin td { color:var(--accent-value,#2f6fb8); }
+.overview-composition-work tbody tr.fixed { background:color-mix(in srgb,var(--warn-bg,#fff7dd) 55%,transparent); }.overview-composition-work tbody tr.fixed td { color:var(--warn-text,#a66f00); }
+.overview-composition-work td.positive { color:var(--pos-text,#237a4b); }.overview-composition-work td.negative { color:var(--neg-text,#bd302b); }
+@media (max-width:760px) { .overview-financial-composition { padding:14px; }.overview-composition-work > header { align-items:flex-start; flex-direction:column; }.overview-composition-work table { min-width:700px; } }

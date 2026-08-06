@@ -25,6 +25,22 @@ export const investmentFinancialValues = (investment = {}, actualCost = 0) => {
   const revisedBudget = number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva);
   return { initialBudget, revisedBudget, actualCost: number(actualCost), deviation: number(actualCost) - revisedBudget };
 };
+export const clientFinancialComposition = (contract = {}, approvedTees = [], fallbackEffectiveCost = 0) => {
+  const initialSale = number(contract.venda_contratual_inicial);
+  const effectiveSale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial);
+  const teeSale = sum(approvedTees, "valor");
+  const initialCost = number(contract.custo_direto_inicial);
+  const effectiveCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial) || number(fallbackEffectiveCost);
+  const teeCost = sum(approvedTees, "preco_custo");
+  const sale = [initialSale, effectiveSale, teeSale, effectiveSale + teeSale];
+  const cost = [initialCost, effectiveCost, teeCost, effectiveCost + teeCost];
+  return {
+    sale,
+    cost,
+    margin: sale.map((value, index) => value - cost[index]),
+    fixedCosts: cost.map(value => Math.round(value * 0.085 * 100) / 100),
+  };
+};
 export const materialInvoiceValue = (invoice, items = []) => {
   const invoiceItems = items.filter(item => item.fatura_id === invoice.id);
   if (!invoiceItems.length) return number(invoice.valor);
@@ -143,7 +159,7 @@ export function createProductionDashboard(options) {
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
     contracts: [], tees: [], investments: [], impacts: [], measurements: [], subcontracts: [], consultations: [],
     payments: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
-    planningItems: [], rncs: [], evaluations: [], incidents: [], inspections: [], epis: [], activeCollaborators: [], warnings: [],
+    planningItems: [], rncs: [], incidents: [], inspections: [], epis: [], activeCollaborators: [], warnings: [],
   });
   let overviewState = emptyOverviewState();
   let meetingState = null;
@@ -224,16 +240,42 @@ export function createProductionDashboard(options) {
     const workBudget = overviewState.budget.filter(item => phaseIds.has(item.fase_id));
     const directCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
       || effectiveDirectCost(workBudget, sale);
+    const composition = clientFinancialComposition(contract, approvedTees, directCost);
     const billed = totalClientBilling(contract, overviewState.measurements.filter(row => row.obra_id === workId));
     const totalSale = sale + approvedTeeSale;
     const updatedDirectCost = directCost + approvedTeeCost;
     return {
       mode: "client",
       sale: totalSale, directCost: updatedDirectCost, margin: totalSale - updatedDirectCost,
+      composition,
       billed, unbilled: totalSale - billed, approvedTees, pendingTees,
       subcontracts: overviewState.subcontracts.filter(row => row.obra_id === workId),
       consultations: overviewState.consultations.filter(row => row.obra_id === workId && row.estado === "em_consulta"),
     };
+  }
+
+  function financialWorkComposition(work) {
+    const summary = workFinancialSummary(work);
+    if (summary.mode === "investment") {
+      return `<article class="overview-composition-work investment">
+        <header><div><span>OBRA ${escapeHtml(work.numero || "—")}</span><h3>${escapeHtml(work.nome || "Obra sem designação")}</h3></div><em>INVESTIMENTO PRÓPRIO</em></header>
+        <div class="overview-composition-scroll"><table><thead><tr><th>INDICADOR</th><th>ORÇAMENTO INICIAL</th><th>ORÇAMENTO REVISTO</th><th>CUSTO REALIZADO</th><th>DESVIO</th></tr></thead>
+          <tbody><tr><th>INVESTIMENTO</th><td>${euro.format(summary.initialBudget)}</td><td>${euro.format(summary.revisedBudget)}</td><td>${euro.format(summary.actualCost)}</td><td class="${summary.deviation > 0 ? "negative" : "positive"}">${euro.format(summary.deviation)}</td></tr></tbody>
+        </table></div>
+      </article>`;
+    }
+    const rows = [
+      ["VALOR VENDA", summary.composition.sale, "value"],
+      ["CUSTO DIRETO", summary.composition.cost, "cost"],
+      ["MARGEM PREVISTA", summary.composition.margin, "margin"],
+      ["CUSTOS FIXOS (TOTAL C.D. × 8,5%)", summary.composition.fixedCosts, "fixed"],
+    ];
+    return `<article class="overview-composition-work">
+      <header><div><span>OBRA ${escapeHtml(work.numero || "—")}</span><h3>${escapeHtml(work.nome || "Obra sem designação")}</h3></div><em>CLIENTE EXTERNO</em></header>
+      <div class="overview-composition-scroll"><table><thead><tr><th>INDICADOR</th><th>CONTRATUAL INICIAL</th><th>CONTRATUAL EFETIVO</th><th>TEEs / AJUSTES</th><th>TOTAL ATUALIZADO</th></tr></thead>
+        <tbody>${rows.map(([label, values, className]) => `<tr class="${className}"><th>${label}</th>${values.map(value => `<td>${euro.format(value)}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table></div>
+    </article>`;
   }
 
   const rncCode = (work, row) => `RNC-${String(work?.numero || "OBRA")}-${String(row?.numero || 0).padStart(3, "0")}`;
@@ -370,8 +412,6 @@ export function createProductionDashboard(options) {
       return validity && validity >= today && validity <= epiLimit && (!activeCollaboratorIds.size || activeCollaboratorIds.has(row.colaborador_id));
     });
     const dueDirectDebits = upcomingDirectDebitRows(overviewState.directDebits, overviewState.directDebitEntries, today, 7);
-    const evaluatedSubcontracts = new Set(overviewState.evaluations.map(row => row.subempreitada_id).filter(Boolean));
-    const unassessedRncs = overviewState.rncs.filter(row => row.estado === "fechado" && row.subempreitada_id && !evaluatedSubcontracts.has(row.subempreitada_id));
     const administrativeCards = role === "administrativo" ? `<section class="overview-role-kpis">
       <article class="attention"><span>INCIDENTES ESTE MÊS</span><strong>${monthIncidents.length}</strong><small>${monthNoncompliantInspections.length} inspeções não conformes</small></article>
       <article class="${expiringEpis.length ? "attention" : ""}"><span>EPIs A VENCER · 30 DIAS</span><strong>${expiringEpis.length}</strong><small>colaboradores ativos</small></article>
@@ -379,11 +419,6 @@ export function createProductionDashboard(options) {
     </section>` : "";
     const financialCards = role === "financeiro" ? `<section class="overview-role-kpis financial">
       <article class="${dueDirectDebits.length ? "attention" : ""}"><span>DÉBITOS DIRETOS · 7 DIAS</span><strong>${dueDirectDebits.length}</strong><small>${euro.format(sum(dueDirectDebits, "valor"))} previstos</small></article>
-      <article class="${unassessedRncs.length ? "urgent" : ""}"><span>RNCs SEM AVALIAÇÃO</span><strong>${unassessedRncs.length}</strong><small>fechadas e ligadas a subempreitadas</small></article>
-    </section>` : "";
-    const financialRncs = role === "financeiro" && unassessedRncs.length ? `<section class="panel overview-financial-rncs">
-      <div class="overview-section-head"><div><p class="eyebrow">CONTROLO DE FORNECEDORES</p><h2>RNCs FECHADAS SEM AVALIAÇÃO</h2></div><span>${unassessedRncs.length}</span></div>
-      <div>${unassessedRncs.map(row => { const work = works.find(item => item.id === row.obra_id); return `<article><span><strong>${escapeHtml(rncCode(work, row))}</strong><small>OBRA ${escapeHtml(work?.numero || "—")} · ${escapeHtml(work?.nome || "")}</small></span><em>${row.data_fecho ? prettyDate.format(safeDate(row.data_fecho)) : "SEM DATA"}</em><b>AVALIAÇÃO EM FALTA</b></article>`; }).join("")}</div>
     </section>` : "";
     const warning = overviewState.warnings.length
       ? `<div class="overview-warning">Alguns dados estão indisponíveis: ${escapeHtml(overviewState.warnings.join(" · "))}</div>` : "";
@@ -400,7 +435,7 @@ export function createProductionDashboard(options) {
         <article><span>ALERTAS PENDENTES</span><strong>${overviewState.alerts.length}</strong><small>por resolver</small></article>
         <article class="money"><span>POR PAGAR ESTA SEMANA</span><strong>${euro.format(sum(unpaid, "valor"))}</strong><small>faturas aprovadas</small></article>
       </section>
-      ${administrativeCards}${financialCards}${financialRncs}
+      ${administrativeCards}${financialCards}
       ${["financeiro", "administrativo", "gerencia"].includes(role) ? `<section class="panel overview-consolidated">
         <div class="overview-section-head"><div><p class="eyebrow">TODAS AS OBRAS EM CURSO</p><h2>RESUMO FINANCEIRO CONSOLIDADO</h2></div><span>${scopedWorks.length}</span></div>
         ${clientWorks.length ? `<div class="overview-work-metrics"><div><span>VENDA · CLIENTES</span><strong>${euro.format(consolidated.sale)}</strong></div><div><span>CUSTO DIRETO</span><strong>${euro.format(consolidated.cost)}</strong></div><div><span>MARGEM</span><strong>${euro.format(consolidated.margin)}</strong></div><div><span>FATURADO</span><strong>${euro.format(consolidated.billed)}</strong><small>POR FATURAR ${euro.format(consolidated.unbilled)}</small></div></div>` : ""}
@@ -428,7 +463,10 @@ export function createProductionDashboard(options) {
           }).join("") : `<div class="overview-empty">NÃO HÁ AÇÕES PENDENTES</div>`}</div>
         </article>
       </section>
-      <section class="panel overview-works">
+      ${role === "financeiro" ? `<section class="panel overview-financial-composition">
+        <div class="overview-section-head"><div><p class="eyebrow">CARTEIRA FINANCEIRA</p><h2>MAPA DE COMPOSIÇÃO DOS TOTAIS</h2></div><span>${scopedWorks.length}</span></div>
+        <div class="overview-composition-list">${scopedWorks.length ? [...scopedWorks].sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true })).map(financialWorkComposition).join("") : `<div class="overview-empty">NÃO EXISTEM OBRAS EM CURSO</div>`}</div>
+      </section>` : `<section class="panel overview-works">
         <div class="overview-section-head"><div><p class="eyebrow">PRODUÇÃO</p><h2>OBRAS EM CURSO</h2></div><span>${scopedWorks.length}</span></div>
         <div class="overview-work-list">${scopedWorks.length ? scopedWorks
           .sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true }))
@@ -440,7 +478,7 @@ export function createProductionDashboard(options) {
               <div><i style="width:${progress}%"></i></div><em>${Math.round(progress)}%</em><b>→</b>
             </button>`;
           }).join("") : `<div class="overview-empty">NÃO EXISTEM OBRAS EM CURSO</div>`}</div>
-      </section>
+      </section>`}
       ${["diretor_obra", "adjunto", "preparador", "administrativo", "gerencia"].includes(role)
         ? `<section class="overview-work-sections">${scopedWorks.map(work => overviewWorkSection(work, pendingInvoices, readOnly, isProductionRole)).join("")}</section>` : ""}`;
   }
@@ -459,12 +497,11 @@ export function createProductionDashboard(options) {
     const requestedRole = access.isAdmin || access.role === "gerencia" ? "gerencia" : access.role || "";
     const technicalRole = ["diretor_obra", "adjunto", "preparador"].includes(requestedRole);
     const administrativeRole = requestedRole === "administrativo";
-    const financialRole = requestedRole === "financeiro";
     const needsDirectDebits = requestedRole !== "encarregado";
     const [
       alerts, profiles, phases, planning, budget, contracts, tees, investments, impacts,
       measurements, subcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries,
-      planningItems, rncs, evaluations, incidents, inspections, epis, activeCollaborators,
+      planningItems, rncs, incidents, inspections, epis, activeCollaborators,
     ] = await Promise.all([
       query(`alertas?select=*&estado=eq.pendente&data_gatilho=lte.${new Date().toISOString().slice(0, 10)}&order=data_gatilho.asc`, "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
@@ -484,8 +521,7 @@ export function createProductionDashboard(options) {
       needsDirectDebits ? query("debitos_diretos?select=id,obra_id,descricao,categoria,valor_previsto,recorrencia,dia_mes,data_inicio,data_fim,ativo", "Débitos diretos") : [],
       needsDirectDebits ? query("debitos_diretos_lancamentos?select=id,debito_direto_id,data,valor", "Lançamentos de débitos diretos") : [],
       technicalRole ? query("planeamento_itens?select=id,fase_id,codigo,descricao,data_inicio_prevista,data_fim_prevista,data_fim_real,data_inicio_baseline,data_fim_baseline,estado,impedido,observacao_impedimento", "Tarefas do planeamento") : [],
-      technicalRole || financialRole ? query("rnc?select=id,obra_id,numero,subempreitada_id,data_deteccao,data_fecho,local_ocorrencia,descricao,gravidade,estado", "RNCs") : [],
-      financialRole ? query("avaliacoes_subempreiteiro?select=id,subempreitada_id", "Avaliações de subempreiteiros") : [],
+      technicalRole ? query("rnc?select=id,obra_id,numero,subempreitada_id,data_deteccao,data_fecho,local_ocorrencia,descricao,gravidade,estado", "RNCs") : [],
       technicalRole || administrativeRole ? query("seguranca_incidentes?select=id,obra_id,data,tipo,gravidade,descricao", "Incidentes de segurança") : [],
       technicalRole || administrativeRole ? query("seguranca_inspecoes?select=id,obra_id,data,conformidade,observacoes", "Inspeções de segurança") : [],
       administrativeRole ? query("epis?select=*", "EPIs") : [],
@@ -510,7 +546,6 @@ export function createProductionDashboard(options) {
     overviewState.directDebitEntries = directDebitEntries;
     overviewState.planningItems = planningItems;
     overviewState.rncs = rncs;
-    overviewState.evaluations = evaluations;
     overviewState.incidents = incidents;
     overviewState.inspections = inspections;
     overviewState.epis = epis;
