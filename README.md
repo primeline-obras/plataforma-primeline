@@ -227,6 +227,13 @@ alerta único pelos avisos escalonados de 60, 45 e 30 dias dos contratos a prazo
 ativos. A verificação integra o mesmo mecanismo diário dos restantes alertas e
 não altera os dois tipos de contrato existentes.
 
+## Faturas duplicadas
+
+`supabase/bloco_08_faturas_duplicadas.sql` documenta a exceção do bloqueio de
+duplicados reservada a Gerência/administradores da plataforma. O frontend
+verifica fornecedor e número antes do upload e exige uma confirmação explícita
+da Gerência; Administrativo continua impedido de prosseguir.
+
 ## Dados reais de Equipa
 
 Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,

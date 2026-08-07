@@ -3750,6 +3750,23 @@ $("#recovery-form").addEventListener("submit", async event => {
   }
 });
 
+async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber }) {
+  const normalizedNumber = String(documentNumber || "").trim();
+  const localDuplicate = invoices.find(invoice =>
+    invoice.fornecedor_id === supplierId
+    && String(invoice.numero_doc || "").trim() === normalizedNumber);
+  if (localDuplicate || !isSupabaseConfigured) return localDuplicate || null;
+
+  const response = await supabase(
+    `faturas?select=id,fornecedor_id,numero_doc&fornecedor_id=eq.${encodeURIComponent(supplierId)}&numero_doc=eq.${encodeURIComponent(normalizedNumber)}&limit=1`,
+  );
+  if (!response.ok) {
+    throw new Error("Não foi possível confirmar se esta fatura já existe. Tente novamente antes de gravar.");
+  }
+  const [duplicate] = await response.json();
+  return duplicate || null;
+}
+
 form.addEventListener("submit", async event => {
   event.preventDefault();
   if (!canInsertInvoices()) return toast("O lançamento de faturas está reservado ao Administrativo e à Gerência.", "error");
@@ -3767,7 +3784,32 @@ form.addEventListener("submit", async event => {
       return;
     }
   }
-  const submit = form.querySelector(".primary-button"); submit.disabled = true; submit.firstChild.textContent = "A GUARDAR… ";
+  const submit = form.querySelector(".primary-button");
+  submit.disabled = true;
+  submit.firstChild.textContent = "A VERIFICAR… ";
+  let duplicateInvoice;
+  try {
+    duplicateInvoice = await findDuplicateInvoice(payload);
+  } catch (error) {
+    toast(error.message, "error");
+    submit.disabled = false;
+    submit.firstChild.textContent = "REGISTAR FATURA ";
+    return;
+  }
+  if (duplicateInvoice && !hasFullAccess()) {
+    toast("Já existe uma fatura com este número para este fornecedor — possível duplicação.", "error");
+    submit.disabled = false;
+    submit.firstChild.textContent = "REGISTAR FATURA ";
+    return;
+  }
+  if (duplicateInvoice && !window.confirm(
+    "Isto vai criar uma fatura duplicada — só continues se tiveres a certeza absoluta.\n\nPretendes mesmo continuar?",
+  )) {
+    submit.disabled = false;
+    submit.firstChild.textContent = "REGISTAR FATURA ";
+    return;
+  }
+  submit.firstChild.textContent = "A GUARDAR… ";
   let saved = false;
   if (!isSupabaseConfigured) {
     const demoInvoice = { ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() };
