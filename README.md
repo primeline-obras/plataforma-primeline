@@ -373,3 +373,10 @@ lançamentos de débitos diretos.
 Execute `supabase/mapa_financeiro.sql` no SQL Editor antes da primeira utilização.
 A migração acrescenta as categorias de despesas fixas e cria
 `mapa_financeiro_ajustes` com RLS restrita a Financeiro e Gerência.
+
+## Resumo das fases no detalhe da obra
+
+O separador **Fases** do detalhe de cada obra consulta diretamente
+`planeamento_fases_resumo`. Apresenta datas previstas, execução média e o estado
+de cada fase, destacando atrasos. O botão **Abrir Planeamento** encaminha para o
+resumo da mesma obra; a edição das tarefas continua concentrada nesse módulo.

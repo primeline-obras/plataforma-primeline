@@ -61,7 +61,7 @@ let invoiceTraceState = "all";
 let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
-  contract: null, investment: null, impacts: [], tees: [], phases: [], measurements: [], payments: [], consultations: [],
+  contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [],
   labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
   billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
   drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
@@ -1983,7 +1983,7 @@ async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
   workDetails = {
-    contract: null, investment: null, impacts: [], tees: [], phases: [], measurements: [], payments: [], consultations: [],
+    contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [],
     labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
     billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
     drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
@@ -2000,7 +2000,13 @@ async function loadWorkDetails(workId) {
       investment: null, impacts: [], tees: [
         { id: "tee-demo-1", obra_id: work.id, fase_id: "f-0", numero: "TEE 01", revisao: "REV00", descricao: "Trabalhos adicionais de demonstração", especialidade: "Construção civil", valor: 12500, preco_custo: 8200, dias_prorrogacao: 3, estado_aprovacao_gerencia: "aprovado", estado_aprovacao_cliente: "pendente", data_envio: "2026-07-20" },
       ], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
-      phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, nome: `Fase ${index + 1}` })),
+      phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, descricao: `Fase ${index + 1}` })),
+      phasePlanning: Array.from({ length: 10 }, (_, index) => ({
+        fase_id: `f-${index}`,
+        data_inicio_prevista: `2026-${String(Math.min(index + 2, 12)).padStart(2, "0")}-01`,
+        data_fim_prevista: `2026-${String(Math.min(index + 3, 12)).padStart(2, "0")}-28`,
+        percentual_executado: Math.max(0, 100 - index * 14),
+      })),
       measurements: [],
       payments: [
         { subempreitada_id: "sub-elec", valor: 8500 },
@@ -2061,6 +2067,12 @@ async function loadWorkDetails(workId) {
   }
   if (phasesResult.ok) workDetails.phases = await phasesResult.json();
   else detailErrors.push((await phasesResult.json().catch(() => ({}))).message || "Fases indisponíveis");
+  if (workDetails.phases.length) {
+    const phaseIds = workDetails.phases.map(phase => phase.id);
+    const planningResult = await supabase(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`);
+    if (planningResult.ok) workDetails.phasePlanning = await planningResult.json();
+    else detailErrors.push((await planningResult.json().catch(() => ({}))).message || "Resumo do planeamento indisponível");
+  }
   if (measurementsResult.ok) workDetails.measurements = await measurementsResult.json();
   else detailErrors.push((await measurementsResult.json().catch(() => ({}))).message || "Autos de medição indisponíveis");
   if (laborResult.ok) workDetails.labor = await laborResult.json();
@@ -2707,11 +2719,68 @@ async function submitTee(event) {
   }
 }
 
+function phasePlanningRecord(phaseId) {
+  return workDetails.phasePlanning.find(item => item.fase_id === phaseId) || null;
+}
+
+function phasePlanDate(plan, boundary) {
+  if (!plan) return null;
+  const fields = boundary === "start"
+    ? ["data_inicio_prevista", "data_inicio_planeada", "inicio_previsto", "inicio_planeado", "data_inicio", "inicio"]
+    : ["data_fim_prevista", "data_fim_planeada", "fim_previsto", "fim_planeado", "data_fim", "fim"];
+  return fields.map(field => plan[field]).find(Boolean) || null;
+}
+
+function phaseDisplayState(plan) {
+  const progress = Math.max(0, Math.min(100, Number(plan?.percentual_executado || 0)));
+  const start = phasePlanDate(plan, "start");
+  const end = phasePlanDate(plan, "end");
+  const today = new Date().toISOString().slice(0, 10);
+  if (progress >= 100) return { key: "done", label: "Concluída" };
+  if (end && end < today) return { key: "late", label: "Em atraso" };
+  if (progress > 0 || (start && start <= today)) return { key: "doing", label: "Em execução" };
+  return { key: "todo", label: "Por iniciar" };
+}
+
+function renderPhasesTab(work) {
+  const rows = [...workDetails.phases].sort((a, b) => String(a.codigo || "").localeCompare(String(b.codigo || ""), "pt", { numeric: true }));
+  const plans = rows.map(phase => phasePlanningRecord(phase.id)).filter(Boolean);
+  const averageProgress = plans.length
+    ? Math.round(plans.reduce((total, plan) => total + Math.max(0, Math.min(100, Number(plan.percentual_executado || 0))), 0) / plans.length)
+    : 0;
+  const delayed = plans.filter(plan => phaseDisplayState(plan).key === "late").length;
+  const active = plans.filter(plan => phaseDisplayState(plan).key === "doing").length;
+  return `<section class="work-phases">
+    <header class="work-phases-head">
+      <div><p class="eyebrow">PLANEAMENTO POR FASE</p><h3>RESUMO DAS FASES</h3><span>Leitura rápida do prazo e execução; a edição continua no Planeamento detalhado.</span></div>
+      <button type="button" data-open-phase-planning="${work.id}">ABRIR PLANEAMENTO →</button>
+    </header>
+    <div class="work-phase-kpis">
+      <article><span>FASES</span><strong>${rows.length}</strong></article>
+      <article><span>EXECUÇÃO MÉDIA</span><strong>${averageProgress}%</strong></article>
+      <article class="${active ? "attention" : ""}"><span>EM EXECUÇÃO</span><strong>${active}</strong></article>
+      <article class="${delayed ? "urgent" : ""}"><span>EM ATRASO</span><strong>${delayed}</strong></article>
+    </div>
+    <div class="work-phase-list">${rows.length ? rows.map(phase => {
+      const plan = phasePlanningRecord(phase.id);
+      const progress = Math.max(0, Math.min(100, Number(plan?.percentual_executado || 0)));
+      const state = phaseDisplayState(plan);
+      const start = phasePlanDate(plan, "start");
+      const end = phasePlanDate(plan, "end");
+      return `<article class="work-phase-card ${state.key}">
+        <div class="work-phase-identity"><span>${safeText(phase.codigo || "FASE")}</span><strong>${safeText(phase.descricao || phase.nome || "Sem descrição")}</strong></div>
+        <div class="work-phase-dates"><span>INÍCIO <b>${formatOptionalDate(start)}</b></span><span>FIM PREVISTO <b>${formatOptionalDate(end)}</b></span></div>
+        <div class="work-phase-progress"><span><b>${progress}%</b><em>${state.label}</em></span><div><i style="width:${progress}%"></i></div></div>
+      </article>`;
+    }).join("") : `<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não tem fases configuradas.</span></div>`}</div>
+  </section>`;
+}
+
 function renderWorkTab(work) {
   if (selectedWorkTab === "subcontracts") return renderSubcontractsTab(work);
   if (selectedWorkTab === "tees") return renderTeesTab(work);
   if (selectedWorkTab === "measurements") return renderMeasurementsTab(work);
-  if (selectedWorkTab === "phases") return `<div class="empty-state"><strong>FASES</strong><span>Este separador será desenvolvido numa próxima etapa.</span></div>`;
+  if (selectedWorkTab === "phases") return renderPhasesTab(work);
   if (selectedWorkTab === "documents") return renderWorkDocumentsTab();
   if (selectedWorkTab === "safety") return renderSafetyTab();
   return renderWorkSummary(work);
@@ -3576,6 +3645,8 @@ $("#work-detail").addEventListener("click", async event => {
   if (rncButton) { selectedWorkId = rncButton.dataset.openRnc; switchView("rnc"); return; }
   const meetingButton = event.target.closest("[data-open-meeting]");
   if (meetingButton) return productionDashboard.openMeeting(meetingButton.dataset.openMeeting, "works");
+  const planningButton = event.target.closest("[data-open-phase-planning]");
+  if (planningButton) return switchView("planning", { workId: planningButton.dataset.openPhasePlanning, view: "summary" });
   const tabButton = event.target.closest("[data-work-tab]");
   if (tabButton) {
     selectedWorkTab = tabButton.dataset.workTab;
