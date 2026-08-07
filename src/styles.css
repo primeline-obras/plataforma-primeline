@@ -1935,3 +1935,39 @@ button, input, select, textarea,
   .meeting-day i { font-size:0; width:7px; height:7px; padding:0; border-radius:50%; }
   .meeting-form form > div:not(.meeting-form-occupied) { grid-template-columns:1fr; }
 }
+
+/* Imóveis e pedidos de orçamento */
+.operations-layout { display:grid; grid-template-columns:minmax(320px,.75fr) minmax(0,1.25fr); gap:20px; align-items:start; }
+.operations-directory,.operations-detail,.budget-detail { padding:22px; }
+.operations-directory > header,.operations-detail > header,.budget-detail > header { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding-bottom:17px; border-bottom:1px solid var(--card-border); }
+.operations-directory > header > span,.operations-detail > header > span,.budget-detail > header > span { color:var(--text-muted); font:800 11px "Manrope"; letter-spacing:.08em; }
+.operations-form-card { margin:18px 0; border:1px solid var(--card-border); border-radius:11px; background:var(--card); overflow:hidden; }
+.operations-form-card summary { padding:15px 17px; color:var(--info-text); font:800 11px "Manrope"; letter-spacing:.08em; cursor:pointer; }
+.operations-form-card form,.budget-version-form { display:grid; gap:13px; padding:17px; border-top:1px solid var(--card-border); }
+.operations-form-card label,.budget-version-form label,.budget-status-form label { display:grid; gap:7px; color:var(--text-muted); font:800 10px "Manrope"; letter-spacing:.08em; }
+.operations-form-card input,.operations-form-card select,.operations-form-card textarea,.budget-version-form input,.budget-version-form textarea,.budget-status-form select,.budget-status-form textarea { width:100%; min-width:0; padding:12px; border:1px solid var(--card-border); border-radius:9px; background:var(--card); color:var(--text-primary); }
+.operations-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.operations-empty { padding:28px 12px; color:var(--text-muted); font:800 10px "Manrope"; letter-spacing:.09em; text-align:center; }
+.property-cards { display:grid; gap:9px; }
+.property-card { width:100%; display:grid; gap:5px; padding:15px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); color:var(--text-primary); text-align:left; }
+.property-card:hover,.property-card.active { border-color:var(--info-text); background:var(--info-bg); }
+.property-card > span,.property-card > small { color:var(--text-muted); font:800 9px "Manrope"; letter-spacing:.1em; }
+.property-card > strong { font-size:15px; }.property-card > p { margin:0; color:var(--text-secondary); font-size:12px; }
+.condo-meeting-list { display:grid; }
+.condo-meeting-list article { display:grid; grid-template-columns:150px 1fr; gap:20px; padding:18px 3px; border-top:1px solid var(--card-border); }
+.condo-meeting-list article.past { opacity:.55; }.condo-meeting-list time { display:grid; gap:5px; color:var(--info-text); }.condo-meeting-list time span { color:var(--text-muted); }
+.condo-meeting-list article p,.condo-meeting-list article small { margin:5px 0 0; color:var(--text-secondary); }
+.budget-new-form { margin:0 0 20px; }.budget-new-form form { grid-template-columns:1fr; }
+.budget-board { display:grid; grid-template-columns:repeat(5,minmax(200px,1fr)); gap:12px; margin-bottom:20px; overflow-x:auto; padding-bottom:5px; }
+.budget-column { min-width:200px; padding:12px; border:1px solid var(--card-border); border-radius:11px; background:var(--bg); }
+.budget-column > header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:11px; color:var(--text-primary); text-transform:uppercase; }
+.budget-column > header strong { font:800 10px "Manrope"; letter-spacing:.08em; }.budget-column > header span { display:grid; place-items:center; width:25px; height:25px; border-radius:50%; background:var(--card); }
+.budget-column.em_curso { border-top:3px solid var(--warn-text); }.budget-column.enviado,.budget-column.aguarda_resposta { border-top:3px solid var(--info-text); }.budget-column.adjudicado { border-top:3px solid var(--pos-text); }.budget-column.perdido { border-top:3px solid var(--neg-text); }
+.budget-card { width:100%; display:grid; gap:7px; margin-bottom:9px; padding:12px; border:1px solid var(--card-border); border-radius:9px; background:var(--card); color:var(--text-primary); text-align:left; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.budget-card:hover,.budget-card.active { border-color:var(--info-text); box-shadow:inset 3px 0 0 var(--info-text); }.budget-card p { height:34px; margin:0; overflow:hidden; color:var(--text-secondary); font-size:11px; }.budget-card small { color:var(--text-muted); font-size:9px; }
+.budget-detail > header p { margin:5px 0 0; color:var(--text-secondary); }.budget-description { padding:16px; border-radius:10px; background:var(--bg); color:var(--text-primary); line-height:1.55; }
+.budget-status-form { display:grid; grid-template-columns:220px 1fr auto; gap:13px; align-items:end; padding:17px 0; border-bottom:1px solid var(--card-border); }.budget-status-form button { min-height:43px; padding:0 16px; border:0; border-radius:9px; background:var(--sidebar-bg); color:#fff; font-weight:800; }.budget-status-form .form-error { grid-column:1/-1; color:var(--neg-text); }
+.budget-versions { padding-top:20px; }.budget-version-form { margin:15px 0; border:1px solid var(--card-border); border-radius:10px; background:var(--bg); }.budget-versions > div:last-child { display:grid; gap:8px; }.budget-versions article { display:grid; grid-template-columns:42px 130px 150px 1fr; gap:14px; align-items:center; padding:12px; border:1px solid var(--card-border); border-radius:9px; }.budget-versions article > span { display:grid; place-items:center; height:32px; border-radius:7px; background:var(--info-bg); color:var(--info-text); font-weight:800; }.budget-versions article p { margin:0; color:var(--text-secondary); }
+
+@media (max-width:1050px) { .operations-layout { grid-template-columns:1fr; }.budget-status-form { grid-template-columns:1fr; }.budget-versions article { grid-template-columns:42px 1fr; }.budget-versions article p { grid-column:1/-1; } }
+@media (max-width:700px) { .operations-form-grid,.condo-meeting-list article { grid-template-columns:1fr; }.operations-directory,.operations-detail,.budget-detail { padding:14px; } }
