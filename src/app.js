@@ -16,6 +16,7 @@ import { createVehiclesModule } from "./vehicles.js?v=1";
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 const prettyDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
+const traceDateTime = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const UI_THEME_KEY = "primeline_theme";
 const UI_TV_KEY = "primeline_tv_mode";
@@ -38,7 +39,8 @@ const icon = (name) => {
 };
 
 let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoices = [], invoiceGuides = [], invoiceAttachments = [], collaborators = [];
-let directDebits = [], directDebitEntries = [];
+let directDebits = [], directDebitEntries = [], invoiceTrace = [];
+let invoiceTraceError = "";
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
 let currentFilter = "all";
@@ -50,6 +52,7 @@ let extractedMaterialItemsApplied = false;
 let openedPdfUrl = "";
 let activeView = "overview";
 let selectedFinanceTab = "invoices";
+let invoiceTraceState = "all";
 let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
@@ -215,6 +218,7 @@ document.querySelector("#root").innerHTML = `
         </div>
         <nav class="finance-tabs" aria-label="Secções financeiras">
           <button type="button" class="active" data-finance-tab="invoices">FATURAS E PAGAMENTOS</button>
+          <button type="button" data-finance-tab="tracking">RASTREIO DE FATURAS</button>
           <button type="button" data-finance-tab="direct-debits">DÉBITOS DIRETOS</button>
         </nav>
         <div data-finance-panel="invoices">
@@ -222,6 +226,16 @@ document.querySelector("#root").innerHTML = `
           <section class="panel paid-history">
             <div class="paid-history-head"><div><p class="eyebrow">ARQUIVO</p><h2>HISTÓRICO DE FATURAS PAGAS</h2></div><span id="paid-count">0 FATURAS</span></div>
             <div class="paid-list" id="paid-list"></div>
+          </section>
+        </div>
+        <div data-finance-panel="tracking" hidden>
+          <section class="panel invoice-trace-panel">
+            <div class="paid-history-head"><div><p class="eyebrow">PERCURSO COMPLETO</p><h2>RASTREIO DE FATURAS</h2></div><span id="invoice-trace-count">0 FATURAS</span></div>
+            <div class="invoice-trace-toolbar">
+              <div class="search-box">${icon("search")}<input id="invoice-trace-search" placeholder="Pesquisar fornecedor, documento ou obraâ€¦"></div>
+              <select id="invoice-trace-state" aria-label="Filtrar estado da fatura"><option value="all">Todos os estados</option><option value="pendente">Pendente</option><option value="aprovado">Aprovada</option><option value="recusado">Recusada</option><option value="pago">Paga</option></select>
+            </div>
+            <div id="invoice-trace-list" class="invoice-trace-list"></div>
           </section>
         </div>
         <div data-finance-panel="direct-debits" hidden>
@@ -563,6 +577,7 @@ function canManageWorkforceWork(workId) {
 function canOpenTeamTab(tab) {
   if (canManageTeam()) return true;
   if (canManageOvertime()) return ["absences", "overtime"].includes(tab);
+  if (effectiveRole() === "encarregado") return ["absences", "medicine"].includes(tab);
   return tab === "absences";
 }
 
@@ -742,6 +757,75 @@ function financeCard(invoice) {
   </article>`;
 }
 
+function invoiceJourneyState(invoice = {}) {
+  if (invoice.estado_pagamento === "pago") return "pago";
+  return invoice.estado_aprovacao || "pendente";
+}
+
+function traceMoment(value) {
+  if (!value) return "Ainda não registado";
+  const raw = String(value);
+  return raw.includes("T") ? traceDateTime.format(new Date(raw)) : formatOptionalDate(raw.slice(0, 10));
+}
+
+function invoiceTraceStage(label, date, actor, state = "waiting") {
+  return `<div class="invoice-trace-stage ${state}"><i></i><span>${label}</span><strong>${traceMoment(date)}</strong><small>${actor ? `POR ${escapeHtml(actor)}` : ["done", "rejected"].includes(state) ? "UTILIZADOR NÃO REGISTADO" : "—"}</small></div>`;
+}
+
+function renderInvoiceTrace() {
+  const list = $("#invoice-trace-list");
+  if (!list) return;
+  const needle = ($("#invoice-trace-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
+  const selectedState = $("#invoice-trace-state")?.value || invoiceTraceState;
+  invoiceTraceState = selectedState;
+  const rows = invoiceTrace.filter(invoice => {
+    const state = invoiceJourneyState(invoice);
+    const haystack = `${invoice.numero_doc || ""} ${invoice.fornecedor_nome || ""} ${invoice.obra_numero || ""} ${invoice.obra_nome || ""}`.toLocaleLowerCase("pt-PT");
+    return (selectedState === "all" || state === selectedState) && (!needle || haystack.includes(needle));
+  });
+  $("#invoice-trace-count").textContent = `${rows.length} ${rows.length === 1 ? "FATURA" : "FATURAS"}`;
+  if (invoiceTraceError) {
+    list.innerHTML = `<div class="work-warning"><strong>RASTREIO INDISPONÍVEL</strong><span>${escapeHtml(invoiceTraceError)}</span></div>`;
+    return;
+  }
+  list.innerHTML = rows.length ? rows.map(invoice => {
+    const state = invoiceJourneyState(invoice);
+    const decisionDone = state !== "pendente";
+    const paid = state === "pago";
+    const decisionLabel = state === "recusado" ? "RECUSADA" : decisionDone ? "APROVADA" : "A AGUARDAR APROVAÇÃO";
+    return `<article class="invoice-trace-card state-${state}">
+      <header><div><span>OBRA ${escapeHtml(invoice.obra_numero || "—")}</span><h3>${escapeHtml(invoice.fornecedor_nome || "Fornecedor")}</h3><p>${escapeHtml(invoice.numero_doc || "Sem número")} · ${escapeHtml(invoice.obra_nome || "Obra não identificada")}</p></div><strong>${euro.format(Number(invoice.valor || 0))}</strong></header>
+      <div class="invoice-trace-journey">
+        ${invoiceTraceStage("LANÇADA", invoice.criado_em, invoice.criado_por_nome, "done")}
+        ${invoiceTraceStage(decisionLabel, invoice.data_aprovacao, invoice.aprovado_por_nome, decisionDone ? state === "recusado" ? "rejected" : "done" : "waiting")}
+        ${invoiceTraceStage(paid ? "PAGA" : "A AGUARDAR PAGAMENTO", invoice.data_pagamento, invoice.pago_por_nome, paid ? "done" : state === "aprovado" ? "waiting" : "disabled")}
+      </div>
+    </article>`;
+  }).join("") : `<div class="finance-empty">SEM FATURAS NESTE FILTRO</div>`;
+}
+
+async function loadInvoiceTrace() {
+  invoiceTraceError = "";
+  if (!isSupabaseConfigured) {
+    invoiceTrace = demoInvoices.map(invoice => ({
+      ...invoice,
+      fornecedor_nome: demoSuppliers.find(item => item.id === invoice.fornecedor_id)?.nome,
+      obra_numero: demoWorks.find(item => item.id === invoice.obra_id)?.numero,
+      obra_nome: demoWorks.find(item => item.id === invoice.obra_id)?.nome,
+      criado_em: invoice.criado_em || invoice.data_fatura,
+      criado_por_nome: "Utilizador de demonstração",
+    }));
+    renderInvoiceTrace();
+    return;
+  }
+  const response = await supabase("rpc/fn_listar_rastreio_faturas", { method: "POST", body: "{}" });
+  if (!response.ok) {
+    invoiceTrace = [];
+    invoiceTraceError = `Não foi possível consultar o percurso das faturas. ${await response.text()}`;
+  } else invoiceTrace = await response.json();
+  renderInvoiceTrace();
+}
+
 function renderFinance() {
   const unpaid = financeInvoices.filter(invoice => invoice.estado_pagamento === "por_pagar");
   const paid = financeInvoices.filter(invoice => invoice.estado_pagamento === "pago").sort((a, b) => new Date(b.data_pagamento) - new Date(a.data_pagamento));
@@ -759,6 +843,7 @@ function renderFinance() {
     const work = works.find(item => item.id === invoice.obra_id);
     return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span></div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
   }).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
+  renderInvoiceTrace();
   renderDirectDebits();
   renderFinanceTabs();
 }
@@ -857,11 +942,13 @@ async function loadData() {
       directDebits = [];
       directDebitEntries = [];
     }
-    if (hasFullAccess() || isAdministrative()) {
+    if (hasFullAccess() || isAdministrative() || allowedViews().has("team")) {
       const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
   }
+  if (allowedViews().has("finance")) await loadInvoiceTrace();
+  else { invoiceTrace = []; invoiceTraceError = ""; }
   renderSelectors(); renderInvoices(); renderFinance();
   renderWorks();
   renderWorkDirectors();
@@ -1673,7 +1760,7 @@ async function loadTeamData(force = false) {
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
-    canManageTeam() ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
+    (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
   ]);
   const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH"];
@@ -3870,6 +3957,7 @@ form.addEventListener("submit", async event => {
     submit.firstChild.textContent = "REGISTAR FATURA ";
     return;
   }
+  if (allowedViews().has("finance")) await loadInvoiceTrace();
   const keepWork = form.obra_id.value, keepType = form.tipo_origem.value;
   form.reset(); form.obra_id.value = keepWork; form.tipo_origem.value = keepType; form.data_fatura.value = new Date().toISOString().slice(0, 10);
   resetMaterialItems();
@@ -3950,6 +4038,7 @@ $("#invoice-list").addEventListener("click", async event => {
     renderFinance();
   }
   invoices = invoices.filter(item => item.id !== invoice.id); renderInvoices();
+  if (allowedViews().has("finance")) await loadInvoiceTrace();
   toast(`Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
 });
 
@@ -4031,6 +4120,7 @@ $("#finance-board").addEventListener("click", async event => {
   invoice.data_pagamento = paidAt;
   invoice.estado_pagamento = "pago";
   invoice.pago_por = accessContext.profile?.id || null;
+  if (allowedViews().has("finance")) await loadInvoiceTrace();
   renderFinance();
   toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
 });
@@ -4040,6 +4130,12 @@ document.querySelector(".finance-tabs").addEventListener("click", event => {
   if (!button) return;
   selectedFinanceTab = button.dataset.financeTab;
   renderFinanceTabs();
+});
+
+$("#invoice-trace-search").addEventListener("input", renderInvoiceTrace);
+$("#invoice-trace-state").addEventListener("change", event => {
+  invoiceTraceState = event.target.value;
+  renderInvoiceTrace();
 });
 
 $("#direct-debit-form").addEventListener("submit", async event => {
