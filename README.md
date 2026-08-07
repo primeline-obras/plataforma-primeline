@@ -220,6 +220,13 @@ alerta diário de seguro com 15 dias de antecedência, sem criar um segundo job
 agendado. A área Viaturas é independente de Equipa e está reservada a
 Administrativo/Gerência.
 
+## Contratos de trabalho
+
+Executar `supabase/bloco_07_contratos_trabalho.sql` para substituir o antigo
+alerta único pelos avisos escalonados de 60, 45 e 30 dias dos contratos a prazo
+ativos. A verificação integra o mesmo mecanismo diário dos restantes alertas e
+não altera os dois tipos de contrato existentes.
+
 ## Dados reais de Equipa
 
 Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,
