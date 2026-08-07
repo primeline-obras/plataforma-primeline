@@ -281,7 +281,7 @@ export async function uploadWorkDocument(file, obraId, documentType) {
 export async function uploadEntityDocument(file, entityType, entityId, documentType) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
-  if (!['colaborador', 'viatura', 'ausencia'].includes(entityType)) throw new Error("Tipo de entidade inválido.");
+  if (!['colaborador', 'viatura', 'ausencia', 'empresa'].includes(entityType)) throw new Error("Tipo de entidade inválido.");
   const extension = file.name.split(".").pop()?.toLowerCase() || "";
   if (!WORK_DOCUMENT_EXTENSIONS.has(extension)) {
     throw new Error("Formato não suportado. Use PDF, imagem, Excel/CSV, Word ou outro formato documental permitido.");
@@ -291,7 +291,8 @@ export async function uploadEntityDocument(file, entityType, entityId, documentT
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-140) || `documento.${extension || "bin"}`;
   const safeType = String(documentType || "outro").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9_-]/gi, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "outro";
-  const objectPath = `rh/${entityType}/${entityId}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
+  const rootPath = entityType === "empresa" ? `empresa/${entityId}` : `rh/${entityType}/${entityId}`;
+  const objectPath = `${rootPath}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
   const response = await fetch(storageBucketUrl("documentos", objectPath), {
     method: "POST",
     headers: {
