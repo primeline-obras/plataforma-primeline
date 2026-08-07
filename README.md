@@ -339,3 +339,14 @@ Execute `supabase/bloco_12_salas_reuniao.sql` no SQL Editor. A migração cria a
 sobreposição no banco de dados. A interface também valida a sobreposição antes de
 enviar, mas o trigger continua a ser a proteção definitiva contra reservas
 concorrentes.
+## Imóveis e pedidos de orçamento
+
+O Bloco 13 acrescenta duas áreas exclusivas de Gerência e Administrativo. **Imóveis**
+mantém o património da empresa separado das obras e agenda reuniões de condomínio.
+**Pedidos de Orçamento** organiza oportunidades por estado, permite atualizar a
+situação atual e conserva todas as versões ou retificações enviadas.
+
+Execute `supabase/bloco_13_imoveis_orcamentos.sql` no SQL Editor. A migração cria as
+quatro tabelas, RLS e os alertas: reunião de condomínio com 7 dias de antecedência e
+entrega de orçamento a 15, 7 e 3 dias. A verificação é incorporada na rotina diária
+já existente, sem criar outro job do `pg_cron`.

@@ -3,11 +3,11 @@ import { accessFor } from "../src/access-control.js";
 
 const matrix = {
   gerencia: {
-    views: ["consolidated", "finance", "vehicles", "rooms", "team", "workforce", "planning", "rnc", "settings"],
+    views: ["consolidated", "finance", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "planning", "rnc", "settings"],
     actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   administrativo: {
-    views: ["finance", "vehicles", "rooms", "team", "workforce", "planning", "documents", "rnc", "settings"],
+    views: ["finance", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "planning", "documents", "rnc", "settings"],
     actions: ["insertInvoices"],
     deniedViews: ["consolidated"],
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
