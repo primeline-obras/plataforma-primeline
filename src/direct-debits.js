@@ -6,6 +6,9 @@ export const DIRECT_DEBIT_CATEGORY_LABELS = {
   software: "Software",
   emprestimo: "Empréstimo",
   servico_publico: "Serviço público",
+  remuneracoes_sede: "Remunerações e Encargos (Sede)",
+  despesas_sede: "Despesas Sede",
+  despesas_armazem: "Despesas Armazém",
   outro: "Outro",
 };
 

@@ -350,3 +350,16 @@ Execute `supabase/bloco_13_imoveis_orcamentos.sql` no SQL Editor. A migração c
 quatro tabelas, RLS e os alertas: reunião de condomínio com 7 dias de antecedência e
 entrega de orçamento a 15, 7 e 3 dias. A verificação é incorporada na rotina diária
 já existente, sem criar outro job do `pg_cron`.
+
+## Mapa Financeiro
+
+A área Financeiro inclui um Mapa Financeiro anual exclusivo de Financeiro e
+Gerência. A grelha distribui a margem das obras pelo respetivo prazo, substitui a
+estimativa por valores reais de `previsao_financeira_mensal` e permite guardar um
+ajuste manual mensal sem apagar o valor calculado de referência. A secção inferior
+consolida remunerações da sede, despesas da sede e despesas do armazém a partir dos
+lançamentos de débitos diretos.
+
+Execute `supabase/mapa_financeiro.sql` no SQL Editor antes da primeira utilização.
+A migração acrescenta as categorias de despesas fixas e cria
+`mapa_financeiro_ajustes` com RLS restrita a Financeiro e Gerência.
