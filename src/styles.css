@@ -1824,6 +1824,51 @@ button, input, select, textarea,
 .overview-composition-work th,.overview-composition-work td { height:48px; padding:10px 13px; border-right:1px solid var(--card-border,var(--line)); border-bottom:1px solid var(--card-border,var(--line)); text-align:right; }
 .overview-composition-work tr > *:last-child { border-right:0; }.overview-composition-work tbody tr:last-child > * { border-bottom:0; }
 .overview-composition-work thead th { height:42px; background:var(--sidebar,#20242b); color:#f5f7fa; font:800 9px "Manrope"; letter-spacing:.55px; }
+
+/* Bloco 6 · Gestão de frota */
+.fleet-layout { display:grid; grid-template-columns:minmax(260px, .34fr) minmax(0, 1fr); gap:18px; align-items:start; }
+.fleet-directory, .fleet-detail, .fleet-fines { border:1px solid var(--card-border); border-radius:12px; background:var(--card); box-shadow:0 1px 3px rgba(0,0,0,.16); overflow:hidden; }
+.fleet-directory { position:sticky; top:86px; }
+.fleet-search { padding:16px; border-bottom:1px solid var(--card-border); }
+.fleet-search input { width:100%; min-height:44px; padding:0 14px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); color:var(--text-primary); font-size:13px; }
+.fleet-directory-count { padding:11px 16px; background:var(--sidebar-bg); color:#fff; font-size:10px; font-weight:850; letter-spacing:1px; }
+.fleet-directory-list { max-height:calc(100vh - 260px); overflow:auto; }
+.fleet-directory-row { position:relative; width:100%; min-height:112px; padding:15px 42px 15px 17px; border:0; border-bottom:1px solid var(--card-border); border-left:3px solid transparent; background:transparent; color:var(--text-primary); text-align:left; cursor:pointer; }
+.fleet-directory-row:hover, .fleet-directory-row.active { background:color-mix(in srgb,var(--info-text) 10%,var(--card)); border-left-color:var(--accent); }
+.fleet-directory-row span, .fleet-directory-row small, .fleet-directory-row em { display:block; }
+.fleet-directory-row span { margin-bottom:5px; color:var(--text-muted); font-size:10px; font-weight:800; letter-spacing:.8px; }
+.fleet-directory-row strong { display:block; font-size:14px; }
+.fleet-directory-row small { margin-top:3px; color:var(--text-secondary); font-size:11px; }
+.fleet-directory-row em { margin-top:9px; color:var(--text-muted); font-size:10px; font-style:normal; }
+.fleet-directory-row > i { position:absolute; right:17px; width:10px; height:10px; border-radius:50%; }
+.fleet-directory-row > i:first-of-type { top:20px; }.fleet-directory-row > i:last-of-type { top:39px; }
+.fleet-directory-row i.valid { background:#2ea768; }.fleet-directory-row i.warning { background:#d59a17; }.fleet-directory-row i.expired { background:#d84942; }.fleet-directory-row i.neutral { background:#9aa1a8; }
+.fleet-detail-head, .fleet-fines > header, .fleet-section > header { display:flex; justify-content:space-between; gap:20px; align-items:center; }
+.fleet-detail-head { padding:22px 24px; border-bottom:1px solid var(--card-border); }
+.fleet-detail-head h2 { margin:4px 0; font-size:24px; }.fleet-detail-head p, .fleet-section h3, .fleet-fines h2 { margin:0; }
+.fleet-detail-head > div:last-child { min-width:190px; padding-left:18px; border-left:2px solid var(--accent); }
+.fleet-detail-head > div:last-child span { display:block; color:var(--text-muted); font-size:10px; font-weight:800; letter-spacing:.8px; }.fleet-detail-head > div:last-child strong { display:block; margin-top:5px; font-size:13px; }
+.fleet-deadlines { display:grid; grid-template-columns:repeat(3, 1fr); border-bottom:1px solid var(--card-border); }
+.fleet-deadline { min-height:98px; padding:18px 20px; border-right:1px solid var(--card-border); border-top:3px solid #9aa1a8; }
+.fleet-deadline:last-child { border-right:0; }.fleet-deadline.valid { border-top-color:#2ea768; }.fleet-deadline.warning { border-top-color:#d59a17; background:color-mix(in srgb,#d59a17 7%,var(--card)); }.fleet-deadline.expired { border-top-color:#d84942; background:color-mix(in srgb,#d84942 7%,var(--card)); }
+.fleet-deadline span, .fleet-deadline small { display:block; }.fleet-deadline span { color:var(--text-muted); font-size:10px; font-weight:850; letter-spacing:.8px; }.fleet-deadline strong { display:block; margin:8px 0 4px; font-size:15px; }.fleet-deadline small { color:var(--text-secondary); font-size:10px; text-transform:uppercase; }
+.fleet-form-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:18px 20px; border-bottom:1px solid var(--card-border); }
+.fleet-form-card { border:1px solid var(--card-border); border-radius:10px; background:color-mix(in srgb,var(--card) 96%,var(--bg)); overflow:hidden; }
+.fleet-form-card > summary { padding:15px 17px; color:var(--info-text); font-size:11px; font-weight:900; letter-spacing:.7px; cursor:pointer; list-style:none; }
+.fleet-form-card[open] > summary { border-bottom:1px solid var(--card-border); }.fleet-form-card form { display:grid; gap:13px; padding:17px; }
+.fleet-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }.fleet-form-card label { display:grid; gap:6px; color:var(--text-secondary); font-size:10px; font-weight:800; letter-spacing:.55px; }
+.fleet-form-card input, .fleet-form-card select, .fleet-form-card textarea { width:100%; min-height:42px; padding:9px 11px; border:1px solid var(--card-border); border-radius:9px; background:var(--card); color:var(--text-primary); font:600 12px "Manrope"; }.fleet-form-card textarea { resize:vertical; }
+.fleet-next-date-toggle { grid-template-columns:auto 1fr!important; justify-content:start; align-items:center; }.fleet-next-date-toggle input { width:18px; min-height:18px; }
+.fleet-form-help { margin:0; color:var(--text-muted); font-size:10px; }.fleet-form-card .primary-button { justify-self:start; min-height:42px; }
+.fleet-section { border-top:1px solid var(--card-border); }.fleet-section > header, .fleet-fines > header { padding:18px 22px; border-bottom:1px solid var(--card-border); }.fleet-section > header span { min-width:28px; padding:6px 8px; border-radius:999px; background:var(--sidebar-bg); color:#fff; text-align:center; font-size:10px; font-weight:900; }
+.fleet-timeline { padding:8px 22px 18px; }.fleet-timeline article { display:grid; grid-template-columns:90px 18px minmax(0,1fr) auto; gap:13px; align-items:start; padding:15px 0; border-bottom:1px solid var(--card-border); }.fleet-timeline time { color:var(--text-secondary); font-size:11px; font-weight:800; }.fleet-timeline article > i { width:12px; height:12px; margin-top:2px; border:3px solid var(--card); border-radius:50%; outline:2px solid var(--info-text); background:var(--info-text); }.fleet-timeline article > div strong { font-size:13px; }.fleet-timeline p { margin:4px 0; color:var(--text-secondary); font-size:12px; }.fleet-timeline small { color:var(--text-muted); font-size:10px; }.fleet-timeline article > b { font-size:12px; }
+.fleet-record-list article { display:flex; justify-content:space-between; gap:20px; padding:17px 22px; border-bottom:1px solid var(--card-border); }.fleet-record-list time { display:block; color:var(--text-muted); font-size:10px; font-weight:800; }.fleet-record-list strong { display:block; margin:5px 0; font-size:13px; }.fleet-record-list strong i { color:var(--info-text); font-size:10px; font-style:normal; }.fleet-record-list p { margin:4px 0; color:var(--text-secondary); font-size:12px; }.fleet-record-list small { color:var(--text-muted); font-size:10px; }.fleet-record-list article > em { align-self:start; padding:6px 9px; border-radius:999px; background:#f4d59b; color:#7d5200; font-size:10px; font-style:normal; font-weight:850; text-transform:uppercase; }.fleet-record-list article > em.fechado { background:#ccebd9; color:#17623b; }
+.fleet-attachments { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; }.fleet-attachments button { padding:6px 8px; border:1px solid var(--card-border); border-radius:7px; background:var(--card); color:var(--info-text); font-size:10px; cursor:pointer; }
+.fleet-fines { margin-top:18px; }.fleet-fines > header > span { color:var(--text-muted); font-size:10px; font-weight:850; }.fleet-fine-form { margin:17px 20px; }.fleet-fines .fleet-record-list { border-top:1px solid var(--card-border); }
+.fleet-empty, .fleet-loading { padding:28px; color:var(--text-muted); text-align:center; font-size:11px; font-weight:800; letter-spacing:.7px; }.fleet-empty.large { min-height:260px; display:grid; place-items:center; }
+
+@media (max-width:1100px) { .fleet-layout { grid-template-columns:1fr; }.fleet-directory { position:static; }.fleet-directory-list { max-height:340px; }.fleet-form-actions { grid-template-columns:1fr; } }
+@media (max-width:700px) { .fleet-deadlines, .fleet-form-grid { grid-template-columns:1fr; }.fleet-deadline { border-right:0; border-bottom:1px solid var(--card-border); }.fleet-detail-head { align-items:flex-start; flex-direction:column; }.fleet-detail-head > div:last-child { width:100%; }.fleet-timeline article { grid-template-columns:75px 14px minmax(0,1fr); }.fleet-timeline article > b { grid-column:3; }.fleet-record-list article { flex-direction:column; } }
 .overview-composition-work thead th:first-child,.overview-composition-work tbody th { width:24%; text-align:left; }
 .overview-composition-work tbody th { color:var(--text-secondary,var(--muted)); font:800 10px "Manrope"; letter-spacing:.35px; }
 .overview-composition-work tbody td { color:var(--text-primary,var(--ink)); font:800 12px "Manrope"; }

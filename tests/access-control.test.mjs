@@ -3,36 +3,36 @@ import { accessFor } from "../src/access-control.js";
 
 const matrix = {
   gerencia: {
-    views: ["consolidated", "finance", "team", "workforce", "planning", "rnc", "settings"],
+    views: ["consolidated", "finance", "vehicles", "team", "workforce", "planning", "rnc", "settings"],
     actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   administrativo: {
-    views: ["finance", "team", "workforce", "planning", "documents", "rnc", "settings"],
+    views: ["finance", "vehicles", "team", "workforce", "planning", "documents", "rnc", "settings"],
     actions: ["insertInvoices"],
     deniedViews: ["consolidated"],
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   financeiro: {
     views: ["overview", "meeting", "works", "planning", "finance", "settings"],
-    deniedViews: ["consolidated", "invoices", "subcontractors", "documents", "team", "workforce"],
+    deniedViews: ["consolidated", "invoices", "subcontractors", "documents", "vehicles", "team", "workforce"],
     actions: ["payInvoices"],
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },
   diretor_obra: {
     views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "team", "settings"],
-    deniedViews: ["consolidated", "finance", "workforce"],
+    deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   preparador: {
     views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "team", "settings"],
-    deniedViews: ["consolidated", "finance", "workforce"],
+    deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   encarregado: {
     views: ["action-plan", "planning", "documents", "rnc", "team", "settings"],
-    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "workforce"],
+    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "workforce"],
     actions: [],
     deniedActions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
