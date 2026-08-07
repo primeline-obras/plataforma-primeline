@@ -3,7 +3,7 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=14";
 import { createPlanningModule } from "./planning.js?v=7";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=10";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=11";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
@@ -655,6 +655,7 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   $("#edit-workforce").hidden = !canManageWorkforce();
+  $("#workforce-movements").hidden = effectiveRole() === "encarregado";
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
@@ -1306,15 +1307,23 @@ function renderTeam() {
   const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
   const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
   const activeMedicine = teamData.medicine.filter(item => personById.has(item.colaborador_id));
+  const isForemanReadOnly = effectiveRole() === "encarregado";
+  const foremanWorkIds = new Set(teamData.responsibles
+    .filter(item => item.utilizador_id === accessContext.profile?.id && item.papel === "encarregado")
+    .map(item => item.obra_id));
   const operationalPeople = collaborators.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
-  const allocations = teamData.allocations.filter(item => personById.has(item.colaborador_id) && workforceRoleClass(personById.get(item.colaborador_id)));
+  const allocations = teamData.allocations.filter(item =>
+    personById.has(item.colaborador_id)
+    && workforceRoleClass(personById.get(item.colaborador_id))
+    && (!isForemanReadOnly || (workforceAllocationType(item) === "obra" && foremanWorkIds.has(item.obra_id))));
   const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
   const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = works
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
+    .filter(work => !isForemanReadOnly || foremanWorkIds.has(work.id))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const boardRows = workforceRows(activeWorks, allocations);
   const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));

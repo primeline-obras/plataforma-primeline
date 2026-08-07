@@ -9,7 +9,7 @@ const sql = await readFile(
 );
 
 const foreman = accessFor({ role: "encarregado" });
-for (const view of ["action-plan", "planning", "documents", "rnc", "team", "settings"]) {
+for (const view of ["action-plan", "planning", "documents", "rnc", "team", "workforce", "settings"]) {
   assert.ok(foreman.views.includes(view), `O encarregado deve manter acesso a ${view}.`);
 }
 for (const view of ["finance", "invoices", "works", "overview"]) {
@@ -21,6 +21,9 @@ assert.match(app, /rpc\/fn_listar_rastreio_faturas/);
 assert.match(app, /invoiceJourneyState/);
 assert.match(app, /effectiveRole\(\) === "encarregado"\) return \["absences", "medicine"\]/);
 assert.match(app, /allowedViews\(\)\.has\("team"\)/);
+assert.match(app, /item\.papel === "encarregado"/);
+assert.match(app, /workforceAllocationType\(item\) === "obra" && foremanWorkIds\.has\(item\.obra_id\)/);
+assert.match(app, /#workforce-movements/);
 
 assert.match(sql, /add column if not exists criado_por uuid/);
 assert.match(sql, /new\.aprovado_por := public\.fn_utilizador_atual_id\(\)/);

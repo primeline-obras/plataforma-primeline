@@ -47,7 +47,7 @@ test("Plano de Ação oferece calendário, atrasadas, conclusão e impedimentos"
 
 test("encarregado vê as áreas autorizadas e a consulta de ausências", () => {
   const foremanAccess = access.match(/encarregado:\s*\{[\s\S]*?\n\s*\},/i)?.[0] || "";
-  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"rooms",\s*"team",\s*"settings"\]/i);
+  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"rooms",\s*"team",\s*"workforce",\s*"settings"\]/i);
   assert.doesNotMatch(foremanAccess, /"overview"|"meeting"|"works"/i);
   assert.match(app, /function defaultViewForCurrentUser\(\)/i);
   assert.match(app, /permitted\.includes\("action-plan"\)/i);
