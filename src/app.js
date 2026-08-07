@@ -4,7 +4,7 @@ import { createProductionDashboard } from "./production-dashboard.js?v=14";
 import { createPlanningModule } from "./planning.js?v=7";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=10";
-import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=1";
+import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=3";
 import { createProcurementModule } from "./procurement.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=2";
@@ -15,6 +15,7 @@ import { createVehiclesModule } from "./vehicles.js?v=1";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=1";
 import { createPropertiesModule } from "./properties.js?v=1";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
+import { createFinancialMapModule } from "./financial-map.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -223,6 +224,7 @@ document.querySelector("#root").innerHTML = `
           <button type="button" class="active" data-finance-tab="invoices">FATURAS E PAGAMENTOS</button>
           <button type="button" data-finance-tab="tracking">RASTREIO DE FATURAS</button>
           <button type="button" data-finance-tab="direct-debits">DÉBITOS DIRETOS</button>
+          <button type="button" data-finance-tab="financial-map">MAPA FINANCEIRO</button>
         </nav>
         <div data-finance-panel="invoices">
           <section class="finance-board" id="finance-board"></section>
@@ -246,7 +248,7 @@ document.querySelector("#root").innerHTML = `
             <div class="direct-debit-section-head"><div><p class="eyebrow">COMPROMISSOS RECORRENTES</p><h2>NOVO DÉBITO DIRETO</h2></div><small>Os valores previstos alimentam automaticamente a previsão da obra.</small></div>
             <form id="direct-debit-form" class="direct-debit-form">
               <label>DESCRIÇÃO<input name="descricao" required maxlength="160" placeholder="Ex.: Seguro mensal da obra"></label>
-              <label>CATEGORIA<select name="categoria"><option value="renda">Renda</option><option value="seguro">Seguro</option><option value="software">Software</option><option value="emprestimo">Empréstimo</option><option value="servico_publico">Serviço público</option><option value="outro">Outro</option></select></label>
+              <label>CATEGORIA<select name="categoria"><option value="renda">Renda</option><option value="seguro">Seguro</option><option value="software">Software</option><option value="emprestimo">Empréstimo</option><option value="servico_publico">Serviço público</option><option value="remuneracoes_sede">Remunerações e Encargos (Sede)</option><option value="despesas_sede">Despesas Sede</option><option value="despesas_armazem">Despesas Armazém</option><option value="outro">Outro</option></select></label>
               <label>VALOR PREVISTO (€)<input name="valor_previsto" type="number" min="0.01" step="0.01" required></label>
               <label>OBRA<select name="obra_id" id="direct-debit-work"><option value="">Geral da empresa</option></select></label>
               <label>RECORRÊNCIA<select name="recorrencia"><option value="">Sem recorrência</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></label>
@@ -262,6 +264,9 @@ document.querySelector("#root").innerHTML = `
             <div class="direct-debit-section-head"><div><p class="eyebrow">CALENDÁRIO DE PAGAMENTOS</p><h2>DÉBITOS DIRETOS</h2></div><span id="direct-debit-count">0 REGISTOS</span></div>
             <div id="direct-debit-list"></div>
           </section>
+        </div>
+        <div data-finance-panel="financial-map" hidden>
+          <div id="financial-map-content"></div>
         </div>
       </div>
       <div class="page team-view" id="team-view" hidden>
@@ -538,6 +543,10 @@ const budgetRequestsModule = createBudgetRequestsModule({
   root: $("#budget-requests-view"), supabase, isConfigured: isSupabaseConfigured,
   getProfile: () => accessContext.profile, euro, prettyDate, toast,
 });
+const financialMapModule = createFinancialMapModule({
+  root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
+});
 const consolidatedView = createConsolidatedView({
   root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getInvoices: () => financeInvoices.length ? financeInvoices : invoices,
@@ -601,6 +610,10 @@ function canOpenTeamTab(tab) {
 
 function isFinancial() {
   return effectiveRole() === "financeiro";
+}
+
+function canViewFinancialMap() {
+  return hasFullAccess() || isFinancial();
 }
 
 function canManageDirectDebits() {
@@ -864,9 +877,13 @@ function renderFinance() {
   renderInvoiceTrace();
   renderDirectDebits();
   renderFinanceTabs();
+  if (selectedFinanceTab === "financial-map") financialMapModule.show();
 }
 
 function renderFinanceTabs() {
+  const financialMapTab = document.querySelector('[data-finance-tab="financial-map"]');
+  if (financialMapTab) financialMapTab.hidden = !canViewFinancialMap();
+  if (selectedFinanceTab === "financial-map" && !canViewFinancialMap()) selectedFinanceTab = "invoices";
   document.querySelectorAll("[data-finance-tab]").forEach(button => {
     button.classList.toggle("active", button.dataset.financeTab === selectedFinanceTab);
   });
@@ -4152,8 +4169,13 @@ $("#finance-board").addEventListener("click", async event => {
 document.querySelector(".finance-tabs").addEventListener("click", event => {
   const button = event.target.closest("[data-finance-tab]");
   if (!button) return;
+  if (button.dataset.financeTab === "financial-map" && !canViewFinancialMap()) {
+    toast("O Mapa Financeiro está reservado ao Financeiro e à Gerência.", "error");
+    return;
+  }
   selectedFinanceTab = button.dataset.financeTab;
   renderFinanceTabs();
+  if (selectedFinanceTab === "financial-map") financialMapModule.show();
 });
 
 $("#invoice-trace-search").addEventListener("input", renderInvoiceTrace);
