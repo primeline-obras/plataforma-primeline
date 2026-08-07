@@ -218,6 +218,30 @@ input::placeholder { color: #acb0b1; }
 .detail-section-title span { font: 700 12px "Manrope"; letter-spacing: 1px; }.detail-section-title small { color: #8b9193; font-size: 12px; }
 .work-detail dl { margin: 8px 0 0; }.work-detail dl > div { display: flex; justify-content: space-between; gap: 15px; padding: 8px 0; border-bottom: 1px solid #eff0ee; font-size: 13px; }.work-detail dt { color: #808688; }.work-detail dd { margin: 0; font-weight: 700; text-align: right; }
 .phase-tags { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; margin-top: 10px; }.phase-tags > span { border: 1px solid #e0e1de; padding: 8px; font: 700 12px "Manrope"; }.phase-tags small { display: block; color: #8b9092; font: 400 11px "DM Sans"; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.phase-tags em { color: #8b9092; font-size: 12px; font-style: normal; }
+.work-phases { display: grid; gap: 16px; margin-top: 16px; }
+.work-phases-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.work-phases-head h3 { margin: 4px 0; font-size: 19px; }.work-phases-head > div > span { color: var(--text-secondary); font-size: 13px; }
+.work-phases-head button { min-height: 40px; padding: 0 15px; border: 1px solid var(--card-border); border-radius: 9px; background: var(--charcoal); color: white; font: 800 11px "Manrope"; letter-spacing: .5px; }
+.work-phase-kpis { display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; background: var(--card); }
+.work-phase-kpis article { padding: 16px 18px; border-right: 1px solid var(--card-border); }.work-phase-kpis article:last-child { border-right: 0; }
+.work-phase-kpis span { display: block; color: var(--text-muted); font: 800 10px "Manrope"; letter-spacing: .7px; }.work-phase-kpis strong { display: block; margin-top: 5px; color: var(--info-text); font: 900 21px "Manrope"; }
+.work-phase-kpis .attention { background: var(--warn-bg); }.work-phase-kpis .attention strong { color: var(--warn-text); }.work-phase-kpis .urgent { background: var(--neg-bg); }.work-phase-kpis .urgent strong { color: var(--neg-text); }
+.work-phase-list { display: grid; gap: 8px; }
+.work-phase-card { display: grid; grid-template-columns: minmax(220px,1.2fr) minmax(240px,.9fr) minmax(260px,1.1fr); align-items: center; gap: 18px; padding: 14px 16px; border: 1px solid var(--card-border); border-left: 4px solid var(--info-text); border-radius: 10px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.work-phase-card.late { border-left-color: var(--neg-text); }.work-phase-card.doing { border-left-color: var(--brand-amber); }.work-phase-card.done { border-left-color: var(--pos-text); }
+.work-phase-identity { display: grid; gap: 3px; }.work-phase-identity span { color: var(--brand-amber); font: 900 11px "Manrope"; letter-spacing: .8px; }.work-phase-identity strong { font-size: 14px; }
+.work-phase-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.work-phase-dates span { color: var(--text-muted); font: 800 9px "Manrope"; letter-spacing: .5px; }.work-phase-dates b { display: block; margin-top: 3px; color: var(--text-primary); font-size: 12px; }
+.work-phase-progress > span { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }.work-phase-progress b { color: var(--info-text); font-size: 13px; }.work-phase-progress em { color: var(--text-secondary); font: 800 10px "Manrope"; font-style: normal; text-transform: uppercase; }
+.work-phase-progress > div { height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--card-border) 75%, transparent); }.work-phase-progress i { display: block; height: 100%; border-radius: inherit; background: var(--info-text); }
+.work-phase-card.done .work-phase-progress i { background: var(--pos-text); }.work-phase-card.doing .work-phase-progress i { background: var(--brand-amber); }.work-phase-card.late .work-phase-progress i { background: var(--neg-text); }
+@media (max-width: 900px) {
+  .work-phase-kpis { grid-template-columns: repeat(2,1fr); }.work-phase-kpis article:nth-child(2) { border-right: 0; }.work-phase-kpis article:nth-child(-n+2) { border-bottom: 1px solid var(--card-border); }
+  .work-phase-card { grid-template-columns: 1fr 1fr; }.work-phase-progress { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .work-phases-head { align-items: stretch; flex-direction: column; }.work-phases-head button { width: 100%; }
+  .work-phase-card, .work-phase-dates { grid-template-columns: 1fr; }.work-phase-progress { grid-column: auto; }
+}
 .work-tabs { display: flex; gap: 0; border-bottom: 1px solid #dfe1de; margin: 20px -25px 0; padding: 0 25px; overflow-x: auto; }
 .work-tabs button { border: 0; border-bottom: 2px solid transparent; background: none; padding: 13px 15px 11px; color: #858b8d; font: 700 11px "Manrope"; letter-spacing: .8px; white-space: nowrap; }
 .work-tabs button.active { color: #2d3336; border-bottom-color: var(--accent); }
