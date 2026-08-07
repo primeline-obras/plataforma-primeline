@@ -11,6 +11,7 @@ import { createActionPlanModule } from "./action-plan.js?v=2";
 import { createDocumentsModule } from "./documents.js?v=1";
 import { createRncModule } from "./rnc.js?v=2";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
+import { createVehiclesModule } from "./vehicles.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -115,7 +116,7 @@ document.querySelector("#root").innerHTML = `
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
         <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -262,7 +263,6 @@ document.querySelector("#root").innerHTML = `
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
           <button data-team-tab="medicine">MEDICINA DO TRABALHO</button>
-          <button data-team-tab="vehicles">VIATURAS</button>
         </nav>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
           <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>AUSÊNCIAS DA SEMANA</h2></div></div>
@@ -319,6 +319,7 @@ document.querySelector("#root").innerHTML = `
       <div class="page settings-view" id="settings-view" hidden></div>
       <div class="page documents-view" id="documents-view" hidden></div>
       <div class="page rnc-view" id="rnc-view" hidden></div>
+      <div class="page vehicles-view" id="vehicles-view" hidden></div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
         <div class="empty-state"><strong id="placeholder-title">MÓDULO EM PREPARAÇÃO</strong><span>Esta área será desenvolvida numa próxima etapa.</span></div>
       </div>
@@ -499,6 +500,11 @@ const documentsModule = createDocumentsModule({
 const rncModule = createRncModule({
   root: $("#rnc-view"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getRole: effectiveRole, uploadWorkDocument, downloadWorkDocument, toast,
+});
+const vehiclesModule = createVehiclesModule({
+  root: $("#vehicles-view"), supabase, isConfigured: isSupabaseConfigured,
+  getCollaborators: () => collaborators, getSuppliers: () => suppliers,
+  uploadEntityDocument, downloadWorkDocument, euro, prettyDate, toast,
 });
 const consolidatedView = createConsolidatedView({
   root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
@@ -2459,8 +2465,9 @@ function switchView(view, context = {}) {
   $("#settings-view").hidden = view !== "settings";
   $("#documents-view").hidden = view !== "documents";
   $("#rnc-view").hidden = view !== "rnc";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "team", "workforce", "settings"].includes(view)) {
+  $("#vehicles-view").hidden = view !== "vehicles";
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "team", "workforce", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "team", "workforce", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -2472,6 +2479,7 @@ function switchView(view, context = {}) {
   if (view === "action-plan") actionPlanModule.show();
   if (view === "documents") documentsModule.show();
   if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
+  if (view === "vehicles") vehiclesModule.show();
   if (view === "subcontractors") subcontractorsModule.show();
   if (view === "team" && !canManageTeam()) activateTeamTab("absences");
   else if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);

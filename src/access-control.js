@@ -1,6 +1,6 @@
 const FULL_VIEWS = [
   "overview", "meeting", "invoices", "works", "planning", "subcontractors",
-  "finance", "documents", "rnc", "team", "workforce", "settings",
+  "finance", "documents", "rnc", "vehicles", "team", "workforce", "settings",
 ];
 
 const ACCESS_BY_ROLE = {

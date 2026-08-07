@@ -212,6 +212,14 @@ de permissões. A migração reutiliza a tabela `documentos` e o bucket privado
 `documentos`, permite tipos documentais em texto livre e reserva leitura/escrita
 de ficheiros de colaboradores e viaturas a Administrativo/Gerência.
 
+## Gestão de viaturas
+
+Executar `supabase/bloco_06_viaturas.sql` no SQL Editor para criar o histórico de
+eventos, sinistros, multas e respetivos anexos. A migração também acrescenta o
+alerta diário de seguro com 15 dias de antecedência, sem criar um segundo job
+agendado. A área Viaturas é independente de Equipa e está reservada a
+Administrativo/Gerência.
+
 ## Dados reais de Equipa
 
 Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,
