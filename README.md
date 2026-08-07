@@ -212,6 +212,15 @@ de permissões. A migração reutiliza a tabela `documentos` e o bucket privado
 `documentos`, permite tipos documentais em texto livre e reserva leitura/escrita
 de ficheiros de colaboradores e viaturas a Administrativo/Gerência.
 
+## Documentos da empresa
+
+Executar `supabase/documentos_empresa.sql` no SQL Editor. A migração não recria
+a tabela nem os alertas 15/7/3 dias já instalados: acrescenta apenas as políticas
+de leitura e inserção para `documentos.entidade_tipo='empresa'` e para a pasta
+privada `empresa/<empresa_id>/` do bucket `documentos`. O ecrã está reservado a
+Administrativo/Gerência e permite carregar, consultar e descarregar certidões,
+RCBE, INPI e seguros, destacando documentos vencidos ou a vencer.
+
 ## Gestão de viaturas
 
 Executar `supabase/bloco_06_viaturas.sql` no SQL Editor para criar o histórico de
