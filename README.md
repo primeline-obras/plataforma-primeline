@@ -243,6 +243,14 @@ interface ordena Viaturas, Medicina e Contratos antes dos restantes alertas;
 férias e aniversários permanecem visíveis como informação secundária. O SMTP
 não é configurado por esta migração.
 
+## Cruzamento RH, Obra e Financeiro
+
+Executar `supabase/bloco_10_cruzamento_rh_obra_financeiro.sql` para registar os
+intervenientes do percurso das faturas e permitir ao encarregado consultar a
+medicina do trabalho e as férias dos colaboradores cuja alocação mais recente
+seja uma das suas obras. O Financeiro passa a ter um rastreio pesquisável de
+lançamento, decisão e pagamento; esta funcionalidade não cria alertas.
+
 ## Dados reais de Equipa
 
 Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,
