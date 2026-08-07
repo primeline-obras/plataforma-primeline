@@ -327,3 +327,15 @@ Executar `supabase/faturas_materiais_descontos.sql` para acrescentar
 `desconto_percentual` e `valor_desconto` aos artigos das faturas. Na captura de
 materiais, `valor_unitario` representa o preço bruto e `valor_total` o total
 líquido da linha; o comparativo apresenta ambos separadamente.
+## Salas de reunião
+
+A área **Salas de Reunião** está disponível a todos os utilizadores autenticados.
+Apresenta um calendário mensal, os horários já ocupados no dia escolhido e a lista
+das próximas reservas. O formulário é self-service: qualquer pessoa pode indicar
+no título em nome de quem está a reservar, sem aprovação prévia.
+
+Execute `supabase/bloco_12_salas_reuniao.sql` no SQL Editor. A migração cria a sala
+única da empresa, as reservas, as políticas de leitura/inserção e o bloqueio de
+sobreposição no banco de dados. A interface também valida a sobreposição antes de
+enviar, mas o trigger continua a ser a proteção definitiva contra reservas
+concorrentes.

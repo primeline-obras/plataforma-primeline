@@ -1,6 +1,6 @@
 const FULL_VIEWS = [
   "overview", "meeting", "invoices", "works", "planning", "subcontractors",
-  "finance", "documents", "rnc", "vehicles", "team", "workforce", "settings",
+  "finance", "documents", "rnc", "vehicles", "rooms", "team", "workforce", "settings",
 ];
 
 const ACCESS_BY_ROLE = {
@@ -21,7 +21,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "meeting", "works", "planning", "finance", "settings"],
+    views: ["overview", "meeting", "works", "planning", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
@@ -29,7 +29,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   diretor_obra: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "team", "settings"],
+    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -37,7 +37,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   adjunto: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "team", "settings"],
+    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -45,7 +45,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   preparador: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "team", "settings"],
+    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -53,7 +53,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "team", "settings"],
+    views: ["action-plan", "planning", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: false,
@@ -63,7 +63,7 @@ const ACCESS_BY_ROLE = {
 };
 
 const NO_ACCESS = {
-  views: ["settings"],
+  views: ["rooms", "settings"],
   insertInvoices: false,
   approveInvoices: false,
   payInvoices: false,

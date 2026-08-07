@@ -3,35 +3,35 @@ import { accessFor } from "../src/access-control.js";
 
 const matrix = {
   gerencia: {
-    views: ["consolidated", "finance", "vehicles", "team", "workforce", "planning", "rnc", "settings"],
+    views: ["consolidated", "finance", "vehicles", "rooms", "team", "workforce", "planning", "rnc", "settings"],
     actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   administrativo: {
-    views: ["finance", "vehicles", "team", "workforce", "planning", "documents", "rnc", "settings"],
+    views: ["finance", "vehicles", "rooms", "team", "workforce", "planning", "documents", "rnc", "settings"],
     actions: ["insertInvoices"],
     deniedViews: ["consolidated"],
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   financeiro: {
-    views: ["overview", "meeting", "works", "planning", "finance", "settings"],
+    views: ["overview", "meeting", "works", "planning", "finance", "rooms", "settings"],
     deniedViews: ["consolidated", "invoices", "subcontractors", "documents", "vehicles", "team", "workforce"],
     actions: ["payInvoices"],
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },
   diretor_obra: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "team", "settings"],
+    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
     deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   preparador: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "team", "settings"],
+    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
     deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "team", "settings"],
+    views: ["action-plan", "planning", "documents", "rnc", "rooms", "team", "settings"],
     deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "workforce"],
     actions: [],
     deniedActions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
@@ -52,6 +52,6 @@ assert.equal(platformAdmin.createWorks, true);
 assert(platformAdmin.views.includes("team"));
 
 const noProfile = accessFor({ role: "", isAdmin: false });
-assert.deepEqual(noProfile.views, ["settings"]);
+assert.deepEqual(noProfile.views, ["rooms", "settings"]);
 
 console.log("Matriz de acesso do frontend validada para 6 papéis e administrador da plataforma.");

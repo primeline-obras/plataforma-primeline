@@ -1891,3 +1891,47 @@ button, input, select, textarea,
 .overview-composition-work tbody tr.fixed { background:color-mix(in srgb,var(--warn-bg,#fff7dd) 55%,transparent); }.overview-composition-work tbody tr.fixed td { color:var(--warn-text,#a66f00); }
 .overview-composition-work td.positive { color:var(--pos-text,#237a4b); }.overview-composition-work td.negative { color:var(--neg-text,#bd302b); }
 @media (max-width:760px) { .overview-financial-composition { padding:14px; }.overview-composition-work > header { align-items:flex-start; flex-direction:column; }.overview-composition-work table { min-width:700px; } }
+/* Salas de reunião */
+.meeting-room-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(330px,.8fr); gap:20px; align-items:start; }
+.meeting-rooms-view .heading-stat strong { max-width:230px; font-size:16px; text-align:right; }
+.meeting-room-layout > div { display:grid; gap:20px; }
+.meeting-calendar, .meeting-agenda, .meeting-form, .meeting-upcoming { padding:22px; }
+.meeting-calendar > header, .meeting-agenda > header, .meeting-upcoming > header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.meeting-calendar > header h2, .meeting-agenda h2, .meeting-form h2, .meeting-upcoming h2 { margin:3px 0 0; text-transform:uppercase; }
+.meeting-calendar > header button { width:42px; height:42px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); color:var(--text-primary); font-size:20px; cursor:pointer; }
+.meeting-weekdays, .meeting-month-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); }
+.meeting-weekdays span { padding:9px; color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.12em; text-align:center; }
+.meeting-month-grid { border-top:1px solid var(--card-border); border-left:1px solid var(--card-border); }
+.meeting-day { position:relative; min-height:108px; padding:10px; border:0; border-right:1px solid var(--card-border); border-bottom:1px solid var(--card-border); border-radius:0; background:var(--card); color:var(--text-primary); text-align:left; cursor:pointer; overflow:hidden; }
+.meeting-day:hover, .meeting-day.selected { background:var(--info-bg); box-shadow:inset 0 0 0 2px var(--info-text); }
+.meeting-day.today b { display:grid; place-items:center; width:27px; height:27px; border-radius:50%; background:var(--sidebar); color:#fff; }
+.meeting-day.empty { min-height:108px; background:var(--bg); border-right:1px solid var(--card-border); border-bottom:1px solid var(--card-border); }
+.meeting-day > span { display:grid; gap:4px; margin-top:8px; }
+.meeting-day i { display:block; padding:4px 6px; border-radius:6px; background:var(--info-bg); color:var(--info-text); font-size:10px; font-style:normal; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.meeting-day em { position:absolute; right:8px; bottom:7px; color:var(--muted); font-size:10px; font-style:normal; }
+.meeting-agenda > header > span, .meeting-upcoming > header > span { display:grid; place-items:center; min-width:30px; height:30px; border-radius:50%; background:var(--sidebar); color:#fff; font-weight:800; }
+.meeting-agenda article, .meeting-upcoming article { display:flex; align-items:center; gap:18px; padding:14px 2px; border-top:1px solid var(--card-border); }
+.meeting-agenda article time { min-width:105px; color:var(--info-text); font-weight:800; }
+.meeting-upcoming article time { display:grid; min-width:135px; color:var(--muted); text-transform:uppercase; }
+.meeting-upcoming article time b { margin-top:4px; color:var(--info-text); }
+.meeting-empty { padding:24px 0; color:var(--muted); text-align:center; }
+.meeting-form > header { margin-bottom:18px; }
+.meeting-form > header p:last-child { color:var(--muted); }
+.meeting-form form { display:grid; gap:14px; }
+.meeting-form form > div:not(.meeting-form-occupied) { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.meeting-form label { display:grid; gap:7px; color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.08em; }
+.meeting-form input, .meeting-form select { width:100%; padding:13px; border:1px solid var(--card-border); border-radius:10px; background:var(--card); color:var(--text-primary); }
+.meeting-form-occupied { display:flex; flex-wrap:wrap; gap:7px; padding:12px; border-radius:10px; background:var(--bg); }
+.meeting-form-occupied::before { content:"OCUPADO:"; margin-right:5px; color:var(--muted); font-size:10px; font-weight:800; }
+.meeting-form-occupied span { padding:4px 7px; border-radius:6px; background:var(--warn-bg); color:var(--warn-text); font-size:11px; font-weight:800; }
+.meeting-form .form-error { min-height:18px; color:var(--neg-text); }
+
+@media (max-width: 1050px) {
+  .meeting-room-layout { grid-template-columns:1fr; }
+}
+@media (max-width: 700px) {
+  .meeting-calendar, .meeting-agenda, .meeting-form, .meeting-upcoming { padding:14px; }
+  .meeting-day, .meeting-day.empty { min-height:70px; padding:6px; }
+  .meeting-day i { font-size:0; width:7px; height:7px; padding:0; border-radius:50%; }
+  .meeting-form form > div:not(.meeting-form-occupied) { grid-template-columns:1fr; }
+}
