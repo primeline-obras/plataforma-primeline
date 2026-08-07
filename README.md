@@ -234,6 +234,15 @@ duplicados reservada a Gerência/administradores da plataforma. O frontend
 verifica fornecedor e número antes do upload e exige uma confirmação explícita
 da Gerência; Administrativo continua impedido de prosseguir.
 
+## Prioridade e canal dos alertas
+
+Executar `supabase/bloco_09_alertas_prioridade_email.sql` para preparar o canal
+de email exclusivamente para o pedido semanal de horas e as informações da
+Reunião Semanal. O pedido de horas é criado à sexta-feira pelo job diário. A
+interface ordena Viaturas, Medicina e Contratos antes dos restantes alertas;
+férias e aniversários permanecem visíveis como informação secundária. O SMTP
+não é configurado por esta migração.
+
 ## Dados reais de Equipa
 
 Executar `supabase/importar_dados_reais_equipa.sql` no SQL Editor para atualizar,

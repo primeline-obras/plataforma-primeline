@@ -150,6 +150,23 @@ export function planningBaselineDelays(work, phases = [], items = []) {
   }).filter(Boolean).sort((a, b) => b.days - a.days);
 }
 
+export function alertPriority(alert = {}) {
+  const text = `${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`
+    .toLocaleLowerCase("pt-PT");
+  if (/(viatura|seguro.*auto|inspe[cç][aã]o.*viatura)/.test(text)) return 0;
+  if (/(medicina|consulta.*m[eé]dic)/.test(text)) return 1;
+  if (/(fim_contrato_rh|contrato.*trabalho|contrato.*prazo)/.test(text)) return 2;
+  if (/(f[eé]rias|ferias|anivers[aá]rio|aniversario)/.test(text)) return 4;
+  return 3;
+}
+
+export function sortAlertsByPriority(alerts = []) {
+  return [...alerts].sort((left, right) =>
+    alertPriority(left) - alertPriority(right)
+    || String(left.data_gatilho || "9999-12-31").localeCompare(String(right.data_gatilho || "9999-12-31"))
+    || String(left.titulo || left.tipo || "").localeCompare(String(right.titulo || right.tipo || ""), "pt-PT"));
+}
+
 export function createProductionDashboard(options) {
   const {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
@@ -488,7 +505,9 @@ export function createProductionDashboard(options) {
 
   function alertDestination(alert) {
     if (["consulta_medicina", "primeira_consulta_medicina"].includes(alert.tipo)) return { view: "team", teamTab: "medicine" };
-    if (alert.tipo === "inspecao_viatura") return { view: "team", teamTab: "vehicles" };
+    if (["inspecao_viatura", "seguro_viatura"].includes(alert.tipo)) return { view: "vehicles" };
+    if (alert.tipo === "fim_contrato_rh") return { view: "team", teamTab: "contracts" };
+    if (alert.tipo === "pedido_semanal_horas") return { view: "team", teamTab: "overtime" };
     if (["validade_epi", "validade_documento"].includes(alert.tipo)) return { view: "team", teamTab: "collaborators" };
     if (alert.obra_id) return { view: "works" };
     return { view: "overview" };
@@ -515,10 +534,10 @@ export function createProductionDashboard(options) {
   function renderNotificationDrawer() {
     const list = document.querySelector("#notification-drawer-list");
     if (!list) return;
-    list.innerHTML = overviewState.alerts.length ? overviewState.alerts.map(alert => {
+    list.innerHTML = overviewState.alerts.length ? sortAlertsByPriority(overviewState.alerts).map(alert => {
       const destination = alertDestination(alert);
       return `<article class="notification-drawer-item alert-${alertSeverity(alert)}">
-        <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em></div>
+        <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><span><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><em class="notification-channel">${alert.enviar_email ? "PLATAFORMA + EMAIL" : "PLATAFORMA"}</em></span></div>
         <strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong>
         <p>${escapeHtml(alert.descricao || "")}</p>
         <footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>
@@ -588,7 +607,7 @@ export function createProductionDashboard(options) {
       administrativeRole ? query("epis?select=*", "EPIs") : [],
       administrativeRole ? query("colaboradores?select=id&data_saida=is.null", "Colaboradores ativos") : [],
     ]);
-      overviewState.alerts = alerts;
+    overviewState.alerts = sortAlertsByPriority(alerts);
     overviewState.profile = profiles[0] || null;
     overviewState.phases = phases;
     overviewState.planning = planning;
