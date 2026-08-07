@@ -1991,3 +1991,19 @@ button, input, select, textarea,
 
 @media (max-width:900px) { .map-adjustment form { grid-template-columns:1fr 1fr; }.map-adjustment .primary-button,.map-adjustment .outline-action { width:100%; }.financial-map,.fixed-expenses,.map-adjustment { padding:14px; } }
 @media (max-width:600px) { .map-adjustment form { grid-template-columns:1fr; }.map-adjustment-reference { align-items:flex-start; flex-direction:column; gap:5px; } }
+
+/* TEEs por obra */
+.tees-workspace { display:grid; gap:18px; }
+.tees-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; }
+.tees-heading > div { display:grid; gap:5px; }.tees-heading span,.tee-card > div > span { color:var(--text-muted); font:800 10px "Manrope"; letter-spacing:.14em; }
+.tees-heading h3 { margin:0; font-size:22px; }.tees-heading p { margin:0; color:var(--text-secondary); }
+.tee-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--card-border); border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.tee-kpis article { min-height:92px; padding:18px; display:grid; align-content:center; gap:5px; background:var(--card); border-right:1px solid var(--card-border); }.tee-kpis article:last-child { border-right:0; }
+.tee-kpis span { color:var(--text-muted); font:800 10px "Manrope"; letter-spacing:.11em; }.tee-kpis strong { color:var(--info-text); font-size:20px; }.tee-kpis small { color:var(--text-secondary); }
+.tee-list { display:grid; gap:10px; }.tee-card { display:grid; grid-template-columns:minmax(230px,1.6fr) minmax(135px,.7fr) minmax(155px,.8fr) minmax(190px,1fr) auto; gap:18px; align-items:center; padding:18px; background:var(--card); border:1px solid var(--card-border); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.tee-card > div { display:grid; gap:5px; min-width:0; }.tee-card-main strong { font-size:15px; }.tee-card small { color:var(--text-secondary); line-height:1.45; }
+.tee-status { width:max-content; padding:5px 9px; border-radius:999px; text-transform:uppercase; font-size:10px; letter-spacing:.08em; }.tee-status.aprovado { color:var(--pos-text); background:var(--pos-bg); }.tee-status.recusado { color:var(--neg-text); background:var(--neg-bg); }.tee-status.pendente { color:var(--warn-text); background:var(--warn-bg); }
+.tee-cross-phase { display:flex !important; flex-direction:row !important; align-items:center; gap:12px; padding:13px 15px; border:1px solid var(--card-border); border-radius:10px; background:var(--bg); cursor:pointer; }.tee-cross-phase input { width:18px; height:18px; flex:0 0 auto; }.tee-cross-phase span { display:grid; gap:3px; }.tee-cross-phase small,.tee-execution small { color:var(--text-secondary); font-weight:500; line-height:1.4; }
+.tee-execution { margin:0; padding:16px; border:1px solid var(--card-border); border-radius:10px; }.tee-execution legend { padding:0 7px; font:800 10px "Manrope"; letter-spacing:.12em; }
+@media (max-width:1100px) { .tee-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }.tee-kpis article:nth-child(2) { border-right:0; }.tee-kpis article:nth-child(-n+2) { border-bottom:1px solid var(--card-border); }.tee-card { grid-template-columns:minmax(220px,1.5fr) repeat(2,minmax(130px,.7fr)); }.tee-card > div:nth-of-type(4) { grid-column:1/span 2; } }
+@media (max-width:720px) { .tees-heading { align-items:stretch; flex-direction:column; }.tee-kpis,.tee-card { grid-template-columns:1fr; }.tee-kpis article { border-right:0; border-bottom:1px solid var(--card-border); }.tee-kpis article:last-child { border-bottom:0; }.tee-card > div:nth-of-type(4) { grid-column:auto; } }

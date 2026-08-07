@@ -60,13 +60,13 @@ let invoiceTraceState = "all";
 let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
-  contract: null, investment: null, impacts: [], phases: [], measurements: [], payments: [], consultations: [],
+  contract: null, investment: null, impacts: [], tees: [], phases: [], measurements: [], payments: [], consultations: [],
   labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
   billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
   drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
   safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
   error: "", procurementError: "", billingError: "", workDocumentsError: "",
-  documentIndexesError: "", safetyError: "",
+  documentIndexesError: "", safetyError: "", teesError: "",
 };
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
@@ -1981,13 +1981,13 @@ async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
   workDetails = {
-    contract: null, investment: null, impacts: [], phases: [], measurements: [], payments: [], consultations: [],
+    contract: null, investment: null, impacts: [], tees: [], phases: [], measurements: [], payments: [], consultations: [],
     labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
     billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
     drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
     safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
     error: "", procurementError: "", billingError: "", workDocumentsError: "",
-    documentIndexesError: "", safetyError: "",
+    documentIndexesError: "", safetyError: "", teesError: "",
   };
   renderWorks();
   const work = works.find(item => item.id === workId);
@@ -1995,7 +1995,9 @@ async function loadWorkDetails(workId) {
   if (!isSupabaseConfigured) {
     workDetails = {
       contract: { venda_contratual_inicial: 553619.19, venda_contratual_efetiva: 472179.26, custo_direto_efetivo: 355023.64, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
-      investment: null, impacts: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
+      investment: null, impacts: [], tees: [
+        { id: "tee-demo-1", obra_id: work.id, fase_id: "f-0", numero: "TEE 01", revisao: "REV00", descricao: "Trabalhos adicionais de demonstração", especialidade: "Construção civil", valor: 12500, preco_custo: 8200, dias_prorrogacao: 3, estado_aprovacao_gerencia: "aprovado", estado_aprovacao_cliente: "pendente", data_envio: "2026-07-20" },
+      ], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
       phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, nome: `Fase ${index + 1}` })),
       measurements: [],
       payments: [
@@ -2025,16 +2027,18 @@ async function loadWorkDetails(workId) {
       workDocumentsError: "",
       documentIndexesError: "",
       safetyError: "",
+      teesError: "",
     };
     renderWorkDetail(work);
     return;
   }
   const investmentMode = work?.modalidade === "investimento_proprio";
   const emptyResult = () => Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }));
-  const [contractResult, investmentResult, impactsResult, phasesResult, measurementsResult, laborResult, siteResult, directDebitsResult] = await Promise.all([
+  const [contractResult, investmentResult, impactsResult, teesResult, phasesResult, measurementsResult, laborResult, siteResult, directDebitsResult] = await Promise.all([
     investmentMode ? emptyResult() : supabase(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encodeURIComponent(workId)}`),
     investmentMode ? supabase(`investimentos?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
     investmentMode ? supabase(`impactos_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`) : emptyResult(),
+    investmentMode ? emptyResult() : supabase(`alteracoes_tee?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=criado_em.desc`),
     supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
     investmentMode ? emptyResult() : supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
     investmentMode ? supabase(`lancamentos_mao_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
@@ -2048,6 +2052,11 @@ async function loadWorkDetails(workId) {
   else detailErrors.push((await investmentResult.json().catch(() => ({}))).message || "Investimento indisponível");
   if (impactsResult.ok) workDetails.impacts = await impactsResult.json();
   else detailErrors.push((await impactsResult.json().catch(() => ({}))).message || "Impactos indisponíveis");
+  if (teesResult.ok) workDetails.tees = await teesResult.json();
+  else {
+    workDetails.teesError = (await teesResult.json().catch(() => ({}))).message || "TEEs indisponíveis";
+    detailErrors.push(workDetails.teesError);
+  }
   if (phasesResult.ok) workDetails.phases = await phasesResult.json();
   else detailErrors.push((await phasesResult.json().catch(() => ({}))).message || "Fases indisponíveis");
   if (measurementsResult.ok) workDetails.measurements = await measurementsResult.json();
@@ -2542,8 +2551,163 @@ function renderSafetyTab() {
     </div>`;
 }
 
+function teeApprovalLabel(value) {
+  return ({ pendente: "Pendente", aprovado: "Aprovado", recusado: "Recusado" })[value] || "Pendente";
+}
+
+function teePhase(tee) {
+  return workDetails.phases.find(phase => phase.id === tee.fase_id) || null;
+}
+
+function renderTeesTab(work) {
+  const approved = workDetails.tees.filter(item => item.estado_aprovacao_cliente === "aprovado");
+  const pending = workDetails.tees.filter(item => item.estado_aprovacao_cliente === "pendente");
+  const approvedValue = approved.reduce((total, item) => total + Number(item.valor || 0), 0);
+  return `<section class="tees-workspace">
+    <header class="tees-heading">
+      <div><span>TRABALHOS EXTRA-EMPREITADA</span><h3>TEEs DA OBRA</h3><p>Registo, aprovação e calendarização da execução.</p></div>
+      ${canEditWork() ? '<button class="primary-button" type="button" data-new-tee>＋ NOVO TEE</button>' : '<span class="readonly-note">CONSULTA · SEM EDIÇÃO</span>'}
+    </header>
+    ${workDetails.teesError ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${safeText(workDetails.teesError)}</span></div>` : ""}
+    <div class="tee-kpis">
+      <article><span>TOTAL</span><strong>${workDetails.tees.length}</strong></article>
+      <article><span>APROVADOS PELO CLIENTE</span><strong>${approved.length}</strong><small>${euro.format(approvedValue)}</small></article>
+      <article><span>AGUARDA RESPOSTA</span><strong>${pending.length}</strong></article>
+      <article><span>PRORROGAÇÃO APROVADA/PROPOSTA</span><strong>${workDetails.tees.reduce((total, item) => total + Number(item.dias_prorrogacao || 0), 0)} dias</strong></article>
+    </div>
+    <div class="tee-list">${workDetails.tees.length ? workDetails.tees.map(tee => {
+      const phase = teePhase(tee);
+      const execution = tee.data_inicio_execucao || tee.data_fim_execucao
+        ? `${formatOptionalDate(tee.data_inicio_execucao)} → ${formatOptionalDate(tee.data_fim_execucao)}`
+        : "Execução por agendar";
+      return `<article class="tee-card">
+        <div class="tee-card-main"><span>${safeText(tee.numero || "TEE")} · ${safeText(tee.revisao || "REV00")}</span><strong>${safeText(tee.descricao || "Sem descrição")}</strong><small>${safeText(tee.especialidade || "Sem especialidade")} · ${safeText(phase ? `${phase.codigo || ""} ${phase.descricao || ""}`.trim() : "Sem fase")}</small></div>
+        <div><span>VENDA</span><strong>${euro.format(Number(tee.valor || 0))}</strong><small>Custo ${euro.format(Number(tee.preco_custo || 0))}</small></div>
+        <div><span>GERÊNCIA</span><b class="tee-status ${safeText(tee.estado_aprovacao_gerencia || "pendente")}">${teeApprovalLabel(tee.estado_aprovacao_gerencia)}</b><small>Cliente: ${teeApprovalLabel(tee.estado_aprovacao_cliente)}</small></div>
+        <div><span>EXECUÇÃO</span><strong>${execution}</strong><small>${Number(tee.dias_prorrogacao || 0)} dias de prorrogação</small></div>
+        ${canEditWork() ? `<button class="outline-action" type="button" data-edit-tee="${tee.id}">EDITAR</button>` : ""}
+      </article>`;
+    }).join("") : '<div class="empty-state"><strong>SEM TEEs REGISTADOS</strong><span>Use “Novo TEE” para criar o primeiro registo desta obra.</span></div>'}</div>
+  </section>`;
+}
+
+function teeFormOptions(selectedId) {
+  return [...workDetails.phases]
+    .sort((left, right) => String(left.codigo || "").localeCompare(String(right.codigo || ""), "pt-PT", { numeric: true }))
+    .map(phase => `<option value="${phase.id}" ${phase.id === selectedId ? "selected" : ""}>${safeText(phase.codigo || "Fase")} · ${safeText(phase.descricao || "Sem descrição")}</option>`)
+    .join("");
+}
+
+function openTeeDialog(teeId = "") {
+  if (!canEditWork()) return toast("Não tem permissão para alterar TEEs nesta obra.", "error");
+  const tee = workDetails.tees.find(item => item.id === teeId) || null;
+  const managementState = tee?.estado_aprovacao_gerencia || "pendente";
+  const rfiOptions = workDetails.rfis.map(rfi => `<option value="${rfi.id}" ${rfi.id === tee?.rfi_id ? "selected" : ""}>${safeText(rfi.numero || rfi.assunto || "PDE")}</option>`).join("");
+  $("#workflow-dialog-title").textContent = tee ? `EDITAR ${tee.numero || "TEE"}` : "NOVO TEE";
+  $("#workflow-dialog-content").innerHTML = `<form id="tee-form" data-tee-id="${tee?.id || ""}">
+    <div class="form-row"><label>NÚMERO<input name="numero" required maxlength="40" value="${safeText(tee?.numero || "")}" placeholder="Ex.: TEE 21"></label><label>REVISÃO<input name="revisao" maxlength="20" value="${safeText(tee?.revisao || "REV00")}"></label></div>
+    <label>DESCRIÇÃO<textarea name="descricao" required rows="3" maxlength="500">${safeText(tee?.descricao || "")}</textarea></label>
+    <div class="form-row"><label>ESPECIALIDADE<input name="especialidade" maxlength="120" value="${safeText(tee?.especialidade || "")}"></label><label>PDE / RFI ASSOCIADO<div class="select-wrap"><select name="rfi_id"><option value="">Sem associação</option>${rfiOptions}</select><b>⌄</b></div></label></div>
+    <label>FASE<div class="select-wrap"><select name="fase_id" required><option value="">Selecionar fase</option>${teeFormOptions(tee?.fase_id)}</select><b>⌄</b></div></label>
+    <label class="tee-cross-phase"><input name="sem_fase_especifica" type="checkbox"><span><strong>ESTE TEE NÃO PERTENCE A UMA FASE ESPECÍFICA</strong><small>Será associado automaticamente à fase F01 · Estaleiro.</small></span></label>
+    <div class="form-row"><label>VALOR DE VENDA (€)<input name="valor" type="number" step="0.01" value="${tee?.valor ?? ""}"></label><label>PREÇO DE CUSTO (€)<input name="preco_custo" type="number" step="0.01" value="${tee?.preco_custo ?? ""}"></label></div>
+    <div class="form-row"><label>DIAS DE PRORROGAÇÃO<input name="dias_prorrogacao" type="number" step="1" value="${tee?.dias_prorrogacao ?? 0}"></label><label>DATA DE ENVIO<input name="data_envio" type="date" value="${tee?.data_envio || ""}"></label></div>
+    <div class="form-row"><label>ESTADO DO CLIENTE<div class="select-wrap"><select name="estado_aprovacao_cliente"><option value="pendente" ${tee?.estado_aprovacao_cliente !== "aprovado" && tee?.estado_aprovacao_cliente !== "recusado" ? "selected" : ""}>Pendente</option><option value="aprovado" ${tee?.estado_aprovacao_cliente === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${tee?.estado_aprovacao_cliente === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label><label>DATA DA RESPOSTA<input name="data_resposta" type="date" value="${tee?.data_resposta || ""}"></label></div>
+    <div class="form-row"><label>DATA DE APROVAÇÃO DO CLIENTE<input name="data_aprovacao_cliente" type="date" value="${tee?.data_aprovacao_cliente || ""}"></label>${hasFullAccess() ? `<label>APROVAÇÃO DA GERÊNCIA<div class="select-wrap"><select name="estado_aprovacao_gerencia"><option value="pendente" ${managementState === "pendente" ? "selected" : ""}>Pendente</option><option value="aprovado" ${managementState === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${managementState === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label>` : `<label>APROVAÇÃO DA GERÊNCIA<input value="${teeApprovalLabel(managementState)}" disabled></label>`}</div>
+    <fieldset class="tee-execution"><legend>EXECUÇÃO PREVISTA</legend><div class="form-row"><label>INÍCIO<input name="data_inicio_execucao" type="date" value="${tee?.data_inicio_execucao || ""}"></label><label>FIM<input name="data_fim_execucao" type="date" value="${tee?.data_fim_execucao || ""}"></label></div><small>Quando o TEE estiver aprovado pelo cliente e estas datas estiverem preenchidas, o planeamento e a previsão financeira são atualizados automaticamente.</small></fieldset>
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${tee ? "GUARDAR ALTERAÇÕES" : "CRIAR TEE"} <span>→</span></button></div>
+  </form>`;
+  $("#workflow-dialog").hidden = false;
+  const formElement = $("#tee-form");
+  formElement.sem_fase_especifica.addEventListener("change", () => {
+    if (!formElement.sem_fase_especifica.checked) return;
+    const sitePhase = workDetails.phases.find(phase => String(phase.codigo || "").toUpperCase() === "F01")
+      || workDetails.phases.find(phase => String(phase.descricao || "").toLocaleLowerCase("pt-PT").includes("estaleiro"));
+    if (!sitePhase) {
+      formElement.sem_fase_especifica.checked = false;
+      formElement.querySelector(".form-error").textContent = "Não foi encontrada a fase F01 · Estaleiro nesta obra.";
+      return;
+    }
+    formElement.fase_id.value = sitePhase.id;
+  });
+  formElement.addEventListener("submit", submitTee);
+}
+
+async function submitTee(event) {
+  event.preventDefault();
+  if (!canEditWork()) return;
+  const formElement = event.currentTarget;
+  const data = new FormData(formElement);
+  const teeId = formElement.dataset.teeId;
+  const existing = workDetails.tees.find(item => item.id === teeId) || null;
+  const errorElement = formElement.querySelector(".form-error");
+  const button = formElement.querySelector('button[type="submit"]');
+  const numero = String(data.get("numero") || "").trim();
+  const duplicate = workDetails.tees.some(item => item.id !== teeId && String(item.numero || "").trim().toLocaleLowerCase("pt-PT") === numero.toLocaleLowerCase("pt-PT"));
+  if (duplicate) { errorElement.textContent = "Já existe um TEE com este número nesta obra."; return; }
+  const start = String(data.get("data_inicio_execucao") || "");
+  const end = String(data.get("data_fim_execucao") || "");
+  if ((start && !end) || (!start && end)) { errorElement.textContent = "Preencha as duas datas de execução, ou deixe ambas vazias."; return; }
+  if (start && end < start) { errorElement.textContent = "A data de fim da execução não pode ser anterior à data de início."; return; }
+  const clientState = String(data.get("estado_aprovacao_cliente") || "pendente");
+  const crossPhase = data.get("sem_fase_especifica") === "on";
+  const sitePhase = crossPhase
+    ? workDetails.phases.find(phase => String(phase.codigo || "").toUpperCase() === "F01")
+      || workDetails.phases.find(phase => String(phase.descricao || "").toLocaleLowerCase("pt-PT").includes("estaleiro"))
+    : null;
+  if (crossPhase && !sitePhase) { errorElement.textContent = "Não foi encontrada a fase F01 · Estaleiro nesta obra."; return; }
+  const payload = {
+    obra_id: selectedWorkId,
+    fase_id: sitePhase?.id || String(data.get("fase_id") || "") || null,
+    rfi_id: String(data.get("rfi_id") || "") || null,
+    numero,
+    revisao: String(data.get("revisao") || "REV00").trim() || "REV00",
+    descricao: String(data.get("descricao") || "").trim(),
+    especialidade: String(data.get("especialidade") || "").trim() || null,
+    valor: data.get("valor") === "" ? null : Number(data.get("valor")),
+    preco_custo: data.get("preco_custo") === "" ? null : Number(data.get("preco_custo")),
+    dias_prorrogacao: Number(data.get("dias_prorrogacao") || 0),
+    data_envio: String(data.get("data_envio") || "") || null,
+    estado_aprovacao_cliente: clientState,
+    data_resposta: String(data.get("data_resposta") || "") || null,
+    data_aprovacao_cliente: clientState === "aprovado" ? (String(data.get("data_aprovacao_cliente") || "") || new Date().toISOString().slice(0, 10)) : null,
+    data_inicio_execucao: start || null,
+    data_fim_execucao: end || null,
+  };
+  if (hasFullAccess()) {
+    const managementState = String(data.get("estado_aprovacao_gerencia") || "pendente");
+    payload.estado_aprovacao_gerencia = managementState;
+    payload.aprovado_por_gerencia = managementState === "aprovado" ? accessContext.profile?.id || existing?.aprovado_por_gerencia || null : null;
+    payload.data_aprovacao_gerencia = managementState === "aprovado" ? existing?.data_aprovacao_gerencia || new Date().toISOString() : null;
+  }
+  button.disabled = true;
+  errorElement.textContent = "";
+  try {
+    let saved = { ...existing, ...payload, id: teeId || crypto.randomUUID(), criado_em: existing?.criado_em || new Date().toISOString() };
+    if (isSupabaseConfigured) {
+      const path = teeId ? `alteracoes_tee?id=eq.${encodeURIComponent(teeId)}&select=*` : "alteracoes_tee?select=*";
+      const response = await supabase(path, { method: teeId ? "PATCH" : "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.message || detail.details || "Não foi possível guardar o TEE.");
+      }
+      saved = (await response.json())[0] || saved;
+    }
+    if (existing) Object.assign(existing, saved);
+    else workDetails.tees.unshift(saved);
+    closeWorkflowDialog();
+    renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    toast(teeId ? "TEE atualizado." : "TEE criado.");
+  } catch (error) {
+    errorElement.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderWorkTab(work) {
   if (selectedWorkTab === "subcontracts") return renderSubcontractsTab(work);
+  if (selectedWorkTab === "tees") return renderTeesTab(work);
   if (selectedWorkTab === "measurements") return renderMeasurementsTab(work);
   if (selectedWorkTab === "phases") return `<div class="empty-state"><strong>FASES</strong><span>Este separador será desenvolvido numa próxima etapa.</span></div>`;
   if (selectedWorkTab === "documents") return renderWorkDocumentsTab();
@@ -2554,7 +2718,8 @@ function renderWorkTab(work) {
 function renderWorkDetail(work) {
   if (!work) return;
   const financialReadOnly = isFinancial();
-  if (financialReadOnly && !["summary", "subcontracts"].includes(selectedWorkTab)) selectedWorkTab = "summary";
+  if (financialReadOnly && !["summary", "subcontracts", "tees"].includes(selectedWorkTab)) selectedWorkTab = "summary";
+  if (work.modalidade === "investimento_proprio" && selectedWorkTab === "tees") selectedWorkTab = "summary";
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
       <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
@@ -2565,6 +2730,7 @@ function renderWorkDetail(work) {
     <nav class="work-tabs">
       <button data-work-tab="summary" class="${selectedWorkTab === "summary" ? "active" : ""}">RESUMO</button>
       <button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
+      ${work.modalidade === "investimento_proprio" ? "" : `<button data-work-tab="tees" class="${selectedWorkTab === "tees" ? "active" : ""}">TEEs</button>`}
       ${financialReadOnly ? "" : `<button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
       <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
       <button data-work-tab="documents" class="${selectedWorkTab === "documents" ? "active" : ""}">DOCUMENTOS</button>
@@ -3412,6 +3578,9 @@ $("#work-detail").addEventListener("click", async event => {
     renderWorkDetail(works.find(item => item.id === selectedWorkId));
     return;
   }
+  if (event.target.closest("[data-new-tee]")) return openTeeDialog();
+  const editTeeButton = event.target.closest("[data-edit-tee]");
+  if (editTeeButton) return openTeeDialog(editTeeButton.dataset.editTee);
   if (event.target.closest("[data-new-measurement]")) return openNewMeasurementDialog();
   const billingButton = event.target.closest("[data-new-billing]");
   if (billingButton) return openBillingDialog(billingButton.dataset.newBilling);

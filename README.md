@@ -319,9 +319,10 @@ fatura como alternativa.
 
 Um TEE transversal a várias fases deve usar a fase Estaleiro (`F01`) como
 `fase_id`; não existe nem é necessária uma relação TEE–múltiplas fases. O
-frontend ainda não possui um formulário de criação/edição de TEEs, pelo que a
-opção visual “sem fase específica” deverá aplicar esta regra quando esse
-formulário for construído.
+formulário de criação/edição de TEEs inclui a opção “sem fase específica”, que
+seleciona automaticamente a fase `F01`. A aprovação pelo cliente, acompanhada
+das datas de execução, continua a alimentar o planeamento e a previsão mensal
+através dos triggers já existentes na base de dados.
 
 Executar `supabase/faturas_materiais_descontos.sql` para acrescentar
 `desconto_percentual` e `valor_desconto` aos artigos das faturas. Na captura de
