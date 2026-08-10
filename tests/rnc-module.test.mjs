@@ -24,7 +24,7 @@ assert.match(migration, /faturas_anexos_insert/);
 assert.match(migration, /avaliacoes_subempreiteiro_anexos_insert/);
 
 assert.match(app, /ANEXOS ADICIONAIS/);
-assert.match(app, /não substitui a guia de remessa obrigatória/);
+assert.match(app, /não substituem a guia de remessa/);
 assert.match(app, /uploadInvoiceAttachment/);
 assert.match(styles, /\.rnc-column > header h2 \{ color:#fff;/);
 assert.equal(rncCode({ numero: 120 }, 1), "RNC-120-001");

@@ -172,6 +172,7 @@ input::placeholder { color: #acb0b1; }
 .empty-state { min-height: 200px; display: flex; flex-direction: column; gap: 8px; justify-content: center; align-items: center; color: #909597; font-size: 13px; letter-spacing: .8px; }.empty-state strong { color: #52585b; }
 .toast { position: fixed; right: 25px; bottom: 25px; z-index: 50; min-width: 300px; max-width: 430px; background: #2d3336; color: white; padding: 14px 18px; display: flex; gap: 12px; align-items: center; font-size: 15px; box-shadow: 0 12px 35px rgba(0,0,0,.2); animation: toast-in .25s ease-out; }
 .toast > span { width: 25px; height: 25px; border: 1px solid #737a7d; display: grid; place-items: center; }.toast svg { width: 14px; }.toast.error { background: #704848; }
+.toast.warning { background: #75551f; }
 @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
 .scrim { display: none; }
 .works-toolbar { display: grid; grid-template-columns: 1fr 190px auto; gap: 13px; margin-bottom: 18px; }
@@ -361,6 +362,11 @@ input::placeholder { color: #acb0b1; }
 .guide-picker { min-width: 0; height: 38px; border: 1px dashed #c9cdca; background: #f8f8f6; display: flex; align-items: center; gap: 7px; padding: 0 10px; color: #747b7d; cursor: pointer; font: 700 10px "Manrope"; letter-spacing: .55px; }
 .guide-picker svg { width: 14px; flex: 0 0 auto; }.guide-picker span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.guide-picker input { display: none; }
 .guide-picker.ready { border-style: solid; border-color: #b8ceb9; color: #4f7255; background: #f0f6f1; }
+.invoice-guide-warning { display:flex; align-items:center; gap:12px; margin-top:10px; padding:11px 13px; border:1px solid #e4c678; border-left:4px solid #bf8610; border-radius:9px; background:#fff6dc; color:#755300; }
+.invoice-guide-warning[hidden] { display:none; }
+.invoice-guide-warning strong { flex:0 0 auto; font:850 10px "Manrope"; letter-spacing:.65px; }
+.invoice-guide-warning span { font-size:12px; }
+.invoice-guide-status { display:inline-flex; width:max-content; margin-top:9px; padding:5px 8px; border:1px solid #e4c678; border-radius:999px; background:#fff6dc; color:#755300; font:850 9px "Manrope"; font-style:normal; letter-spacing:.55px; }
 .attached-guides { display: flex; gap: 5px; flex-wrap: wrap; }
 .attached-guides button, .finance-guides button { border: 1px solid #cfd4d0; background: white; color: #586166; min-height: 27px; padding: 0 8px; font: 700 10px "Manrope"; letter-spacing: .45px; cursor: pointer; }
 .payment-term { margin: 0; color: #858b8d; font: 700 9px "Manrope"; letter-spacing: .55px; }
@@ -635,6 +641,7 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
 }
 :root[data-theme="dark"] .work-list-item.selected { background: #343a3d; }
 :root[data-theme="dark"] .finance-column, :root[data-theme="dark"] .guide-picker { background: #252a2d; border-color: var(--line); }
+:root[data-theme="dark"] .invoice-guide-warning, :root[data-theme="dark"] .invoice-guide-status { background:#403625; color:#ffd790; border-color:#755f36; }
 :root[data-theme="dark"] .overview-alerts > div.alert-urgent { background: #432b2b; }
 :root[data-theme="dark"] .overview-alerts > div.alert-attention { background: #403625; }
 :root[data-theme="dark"] .overview-alerts > div.alert-pending { background: #263744; }
