@@ -155,6 +155,11 @@ input::placeholder { color: #acb0b1; }
 .extraction-row em.provavel { color: #80642f; background: #fbf7ed; border-color: #e3d4b3; }
 .extraction-row em.manual { color: #805858; background: #fbf3f3; border-color: #dfc9c9; }
 #extraction-note { color: #767c7e; font-size: 12px; line-height: 1.45; margin: 10px 0 0; }
+.invoice-review-banner { display:flex; align-items:center; gap:10px; margin:10px 0 2px; padding:10px 12px; border:1px solid var(--warn-border,#e3d4b3); border-radius:10px; background:var(--warn-bg,#fbf7ed); color:var(--warn-text,#80642f); }
+.invoice-review-banner strong { flex:0 0 auto; font:800 10px "Manrope"; letter-spacing:.7px; }
+.invoice-review-banner span { font-size:11px; line-height:1.4; }
+.invoice-work-review-hint { display:block; margin-top:6px; color:var(--warn-text,#80642f); font:800 9px "Manrope"; font-style:normal; letter-spacing:.45px; }
+.invoice-review-active [name="obra_id"] { border-color:var(--warn-text,#a66f00); box-shadow:0 0 0 2px color-mix(in srgb,var(--warn-bg,#fff7dd) 80%,transparent); }
 .pdf-modal { position: fixed; inset: 0; z-index: 120; background: rgba(22,26,28,.76); padding: 28px; display: grid; grid-template-rows: 48px minmax(0,1fr); }
 .pdf-modal-bar { background: var(--charcoal); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
 .pdf-modal-bar strong { font: 700 13px "Manrope"; letter-spacing: 1px; }

@@ -145,7 +145,7 @@ document.querySelector("#root").innerHTML = `
           <div class="panel new-invoice">
             <div class="panel-title"><span>＋ NOVA FATURA</span><small>INSERÇÃO MANUAL</small></div>
             <form id="invoice-form">
-              <label>OBRA<div class="select-wrap"><select name="obra_id" required></select><b>⌄</b></div></label>
+              <label>OBRA<div class="select-wrap"><select name="obra_id" required></select><b>⌄</b></div><em class="invoice-work-review-hint" hidden>CONFIRME OU CORRIJA A OBRA ANTES DE GRAVAR</em></label>
               <label>TIPO DE DESPESA<div class="segmented">
                 <button type="button" data-type="subempreitada" class="selected">SUBEMPREITADA</button><button type="button" data-type="material">MATERIAL</button><button type="button" data-type="estaleiro">ESTALEIRO</button>
               </div></label>
@@ -170,6 +170,7 @@ document.querySelector("#root").innerHTML = `
               </div>
               <div class="extraction-panel" id="extraction-panel" hidden>
                 <div class="extraction-title"><span>LEITURA AUTOMÁTICA</span><small id="extraction-status">A ANALISAR…</small></div>
+                <div class="invoice-review-banner" id="invoice-review-banner" hidden><strong>REVISÃO EDITÁVEL</strong><span>Confirme ou corrija todos os campos sugeridos, incluindo a obra, antes de registar.</span></div>
                 <div id="extraction-results"></div>
                 <p id="extraction-note"></p>
               </div>
@@ -431,6 +432,34 @@ function showExtractedMaterialItems(items) {
   $("#material-items-list").innerHTML = "";
   extractedMaterialItems.forEach(addMaterialItem);
   extractedMaterialItemsApplied = true;
+}
+
+function enableExtractedInvoiceReview() {
+  const fields = [
+    form.obra_id,
+    form.fornecedor_id,
+    form.subempreitada_id,
+    form.numero_doc,
+    form.data_fatura,
+    form.valor,
+    form.condicao_pagamento,
+    ...document.querySelectorAll("#material-items-list [data-item-field]"),
+  ].filter(Boolean);
+  fields.forEach(field => {
+    field.disabled = false;
+    field.readOnly = false;
+    field.removeAttribute("aria-disabled");
+    field.removeAttribute("readonly");
+  });
+  form.classList.add("invoice-review-active");
+  $("#invoice-review-banner").hidden = false;
+  $(".invoice-work-review-hint").hidden = false;
+}
+
+function endExtractedInvoiceReview() {
+  form.classList.remove("invoice-review-active");
+  $("#invoice-review-banner").hidden = true;
+  $(".invoice-work-review-hint").hidden = true;
 }
 
 function updateMaterialItemTotal(row, changedField = "") {
@@ -3946,6 +3975,7 @@ function findMaterialItems(rows) {
 }
 async function extractPdfData(file) {
   $("#extraction-panel").hidden = false;
+  enableExtractedInvoiceReview();
   $("#extraction-status").textContent = "A ANALISAR…";
   $("#extraction-results").innerHTML = "";
   $("#extraction-note").textContent = "Os dados encontrados continuam editáveis e devem ser confirmados.";
@@ -3981,6 +4011,7 @@ async function extractPdfData(file) {
     const paymentConditionSuggestion = findPaymentConditionSuggestion(rows);
     const materialItems = findMaterialItems(rows);
     showExtractedMaterialItems(materialItems);
+    enableExtractedInvoiceReview();
 
     const supplierCandidate = findSupplierCandidate(rows.filter(row => row.pageNumber === 1));
     const exactSupplier = suppliers.find(supplier => normalizeExactName(supplier.nome) === normalizeExactName(supplierCandidate));
@@ -4036,6 +4067,7 @@ $("#pdf-input").addEventListener("change", event => {
   }
   if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
   selectedPdf = file;
+  enableExtractedInvoiceReview();
   localPdfUrl = URL.createObjectURL(file);
   $("#pdf-name").textContent = file.name;
   $("#pdf-size").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
@@ -4071,6 +4103,7 @@ $("#remove-pdf").addEventListener("click", () => {
   $("#pdf-input").value = "";
   $("#pdf-attachment").hidden = true;
   $("#extraction-panel").hidden = true;
+  endExtractedInvoiceReview();
   $("#extraction-results").innerHTML = "";
   $("#payment-condition-suggestion").textContent = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
@@ -4285,6 +4318,7 @@ form.addEventListener("submit", async event => {
   selectedPdf = null; localPdfUrl = "";
   $("#pdf-attachment").hidden = true;
   $("#extraction-panel").hidden = true;
+  endExtractedInvoiceReview();
   $("#extraction-results").innerHTML = "";
   $("#payment-condition-suggestion").textContent = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
