@@ -11,6 +11,7 @@ export function createProcurementModule({
   getSubcontracts,
   euro,
   toast,
+  onImportExcel,
   onAdjudicated,
   onConsultationsChanged,
 }) {
@@ -123,7 +124,7 @@ export function createProcurementModule({
     if (!container) return;
     if (state.loading) return void (container.innerHTML = `<div class="empty-state">A CARREGAR MAPAS COMPARATIVOS…</div>`);
     const open = state.consultations.filter(item => item.estado === "em_consulta" || !item.estado);
-    container.innerHTML = `<section class="procurement-entry"><header><div><p class="eyebrow">MAPA COMPARATIVO</p><h3>EM CONSULTA</h3><span>Crie consultas, recolha propostas e compare preços por artigo.</span></div><b>${open.length}</b></header>${renderNewConsultation()}<div class="procurement-consultations">${open.length ? open.map(renderConsultation).join("") : `<div class="procurement-empty">NÃO EXISTEM CONSULTAS ABERTAS NESTA OBRA.</div>`}</div></section>`;
+    container.innerHTML = `<section class="procurement-entry"><header><div><p class="eyebrow">MAPA COMPARATIVO</p><h3>EM CONSULTA</h3><span>Crie consultas, recolha propostas e compare preços por artigo.</span></div><div class="procurement-header-actions">${state.canEdit ? '<button type="button" class="outline-action" data-import-subcontracts>IMPORTAR EXCEL</button>' : ""}<b>${open.length}</b></div></header>${renderNewConsultation()}<div class="procurement-consultations">${open.length ? open.map(renderConsultation).join("") : `<div class="procurement-empty">NÃO EXISTEM CONSULTAS ABERTAS NESTA OBRA.</div>`}</div></section>`;
     renderBudgetItems(container.querySelector("[data-new-consultation]"));
   }
 
@@ -223,6 +224,10 @@ export function createProcurementModule({
   }
 
   host.addEventListener("click", event => {
+    if (event.target.closest("[data-import-subcontracts]")) {
+      onImportExcel?.({ work: state.work, phases: phases(), suppliers: getSuppliers(), consultations: state.consultations, subcontracts: getSubcontracts().filter(item => item.obra_id === state.work.id), onComplete: () => load(state.work, true) });
+      return;
+    }
     const newButton = event.target.closest("[data-toggle-new-consultation]");
     if (newButton) { state.newFormOpen = !state.newFormOpen; return render(); }
     const consultationButton = event.target.closest("[data-toggle-consultation]");

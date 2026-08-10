@@ -17,6 +17,7 @@ import { createPropertiesModule } from "./properties.js?v=1";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
+import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -679,9 +680,11 @@ const budgetRequestsModule = createBudgetRequestsModule({
   root: $("#budget-requests-view"), supabase, isConfigured: isSupabaseConfigured,
   getProfile: () => accessContext.profile, euro, prettyDate, toast,
 });
+let operationalXlsxImportModule;
 const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
+  onImportExcel: context => operationalXlsxImportModule?.openFinancial(context),
 });
 const consolidatedView = createConsolidatedView({
   root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
@@ -2733,7 +2736,7 @@ function renderTeesTab(work) {
   return `<section class="tees-workspace">
     <header class="tees-heading">
       <div><span>TRABALHOS EXTRA-EMPREITADA</span><h3>TEEs DA OBRA</h3><p>Registo, aprovação e calendarização da execução.</p></div>
-      ${canEditWork() ? '<button class="primary-button" type="button" data-new-tee>＋ NOVO TEE</button>' : '<span class="readonly-note">CONSULTA · SEM EDIÇÃO</span>'}
+      ${canEditWork() ? '<div class="tee-heading-actions"><button class="outline-action" type="button" data-import-tees>IMPORTAR EXCEL</button><button class="primary-button" type="button" data-new-tee>＋ NOVO TEE</button></div>' : '<span class="readonly-note">CONSULTA · SEM EDIÇÃO</span>'}
     </header>
     ${workDetails.teesError ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${safeText(workDetails.teesError)}</span></div>` : ""}
     <div class="tee-kpis">
@@ -3803,6 +3806,11 @@ $("#work-detail").addEventListener("click", async event => {
     renderWorkDetail(works.find(item => item.id === selectedWorkId));
     return;
   }
+  if (event.target.closest("[data-import-tees]")) {
+    const work = works.find(item => item.id === selectedWorkId);
+    if (work) operationalXlsxImportModule?.openTees({ work, phases: workDetails.phases, tees: workDetails.tees, isAdmin: hasFullAccess(), onComplete: () => loadWorkDetails(work.id) });
+    return;
+  }
   if (event.target.closest("[data-new-tee]")) return openTeeDialog();
   const editTeeButton = event.target.closest("[data-edit-tee]");
   if (editTeeButton) return openTeeDialog(editTeeButton.dataset.editTee);
@@ -4767,6 +4775,7 @@ procurementModule = createProcurementModule({
   getSubcontracts: () => subcontracts,
   euro,
   toast,
+  onImportExcel: context => operationalXlsxImportModule?.openSubcontracts(context),
   onConsultationsChanged: rows => { workDetails.consultations = rows; },
   onAdjudicated: async result => {
     const row = Array.isArray(result) ? result[0] : result;
@@ -4774,6 +4783,12 @@ procurementModule = createProcurementModule({
     const existing = subcontracts.find(item => item.id === row.id);
     if (existing) Object.assign(existing, row); else subcontracts.push(row);
   },
+});
+operationalXlsxImportModule = createOperationalXlsxImport({
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getProfile: () => accessContext.profile,
+  toast,
 });
 renderUser();
 loadData();
