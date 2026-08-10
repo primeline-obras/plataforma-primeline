@@ -3,11 +3,20 @@ const anonKey = window.PRIMELINE_CONFIG?.supabaseAnonKey || "";
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
 const SESSION_KEY = "primeline_supabase_session";
+const sessionStore = window.sessionStorage;
 let refreshPromise = null;
+
+// As sessões são isoladas por separador/janela. O localStorage era partilhado
+// pelo navegador e fazia um segundo login substituir o utilizador da primeira janela.
+try {
+  window.localStorage.removeItem(SESSION_KEY);
+} catch {
+  // A aplicação continua funcional mesmo quando o browser bloqueia localStorage.
+}
 
 export function getSession() {
   try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+    const session = JSON.parse(sessionStore.getItem(SESSION_KEY));
     if (!session?.access_token) return null;
     return session;
   } catch {
@@ -16,7 +25,7 @@ export function getSession() {
 }
 
 export function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+  sessionStore.removeItem(SESSION_KEY);
 }
 
 export async function signIn(email, password) {
@@ -27,7 +36,7 @@ export async function signIn(email, password) {
   });
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error_description || payload.msg || "Não foi possível iniciar sessão.");
-  localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  sessionStore.setItem(SESSION_KEY, JSON.stringify(payload));
   return payload;
 }
 
@@ -58,7 +67,7 @@ export async function refreshSession() {
       window.dispatchEvent(new CustomEvent("primeline:session-expired"));
       throw new Error("A sessão expirou. Inicie sessão novamente.");
     }
-    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    sessionStore.setItem(SESSION_KEY, JSON.stringify(payload));
     return payload;
   })();
   try {
