@@ -22,6 +22,7 @@ export function createSettingsModule({
 }) {
   const state = {
     loaded: false, users: [], responsibilities: [], admins: [], company: null,
+    parameters: [],
     adminTab: "management", audit: [], auditLoaded: false, auditLoading: false,
   };
 
@@ -36,6 +37,7 @@ export function createSettingsModule({
         <div class="settings-divider"><span>ADMINISTRAÇÃO DA PLATAFORMA</span></div>
         <nav class="settings-admin-tabs" aria-label="Áreas de administração">
           <button type="button" class="active" data-settings-admin-tab="management">GESTÃO</button>
+          <button type="button" data-settings-admin-tab="parameters">PARÂMETROS OPERACIONAIS</button>
           <button type="button" data-settings-admin-tab="audit">AUDITORIA</button>
         </nav>
         <div class="settings-grid" data-settings-admin-panel="management">
@@ -54,6 +56,11 @@ export function createSettingsModule({
             <form id="settings-company-form" class="settings-stack-form"><label>NOME<input name="nome" required></label><label>NIF<input name="nif" maxlength="20"></label><label>MORADA<textarea name="morada" rows="3"></textarea></label><button type="submit">GUARDAR DADOS</button></form>
           </section>
         </div>
+        <section class="panel settings-card settings-parameters" data-settings-admin-panel="parameters" hidden>
+          <header><div><p class="eyebrow">REGRAS DE NEGÓCIO</p><h2>PARÂMETROS OPERACIONAIS</h2></div><span id="settings-parameter-count"></span></header>
+          <div class="settings-parameter-note">As alterações entram em vigor imediatamente, sem nova publicação da aplicação. Valores com vários prazos devem ser separados por vírgulas.</div>
+          <div id="settings-parameters" class="settings-parameter-list"></div>
+        </section>
         <section class="panel settings-card settings-audit" data-settings-admin-panel="audit" hidden>
           <header><div><p class="eyebrow">RASTREABILIDADE</p><h2>HISTÓRICO DE ALTERAÇÕES</h2></div><div class="settings-audit-head"><span id="settings-audit-count"></span><button type="button" data-refresh-audit>ATUALIZAR</button></div></header>
           <div class="settings-audit-filters">
@@ -124,6 +131,25 @@ export function createSettingsModule({
     form.elements.nome.value = company.nome || "";
     form.elements.nif.value = company.nif || "";
     form.elements.morada.value = company.morada || "";
+  }
+
+  function renderParameters() {
+    const list = root.querySelector("#settings-parameters");
+    if (!list) return;
+    root.querySelector("#settings-parameter-count").textContent = `${state.parameters.length} PARÂMETROS`;
+    list.innerHTML = state.parameters.map(parameter => {
+      const updater = state.users.find(user => user.id === parameter.atualizado_por);
+      const date = parameter.atualizado_em
+        ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(parameter.atualizado_em))
+        : "Sem alteração registada";
+      const inputMode = parameter.chave === "valor_minimo_contrato_subempreitada" ? "decimal" : "numeric";
+      return `<form class="settings-parameter-row" data-parameter-form data-parameter-key="${escapeHtml(parameter.chave)}">
+        <div class="settings-parameter-copy"><strong>${escapeHtml(parameter.descricao || parameter.chave)}</strong><code>${escapeHtml(parameter.chave)}</code></div>
+        <label>VALOR ATUAL<input name="valor" required inputmode="${inputMode}" value="${escapeHtml(parameter.valor)}"></label>
+        <div class="settings-parameter-history"><span>ÚLTIMA ALTERAÇÃO</span><strong>${escapeHtml(updater?.nome || (parameter.atualizado_por ? "Utilizador" : "Valor inicial"))}</strong><small>${escapeHtml(date)}</small></div>
+        <button type="submit">GUARDAR</button>
+      </form>`;
+    }).join("") || `<div class="settings-empty">SEM PARÂMETROS CONFIGURADOS</div>`;
   }
 
   function auditTableLabel(value) {
@@ -220,7 +246,7 @@ export function createSettingsModule({
   function renderAdmin() {
     root.querySelector("#settings-admin").hidden = !isAdmin();
     if (!isAdmin()) return;
-    renderUsers(); renderResponsibilities(); renderAdmins(); renderCompany();
+    renderUsers(); renderResponsibilities(); renderAdmins(); renderCompany(); renderParameters();
     activateAdminTab(state.adminTab);
   }
 
@@ -241,6 +267,18 @@ export function createSettingsModule({
       const profile = getProfile();
       state.users = [{ ...profile, id: profile?.id || "demo", email: "demo@primeline.pt", ativo: true, auth_user_id: "demo-auth", empresa_id: companyId }];
       state.company = { id: companyId, nome: "PRIMELINE", nif: "", morada: "" };
+      state.parameters = [
+        ["valor_minimo_contrato_subempreitada", "Valor adjudicado a partir do qual é obrigatório contrato de subempreitada (€).", "5000"],
+        ["antecedencias_alerta_contrato_rh", "Antecedências dos alertas de fim de contrato de trabalho, em dias.", "60,45,30"],
+        ["antecedencia_alerta_documento_colaborador", "Antecedência do alerta de validade de documentos de colaboradores, em dias.", "30"],
+        ["antecedencia_alerta_epi", "Antecedência do alerta de validade de EPI, em dias.", "30"],
+        ["antecedencia_alerta_medicina", "Antecedência do alerta de Medicina do Trabalho, em dias.", "30"],
+        ["antecedencia_alerta_viatura_inspecao", "Antecedência do alerta de inspeção de viatura, em dias.", "15"],
+        ["antecedencia_alerta_viatura_seguro", "Antecedência do alerta de seguro de viatura, em dias.", "15"],
+        ["antecedencias_alerta_documento_empresa", "Antecedências dos alertas de documentos da empresa, em dias.", "15,7,3"],
+        ["antecedencias_alerta_pedido_orcamento", "Antecedências dos alertas de entrega de pedidos de orçamento, em dias.", "15,7,3"],
+        ["antecedencia_alerta_reuniao_condominio", "Antecedência do alerta de reunião de condomínio, em dias.", "7"],
+      ].map(([chave, descricao, valor]) => ({ chave, descricao, valor, atualizado_por: null, atualizado_em: new Date().toISOString() }));
       state.loaded = true; renderAdmin(); return;
     }
     try {
@@ -249,9 +287,11 @@ export function createSettingsModule({
         request("obra_responsaveis?select=id,obra_id,utilizador_id,papel,criado_em&order=criado_em", {}, "Não foi possível carregar os responsáveis"),
         request("administradores_plataforma?select=id,utilizador_id,criado_em&order=criado_em", {}, "Não foi possível carregar os administradores"),
         request(`empresas?select=id,nome,morada,nif&id=eq.${companyId}&limit=1`, {}, "Não foi possível carregar a empresa"),
+        request("parametros_operacionais?select=chave,descricao,valor,atualizado_por,atualizado_em&order=descricao", {}, "Não foi possível carregar os parâmetros operacionais"),
       ]);
       [state.users, state.responsibilities, state.admins] = results;
       state.company = results[3][0] || null;
+      state.parameters = results[4];
       state.loaded = true;
       renderAdmin();
     } catch (error) { toast(error.message, "error"); }
@@ -331,6 +371,19 @@ export function createSettingsModule({
         const payload = { nome: form.elements.nome.value.trim(), nif: form.elements.nif.value.trim() || null, morada: form.elements.morada.value.trim() || null };
         await request(`empresas?id=eq.${state.company?.id || companyId}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(payload) }, "Não foi possível guardar os dados da empresa");
         state.company = { ...(state.company || { id: companyId }), ...payload }; toast("Dados da empresa atualizados.");
+      });
+      if (form.matches("[data-parameter-form]")) return withButton(button, async () => {
+        const chave = form.dataset.parameterKey;
+        const valor = form.elements.valor.value.trim();
+        const rows = await request(`parametros_operacionais?chave=eq.${encodeURIComponent(chave)}&select=chave,descricao,valor,atualizado_por,atualizado_em`, {
+          method: "PATCH",
+          headers: { Prefer: "return=representation" },
+          body: JSON.stringify({ valor }),
+        }, "Não foi possível atualizar o parâmetro");
+        const index = state.parameters.findIndex(item => item.chave === chave);
+        if (index >= 0 && rows?.[0]) state.parameters[index] = rows[0];
+        renderParameters();
+        toast("Parâmetro atualizado. A nova regra já está ativa.");
       });
     });
   }
