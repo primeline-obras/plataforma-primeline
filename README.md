@@ -388,3 +388,12 @@ O separador **Fases** do detalhe de cada obra consulta diretamente
 `planeamento_fases_resumo`. Apresenta datas previstas, execução média e o estado
 de cada fase, destacando atrasos. O botão **Abrir Planeamento** encaminha para o
 resumo da mesma obra; a edição das tarefas continua concentrada nesse módulo.
+
+## Edição de faturas pendentes
+
+Execute `supabase/faturas_edicao_pendente_condicao_pagamento.sql` no SQL Editor.
+A migração acrescenta a condição **Outra data** e a RPC transacional que permite à
+Gerência corrigir qualquer fatura pendente e ao Administrativo corrigir apenas as
+faturas que lançou. A obra, o fornecedor, os valores e os artigos de material podem
+ser corrigidos enquanto a fatura continuar pendente; depois da aprovação, a edição
+fica bloqueada.
