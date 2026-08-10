@@ -129,8 +129,16 @@ alter table public.planeamento_itens enable trigger trg_recalcular_planeamento;
 Executar `supabase/subempreitadas_mapa_comparativo_workflow.sql` no SQL Editor para
 ativar a adjudicação de candidatos, as permissões de escrita por obra, a sincronização
 com o planeamento detalhado e a conclusão com avaliação obrigatória. O limite de
-contrato está centralizado em `fn_limite_contrato_subempreitada()` e é atualmente
-5.000 €.
+contrato está centralizado em `fn_limite_contrato_subempreitada()` e é configurável
+em Definições → Parâmetros Operacionais (5.000 € por defeito).
+
+## Parâmetros operacionais
+
+Executar `supabase/parametros_operacionais.sql` no SQL Editor para criar os valores
+iniciais, aplicar as políticas exclusivas de gerência e fazer com que os alertas e o
+limite de contrato leiam a configuração guardada. A secção Definições → Parâmetros
+Operacionais permite alterar os valores sem nova publicação e regista automaticamente
+quem alterou e quando. A migração preserva os valores já existentes.
 
 Depois da migração, executar
 `supabase/teste_bloqueio_conclusao_sem_avaliacao.sql`. O teste tenta concluir, sem
