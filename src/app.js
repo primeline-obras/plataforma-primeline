@@ -855,7 +855,7 @@ window.addEventListener("primeline:session-expired", () => {
 });
 
 function toast(message, kind = "success") {
-  $("#toast").innerHTML = `<div class="toast ${kind}"><span>${icon(kind === "error" ? "x" : "check")}</span>${message}</div>`;
+  $("#toast").innerHTML = `<div class="toast ${kind}"><span>${icon(kind === "error" ? "x" : kind === "warning" ? "bell" : "check")}</span>${message}</div>`;
   setTimeout(() => { $("#toast").innerHTML = ""; }, 4200);
 }
 
@@ -917,12 +917,13 @@ function renderInvoices() {
           </label>
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
-        <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substitui a guia de remessa obrigatória</small></div>
+        ${!hasGuide ? `<div class="invoice-guide-warning" data-guide-warning="${invoice.id}"><strong>SEM GUIA DE REMESSA</strong><span>Esta fatura não tem guia de remessa anexada. A aprovação é permitida temporariamente.</span></div>` : ""}
+        <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substituem a guia de remessa</small></div>
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
           <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
         </div>
         ${editable ? `<button type="button" class="invoice-edit-action" data-edit-invoice="${invoice.id}">EDITAR FATURA PENDENTE</button>` : ""}
-        ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
+        ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" title="${hasGuide ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
 }
@@ -938,6 +939,7 @@ function financeCard(invoice) {
   return `<article class="finance-card">
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
+    ${invoice.aprovada_sem_guia ? `<div class="invoice-guide-status missing">APROVADA SEM GUIA DE REMESSA</div>` : ""}
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
     ${invoice.condicao_pagamento === "outra_data" && invoice.data_vencimento ? `<div class="finance-date"><span>VENCIMENTO DEFINIDO</span><strong>${prettyDate.format(new Date(`${invoice.data_vencimento}T12:00:00`))}</strong></div>` : ""}
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
@@ -1031,7 +1033,7 @@ function renderFinance() {
   $("#paid-list").innerHTML = paid.length ? paid.map(invoice => {
     const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
     const work = works.find(item => item.id === invoice.obra_id);
-    return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span></div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
+    return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
   }).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
   renderInvoiceTrace();
   renderDirectDebits();
@@ -4497,10 +4499,8 @@ $("#invoice-list").addEventListener("click", async event => {
   const guideInput = card?.querySelector("[data-guide-input]");
   const existingGuides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
   const selectedGuides = [...(guideInput?.files || [])];
-  if (decision === "aprovado" && !existingGuides.length && !selectedGuides.length) {
-    toast("Anexe pelo menos uma guia antes de aprovar a fatura.", "error");
-    return;
-  }
+  const approvingWithoutGuide = decision === "aprovado" && !existingGuides.length && !selectedGuides.length;
+  if (approvingWithoutGuide) toast("Esta fatura não tem guia de remessa anexada. A aprovação continuará.", "warning");
   button.disabled = true;
   const createdGuides = [];
   if (decision === "aprovado" && selectedGuides.length && isSupabaseConfigured) {
@@ -4533,13 +4533,15 @@ $("#invoice-list").addEventListener("click", async event => {
   if (decision === "aprovado") {
     if (isSupabaseConfigured) invoiceGuides.push(...createdGuides);
     else if (!existingGuides.length) invoiceGuides.push(...selectedGuides.map((file, index) => ({ id: `demo-guide-${Date.now()}-${index}`, fatura_id: invoice.id, arquivo_url: URL.createObjectURL(file), nome_arquivo: file.name, mime_type: file.type })));
-    financeInvoices.unshift({ ...invoice, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", data_aprovacao: new Date().toISOString() });
+    financeInvoices.unshift({ ...invoice, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", aprovada_sem_guia: approvingWithoutGuide, data_aprovacao: new Date().toISOString() });
     renderFinance();
   }
   if (editingInvoiceId === String(invoice.id)) stopInvoiceEditing();
   invoices = invoices.filter(item => item.id !== invoice.id); renderInvoices();
   if (allowedViews().has("finance")) await loadInvoiceTrace();
-  toast(`Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
+  toast(approvingWithoutGuide
+    ? `Fatura aprovada sem guia de remessa${isSupabaseConfigured ? "" : " em modo de demonstração"}.`
+    : `Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`, approvingWithoutGuide ? "warning" : "success");
 });
 
 $("#invoice-list").addEventListener("change", event => {
@@ -4565,11 +4567,15 @@ $("#invoice-list").addEventListener("change", event => {
   if (!input) return;
   const files = [...(input.files || [])];
   const picker = input.closest(".guide-picker");
-  const approve = input.closest("[data-invoice-card]")?.querySelector('[data-action="aprovado"]');
+  const card = input.closest("[data-invoice-card]");
+  const approve = card?.querySelector('[data-action="aprovado"]');
+  const warning = card?.querySelector("[data-guide-warning]");
   if (!files.length) {
     picker.classList.remove("ready");
     picker.querySelector("span").textContent = "ANEXAR GUIAS";
-    approve.disabled = !invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput);
+    approve.disabled = false;
+    approve.title = invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput) ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa";
+    if (warning) warning.hidden = invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput);
     return;
   }
   const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
@@ -4581,6 +4587,7 @@ $("#invoice-list").addEventListener("change", event => {
   }
   picker.classList.add("ready");
   picker.querySelector("span").textContent = `${files.length} GUIA(S) SELECIONADA(S)`;
+  if (warning) warning.hidden = true;
   approve.disabled = false;
   approve.title = "Aprovar fatura";
 });
