@@ -29,7 +29,7 @@ function activeInMonth(work, year, month) {
   return start <= monthEnd && end >= monthStart;
 }
 
-export function createFinancialMapModule({ root, supabase, isConfigured, getWorks, getProfile, euro, toast }) {
+export function createFinancialMapModule({ root, supabase, isConfigured, getWorks, getProfile, euro, toast, onImportExcel }) {
   const state = {
     year: new Date().getFullYear(), loaded: false, loading: false, error: "",
     contracts: [], investments: [], forecast: [], adjustments: [], debits: [], entries: [], editing: null,
@@ -166,7 +166,7 @@ export function createFinancialMapModule({ root, supabase, isConfigured, getWork
 
   function render() {
     const rows = buildRows();
-    root.innerHTML = `${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)}</span></div>` : ""}${state.loading ? `<div class="fleet-loading">A CARREGAR MAPA FINANCEIRO…</div>` : `<section class="panel financial-map"><header><div><p class="eyebrow">CONTROLO ANUAL</p><h2>MAPA FINANCEIRO · ${state.year}</h2><p>Margem distribuída pelo prazo, substituída por valores reais nos meses já realizados.</p></div><div class="map-legend"><span class="real">REAL</span><span class="estimated">ESTIMADO</span><span class="adjusted">AJUSTADO</span></div></header>${renderSummary(rows)}</section>${renderAdjustment(rows)}${renderFixedExpenses()}`}`;
+    root.innerHTML = `${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)}</span></div>` : ""}${state.loading ? `<div class="fleet-loading">A CARREGAR MAPA FINANCEIRO…</div>` : `<section class="panel financial-map"><header><div><p class="eyebrow">CONTROLO ANUAL</p><h2>MAPA FINANCEIRO · ${state.year}</h2><p>Margem distribuída pelo prazo, substituída por valores reais nos meses já realizados.</p></div><div class="map-header-actions"><button type="button" class="outline-action" data-import-financial-map>IMPORTAR EXCEL</button><div class="map-legend"><span class="real">REAL</span><span class="estimated">ESTIMADO</span><span class="adjusted">AJUSTADO</span></div></div></header>${renderSummary(rows)}</section>${renderAdjustment(rows)}${renderFixedExpenses()}`}`;
   }
 
   async function removeAdjustment() {
@@ -178,6 +178,10 @@ export function createFinancialMapModule({ root, supabase, isConfigured, getWork
   }
 
   root.addEventListener("click", async event => {
+    if (event.target.closest("[data-import-financial-map]")) {
+      onImportExcel?.({ year: state.year, works: getWorks(), adjustments: state.adjustments, debits: state.debits, entries: state.entries, onComplete: () => load(true) });
+      return;
+    }
     const adjust = event.target.closest("[data-map-adjust]");
     if (adjust) { const [workId, month] = adjust.dataset.mapAdjust.split(":"); state.editing = { workId, month: Number(month) }; render(); root.querySelector(".map-adjustment")?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (event.target.closest("[data-map-adjust-close]")) { state.editing = null; render(); return; }

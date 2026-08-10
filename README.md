@@ -397,3 +397,12 @@ Gerência corrigir qualquer fatura pendente e ao Administrativo corrigir apenas 
 faturas que lançou. A obra, o fornecedor, os valores e os artigos de material podem
 ser corrigidos enquanto a fatura continuar pendente; depois da aprovação, a edição
 fica bloqueada.
+## Importação operacional por Excel
+
+Os ecrãs **Subempreitadas**, **TEEs** e **Mapa Financeiro** incluem importação `.xlsx` com pré-visualização obrigatória, validação linha a linha, seleção das linhas válidas e confirmação explícita. Execute primeiro `supabase/importacao_xlsx_operacional.sql` no SQL Editor.
+
+- Subempreitadas usa `Modelo_Gestao_Subempreitadas.xlsx` e nunca cria fornecedores automaticamente.
+- TEEs usa as folhas `TEE_Cabeçalho` e `TEE_Itens` de `Modelo_Indice_TEEs.xlsx`.
+- Mapa Financeiro reconhece a grelha `Obra` + `Jan` a `Dez` e os três grupos de despesas fixas.
+- Possíveis duplicados ficam desmarcados por omissão e não são sobrescritos sem confirmação.
+- Cada confirmação cria um resumo no `log_auditoria` com utilizador, ficheiro, data e contagens.
