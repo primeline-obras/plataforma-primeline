@@ -1,5 +1,5 @@
 const FULL_VIEWS = [
-  "overview", "meeting", "invoices", "works", "planning", "subcontractors",
+  "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors",
   "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests",
   "team", "workforce", "company-documents", "settings",
 ];
@@ -22,7 +22,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "meeting", "works", "planning", "finance", "rooms", "settings"],
+    views: ["overview", "rsp", "meeting", "works", "planning", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
@@ -30,7 +30,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   diretor_obra: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -38,7 +38,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   adjunto: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -46,7 +46,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   preparador: {
-    views: ["overview", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
