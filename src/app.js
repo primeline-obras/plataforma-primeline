@@ -53,6 +53,7 @@ let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !is
 let currentFilter = "all";
 let session = initialSession;
 let selectedPdf = null;
+let editingInvoiceId = "";
 let localPdfUrl = "";
 let extractedMaterialItems = [];
 let extractedMaterialItemsApplied = false;
@@ -144,7 +145,7 @@ document.querySelector("#root").innerHTML = `
         <div class="page-heading"><div><p class="eyebrow">GESTÃO FINANCEIRA</p><h1>FATURAS</h1><p>Registo e aprovação de despesas das obras.</p></div><div class="heading-stat"><span>PENDENTES</span><strong id="count">00</strong></div></div>
         <section class="invoice-grid">
           <div class="panel new-invoice">
-            <div class="panel-title"><span>＋ NOVA FATURA</span><small>INSERÇÃO MANUAL</small></div>
+            <div class="panel-title"><span id="invoice-form-title">＋ NOVA FATURA</span><small id="invoice-form-mode">INSERÇÃO MANUAL</small></div>
             <form id="invoice-form">
               <label>OBRA<div class="select-wrap"><select name="obra_id" required></select><b>⌄</b></div><em class="invoice-work-review-hint" hidden>CONFIRME OU CORRIJA A OBRA ANTES DE GRAVAR</em></label>
               <label>TIPO DE DESPESA<div class="segmented">
@@ -161,7 +162,8 @@ document.querySelector("#root").innerHTML = `
                 <div id="material-items-list"></div>
                 <p>O valor total da fatura continua a ser o valor final com IVA incluído.</p>
               </section>
-              <label>CONDIÇÃO DE PAGAMENTO<div class="select-wrap"><select name="condicao_pagamento" required><option value="">Selecionar condição</option><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option></select><b>⌄</b></div><em id="payment-condition-suggestion"></em></label>
+              <label>CONDIÇÃO DE PAGAMENTO<div class="select-wrap"><select name="condicao_pagamento" required><option value="">Selecionar condição</option><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option><option value="outra_data">Outra data</option></select><b>⌄</b></div><em id="payment-condition-suggestion"></em></label>
+              <label id="custom-payment-date-field" hidden>DATA DE VENCIMENTO<input name="data_vencimento" type="date"><em>Definida manualmente para esta fatura.</em></label>
               <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden>
               <div class="pdf-attachment" id="pdf-attachment" hidden>
                 <div class="pdf-attachment-head">
@@ -175,7 +177,7 @@ document.querySelector("#root").innerHTML = `
                 <div id="extraction-results"></div>
                 <p id="extraction-note"></p>
               </div>
-              <div class="form-actions"><button type="button" class="upload-button" id="choose-pdf">${icon("upload")} ANEXAR PDF</button><button class="primary-button" type="submit">REGISTAR FATURA <span>→</span></button></div>
+              <div class="form-actions"><button type="button" class="upload-button" id="choose-pdf">${icon("upload")} ANEXAR PDF</button><button type="button" class="outline-action" id="cancel-invoice-edit" hidden>CANCELAR EDIÇÃO</button><button class="primary-button" type="submit" id="save-invoice">REGISTAR FATURA <span>→</span></button></div>
             </form>
           </div>
           <div class="panel pending-panel">
@@ -419,6 +421,93 @@ function resetMaterialItems() {
   addMaterialItem();
 }
 
+function toggleCustomPaymentDate() {
+  const isCustom = form.condicao_pagamento.value === "outra_data";
+  $("#custom-payment-date-field").hidden = !isCustom;
+  form.data_vencimento.required = isCustom;
+  if (!isCustom) form.data_vencimento.value = "";
+}
+
+function setInvoiceType(type) {
+  const normalized = ["subempreitada", "material", "estaleiro"].includes(type) ? type : "subempreitada";
+  document.querySelectorAll("#invoice-form [data-type]").forEach(item => item.classList.toggle("selected", item.dataset.type === normalized));
+  form.tipo_origem.value = normalized;
+  const isSubcontract = normalized === "subempreitada";
+  $("#subcontract-field").hidden = !isSubcontract;
+  form.subempreitada_id.required = isSubcontract;
+  if (!isSubcontract) form.subempreitada_id.value = "";
+  const isMaterial = normalized === "material";
+  $("#material-items-editor").hidden = !isMaterial;
+  if (isMaterial && extractedMaterialItems.length && !editingInvoiceId) showExtractedMaterialItems(extractedMaterialItems);
+  else if (isMaterial && !$("#material-items-list").children.length) addMaterialItem();
+}
+
+function canEditPendingInvoice(invoice) {
+  if (!invoice || invoice.estado_aprovacao !== "pendente") return false;
+  if (hasFullAccess()) return true;
+  return isAdministrative() && Boolean(invoice.criado_por) && invoice.criado_por === accessContext.profile?.id;
+}
+
+function stopInvoiceEditing({ preserveWork = true } = {}) {
+  const workId = preserveWork ? form.obra_id.value : "";
+  editingInvoiceId = "";
+  form.reset();
+  form.data_fatura.value = new Date().toISOString().slice(0, 10);
+  if (workId && works.some(work => work.id === workId)) form.obra_id.value = workId;
+  else if (works[0]) form.obra_id.value = works[0].id;
+  setInvoiceType("subempreitada");
+  renderSubcontracts();
+  resetMaterialItems();
+  toggleCustomPaymentDate();
+  $("#invoice-form-title").textContent = "＋ NOVA FATURA";
+  $("#invoice-form-mode").textContent = "INSERÇÃO MANUAL";
+  $("#save-invoice").firstChild.textContent = "REGISTAR FATURA ";
+  $("#cancel-invoice-edit").hidden = true;
+  $("#choose-pdf").hidden = false;
+}
+
+async function startInvoiceEditing(invoiceId) {
+  const invoice = invoices.find(item => String(item.id) === String(invoiceId));
+  if (!canEditPendingInvoice(invoice)) return toast("Só pode editar faturas pendentes lançadas por si. A Gerência pode editar qualquer fatura pendente.", "error");
+  editingInvoiceId = String(invoice.id);
+  selectedPdf = null;
+  if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
+  localPdfUrl = "";
+  $("#pdf-input").value = "";
+  $("#pdf-attachment").hidden = true;
+  $("#extraction-panel").hidden = true;
+  endExtractedInvoiceReview();
+  form.obra_id.value = invoice.obra_id || "";
+  form.fornecedor_id.value = invoice.fornecedor_id || "";
+  setInvoiceType(invoice.tipo_origem);
+  renderSubcontracts();
+  form.subempreitada_id.value = invoice.subempreitada_id || "";
+  form.numero_doc.value = invoice.numero_doc || "";
+  form.data_fatura.value = invoice.data_fatura || "";
+  form.valor.value = invoice.valor ?? "";
+  form.condicao_pagamento.value = invoice.condicao_pagamento || "";
+  form.data_vencimento.value = invoice.condicao_pagamento === "outra_data" ? invoice.data_vencimento || "" : "";
+  toggleCustomPaymentDate();
+  resetMaterialItems();
+  if (invoice.tipo_origem === "material" && isSupabaseConfigured) {
+    const response = await supabase(`faturas_itens?select=id,designacao,unidade,quantidade,valor_unitario,valor_total,desconto_percentual,valor_desconto&fatura_id=eq.${encodeURIComponent(invoice.id)}&order=id`);
+    if (!response.ok) return toast(`Não foi possível carregar os artigos: ${await response.text()}`, "error");
+    const items = await response.json();
+    $("#material-items-list").innerHTML = "";
+    (items.length ? items : [{}]).forEach(item => addMaterialItem({
+      ...item,
+      preco_unitario: item.valor_unitario,
+      preco_total: item.valor_total,
+    }));
+  }
+  $("#invoice-form-title").textContent = `EDITAR FATURA · ${invoice.numero_doc || "SEM NÚMERO"}`;
+  $("#invoice-form-mode").textContent = "PENDENTE DE APROVAÇÃO";
+  $("#save-invoice").firstChild.textContent = "GUARDAR ALTERAÇÕES ";
+  $("#cancel-invoice-edit").hidden = false;
+  $("#choose-pdf").hidden = true;
+  document.querySelector(".new-invoice").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function showExtractedMaterialItems(items) {
   if (items !== extractedMaterialItems) {
     extractedMaterialItems = items.map(item => ({ ...item }));
@@ -444,6 +533,7 @@ function enableExtractedInvoiceReview() {
     form.data_fatura,
     form.valor,
     form.condicao_pagamento,
+    form.data_vencimento,
     ...document.querySelectorAll("#material-items-list [data-item-field]"),
   ].filter(Boolean);
   fields.forEach(field => {
@@ -506,6 +596,18 @@ function collectMaterialItems() {
       preco_total: Math.max(0, gross - effectiveDiscount),
     };
   }).filter(item => item.designacao || item.unidade || item.quantidade || item.preco_unitario);
+}
+
+function materialItemDatabasePayload(item) {
+  return {
+    designacao: item.designacao,
+    unidade: item.unidade,
+    quantidade: item.quantidade,
+    valor_unitario: item.preco_unitario,
+    valor_total: item.preco_total,
+    desconto_percentual: item.desconto_percentual,
+    valor_desconto: item.valor_desconto,
+  };
 }
 
 resetMaterialItems();
@@ -800,6 +902,7 @@ function renderInvoices() {
     const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
     const hasGuide = guides.length > 0;
     const actionable = canApproveInvoices();
+    const editable = canEditPendingInvoice(invoice);
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
@@ -815,6 +918,7 @@ function renderInvoices() {
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
           <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
         </div>
+        ${editable ? `<button type="button" class="invoice-edit-action" data-edit-invoice="${invoice.id}">EDITAR FATURA PENDENTE</button>` : ""}
         ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" ${hasGuide ? "" : "disabled"} title="${hasGuide ? "Aprovar fatura" : "Anexe uma guia para aprovar"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
@@ -832,6 +936,7 @@ function financeCard(invoice) {
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
+    ${invoice.condicao_pagamento === "outra_data" && invoice.data_vencimento ? `<div class="finance-date"><span>VENCIMENTO DEFINIDO</span><strong>${prettyDate.format(new Date(`${invoice.data_vencimento}T12:00:00`))}</strong></div>` : ""}
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
     <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
     ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
@@ -911,7 +1016,7 @@ async function loadInvoiceTrace() {
 function renderFinance() {
   const unpaid = financeInvoices.filter(invoice => invoice.estado_pagamento === "por_pagar");
   const paid = financeInvoices.filter(invoice => invoice.estado_pagamento === "pago").sort((a, b) => new Date(b.data_pagamento) - new Date(a.data_pagamento));
-  const columns = [["imediato", "IMEDIATO"], ["15_dias", "15 DIAS"], ["30_dias", "30 DIAS"]];
+  const columns = [["imediato", "IMEDIATO"], ["15_dias", "15 DIAS"], ["30_dias", "30 DIAS"], ["outra_data", "OUTRA DATA"]];
   $("#finance-count").textContent = String(unpaid.length).padStart(2, "0");
   $("#finance-board").innerHTML = columns.map(([term, label]) => {
     const rows = unpaid.filter(invoice => invoice.condicao_pagamento === term).sort((a, b) => invoiceSortDate(b) - invoiceSortDate(a));
@@ -2927,14 +3032,7 @@ function closeSidebar() {
 }
 
 document.querySelectorAll("[data-type]").forEach(button => button.addEventListener("click", () => {
-  document.querySelectorAll("[data-type]").forEach(item => item.classList.remove("selected"));
-  button.classList.add("selected"); form.tipo_origem.value = button.dataset.type;
-  const isSubcontract = button.dataset.type === "subempreitada";
-  $("#subcontract-field").hidden = !isSubcontract; form.subempreitada_id.required = isSubcontract;
-  const isMaterial = button.dataset.type === "material";
-  $("#material-items-editor").hidden = !isMaterial;
-  if (isMaterial && extractedMaterialItems.length) showExtractedMaterialItems(extractedMaterialItems);
-  else if (isMaterial && !$("#material-items-list").children.length) addMaterialItem();
+  setInvoiceType(button.dataset.type);
 }));
 $("#add-material-item").addEventListener("click", () => addMaterialItem());
 $("#material-items-list").addEventListener("input", event => {
@@ -2952,6 +3050,8 @@ $("#material-items-list").addEventListener("click", event => {
 });
 form.obra_id.addEventListener("change", renderSubcontracts);
 form.fornecedor_id.addEventListener("change", renderSubcontracts);
+form.condicao_pagamento.addEventListener("change", toggleCustomPaymentDate);
+$("#cancel-invoice-edit").addEventListener("click", () => stopInvoiceEditing());
 $("#search").addEventListener("input", renderInvoices);
 $("#work-filter").addEventListener("change", e => { currentFilter = e.target.value; renderInvoices(); });
 document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
@@ -4190,15 +4290,16 @@ $("#recovery-form").addEventListener("submit", async event => {
   }
 });
 
-async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber }) {
+async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber }, excludedInvoiceId = "") {
   const normalizedNumber = String(documentNumber || "").trim();
   const localDuplicate = invoices.find(invoice =>
     invoice.fornecedor_id === supplierId
-    && String(invoice.numero_doc || "").trim() === normalizedNumber);
+    && String(invoice.numero_doc || "").trim() === normalizedNumber
+    && String(invoice.id) !== String(excludedInvoiceId));
   if (localDuplicate || !isSupabaseConfigured) return localDuplicate || null;
 
   const response = await supabase(
-    `faturas?select=id,fornecedor_id,numero_doc&fornecedor_id=eq.${encodeURIComponent(supplierId)}&numero_doc=eq.${encodeURIComponent(normalizedNumber)}&limit=1`,
+    `faturas?select=id,fornecedor_id,numero_doc&fornecedor_id=eq.${encodeURIComponent(supplierId)}&numero_doc=eq.${encodeURIComponent(normalizedNumber)}${excludedInvoiceId ? `&id=neq.${encodeURIComponent(excludedInvoiceId)}` : ""}&limit=1`,
   );
   if (!response.ok) {
     throw new Error("Não foi possível confirmar se esta fatura já existe. Tente novamente antes de gravar.");
@@ -4210,8 +4311,18 @@ async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: doc
 form.addEventListener("submit", async event => {
   event.preventDefault();
   if (!canInsertInvoices()) return toast("O lançamento de faturas está reservado ao Administrativo e à Gerência.", "error");
+  const editingInvoice = editingInvoiceId ? invoices.find(item => String(item.id) === editingInvoiceId) : null;
+  if (editingInvoiceId && !canEditPendingInvoice(editingInvoice)) {
+    stopInvoiceEditing();
+    return toast("A fatura já não está pendente ou não foi lançada por este utilizador.", "error");
+  }
   const payload = Object.fromEntries(new FormData(form));
   payload.valor = Number(payload.valor); payload.subempreitada_id ||= null;
+  payload.data_vencimento = payload.condicao_pagamento === "outra_data" ? payload.data_vencimento || null : null;
+  if (payload.condicao_pagamento === "outra_data" && !payload.data_vencimento) {
+    toast("Escolha a data de vencimento para a condição ‘Outra data’.", "error");
+    return;
+  }
   const materialItems = payload.tipo_origem === "material" ? collectMaterialItems() : [];
   if (payload.tipo_origem === "material") {
     const invalidItem = materialItems.find(item =>
@@ -4225,98 +4336,115 @@ form.addEventListener("submit", async event => {
     }
   }
   const submit = form.querySelector(".primary-button");
+  const idleSubmitLabel = editingInvoice ? "GUARDAR ALTERAÇÕES " : "REGISTAR FATURA ";
   submit.disabled = true;
   submit.firstChild.textContent = "A VERIFICAR… ";
   let duplicateInvoice;
   try {
-    duplicateInvoice = await findDuplicateInvoice(payload);
+    duplicateInvoice = editingInvoice
+      ? await findDuplicateInvoice(payload, editingInvoice.id)
+      : await findDuplicateInvoice(payload);
   } catch (error) {
     toast(error.message, "error");
     submit.disabled = false;
-    submit.firstChild.textContent = "REGISTAR FATURA ";
+    submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
   if (duplicateInvoice && !hasFullAccess()) {
     toast("Já existe uma fatura com este número para este fornecedor — possível duplicação.", "error");
     submit.disabled = false;
-    submit.firstChild.textContent = "REGISTAR FATURA ";
+    submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
   if (duplicateInvoice && !window.confirm(
     "Isto vai criar uma fatura duplicada — só continues se tiveres a certeza absoluta.\n\nPretendes mesmo continuar?",
   )) {
     submit.disabled = false;
-    submit.firstChild.textContent = "REGISTAR FATURA ";
+    submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
   submit.firstChild.textContent = "A GUARDAR… ";
   let saved = false;
   if (!isSupabaseConfigured) {
-    const demoInvoice = { ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() };
-    invoices.unshift(demoInvoice);
-    materialItems.forEach(item => item.fatura_id = demoInvoice.id);
+    if (editingInvoice) Object.assign(editingInvoice, payload);
+    else invoices.unshift({ ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() });
     saved = true;
-    toast("Fatura adicionada em modo de demonstração.");
+    toast(editingInvoice ? "Fatura pendente atualizada em modo de demonstração." : "Fatura adicionada em modo de demonstração.");
   } else {
-    if (selectedPdf) {
+    if (editingInvoice) {
+      submit.firstChild.textContent = "A ATUALIZAR… ";
+      const result = await supabase("rpc/fn_editar_fatura_pendente", {
+        method: "POST",
+        body: JSON.stringify({
+          p_fatura_id: editingInvoice.id,
+          p_obra_id: payload.obra_id,
+          p_tipo_origem: payload.tipo_origem,
+          p_fornecedor_id: payload.fornecedor_id,
+          p_subempreitada_id: payload.subempreitada_id,
+          p_numero_doc: payload.numero_doc,
+          p_data_fatura: payload.data_fatura,
+          p_valor: payload.valor,
+          p_condicao_pagamento: payload.condicao_pagamento,
+          p_data_vencimento: payload.data_vencimento,
+          p_itens: materialItems.map(materialItemDatabasePayload),
+        }),
+      });
+      if (!result.ok) toast(`Não foi possível atualizar a fatura: ${await result.text()}`, "error");
+      else {
+        const updated = await result.json();
+        const index = invoices.findIndex(item => item.id === editingInvoice.id);
+        if (index >= 0) invoices[index] = updated;
+        saved = true;
+        toast("Fatura pendente atualizada e mantida na fila de aprovação.");
+      }
+    } else if (selectedPdf) {
       submit.firstChild.textContent = "A ENVIAR PDF… ";
       try {
         payload.arquivo_url = await uploadInvoicePdf(selectedPdf, payload.obra_id);
       } catch (error) {
         toast(error.message || "Não foi possível enviar o PDF.", "error");
         submit.disabled = false;
-        submit.firstChild.textContent = "REGISTAR FATURA ";
+        submit.firstChild.textContent = idleSubmitLabel;
         return;
       }
     }
-    submit.firstChild.textContent = "A REGISTAR… ";
-    const result = await supabase("faturas", { method: "POST", body: JSON.stringify(payload), headers: { Prefer: "return=representation" } });
-    if (!result.ok) {
-      const detail = await result.text();
-      toast(
-        payload.arquivo_url
-          ? `O PDF foi enviado, mas a fatura não foi registada. Contacte o administrador para remover o ficheiro órfão. ${detail}`
-          : `Erro ao registar: ${detail}`,
-        "error",
-      );
-    } else {
-      const [inserted] = await result.json();
-      invoices.unshift(inserted);
-      if (materialItems.length) {
-        submit.firstChild.textContent = "A REGISTAR ARTIGOS… ";
-        const itemResult = await supabase("faturas_itens", {
-          method: "POST",
-          headers: { Prefer: "return=minimal" },
-          body: JSON.stringify(materialItems.map(item => ({
-            fatura_id: inserted.id,
-            designacao: item.designacao,
-            unidade: item.unidade,
-            quantidade: item.quantidade,
-            valor_unitario: item.preco_unitario,
-            valor_total: item.preco_total,
-            desconto_percentual: item.desconto_percentual,
-            valor_desconto: item.valor_desconto,
-          }))),
-        });
-        if (!itemResult.ok) {
-          toast(`A fatura foi registada, mas os artigos não foram guardados: ${await itemResult.text()}`, "error");
-        } else toast("Fatura e artigos registados e enviados para aprovação.");
-      } else toast("Fatura registada e enviada para aprovação.");
-      saved = true;
+    if (!editingInvoice) {
+      submit.firstChild.textContent = "A REGISTAR… ";
+      const result = await supabase("faturas", { method: "POST", body: JSON.stringify(payload), headers: { Prefer: "return=representation" } });
+      if (!result.ok) {
+        const detail = await result.text();
+        toast(
+          payload.arquivo_url
+            ? `O PDF foi enviado, mas a fatura não foi registada. Contacte o administrador para remover o ficheiro órfão. ${detail}`
+            : `Erro ao registar: ${detail}`,
+          "error",
+        );
+      } else {
+        const [inserted] = await result.json();
+        invoices.unshift(inserted);
+        if (materialItems.length) {
+          submit.firstChild.textContent = "A REGISTAR ARTIGOS… ";
+          const itemResult = await supabase("faturas_itens", {
+            method: "POST",
+            headers: { Prefer: "return=minimal" },
+            body: JSON.stringify(materialItems.map(item => ({ fatura_id: inserted.id, ...materialItemDatabasePayload(item) }))),
+          });
+          if (!itemResult.ok) toast(`A fatura foi registada, mas os artigos não foram guardados: ${await itemResult.text()}`, "error");
+          else toast("Fatura e artigos registados e enviados para aprovação.");
+        } else toast("Fatura registada e enviada para aprovação.");
+        saved = true;
+      }
     }
   }
   if (!saved) {
     submit.disabled = false;
-    submit.firstChild.textContent = "REGISTAR FATURA ";
+    submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
   if (allowedViews().has("finance")) await loadInvoiceTrace();
-  const keepWork = form.obra_id.value, keepType = form.tipo_origem.value;
-  form.reset(); form.obra_id.value = keepWork; form.tipo_origem.value = keepType; form.data_fatura.value = new Date().toISOString().slice(0, 10);
-  resetMaterialItems();
+  const keepWork = form.obra_id.value;
   extractedMaterialItems = [];
   extractedMaterialItemsApplied = false;
-  $("#material-items-editor").hidden = keepType !== "material";
   if (localPdfUrl) URL.revokeObjectURL(localPdfUrl);
   selectedPdf = null; localPdfUrl = "";
   $("#pdf-attachment").hidden = true;
@@ -4325,10 +4453,19 @@ form.addEventListener("submit", async event => {
   $("#extraction-results").innerHTML = "";
   $("#payment-condition-suggestion").textContent = "";
   $("#choose-pdf").innerHTML = `${icon("upload")} ANEXAR PDF`;
+  stopInvoiceEditing({ preserveWork: false });
+  if (keepWork && works.some(work => work.id === keepWork)) form.obra_id.value = keepWork;
   renderSubcontracts(); renderInvoices(); submit.disabled = false; submit.firstChild.textContent = "REGISTAR FATURA ";
 });
 
 $("#invoice-list").addEventListener("click", async event => {
+  const editButton = event.target.closest("[data-edit-invoice]");
+  if (editButton) {
+    editButton.disabled = true;
+    await startInvoiceEditing(editButton.dataset.editInvoice);
+    editButton.disabled = false;
+    return;
+  }
   const pdfButton = event.target.closest("[data-pdf], [data-guide], [data-invoice-attachment]");
   if (pdfButton) {
     pdfButton.disabled = true;
@@ -4391,6 +4528,7 @@ $("#invoice-list").addEventListener("click", async event => {
     financeInvoices.unshift({ ...invoice, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", data_aprovacao: new Date().toISOString() });
     renderFinance();
   }
+  if (editingInvoiceId === String(invoice.id)) stopInvoiceEditing();
   invoices = invoices.filter(item => item.id !== invoice.id); renderInvoices();
   if (allowedViews().has("finance")) await loadInvoiceTrace();
   toast(`Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
