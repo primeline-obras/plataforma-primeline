@@ -1,6 +1,6 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=5";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=14";
+import { createProductionDashboard } from "./production-dashboard.js?v=15";
 import { createPlanningModule } from "./planning.js?v=7";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=12";
@@ -125,7 +125,7 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="works">▥ <span>Obras</span></button>
         <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">▣ <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
@@ -136,6 +136,7 @@ document.querySelector("#root").innerHTML = `
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button" id="notification-button" type="button" aria-label="Ver alertas pendentes">${icon("bell")}<i>0</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
+      <div class="page rsp-view" id="rsp-view" hidden></div>
       <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
@@ -2867,6 +2868,7 @@ function switchView(view, context = {}) {
   activeView = view;
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
+  $("#rsp-view").hidden = view !== "rsp";
   $("#consolidated-view").hidden = view !== "consolidated";
   $("#action-plan-view").hidden = view !== "action-plan";
   $("#meeting-view").hidden = view !== "meeting";
@@ -2885,8 +2887,8 @@ function switchView(view, context = {}) {
   $("#rooms-view").hidden = view !== "rooms";
   $("#properties-view").hidden = view !== "properties";
   $("#budget-requests-view").hidden = view !== "budget-requests";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -2909,6 +2911,7 @@ function switchView(view, context = {}) {
   if (view === "settings") settingsModule?.load();
   if (view === "company-documents") companyDocumentsModule.show();
   if (view === "overview") productionDashboard.refreshOverview();
+  if (view === "rsp") productionDashboard.showRsp();
   if (view === "consolidated") consolidatedView.show();
   closeSidebar();
 }

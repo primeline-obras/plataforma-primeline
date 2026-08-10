@@ -1907,6 +1907,49 @@ button, input, select, textarea,
 @media (max-width:1100px) { .overview-technical-grid { grid-template-columns:1fr 1fr; }.overview-technical-grid > section:last-child { grid-column:1/-1; } }
 @media (max-width:760px) { .overview-role-kpis,.overview-role-kpis.financial,.overview-technical-grid { grid-template-columns:1fr; }.overview-technical-grid > section:last-child { grid-column:auto; }.overview-financial-rncs article { grid-template-columns:1fr auto; }.overview-financial-rncs article b { grid-column:1/-1; justify-self:start; }.overview-blocked-priority > div { grid-template-columns:1fr; }.overview-blocked-priority button { border-right:0; border-bottom:1px solid var(--neg-border,#e7b9b5); } }
 
+/* Visão Geral focada em alertas e Reunião Semanal consolidada */
+.overview-alert-layout { display:grid; grid-template-columns:1fr; gap:18px; }
+.overview-alert-work-sections { display:grid; gap:18px; margin-top:18px; }
+.overview-alert-work { padding:20px; }
+.overview-alert-work > header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.overview-alert-work > header h2 { margin:3px 0 0; font-size:20px; }
+.overview-technical-grid.alert-only { grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+.rsp-view { display:grid; gap:22px; }
+.rsp-heading { margin-bottom:0; }
+.rsp-list { display:grid; gap:24px; }
+.rsp-work { padding:22px; overflow:hidden; }
+.rsp-work-header { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
+.rsp-work-header h2 { margin:4px 0; font-size:24px; }
+.rsp-work-header span { color:var(--text-secondary); }
+.rsp-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--card-border); border-radius:12px; overflow:hidden; }
+.rsp-kpis > div { min-height:96px; padding:18px; border-right:1px solid var(--card-border); background:var(--bg-soft); }
+.rsp-kpis > div:last-child { border-right:0; }
+.rsp-kpis span,.rsp-operational-grid span { display:block; color:var(--text-secondary); font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.rsp-kpis strong { display:inline-block; margin-top:9px; font-size:20px; }
+.rsp-kpis small { margin-left:8px; color:var(--text-secondary); }
+.rsp-progress-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+.rsp-progress-grid .meeting-progress { margin:0; padding:16px; border:1px solid var(--card-border); border-radius:12px; }
+.rsp-operational-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:18px; }
+.rsp-operational-grid > div { padding:16px; border:1px solid var(--card-border); border-radius:12px; background:var(--bg-soft); }
+.rsp-operational-grid strong { display:block; margin-top:7px; font-size:20px; }
+.rsp-operational-grid small { display:block; margin-top:4px; color:var(--text-secondary); }
+.rsp-detail { margin-top:18px; border:1px solid var(--card-border); border-radius:12px; overflow:hidden; }
+.rsp-detail > summary { padding:15px 18px; background:var(--bg-soft); font-size:11px; font-weight:850; letter-spacing:.08em; cursor:pointer; }
+.rsp-detail > .cash-flow,.rsp-detail > .phase-timeline { padding:18px; }
+
+@media (max-width:1100px) {
+  .rsp-kpis,.rsp-operational-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .rsp-kpis > div:nth-child(2) { border-right:0; }
+  .rsp-kpis > div:nth-child(-n+2) { border-bottom:1px solid var(--card-border); }
+}
+@media (max-width:760px) {
+  .overview-technical-grid.alert-only,.rsp-kpis,.rsp-progress-grid,.rsp-operational-grid { grid-template-columns:1fr; }
+  .rsp-work-header { flex-direction:column; }
+  .rsp-kpis > div { border-right:0; border-bottom:1px solid var(--card-border); }
+  .rsp-kpis > div:last-child { border-bottom:0; }
+}
+
 /* Visão Geral Financeiro · composição dos totais por obra */
 .overview-financial-composition { overflow:hidden; margin-top:18px; padding:20px; }
 .overview-composition-list { display:grid; gap:16px; margin-top:12px; }
