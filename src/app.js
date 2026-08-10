@@ -26,8 +26,10 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character =>
 const UI_THEME_KEY = "primeline_theme";
 const UI_TV_KEY = "primeline_tv_mode";
 const UI_SIDEBAR_KEY = "primeline_sidebar_collapsed";
+const initialSession = getSession();
 const savedTheme = localStorage.getItem(UI_THEME_KEY);
-document.documentElement.dataset.theme = savedTheme === "dark" ? "dark" : "light";
+const applySavedThemeInitially = Boolean(initialSession || !isSupabaseConfigured);
+document.documentElement.dataset.theme = applySavedThemeInitially && savedTheme === "dark" ? "dark" : "light";
 document.documentElement.classList.toggle("tv-mode", localStorage.getItem(UI_TV_KEY) === "true");
 document.documentElement.classList.toggle("sidebar-collapsed", localStorage.getItem(UI_SIDEBAR_KEY) === "true");
 const icon = (name) => {
@@ -49,7 +51,7 @@ let invoiceTraceError = "";
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
 let currentFilter = "all";
-let session = getSession();
+let session = initialSession;
 let selectedPdf = null;
 let localPdfUrl = "";
 let extractedMaterialItems = [];
@@ -649,6 +651,21 @@ function defaultViewForCurrentUser() {
   return permitted[0] || "settings";
 }
 
+function applyAuthenticatedTheme() {
+  document.documentElement.dataset.theme = localStorage.getItem(UI_THEME_KEY) === "dark" ? "dark" : "light";
+  syncDisplayToggles();
+}
+
+function applyLoginTheme() {
+  document.documentElement.dataset.theme = "light";
+  syncDisplayToggles();
+}
+
+function redirectToRoleHome() {
+  window.history.replaceState(null, "", window.location.pathname);
+  switchView(defaultViewForCurrentUser());
+}
+
 function applyAccessVisibility() {
   const permitted = allowedViews();
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => {
@@ -697,6 +714,7 @@ async function loadAccessContext() {
 
 window.addEventListener("primeline:session-expired", () => {
   session = null;
+  applyLoginTheme();
   $("#auth-screen").hidden = false;
   $("#auth-error").textContent = "A sua sessão expirou. Inicie sessão novamente.";
 });
@@ -4066,6 +4084,7 @@ document.addEventListener("keydown", event => {
 });
 $("#logout").addEventListener("click", async () => {
   await signOut(); session = null;
+  applyLoginTheme();
   $("#auth-screen").hidden = false;
   works = []; suppliers = []; subcontracts = []; invoices = [];
   renderInvoices();
@@ -4079,11 +4098,15 @@ $("#login-form").addEventListener("submit", async event => {
   $("#auth-error").textContent = "";
   try {
     session = await signIn(fields.email, fields.password);
+    applyAuthenticatedTheme();
     $("#auth-screen").hidden = true;
     renderUser();
     await loadData();
+    redirectToRoleHome();
   } catch (error) {
     clearSession();
+    session = null;
+    applyLoginTheme();
     $("#auth-error").textContent = error.message;
   } finally {
     button.disabled = false; button.firstChild.textContent = "INICIAR SESSÃO ";
