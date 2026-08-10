@@ -406,3 +406,15 @@ Os ecrãs **Subempreitadas**, **TEEs** e **Mapa Financeiro** incluem importaçã
 - Mapa Financeiro reconhece a grelha `Obra` + `Jan` a `Dez` e os três grupos de despesas fixas.
 - Possíveis duplicados ficam desmarcados por omissão e não são sobrescritos sem confirmação.
 - Cada confirmação cria um resumo no `log_auditoria` com utilizador, ficheiro, data e contagens.
+
+## Ciclo de vida dos colaboradores
+
+Execute `supabase/colaboradores_crud_alocacao_inicial.sql` no SQL Editor antes de
+usar o novo botão **Novo colaborador**. O formulário cria o colaborador e a sua
+primeira alocação na mesma transação. A alocação pode ser uma obra ativa ou o
+**Escritório**, que é independente das responsabilidades atribuídas em
+`obra_responsaveis`.
+
+Administrativo e Gerência podem editar a ficha, preencher `data_saida` para
+inativar e limpar essa data para reativar. Nenhuma destas operações elimina
+horas, ausências, documentos, registos de medicina, EPI ou alocações históricas.

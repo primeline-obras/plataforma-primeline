@@ -76,11 +76,12 @@ let workDetails = {
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
-let teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: "", error: "" };
+let teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let teamQuickFilter = "";
 let selectedTeamEntity = null;
 let selectedVehicleEditId = "";
+let showInactiveCollaborators = false;
 const localEntityDocumentFiles = new Map();
 let workforceEditing = false;
 let selectedWorkforcePersonId = "";
@@ -284,6 +285,7 @@ document.querySelector("#root").innerHTML = `
         </div>
         <div class="team-toolbar directory-toolbar">
           <div class="search-box">${icon("search")}<input id="team-directory-search" placeholder="Pesquisar colaborador ou função…"></div>
+          <div class="team-lifecycle-actions" id="team-lifecycle-actions" hidden><button class="outline-action" id="toggle-inactive-collaborators" type="button">VER INATIVOS</button><button class="primary-button" id="new-collaborator" type="button">+ NOVO COLABORADOR</button></div>
         </div>
         <section class="team-kpis" id="team-kpis"></section>
         <section class="team-alert-summary" id="team-alert-summary"></section>
@@ -301,6 +303,7 @@ document.querySelector("#root").innerHTML = `
         <section class="panel team-directory-panel team-tab-panel" data-team-panel="collaborators">
           <div class="team-section-head"><div><p class="eyebrow">ESTRUTURA</p><h2>COLABORADORES</h2></div><span id="team-result-count"></span></div>
           <div id="team-directory"></div>
+          <div class="inactive-collaborators" id="inactive-collaborators" hidden></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="contracts" hidden>
           <div class="team-section-head"><div><p class="eyebrow">VÍNCULOS</p><h2>CONTRATOS</h2></div><span id="team-contract-count"></span></div>
@@ -326,7 +329,7 @@ document.querySelector("#root").innerHTML = `
         </div>
         <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="add-workforce-line" type="button">＋ NOVA LINHA</button><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
         <form class="workforce-new-line" id="workforce-new-line" hidden>
-          <div><span>TIPO DE LINHA</span><select id="workforce-line-type"><option value="obra">Obra existente</option><option value="garantia">Garantia</option><option value="pontual">Pontual</option></select></div>
+          <div><span>TIPO DE LINHA</span><select id="workforce-line-type"><option value="obra">Obra existente</option><option value="escritorio">Escritório</option><option value="garantia">Garantia</option><option value="pontual">Pontual</option></select></div>
           <div data-workforce-existing><span>OBRA</span><select id="workforce-line-work"></select></div>
           <div data-workforce-free hidden><span>NOME DA LINHA</span><input id="workforce-line-description" maxlength="120" placeholder="Ex.: Garantia Casa R"></div>
           <button type="submit">ADICIONAR LINHA</button><button type="button" data-cancel-workforce-line>CANCELAR</button>
@@ -1283,7 +1286,7 @@ function isWorkforceForeman(person) {
 }
 
 function workforceAllocationType(allocation) {
-  return ["garantia", "pontual"].includes(allocation?.tipo_alocacao) ? allocation.tipo_alocacao : "obra";
+  return ["escritorio", "garantia", "pontual"].includes(allocation?.tipo_alocacao) ? allocation.tipo_alocacao : "obra";
 }
 
 function workforceRowKey(allocation) {
@@ -1457,8 +1460,114 @@ function renderEntityDocuments(entityType, entity) {
   </section>`;
 }
 
+function activeWorkOptions(selectedId = "") {
+  return works
+    .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes(String(work.situacao || "").toLocaleLowerCase("pt-PT")))
+    .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }))
+    .map(work => `<option value="${work.id}" ${work.id === selectedId ? "selected" : ""}>Obra ${safeText(work.numero || "—")} · ${safeText(work.nome || "Sem designação")}</option>`)
+    .join("");
+}
+
+function collaboratorFormFields(person = null) {
+  const isNew = !person;
+  return `<form id="collaborator-lifecycle-form" data-collaborator-id="${person?.id || ""}">
+    <div class="form-row"><label>NOME<input name="nome" maxlength="160" value="${safeText(person?.nome || "")}" required></label><label>FUNÇÃO<input name="funcao" maxlength="100" value="${safeText(person?.funcao || "")}" required></label></div>
+    <div class="form-row"><label>DATA DE ADMISSÃO<input name="data_admissao" type="date" value="${person?.data_admissao || new Date().toISOString().slice(0, 10)}" required></label><label>DATA DE NASCIMENTO (OPCIONAL)<input name="data_nascimento" type="date" value="${person?.data_nascimento || ""}"></label></div>
+    ${isNew ? `<div class="collaborator-initial-allocation"><p class="eyebrow">ALOCAÇÃO INICIAL OBRIGATÓRIA</p><div class="form-row"><label>LOCAL INICIAL<select name="alocacao_tipo" required><option value="obra">Obra ativa</option><option value="escritorio">Escritório</option></select></label><label data-initial-work>OBRA<select name="obra_id" required><option value="">Selecionar obra</option>${activeWorkOptions()}</select></label></div><small>Esta alocação é operacional. Não altera as responsabilidades como diretor, adjunto ou preparador.</small></div>` : `<label>DATA DE SAÍDA<input name="data_saida" type="date" value="${person?.data_saida || ""}"><small>Preencher esta data marca o colaborador como inativo sem apagar o histórico.</small></label>`}
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${isNew ? "CRIAR COLABORADOR" : "GUARDAR ALTERAÇÕES"} <span>→</span></button></div>
+  </form>`;
+}
+
+function openCollaboratorDialog(person = null) {
+  if (!canManageTeam()) return toast("A gestão de colaboradores está reservada ao Administrativo e à Gerência.", "error");
+  $("#workflow-dialog-title").textContent = person ? `EDITAR · ${person.nome}` : "NOVO COLABORADOR";
+  $("#workflow-dialog-content").innerHTML = collaboratorFormFields(person);
+  $("#workflow-dialog").hidden = false;
+  const lifecycleForm = $("#collaborator-lifecycle-form");
+  const allocationSelect = lifecycleForm.elements.alocacao_tipo;
+  if (allocationSelect) {
+    const toggleInitialWork = () => {
+      const workLabel = lifecycleForm.querySelector("[data-initial-work]");
+      const workSelect = lifecycleForm.elements.obra_id;
+      const isWork = allocationSelect.value === "obra";
+      workLabel.hidden = !isWork;
+      workSelect.required = isWork;
+      if (!isWork) workSelect.value = "";
+    };
+    allocationSelect.addEventListener("change", toggleInitialWork);
+    toggleInitialWork();
+  }
+  lifecycleForm.addEventListener("submit", submitCollaboratorLifecycle);
+  lifecycleForm.elements.nome.focus();
+}
+
+async function reloadActiveCollaborators() {
+  if (!isSupabaseConfigured) return;
+  const response = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
+  if (!response.ok) throw new Error(await response.text());
+  collaborators = await response.json();
+}
+
+async function submitCollaboratorLifecycle(event) {
+  event.preventDefault();
+  const lifecycleForm = event.currentTarget;
+  const personId = lifecycleForm.dataset.collaboratorId || "";
+  const fields = Object.fromEntries(new FormData(lifecycleForm));
+  const submitButton = lifecycleForm.querySelector('button[type="submit"]');
+  const errorNode = lifecycleForm.querySelector(".form-error");
+  submitButton.disabled = true;
+  errorNode.textContent = "";
+  try {
+    if (isSupabaseConfigured) {
+      const functionName = personId ? "fn_atualizar_colaborador_ciclo_vida" : "fn_criar_colaborador_com_alocacao";
+      const payload = personId
+        ? { p_colaborador_id: personId, p_nome: fields.nome.trim(), p_funcao: fields.funcao.trim(), p_data_admissao: fields.data_admissao, p_data_nascimento: fields.data_nascimento || null, p_data_saida: fields.data_saida || null }
+        : { p_nome: fields.nome.trim(), p_funcao: fields.funcao.trim(), p_data_admissao: fields.data_admissao, p_data_nascimento: fields.data_nascimento || null, p_alocacao_tipo: fields.alocacao_tipo, p_obra_id: fields.obra_id || null };
+      const response = await supabase(`rpc/${functionName}`, { method: "POST", body: JSON.stringify(payload) });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível guardar o colaborador."));
+      await reloadActiveCollaborators();
+    } else if (personId) {
+      const current = collaborators.find(item => item.id === personId) || teamData.inactiveCollaborators.find(item => item.id === personId);
+      const updated = { ...current, nome: fields.nome.trim(), funcao: fields.funcao.trim(), data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null, data_saida: fields.data_saida || null };
+      collaborators = collaborators.filter(item => item.id !== personId);
+      teamData.inactiveCollaborators = teamData.inactiveCollaborators.filter(item => item.id !== personId);
+      (updated.data_saida ? teamData.inactiveCollaborators : collaborators).push(updated);
+    } else {
+      const created = { id: crypto.randomUUID(), nome: fields.nome.trim(), funcao: fields.funcao.trim(), data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null };
+      collaborators.push(created);
+      teamData.allocations.push({ id: crypto.randomUUID(), colaborador_id: created.id, obra_id: fields.alocacao_tipo === "obra" ? fields.obra_id : null, tipo_alocacao: fields.alocacao_tipo, descricao_livre: fields.alocacao_tipo === "escritorio" ? "Escritório" : null, semana_inicio: mondayIso(fields.data_admissao), data: fields.data_admissao, periodo: "dia_inteiro" });
+    }
+    closeWorkflowDialog();
+    await loadTeamData(true);
+    toast(personId ? "Colaborador atualizado sem alterar o histórico." : "Colaborador criado e alocado com sucesso.");
+  } catch (error) {
+    errorNode.textContent = error.message || "Não foi possível guardar o colaborador.";
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+async function reactivateCollaborator(personId) {
+  const person = teamData.inactiveCollaborators.find(item => item.id === personId);
+  if (!person || !canManageTeam()) return;
+  if (!window.confirm(`Reativar ${person.nome}? Todo o histórico anterior continuará associado.`)) return;
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase("rpc/fn_atualizar_colaborador_ciclo_vida", { method: "POST", body: JSON.stringify({ p_colaborador_id: person.id, p_nome: person.nome, p_funcao: person.funcao, p_data_admissao: person.data_admissao, p_data_nascimento: person.data_nascimento || null, p_data_saida: null }) });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível reativar o colaborador."));
+      await reloadActiveCollaborators();
+    } else {
+      teamData.inactiveCollaborators = teamData.inactiveCollaborators.filter(item => item.id !== person.id);
+      collaborators.push({ ...person, data_saida: null });
+    }
+    await loadTeamData(true);
+    toast("Colaborador reativado. O histórico foi preservado.");
+  } catch (error) { toast(error.message || "Não foi possível reativar o colaborador.", "error"); }
+}
+
 function renderTeam() {
   renderWorkforceLineEditor();
+  if ($("#team-lifecycle-actions")) $("#team-lifecycle-actions").hidden = !canManageTeam();
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const workById = new Map(works.map(work => [work.id, work]));
@@ -1528,7 +1637,7 @@ function renderTeam() {
       const fixed = work ? fixedWorkTeam(work) : [];
       const rowHeading = row.type === "obra"
         ? `<span>OBRA ${safeText(work?.numero || "—")}</span><strong title="${safeText(work?.nome || "Sem designação")}">${safeText(compactWorkName(work?.nome || "Sem designação"))}</strong><div class="fixed-work-team">${fixed.length ? fixed.map(person => `<small><b>${person.label}</b>${safeText(shortPersonName(person.name))}</small>`).join("") : "<small>Responsáveis não definidos</small>"}</div>`
-        : `<span class="workforce-line-type ${row.type}">${row.type.toUpperCase()}</span>${workforceEditing
+        : `<span class="workforce-line-type ${row.type}">${row.type === "escritorio" ? "ESCRITÓRIO" : row.type.toUpperCase()}</span>${workforceEditing && row.type !== "escritorio"
           ? `<input class="workforce-custom-name" value="${safeText(row.description)}" maxlength="120" data-workforce-rename data-row-type="${row.type}" data-old-description="${encodeURIComponent(row.description)}" aria-label="Nome da linha ${row.type}">`
           : `<strong title="${safeText(row.description)}">${safeText(row.description)}</strong>`}<div class="fixed-work-team"><small>SEM OBRA FORMAL ASSOCIADA</small></div>`;
       return `<article class="workforce-grid team-work-row">
@@ -1609,9 +1718,11 @@ function renderTeam() {
     const work = workById.get(allocation?.obra_id);
     const contract = contractByPerson.get(person.id);
     const absence = currentAbsences.find(item => item.colaborador_id === person.id);
-    const allocationLabel = workforceAllocationType(allocation) === "obra"
+    const allocationType = workforceAllocationType(allocation);
+    const allocationLabel = allocationType === "obra"
       ? work ? `Obra ${work.numero || "—"}` : "Sem alocação"
-      : `${workforceAllocationType(allocation) === "garantia" ? "Garantia" : "Pontual"} · ${allocation?.descricao_livre || "Sem nome"}`;
+      : allocationType === "escritorio" ? "Escritório"
+        : `${allocationType === "garantia" ? "Garantia" : "Pontual"} · ${allocation?.descricao_livre || "Sem nome"}`;
     const documents = entityDocuments("colaborador", person.id);
     const documentsOpen = selectedTeamEntity?.type === "colaborador" && selectedTeamEntity.id === person.id;
     return `<article class="team-directory-row">
@@ -1621,8 +1732,17 @@ function renderTeam() {
       <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
       <button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="colaborador" data-entity-id="${person.id}">DOCUMENTOS <b>${documents.length}</b></button>
+      ${canManageTeam() ? `<button class="collaborator-edit-button" type="button" data-edit-collaborator="${person.id}">EDITAR</button>` : ""}
     </article>${documentsOpen ? renderEntityDocuments("colaborador", person) : ""}`;
   }).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`;
+
+  const inactivePanel = $("#inactive-collaborators");
+  const inactivePeople = teamData.inactiveCollaborators || [];
+  if (inactivePanel) {
+    inactivePanel.hidden = !canManageTeam() || !showInactiveCollaborators;
+    inactivePanel.innerHTML = `<header><div><p class="eyebrow">HISTÓRICO</p><h3>COLABORADORES INATIVOS</h3></div><span>${inactivePeople.length} REGISTO${inactivePeople.length === 1 ? "" : "S"}</span></header>${inactivePeople.length ? inactivePeople.map(person => `<article><span class="team-avatar">${personInitials(person.nome)}</span><div><strong>${safeText(person.nome)}</strong><small>${safeText(person.funcao || "Função não definida")} · saída em ${formatOptionalDate(person.data_saida)}</small></div><button type="button" data-reactivate-collaborator="${person.id}">REATIVAR</button></article>`).join("") : `<div class="empty-state"><strong>SEM INATIVOS</strong><span>Não existem colaboradores inativos.</span></div>`}`;
+  }
+  if ($("#toggle-inactive-collaborators")) $("#toggle-inactive-collaborators").textContent = showInactiveCollaborators ? "OCULTAR INATIVOS" : `VER INATIVOS (${inactivePeople.length})`;
 
   const endingContracts = activeContracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
   $("#team-alert-summary").innerHTML = [
@@ -1720,16 +1840,18 @@ function toggleWorkforceLineForm(show) {
     $("#workforce-line-type").value = "obra";
     $("#workforce-line-description").value = "";
   }
-  const custom = $("#workforce-line-type").value !== "obra";
-  formElement.querySelector("[data-workforce-existing]").hidden = custom;
+  const type = $("#workforce-line-type").value;
+  const custom = ["garantia", "pontual"].includes(type);
+  formElement.querySelector("[data-workforce-existing]").hidden = type !== "obra";
   formElement.querySelector("[data-workforce-free]").hidden = !custom;
-  if (show) (custom ? $("#workforce-line-description") : $("#workforce-line-work")).focus();
+  if (show && type === "obra") $("#workforce-line-work").focus();
+  else if (show && custom) $("#workforce-line-description").focus();
 }
 
 function addWorkforceLine(type, workId, description) {
   const row = type === "obra"
     ? { type: "obra", workId, description: "" }
-    : { type, workId: "", description: String(description || "").trim() };
+    : { type, workId: "", description: type === "escritorio" ? "Escritório" : String(description || "").trim() };
   const key = workforceRowKey({ obra_id: row.workId, tipo_alocacao: row.type, descricao_livre: row.description });
   if (!key) return false;
   const activeWorks = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
@@ -1787,11 +1909,11 @@ async function renameWorkforceLine(type, oldDescription, newDescription) {
 async function saveWorkforceAllocation(personId, date, target) {
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
-  const type = ["garantia", "pontual"].includes(target?.type) ? target.type : "obra";
+  const type = ["escritorio", "garantia", "pontual"].includes(target?.type) ? target.type : "obra";
   const workId = type === "obra" ? target?.workId || null : null;
-  const description = type === "obra" ? null : String(target?.description || "").trim();
+  const description = type === "obra" ? null : type === "escritorio" ? "Escritório" : String(target?.description || "").trim();
   if (!canManageWorkforceWork(workId)) {
-    toast(type === "obra" ? "Só pode alterar o quadro das obras pelas quais é responsável." : "As linhas de garantia e trabalhos pontuais são geridas pelo Administrativo ou pela Gerência.", "error");
+    toast(type === "obra" ? "Só pode alterar o quadro das obras pelas quais é responsável." : "As linhas de Escritório, garantia e trabalhos pontuais são geridas pelo Administrativo ou pela Gerência.", "error");
     return;
   }
   const targetKey = workforceRowKey({ obra_id: workId, tipo_alocacao: type, descricao_livre: description });
@@ -1950,7 +2072,7 @@ async function saveVacationDays(event) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
@@ -1966,14 +2088,15 @@ async function loadTeamData(force = false) {
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
   ]);
-  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH"];
+  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
-  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments] = payloads.map(payload => Array.isArray(payload) ? payload : []);
+  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.map(payload => Array.isArray(payload) ? payload : []);
   const essentialFailures = failures.filter(item => ["alocações", "ausências"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
-  const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH"].includes(item.failed));
+  const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
   renderTeam();
 }
@@ -1984,6 +2107,7 @@ function workforceMovementPlace(rows) {
       const work = works.find(entry => entry.id === item.obra_id);
       return work ? `Obra ${work.numero} · ${work.nome}` : "Obra não encontrada";
     }
+    if (item.tipo_alocacao === "escritorio") return "Escritório";
     return `${item.tipo_alocacao === "garantia" ? "Garantia" : "Pontual"} · ${item.descricao_livre || "Sem designação"}`;
   }))].join(" / ") || "Sem colocação";
 }
@@ -3064,6 +3188,11 @@ $("#work-search").addEventListener("input", renderWorks);
 $("#work-status-filter").addEventListener("change", renderWorks);
 $("#team-search").addEventListener("input", renderTeam);
 $("#team-directory-search").addEventListener("input", renderTeam);
+$("#new-collaborator").addEventListener("click", () => openCollaboratorDialog());
+$("#toggle-inactive-collaborators").addEventListener("click", () => {
+  showInactiveCollaborators = !showInactiveCollaborators;
+  renderTeam();
+});
 $("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
 $("#workforce-movements").addEventListener("click", openWorkforceMovements);
 $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
@@ -3077,8 +3206,8 @@ $("#workforce-new-line").addEventListener("submit", event => {
   event.preventDefault();
   const type = $("#workforce-line-type").value;
   const workId = $("#workforce-line-work").value;
-  const description = $("#workforce-line-description").value.trim();
-  if (type !== "obra" && !description) {
+  const description = type === "escritorio" ? "Escritório" : $("#workforce-line-description").value.trim();
+  if (["garantia", "pontual"].includes(type) && !description) {
     toast("Escreva o nome da linha.", "error");
     $("#workforce-line-description").focus();
     return;
@@ -3175,6 +3304,17 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const editCollaboratorButton = event.target.closest("[data-edit-collaborator]");
+  if (editCollaboratorButton) {
+    const person = collaborators.find(item => item.id === editCollaboratorButton.dataset.editCollaborator);
+    if (person) openCollaboratorDialog(person);
+    return;
+  }
+  const reactivateButton = event.target.closest("[data-reactivate-collaborator]");
+  if (reactivateButton) {
+    await reactivateCollaborator(reactivateButton.dataset.reactivateCollaborator);
+    return;
+  }
   const absenceDownload = event.target.closest("[data-absence-download]");
   if (absenceDownload) {
     const path = decodeURIComponent(absenceDownload.dataset.absenceDownload || "");
