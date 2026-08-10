@@ -62,6 +62,7 @@ let openedPdfUrl = "";
 let activeView = "overview";
 let selectedFinanceTab = "invoices";
 let invoiceTraceState = "all";
+let selectedInvoiceTraceId = "";
 let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
@@ -247,6 +248,7 @@ document.querySelector("#root").innerHTML = `
             <div class="invoice-trace-toolbar">
               <div class="search-box">${icon("search")}<input id="invoice-trace-search" placeholder="Pesquisar fornecedor, documento ou obraâ€¦"></div>
               <select id="invoice-trace-state" aria-label="Filtrar estado da fatura"><option value="all">Todos os estados</option><option value="pendente">Pendente</option><option value="aprovado">Aprovada</option><option value="recusado">Recusada</option><option value="pago">Paga</option></select>
+              <button type="button" class="invoice-trace-delete" id="delete-selected-invoice" disabled hidden>${icon("x")} APAGAR SELECIONADA</button>
             </div>
             <div id="invoice-trace-list" class="invoice-trace-list"></div>
           </section>
@@ -388,6 +390,17 @@ document.querySelector("#root").innerHTML = `
       <section class="work-dialog-card workflow-dialog-card" role="dialog" aria-modal="true">
         <div class="panel-title"><span id="workflow-dialog-title">REGISTO</span><button id="close-workflow-dialog" type="button" aria-label="Fechar">×</button></div>
         <div id="workflow-dialog-content"></div>
+      </section>
+    </div>
+    <div class="dialog-backdrop" id="delete-invoice-dialog" hidden>
+      <section class="work-dialog-card delete-invoice-dialog-card" role="dialog" aria-modal="true" aria-labelledby="delete-invoice-title">
+        <div class="panel-title"><span id="delete-invoice-title">APAGAR FATURA</span><button id="close-delete-invoice" type="button" aria-label="Fechar">×</button></div>
+        <div class="delete-invoice-dialog-body">
+          <strong>Tens a certeza que queres apagar esta fatura?</strong>
+          <p id="delete-invoice-summary"></p>
+          <div class="work-warning"><strong>ESTA AÇÃO NÃO PODE SER DESFEITA</strong><span>Os artigos, anexos adicionais e guias ligados à fatura também serão apagados.</span></div>
+        </div>
+        <div class="dialog-actions"><button class="outline-action" id="cancel-delete-invoice" type="button">CANCELAR</button><button class="danger-action" id="confirm-delete-invoice" type="button">APAGAR DEFINITIVAMENTE</button></div>
       </section>
     </div>
     <div class="pdf-modal" id="pdf-modal" hidden>
@@ -970,6 +983,9 @@ function renderInvoiceTrace() {
   const needle = ($("#invoice-trace-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const selectedState = $("#invoice-trace-state")?.value || invoiceTraceState;
   invoiceTraceState = selectedState;
+  const deleteButton = $("#delete-selected-invoice");
+  deleteButton.hidden = !isAdministrative();
+  deleteButton.disabled = !selectedInvoiceTraceId;
   const rows = invoiceTrace.filter(invoice => {
     const state = invoiceJourneyState(invoice);
     const haystack = `${invoice.numero_doc || ""} ${invoice.fornecedor_nome || ""} ${invoice.obra_numero || ""} ${invoice.obra_nome || ""}`.toLocaleLowerCase("pt-PT");
@@ -985,8 +1001,8 @@ function renderInvoiceTrace() {
     const decisionDone = state !== "pendente";
     const paid = state === "pago";
     const decisionLabel = state === "recusado" ? "RECUSADA" : decisionDone ? "APROVADA" : "A AGUARDAR APROVAÇÃO";
-    return `<article class="invoice-trace-card state-${state}">
-      <header><div><span>OBRA ${escapeHtml(invoice.obra_numero || "—")}</span><h3>${escapeHtml(invoice.fornecedor_nome || "Fornecedor")}</h3><p>${escapeHtml(invoice.numero_doc || "Sem número")} · ${escapeHtml(invoice.obra_nome || "Obra não identificada")}</p></div><strong>${euro.format(Number(invoice.valor || 0))}</strong></header>
+    return `<article class="invoice-trace-card state-${state} ${selectedInvoiceTraceId === String(invoice.id) ? "selected-for-delete" : ""}">
+      <header><div><span>OBRA ${escapeHtml(invoice.obra_numero || "—")}</span><h3>${escapeHtml(invoice.fornecedor_nome || "Fornecedor")}</h3><p>${escapeHtml(invoice.numero_doc || "Sem número")} · ${escapeHtml(invoice.obra_nome || "Obra não identificada")}</p></div><div class="invoice-trace-head-actions"><strong>${euro.format(Number(invoice.valor || 0))}</strong>${isAdministrative() ? `<label><input type="radio" name="invoice-trace-delete-selection" value="${invoice.id}" data-select-invoice-delete ${selectedInvoiceTraceId === String(invoice.id) ? "checked" : ""}> SELECIONAR</label>` : ""}</div></header>
       <div class="invoice-trace-journey">
         ${invoiceTraceStage("LANÇADA", invoice.criado_em, invoice.criado_por_nome, "done")}
         ${invoiceTraceStage(decisionLabel, invoice.data_aprovacao, invoice.aprovado_por_nome, decisionDone ? state === "recusado" ? "rejected" : "done" : "waiting")}
@@ -1015,7 +1031,52 @@ async function loadInvoiceTrace() {
     invoiceTrace = [];
     invoiceTraceError = `Não foi possível consultar o percurso das faturas. ${await response.text()}`;
   } else invoiceTrace = await response.json();
+  if (selectedInvoiceTraceId && !invoiceTrace.some(invoice => String(invoice.id) === selectedInvoiceTraceId)) selectedInvoiceTraceId = "";
   renderInvoiceTrace();
+}
+
+function closeDeleteInvoiceDialog() {
+  $("#delete-invoice-dialog").hidden = true;
+}
+
+function openDeleteInvoiceDialog() {
+  if (!isAdministrative()) return toast("Só o papel Administrativo pode apagar faturas.", "error");
+  const invoice = invoiceTrace.find(item => String(item.id) === selectedInvoiceTraceId);
+  if (!invoice) return toast("Selecione primeiro uma fatura no rastreio.", "error");
+  $("#delete-invoice-summary").textContent = `${invoice.numero_doc || "Sem número"} · ${invoice.fornecedor_nome || "Fornecedor"} · Obra ${invoice.obra_numero || "—"}`;
+  $("#delete-invoice-dialog").hidden = false;
+}
+
+async function deleteSelectedInvoice() {
+  if (!isAdministrative()) return toast("Só o papel Administrativo pode apagar faturas.", "error");
+  const invoice = invoiceTrace.find(item => String(item.id) === selectedInvoiceTraceId);
+  if (!invoice) return toast("A fatura selecionada já não está disponível.", "error");
+  const button = $("#confirm-delete-invoice");
+  button.disabled = true;
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase("rpc/fn_apagar_fatura_administrativo", {
+        method: "POST",
+        body: JSON.stringify({ p_fatura_id: invoice.id }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+    }
+    const id = String(invoice.id);
+    invoices = invoices.filter(item => String(item.id) !== id);
+    financeInvoices = financeInvoices.filter(item => String(item.id) !== id);
+    invoiceTrace = invoiceTrace.filter(item => String(item.id) !== id);
+    invoiceGuides = invoiceGuides.filter(item => String(item.fatura_id) !== id);
+    invoiceAttachments = invoiceAttachments.filter(item => String(item.fatura_id) !== id);
+    selectedInvoiceTraceId = "";
+    closeDeleteInvoiceDialog();
+    renderInvoices();
+    renderFinance();
+    toast(`Fatura ${invoice.numero_doc || ""} apagada definitivamente.`);
+  } catch (error) {
+    toast(error.message || "Não foi possível apagar a fatura.", "error");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function renderFinance() {
@@ -4649,6 +4710,19 @@ $("#invoice-trace-state").addEventListener("change", event => {
   invoiceTraceState = event.target.value;
   renderInvoiceTrace();
 });
+$("#invoice-trace-list").addEventListener("change", event => {
+  const selector = event.target.closest("[data-select-invoice-delete]");
+  if (!selector || !isAdministrative()) return;
+  selectedInvoiceTraceId = selector.value;
+  renderInvoiceTrace();
+});
+$("#delete-selected-invoice").addEventListener("click", openDeleteInvoiceDialog);
+$("#close-delete-invoice").addEventListener("click", closeDeleteInvoiceDialog);
+$("#cancel-delete-invoice").addEventListener("click", closeDeleteInvoiceDialog);
+$("#delete-invoice-dialog").addEventListener("click", event => {
+  if (event.target.id === "delete-invoice-dialog") closeDeleteInvoiceDialog();
+});
+$("#confirm-delete-invoice").addEventListener("click", deleteSelectedInvoice);
 
 $("#direct-debit-form").addEventListener("submit", async event => {
   event.preventDefault();

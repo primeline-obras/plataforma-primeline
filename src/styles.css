@@ -392,12 +392,23 @@ input::placeholder { color: #acb0b1; }
 .finance-tabs button { min-height: 44px; padding: 0 20px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); color: var(--text-secondary); font: 800 12px "Manrope"; letter-spacing: .75px; cursor: pointer; }
 .finance-tabs button.active { border-color: var(--sidebar-bg); background: var(--sidebar-bg); color: #fff; }
 .invoice-trace-panel { padding: 22px; }
-.invoice-trace-toolbar { display: grid; grid-template-columns: minmax(320px,1fr) 220px; gap: 12px; padding: 18px 0; }
+.invoice-trace-toolbar { display: grid; grid-template-columns: minmax(320px,1fr) 220px auto; gap: 12px; padding: 18px 0; }
 .invoice-trace-toolbar .search-box { width: auto; }
 .invoice-trace-toolbar select { min-height: 44px; padding: 0 13px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); color: var(--text-primary); font: 700 12px "Manrope"; }
 .invoice-trace-list { display: grid; gap: 12px; }
 .invoice-trace-card { overflow: hidden; border: 1px solid var(--card-border); border-radius: 11px; background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .invoice-trace-card > header { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 17px 19px; border-bottom: 1px solid var(--card-border); }
+.invoice-trace-card.selected-for-delete { border-color:#c66b65; box-shadow:0 0 0 2px rgba(166,69,61,.11); }
+.invoice-trace-head-actions { display:grid; justify-items:end; gap:8px; }
+.invoice-trace-head-actions > strong { font:800 16px "Manrope"; white-space:nowrap; }
+.invoice-trace-head-actions label { display:flex; align-items:center; gap:6px; color:var(--neg-text); font:850 9px "Manrope"; letter-spacing:.55px; cursor:pointer; }
+.invoice-trace-head-actions input { accent-color:#a7453d; }
+.invoice-trace-delete, .danger-action { min-height:44px; padding:0 15px; border:1px solid #c66b65; border-radius:10px; background:#fff1ef; color:#993b34; font:850 10px "Manrope"; letter-spacing:.65px; }
+.invoice-trace-delete { display:flex; align-items:center; justify-content:center; gap:7px; }.invoice-trace-delete svg { width:14px; }
+.invoice-trace-delete:disabled, .danger-action:disabled { opacity:.45; cursor:not-allowed; }
+.delete-invoice-dialog-card { max-width:560px; }
+.delete-invoice-dialog-body { padding:22px 24px 6px; }.delete-invoice-dialog-body > strong { font:800 18px "Manrope"; }.delete-invoice-dialog-body > p { color:var(--text-muted); margin:9px 0 18px; }
+:root[data-theme="dark"] .invoice-trace-delete, :root[data-theme="dark"] .danger-action { background:#432b2b; border-color:#80504d; color:#ffb5ae; }
 .invoice-trace-card > header span { color: var(--info-text); font: 850 10px "Manrope"; letter-spacing: .7px; }.invoice-trace-card > header h3 { margin: 4px 0 2px; font-size: 16px; }.invoice-trace-card > header p { margin: 0; color: var(--text-muted); font-size: 12px; }.invoice-trace-card > header > strong { font: 800 16px "Manrope"; white-space: nowrap; }
 .invoice-trace-journey { display: grid; grid-template-columns: repeat(3,1fr); padding: 18px 19px 20px; }
 .invoice-trace-stage { position: relative; display: grid; gap: 3px; padding: 0 22px 0 25px; min-width: 0; }
