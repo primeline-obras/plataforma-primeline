@@ -6,7 +6,7 @@ const FULL_VIEWS = [
 
 const ACCESS_BY_ROLE = {
   gerencia: {
-    views: [...FULL_VIEWS, "consolidated"],
+    views: [...FULL_VIEWS, "consolidated", "management-map"],
     insertInvoices: true,
     approveInvoices: true,
     payInvoices: true,
@@ -22,7 +22,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "rsp", "meeting", "works", "planning", "finance", "rooms", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "works", "planning", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
