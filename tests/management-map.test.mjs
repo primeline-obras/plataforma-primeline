@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+const access = readFileSync(new URL("../src/access-control.js", import.meta.url), "utf8");
 const moduleSource = readFileSync(new URL("../src/management-map.js", import.meta.url), "utf8");
 const sql = readFileSync(new URL("../supabase/mapa_gestao_obras.sql", import.meta.url), "utf8");
 
-assert.match(app, /data-finance-tab="management-map"/);
+assert.match(app, /data-view="management-map"/);
+assert.match(app, /id="management-map-view"/);
+assert.doesNotMatch(app, /data-finance-tab="management-map"/);
 assert.match(app, /createManagementMapModule/);
-assert.match(app, /canViewFinancialMap/);
+assert.match(access, /gerencia:[\s\S]*"management-map"/);
+assert.match(access, /financeiro:[\s\S]*"management-map"/);
 for (const filter of ["obra_id", "categoria", "data_inicio", "data_fim", "entidade"]) assert.match(moduleSource, new RegExp(filter));
 for (const category of ["materiais", "estaleiro", "mao_obra", "subempreitadas"]) assert.match(moduleSource, new RegExp(category));
 assert.match(moduleSource, /rpc\/fn_mapa_gestao_obras/);
