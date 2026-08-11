@@ -4553,22 +4553,43 @@ $("#recovery-form").addEventListener("submit", async event => {
   }
 });
 
-async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber }, excludedInvoiceId = "") {
+async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber, valor }, excludedInvoiceId = "") {
   const normalizedNumber = String(documentNumber || "").trim();
-  const localDuplicate = invoices.find(invoice =>
+  const localCandidates = [...invoices, ...financeInvoices].filter((invoice, index, rows) =>
+    rows.findIndex(candidate => String(candidate.id) === String(invoice.id)) === index
+    && invoice.fornecedor_id === supplierId
+    && String(invoice.id) !== String(excludedInvoiceId));
+  const localDuplicate = localCandidates.find(invoice =>
     invoice.fornecedor_id === supplierId
     && String(invoice.numero_doc || "").trim() === normalizedNumber
     && String(invoice.id) !== String(excludedInvoiceId));
-  if (localDuplicate || !isSupabaseConfigured) return localDuplicate || null;
+  if (!isSupabaseConfigured) {
+    if (localDuplicate) return { ...localDuplicate, tipo_correspondencia: "exata" };
+    const tolerance = Math.max(1, Math.abs(Number(valor || 0)) * 0.005);
+    const similar = localCandidates.find(invoice => Math.abs(Number(invoice.valor || 0) - Number(valor || 0)) <= tolerance);
+    return similar ? { ...similar, tipo_correspondencia: "semelhante" } : null;
+  }
 
-  const response = await supabase(
-    `faturas?select=id,fornecedor_id,numero_doc&fornecedor_id=eq.${encodeURIComponent(supplierId)}&numero_doc=eq.${encodeURIComponent(normalizedNumber)}${excludedInvoiceId ? `&id=neq.${encodeURIComponent(excludedInvoiceId)}` : ""}&limit=1`,
-  );
+  const response = await supabase("rpc/fn_verificar_fatura_semelhante", {
+    method: "POST",
+    body: JSON.stringify({
+      p_fornecedor_id: supplierId,
+      p_valor: Number(valor),
+      p_numero_doc: normalizedNumber,
+      p_excluir_fatura_id: excludedInvoiceId || null,
+    }),
+  });
   if (!response.ok) {
     throw new Error("Não foi possível confirmar se esta fatura já existe. Tente novamente antes de gravar.");
   }
   const [duplicate] = await response.json();
   return duplicate || null;
+}
+
+function confirmSimilarInvoice(match, actionLabel = "continuar") {
+  return window.confirm(
+    `AVISO DE POSSÍVEL DUPLICAÇÃO ENTRE OBRAS\n\nJá existe a fatura ${match.numero_doc || "sem número"} na Obra ${match.obra_numero || "—"}, do mesmo fornecedor, com o valor ${euro.format(Number(match.valor || 0))}.\n\nConfirma que são documentos diferentes e pretende ${actionLabel}?`,
+  );
 }
 
 form.addEventListener("submit", async event => {
@@ -4613,15 +4634,21 @@ form.addEventListener("submit", async event => {
     submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
-  if (duplicateInvoice && !hasFullAccess()) {
+  const exactDuplicate = duplicateInvoice?.tipo_correspondencia === "exata";
+  if (exactDuplicate && !hasFullAccess()) {
     toast("Já existe uma fatura com este número para este fornecedor — possível duplicação.", "error");
     submit.disabled = false;
     submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
-  if (duplicateInvoice && !window.confirm(
+  if (exactDuplicate && !window.confirm(
     "Isto vai criar uma fatura duplicada — só continues se tiveres a certeza absoluta.\n\nPretendes mesmo continuar?",
   )) {
+    submit.disabled = false;
+    submit.firstChild.textContent = idleSubmitLabel;
+    return;
+  }
+  if (duplicateInvoice?.tipo_correspondencia === "semelhante" && !confirmSimilarInvoice(duplicateInvoice, "registar esta fatura")) {
     submit.disabled = false;
     submit.firstChild.textContent = idleSubmitLabel;
     return;
@@ -4753,6 +4780,14 @@ $("#invoice-list").addEventListener("click", async event => {
   if (!canApproveInvoices()) return toast("Não tem permissão para aprovar ou recusar faturas.", "error");
   const invoice = invoices.find(item => String(item.id) === button.dataset.id); if (!invoice) return;
   const decision = button.dataset.action;
+  if (decision === "aprovado") {
+    try {
+      const match = await findDuplicateInvoice(invoice, invoice.id);
+      if (match && !confirmSimilarInvoice(match, "aprovar esta fatura")) return;
+    } catch (error) {
+      return toast(error.message, "error");
+    }
+  }
   const card = button.closest("[data-invoice-card]");
   const guideInput = card?.querySelector("[data-guide-input]");
   const existingGuides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
@@ -4888,6 +4923,12 @@ $("#finance-board").addEventListener("click", async event => {
   if (!canPayInvoices()) return toast("O pagamento está reservado ao papel Financeiro.", "error");
   const invoice = financeInvoices.find(item => String(item.id) === button.dataset.markPaid);
   if (!invoice) return;
+  try {
+    const match = await findDuplicateInvoice(invoice, invoice.id);
+    if (match && !confirmSimilarInvoice(match, "marcar esta fatura como paga")) return;
+  } catch (error) {
+    return toast(error.message, "error");
+  }
   button.disabled = true;
   const paymentDate = button.closest(".finance-card")?.querySelector("[data-payment-date]")?.value || new Date().toISOString().slice(0, 10);
   const paidAt = `${paymentDate}T12:00:00`;
