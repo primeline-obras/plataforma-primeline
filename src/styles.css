@@ -2110,6 +2110,8 @@ button, input, select, textarea,
 .meeting-day em { position:absolute; right:8px; bottom:7px; color:var(--muted); font-size:10px; font-style:normal; }
 .meeting-agenda > header > span, .meeting-upcoming > header > span { display:grid; place-items:center; min-width:30px; height:30px; border-radius:50%; background:var(--sidebar); color:#fff; font-weight:800; }
 .meeting-agenda article, .meeting-upcoming article { display:flex; align-items:center; gap:18px; padding:14px 2px; border-top:1px solid var(--card-border); }
+.meeting-agenda article > strong, .meeting-upcoming article > strong { flex:1; }
+.meeting-reservation-actions { display:flex; gap:6px; margin-left:auto; }.meeting-reservation-actions button { min-height:30px; padding:0 10px; border:1px solid var(--card-border); border-radius:7px; background:var(--card); color:var(--text-primary); font:800 9px "Manrope"; letter-spacing:.08em; cursor:pointer; }.meeting-reservation-actions button.danger { color:var(--neg-text); border-color:var(--neg-text); }
 .meeting-agenda article time { min-width:105px; color:var(--info-text); font-weight:800; }
 .meeting-upcoming article time { display:grid; min-width:135px; color:var(--muted); text-transform:uppercase; }
 .meeting-upcoming article time b { margin-top:4px; color:var(--info-text); }
@@ -2124,6 +2126,7 @@ button, input, select, textarea,
 .meeting-form-occupied::before { content:"OCUPADO:"; margin-right:5px; color:var(--muted); font-size:10px; font-weight:800; }
 .meeting-form-occupied span { padding:4px 7px; border-radius:6px; background:var(--warn-bg); color:var(--warn-text); font-size:11px; font-weight:800; }
 .meeting-form .form-error { min-height:18px; color:var(--neg-text); }
+.meeting-form .meeting-form-actions { display:flex; grid-template-columns:none; gap:8px; }.meeting-form-actions > button { flex:1; }
 
 @media (max-width: 1050px) {
   .meeting-room-layout { grid-template-columns:1fr; }
