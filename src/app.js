@@ -939,6 +939,7 @@ function renderInvoices() {
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
         ${!hasGuide ? `<div class="invoice-guide-warning" data-guide-warning="${invoice.id}"><strong>SEM GUIA DE REMESSA</strong><span>Esta fatura não tem guia de remessa anexada. A aprovação é permitida temporariamente.</span></div>` : ""}
+        ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p><small>É necessária uma nova verificação e aprovação antes do pagamento.</small></div>` : ""}
         <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substituem a guia de remessa</small></div>
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
           <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
@@ -1012,8 +1013,26 @@ function financeCard(invoice) {
     ${invoice.condicao_pagamento === "outra_data" && invoice.data_vencimento ? `<div class="finance-date"><span>VENCIMENTO DEFINIDO</span><strong>${prettyDate.format(new Date(`${invoice.data_vencimento}T12:00:00`))}</strong></div>` : ""}
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
     <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
+    ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p></div>` : ""}
     ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
-    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
+    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>
+    <button class="finance-return-action" data-return-invoice="${invoice.id}">DEVOLVER COM OBSERVAÇÃO</button>
+    <label class="finance-attachment-action">${icon("upload")} ADICIONAR ANEXO<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-finance-attachment-input="${invoice.id}"></label>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
+  </article>`;
+}
+
+function paidFinanceRow(invoice) {
+  const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
+  const work = works.find(item => item.id === invoice.obra_id);
+  const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
+  return `<article class="paid-invoice-row">
+    <div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div>
+    <strong>${euro.format(Number(invoice.valor))}</strong>
+    <time>PAGA EM ${prettyDate.format(new Date(`${String(invoice.data_pagamento).slice(0, 10)}T12:00:00`))}</time>
+    <div class="paid-invoice-actions">
+      ${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("")}
+      ${canPayInvoices() ? `<label>${icon("upload")} ANEXAR COMPROVATIVO<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-finance-attachment-input="${invoice.id}"></label><button type="button" data-unmark-paid="${invoice.id}">DESMARCAR COMO PAGA</button>` : ""}
+    </div>
   </article>`;
 }
 
@@ -1030,6 +1049,13 @@ function traceMoment(value) {
 
 function invoiceTraceStage(label, date, actor, state = "waiting") {
   return `<div class="invoice-trace-stage ${state}"><i></i><span>${label}</span><strong>${traceMoment(date)}</strong><small>${actor ? `POR ${escapeHtml(actor)}` : ["done", "rejected"].includes(state) ? "UTILIZADOR NÃO REGISTADO" : "—"}</small></div>`;
+}
+
+function invoiceTraceEvents(invoice) {
+  const events = Array.isArray(invoice.eventos) ? invoice.eventos : [];
+  if (!events.length) return "";
+  const labels = { paga: "MARCADA COMO PAGA", pagamento_revertido: "PAGAMENTO REVERTIDO", devolvida: "DEVOLVIDA PELO FINANCEIRO", anexo_adicionado: "ANEXO ADICIONADO" };
+  return `<div class="invoice-trace-events">${events.map(event => `<div><time>${traceMoment(event.criado_em)}</time><strong>${escapeHtml(labels[event.tipo] || event.tipo || "AÇÃO")}</strong><span>${event.utilizador_nome ? `POR ${escapeHtml(event.utilizador_nome)}` : "—"}</span>${event.observacao ? `<p>${escapeHtml(event.observacao)}</p>` : ""}</div>`).join("")}</div>`;
 }
 
 function renderInvoiceTrace() {
@@ -1063,6 +1089,7 @@ function renderInvoiceTrace() {
         ${invoiceTraceStage(decisionLabel, invoice.data_aprovacao, invoice.aprovado_por_nome, decisionDone ? state === "recusado" ? "rejected" : "done" : "waiting")}
         ${invoiceTraceStage(paid ? "PAGA" : "A AGUARDAR PAGAMENTO", invoice.data_pagamento, invoice.pago_por_nome, paid ? "done" : state === "aprovado" ? "waiting" : "disabled")}
       </div>
+      ${invoiceTraceEvents(invoice)}
     </article>`;
   }).join("") : `<div class="finance-empty">SEM FATURAS NESTE FILTRO</div>`;
 }
@@ -1146,11 +1173,7 @@ function renderFinance() {
     </div>`;
   }).join("");
   $("#paid-count").textContent = `${paid.length} ${paid.length === 1 ? "FATURA" : "FATURAS"}`;
-  $("#paid-list").innerHTML = paid.length ? paid.map(invoice => {
-    const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
-    const work = works.find(item => item.id === invoice.obra_id);
-    return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
-  }).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
+  $("#paid-list").innerHTML = paid.length ? paid.map(paidFinanceRow).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
   renderInvoiceTrace();
   renderDirectDebits();
   renderFinanceTabs();
@@ -4905,6 +4928,60 @@ $("#invoice-list").addEventListener("change", event => {
   approve.title = "Aprovar fatura";
 });
 
+async function addFinanceAttachments(input) {
+  if (!canPayInvoices()) throw new Error("Os anexos financeiros estão reservados ao papel Financeiro.");
+  const invoice = financeInvoices.find(item => String(item.id) === String(input.dataset.financeAttachmentInput));
+  if (!invoice) throw new Error("A fatura já não está disponível.");
+  const files = [...(input.files || [])];
+  if (!files.length) return;
+  input.disabled = true;
+  try {
+    for (const file of files) {
+      const path = isSupabaseConfigured ? await uploadInvoiceAttachment(file, invoice.obra_id, invoice.id) : URL.createObjectURL(file);
+      if (isSupabaseConfigured) {
+        const response = await supabase("faturas_anexos?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: path, nome_arquivo: file.name }) });
+        if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível registar o anexo."));
+        invoiceAttachments.push((await response.json())[0]);
+      } else invoiceAttachments.push({ id: crypto.randomUUID(), fatura_id: invoice.id, arquivo_url: path, nome_arquivo: file.name });
+    }
+    if (allowedViews().has("finance")) await loadInvoiceTrace();
+    renderFinance();
+    toast("Anexo financeiro adicionado ao histórico da fatura.");
+  } finally {
+    input.disabled = false;
+  }
+}
+
+async function returnInvoiceToReview(invoice) {
+  const observation = window.prompt("Indique obrigatoriamente o motivo da devolução:", "")?.trim();
+  if (!observation) return toast("A observação é obrigatória para devolver a fatura.", "error");
+  if (!window.confirm("Devolver esta fatura para nova verificação e aprovação?")) return;
+  if (isSupabaseConfigured) {
+    const response = await supabase("rpc/fn_devolver_fatura_financeiro", { method: "POST", body: JSON.stringify({ p_fatura_id: invoice.id, p_observacao: observation }) });
+    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível devolver a fatura."));
+  }
+  financeInvoices = financeInvoices.filter(item => String(item.id) !== String(invoice.id));
+  invoices.unshift({ ...invoice, estado_aprovacao: "pendente", estado_pagamento: "por_pagar", observacao_devolucao: observation });
+  await loadInvoiceTrace();
+  renderInvoices();
+  renderFinance();
+  toast("Fatura devolvida para nova verificação.", "warning");
+}
+
+async function unmarkInvoicePaid(invoice) {
+  if (!window.confirm("Desmarcar esta fatura como paga e devolvê-la à lista por pagar?")) return;
+  if (isSupabaseConfigured) {
+    const response = await supabase("rpc/fn_desmarcar_fatura_paga", { method: "POST", body: JSON.stringify({ p_fatura_id: invoice.id }) });
+    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível reverter o pagamento."));
+  }
+  invoice.estado_pagamento = "por_pagar";
+  invoice.data_pagamento = null;
+  invoice.pago_por = null;
+  await loadInvoiceTrace();
+  renderFinance();
+  toast("Pagamento revertido. A fatura voltou a ficar por pagar.", "warning");
+}
+
 $("#finance-board").addEventListener("click", async event => {
   const guideButton = event.target.closest("[data-guide], [data-invoice-attachment]");
   if (guideButton) {
@@ -4916,6 +4993,14 @@ $("#finance-board").addEventListener("click", async event => {
       openedPdfUrl = URL.createObjectURL(blob);
       openPdfModal(openedPdfUrl, title);
     } catch (error) { toast(error.message || "Não foi possível abrir a guia.", "error"); }
+    return;
+  }
+  const returnButton = event.target.closest("[data-return-invoice]");
+  if (returnButton) {
+    const invoice = financeInvoices.find(item => String(item.id) === returnButton.dataset.returnInvoice);
+    if (!invoice) return;
+    returnButton.disabled = true;
+    try { await returnInvoiceToReview(invoice); } catch (error) { toast(error.message, "error"); returnButton.disabled = false; }
     return;
   }
   const button = event.target.closest("[data-mark-paid]");
@@ -4949,6 +5034,34 @@ $("#finance-board").addEventListener("click", async event => {
   if (allowedViews().has("finance")) await loadInvoiceTrace();
   renderFinance();
   toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
+});
+
+$("#finance-board").addEventListener("change", event => {
+  const input = event.target.closest("[data-finance-attachment-input]");
+  if (input) addFinanceAttachments(input).catch(error => toast(error.message, "error"));
+});
+
+$("#paid-list").addEventListener("click", async event => {
+  const attachment = event.target.closest("[data-invoice-attachment]");
+  if (attachment) {
+    try {
+      const blob = await downloadInvoicePdf(decodeURIComponent(attachment.dataset.invoiceAttachment));
+      openedPdfUrl = URL.createObjectURL(blob);
+      openPdfModal(openedPdfUrl, "ANEXO FINANCEIRO");
+    } catch (error) { toast(error.message || "Não foi possível abrir o anexo.", "error"); }
+    return;
+  }
+  const button = event.target.closest("[data-unmark-paid]");
+  if (!button || !canPayInvoices()) return;
+  const invoice = financeInvoices.find(item => String(item.id) === button.dataset.unmarkPaid);
+  if (!invoice) return;
+  button.disabled = true;
+  try { await unmarkInvoicePaid(invoice); } catch (error) { toast(error.message, "error"); button.disabled = false; }
+});
+
+$("#paid-list").addEventListener("change", event => {
+  const input = event.target.closest("[data-finance-attachment-input]");
+  if (input) addFinanceAttachments(input).catch(error => toast(error.message, "error"));
 });
 
 document.querySelector(".finance-tabs").addEventListener("click", event => {
