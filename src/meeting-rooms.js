@@ -43,7 +43,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
       else [state.rooms, state.reservations, state.participants, state.users] = await Promise.all([
         api("salas_reuniao?select=*&order=nome.asc"), api("reservas_salas?select=*&order=data.asc,hora_inicio.asc"),
         api("reservas_salas_participantes?select=reserva_id,utilizador_id"),
-        api("utilizadores?select=id,nome,funcao,auth_user_id,ativo&ativo=eq.true&auth_user_id=not.is.null&order=nome.asc"),
+        api("rpc/fn_listar_participantes_reuniao", { method: "POST", body: "{}" }),
       ]);
       state.loaded = true;
       if (!state.selectedRoomId || !state.rooms.some(room => room.id === state.selectedRoomId)) state.selectedRoomId = state.rooms[0]?.id || "";
