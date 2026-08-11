@@ -171,6 +171,10 @@ input::placeholder { color: #acb0b1; }
 .card-actions .reject { border: 1px solid #d8caca; color: #855d5d; }.card-actions .approve { border: 1px solid var(--charcoal); background: var(--charcoal); color: white; }
 .invoice-detail-action { margin-top: 13px; min-height: 36px; border: 1px solid var(--charcoal); background: #fff; color: var(--charcoal); padding: 0 14px; font: 700 11px "Manrope"; letter-spacing: .7px; display: inline-flex; align-items: center; gap: 7px; }
 .invoice-detail-action svg { width: 15px; }
+.invoice-primary-actions { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; padding-top:12px; border-top:1px solid #eff0ee; }
+.invoice-primary-actions .invoice-detail-action { margin-top:0; flex:1; justify-content:center; }
+.invoice-primary-actions > .reject, .invoice-primary-actions > .approve { min-height:36px; padding:0 12px; font:700 10px "Manrope"; letter-spacing:.7px; display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+.invoice-primary-actions > .reject { border:1px solid #d8caca; background:#fff; color:#855d5d; }.invoice-primary-actions > .approve { border:1px solid var(--charcoal); background:var(--charcoal); color:#fff; }.invoice-primary-actions svg { width:14px; }
 .invoice-detail-loading, .invoice-detail-error { padding: 32px; }
 .invoice-detail { padding: 24px; max-height: min(76vh, 760px); overflow-y: auto; }
 .invoice-detail-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); border: 1px solid #dddeda; }
