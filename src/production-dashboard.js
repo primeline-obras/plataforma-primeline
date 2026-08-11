@@ -169,6 +169,7 @@ export function sortAlertsByPriority(alerts = []) {
 
 const FINANCIAL_ALERT_PATTERN = /(fatura|pagamento|recebimento|cobran[cç]a|d[eé]bito|tesouraria|cash.?flow|financeir)/i;
 const TECHNICAL_RECURRING_TYPES = new Set(["pedido_mensal_horas", "pedido_semanal_horas", "informacao_reuniao_semanal", "informacao_reuniao_producao"]);
+const isMeetingInformation = alert => alert?.tipo === "reserva_sala";
 
 export function invoiceDueDate(invoice = {}) {
   if (invoice.condicao_pagamento === "outra_data") return invoice.data_vencimento || null;
@@ -179,15 +180,17 @@ export function invoiceDueDate(invoice = {}) {
 }
 
 export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = new Set(), currentUserId = "") {
-  if (["gerencia", "administrativo"].includes(role)) return sortAlertsByPriority(alerts);
-  if (role === "financeiro") return sortAlertsByPriority(alerts.filter(alert => FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`)));
+  const personalMeeting = alert => isMeetingInformation(alert) && alert.destinatario_utilizador_id === currentUserId;
+  if (["gerencia", "administrativo"].includes(role)) return sortAlertsByPriority(alerts.filter(alert => !isMeetingInformation(alert) || personalMeeting(alert)));
+  if (role === "financeiro") return sortAlertsByPriority(alerts.filter(alert => personalMeeting(alert) || FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`)));
   if (["diretor_obra", "adjunto", "preparador"].includes(role)) {
     return sortAlertsByPriority(alerts.filter(alert =>
-      (alert.obra_id && responsibleWorkIds.has(alert.obra_id))
+      personalMeeting(alert)
+      || (alert.obra_id && responsibleWorkIds.has(alert.obra_id))
       || (TECHNICAL_RECURRING_TYPES.has(alert.tipo) && (!alert.entidade_id || alert.entidade_id === currentUserId))
     ));
   }
-  return [];
+  return sortAlertsByPriority(alerts.filter(personalMeeting));
 }
 
 export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date()) {
@@ -458,7 +461,7 @@ export function createProductionDashboard(options) {
           <div class="overview-alerts">${visibleAlerts.length ? visibleAlerts.map(alert => `
             <div class="alert-${alertSeverity(alert)}"><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
               <span><strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong><small>${escapeHtml(alert.descricao || "")}</small></span>
-              <span class="overview-alert-actions"><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></span>
+              <span class="overview-alert-actions"><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em>${isMeetingInformation(alert) ? '<small>INFORMATIVO</small>' : `<button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button>`}</span>
             </div>`).join("") : `<div class="overview-empty">SEM ALERTAS PENDENTES</div>`}</div>
         </article>
       </section>
@@ -471,6 +474,7 @@ export function createProductionDashboard(options) {
   }
 
   function alertDestination(alert) {
+    if (alert.tipo === "reserva_sala") return { view: "rooms" };
     if (["consulta_medicina", "primeira_consulta_medicina"].includes(alert.tipo)) return { view: "team", teamTab: "medicine" };
     if (["inspecao_viatura", "seguro_viatura"].includes(alert.tipo)) return { view: "vehicles" };
     if (alert.tipo === "fim_contrato_rh") return { view: "team", teamTab: "contracts" };
@@ -508,7 +512,7 @@ export function createProductionDashboard(options) {
         <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><span><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><em class="notification-channel">${alert.enviar_email ? "PLATAFORMA + EMAIL" : "PLATAFORMA"}</em></span></div>
         <strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong>
         <p>${escapeHtml(alert.descricao || "")}</p>
-        <footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>
+        ${isMeetingInformation(alert) ? "" : `<footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>`}
       </article>`;
     }).join("") : `<div class="notification-drawer-empty"><strong>TUDO EM DIA</strong><span>Não existem alertas pendentes.</span></div>`;
   }

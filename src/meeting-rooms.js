@@ -29,7 +29,7 @@ function calendarDays(value) {
 
 export function createMeetingRoomsModule({ root, supabase, isConfigured, getProfile, toast }) {
   const state = {
-    loaded: false, loading: false, rooms: [], reservations: [], error: "",
+    loaded: false, loading: false, rooms: [], reservations: [], users: [], error: "",
     month: monthKey(), selectedDate: isoToday(), selectedRoomId: "",
   };
 
@@ -52,9 +52,10 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
         state.rooms = [{ id: "demo-room", nome: "Sala de Reuniões" }];
         state.reservations = [];
       } else {
-        [state.rooms, state.reservations] = await Promise.all([
+        [state.rooms, state.reservations, state.users] = await Promise.all([
           api("salas_reuniao?select=*&order=nome.asc"),
           api("reservas_salas?select=*&order=data.asc,hora_inicio.asc"),
+          api("utilizadores?select=id,nome,funcao,auth_user_id,ativo&ativo=eq.true&auth_user_id=not.is.null&order=nome.asc"),
         ]);
       }
       state.loaded = true;
@@ -100,13 +101,12 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
   }
 
   function renderForm() {
-    const rooms = state.rooms.map(room => `<option value="${room.id}" ${room.id === state.selectedRoomId ? "selected" : ""}>${esc(room.nome)}</option>`).join("");
     return `<section class="meeting-form panel"><header><p class="eyebrow">SELF-SERVICE</p><h2>NOVA RESERVA</h2><p>Sem aprovação prévia. Confirme os horários ocupados antes de gravar.</p></header>
       <form data-room-form>
-        <label>SALA<select name="sala_id" required>${rooms}</select></label>
         <label>TÍTULO / PARA QUEM<input name="titulo" required maxlength="160" placeholder="Ex. Reunião de produção — Eng. Henrique"></label>
         <label>DATA<input name="data" type="date" required value="${state.selectedDate}"></label>
         <div><label>HORA INÍCIO<input name="hora_inicio" type="time" required></label><label>HORA FIM<input name="hora_fim" type="time" required></label></div>
+        <fieldset class="meeting-participants"><legend>PARTICIPANTES</legend><p>Selecione os utilizadores que devem receber esta reunião na Visão Geral.</p><div>${state.users.map(user => `<label><input type="checkbox" name="participantes" value="${user.id}"><span>${esc(user.nome)}</span><small>${esc(String(user.funcao || "Utilizador").replaceAll("_", " "))}</small></label>`).join("") || '<span class="meeting-empty">Não existem utilizadores disponíveis.</span>'}</div></fieldset>
         <div class="meeting-form-occupied" data-room-occupied>${reservationsFor(state.selectedDate).length ? reservationsFor(state.selectedDate).map(row => `<span>${normalizeTime(row.hora_inicio)}–${normalizeTime(row.hora_fim)}</span>`).join("") : "<span>LIVRE</span>"}</div>
         <button class="primary-button" type="submit">RESERVAR SALA <span>→</span></button><p class="form-error"></p>
       </form>
@@ -128,7 +128,6 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
   }
 
   function refreshOccupied(form) {
-    state.selectedRoomId = form.elements.sala_id.value;
     state.selectedDate = form.elements.data.value || isoToday();
     state.month = monthKey(state.selectedDate);
     render();
@@ -137,6 +136,8 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
       nextForm.elements.titulo.value = form.elements.titulo.value;
       nextForm.elements.hora_inicio.value = form.elements.hora_inicio.value;
       nextForm.elements.hora_fim.value = form.elements.hora_fim.value;
+      const selected = new Set(new FormData(form).getAll("participantes"));
+      nextForm.querySelectorAll('[name="participantes"]').forEach(input => { input.checked = selected.has(input.value); });
     }
   }
 
@@ -149,7 +150,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
 
   root.addEventListener("change", event => {
     const form = event.target.closest("[data-room-form]");
-    if (form && ["data", "sala_id"].includes(event.target.name)) refreshOccupied(form);
+    if (form && event.target.name === "data") refreshOccupied(form);
   });
 
   root.addEventListener("submit", async event => {
@@ -158,7 +159,9 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     event.preventDefault();
     const button = form.querySelector('button[type="submit"]');
     const errorNode = form.querySelector(".form-error");
-    const fields = Object.fromEntries(new FormData(form));
+    const formData = new FormData(form);
+    const fields = Object.fromEntries(formData);
+    const participants = formData.getAll("participantes");
     errorNode.textContent = "";
     if (fields.hora_fim <= fields.hora_inicio) {
       errorNode.textContent = "A hora de fim tem de ser posterior à hora de início.";
@@ -171,14 +174,17 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     button.disabled = true;
     try {
       const payload = {
-        sala_id: fields.sala_id, titulo: fields.titulo.trim(), data: fields.data,
+        sala_id: state.selectedRoomId, titulo: fields.titulo.trim(), data: fields.data,
         hora_inicio: fields.hora_inicio, hora_fim: fields.hora_fim,
         criado_por: getProfile()?.id || null,
       };
       let saved = { id: crypto.randomUUID(), criado_em: new Date().toISOString(), ...payload };
-      if (isConfigured) [saved] = await api("reservas_salas?select=*", {
-        method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload),
-      });
+      if (isConfigured) {
+        const result = await api("rpc/fn_criar_reserva_sala", {
+          method: "POST", body: JSON.stringify({ p_titulo: payload.titulo, p_data: payload.data, p_hora_inicio: payload.hora_inicio, p_hora_fim: payload.hora_fim, p_participantes: participants }),
+        });
+        saved = Array.isArray(result) ? result[0] : result;
+      }
       state.reservations.push(saved);
       state.reservations.sort((a, b) => `${a.data}${a.hora_inicio}`.localeCompare(`${b.data}${b.hora_inicio}`));
       toast("Sala reservada com sucesso.");

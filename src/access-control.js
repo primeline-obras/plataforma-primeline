@@ -54,7 +54,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "rooms", "team", "workforce", "settings"],
+    views: ["action-plan", "planning", "documents", "rnc", "team", "workforce", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: false,
@@ -64,7 +64,7 @@ const ACCESS_BY_ROLE = {
 };
 
 const NO_ACCESS = {
-  views: ["rooms", "settings"],
+  views: ["settings"],
   insertInvoices: false,
   approveInvoices: false,
   payInvoices: false,
