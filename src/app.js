@@ -169,6 +169,7 @@ document.querySelector("#root").innerHTML = `
               </section>
               <label>CONDIÇÃO DE PAGAMENTO<div class="select-wrap"><select name="condicao_pagamento" required><option value="">Selecionar condição</option><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option><option value="outra_data">Outra data</option></select><b>⌄</b></div><em id="payment-condition-suggestion"></em></label>
               <label id="custom-payment-date-field" hidden>DATA DE VENCIMENTO<input name="data_vencimento" type="date"><em>Definida manualmente para esta fatura.</em></label>
+              <label>OBSERVAÇÃO<textarea name="observacao" rows="3" maxlength="1000" placeholder="Informação relevante para quem vai verificar e aprovar a fatura"></textarea></label>
               <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden>
               <div class="pdf-attachment" id="pdf-attachment" hidden>
                 <div class="pdf-attachment-head">
@@ -506,6 +507,7 @@ async function startInvoiceEditing(invoiceId) {
   form.valor.value = invoice.valor ?? "";
   form.condicao_pagamento.value = invoice.condicao_pagamento || "";
   form.data_vencimento.value = invoice.condicao_pagamento === "outra_data" ? invoice.data_vencimento || "" : "";
+  form.observacao.value = invoice.observacao || "";
   toggleCustomPaymentDate();
   resetMaterialItems();
   if (invoice.tipo_origem === "material" && isSupabaseConfigured) {
@@ -945,6 +947,7 @@ function renderInvoices() {
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
         ${!hasGuide ? `<div class="invoice-guide-warning" data-guide-warning="${invoice.id}"><strong>SEM GUIA DE REMESSA</strong><span>Esta fatura não tem guia de remessa anexada. A aprovação é permitida temporariamente.</span></div>` : ""}
+        ${actionable ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="3" maxlength="1000" data-approval-observation="${invoice.id}" placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
         ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p><small>É necessária uma nova verificação e aprovação antes do pagamento.</small></div>` : ""}
         <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substituem a guia de remessa</small></div>
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
@@ -991,6 +994,7 @@ async function openInvoiceDetail(invoiceId) {
         <div><span>VALOR DO DOCUMENTO</span><strong>${euro.format(documentCents / 100)}</strong></div>
       </section>
       ${invoice.arquivo_url ? `<button type="button" class="outline-action invoice-detail-pdf" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} ABRIR PDF ORIGINAL</button>` : `<div class="invoice-detail-no-pdf">PDF ORIGINAL NÃO DISPONÍVEL</div>`}
+      ${canApproveInvoices() ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="4" maxlength="1000" data-detail-approval-observation placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
       <section class="invoice-detail-items">
         <header><div><span>ITENS EXTRAÍDOS</span><strong>${items.length} LINHA${items.length === 1 ? "" : "S"}</strong></div><small>Confirme estes valores com o PDF antes de decidir.</small></header>
         ${items.length ? `<div class="invoice-detail-table"><table><thead><tr><th>DESIGNAÇÃO</th><th>UN.</th><th>QTD.</th><th>PREÇO UNIT.</th><th>DESCONTO</th><th>TOTAL</th></tr></thead><tbody>${items.map(item => `<tr><td>${safeText(item.designacao || "—")}</td><td>${safeText(item.unidade || "—")}</td><td>${safeText(item.quantidade ?? "—")}</td><td>${euro.format(Number(item.valor_unitario || 0))}</td><td>${euro.format(Number(item.valor_desconto || 0))}</td><td>${euro.format(Number(item.valor_total || 0))}</td></tr>`).join("")}</tbody></table></div>` : `<div class="invoice-detail-empty">Esta fatura não tem itens extraídos registados.</div>`}
@@ -1011,11 +1015,16 @@ function financeCard(invoice) {
   const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
   const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
   const today = new Date().toISOString().slice(0, 10);
+  const trace = invoiceTrace.find(item => String(item.id) === String(invoice.id)) || {};
+  const approverName = invoice.aprovado_por_nome || trace.aprovado_por_nome || "Utilizador não identificado";
+  const approvalDate = invoice.data_aprovacao || trace.data_aprovacao;
   return `<article class="finance-card">
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     ${invoice.aprovada_sem_guia ? `<div class="invoice-guide-status missing">APROVADA SEM GUIA DE REMESSA</div>` : ""}
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
+    <div class="finance-approval"><span>APROVADA POR</span><strong>${escapeHtml(approverName)}</strong><small>${traceMoment(approvalDate)}</small></div>
+    ${invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
     ${invoice.condicao_pagamento === "outra_data" && invoice.data_vencimento ? `<div class="finance-date"><span>VENCIMENTO DEFINIDO</span><strong>${prettyDate.format(new Date(`${invoice.data_vencimento}T12:00:00`))}</strong></div>` : ""}
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
     <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
@@ -4707,6 +4716,7 @@ form.addEventListener("submit", async event => {
           p_valor: payload.valor,
           p_condicao_pagamento: payload.condicao_pagamento,
           p_data_vencimento: payload.data_vencimento,
+          p_observacao: payload.observacao || null,
           p_itens: materialItems.map(materialItemDatabasePayload),
         }),
       });
@@ -4820,6 +4830,7 @@ $("#invoice-list").addEventListener("click", async event => {
     }
   }
   const card = button.closest("[data-invoice-card]");
+  const approvalObservation = card?.querySelector(`[data-approval-observation="${invoice.id}"]`)?.value.trim() || "";
   const guideInput = card?.querySelector("[data-guide-input]");
   const existingGuides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
   const selectedGuides = [...(guideInput?.files || [])];
@@ -4850,14 +4861,14 @@ $("#invoice-list").addEventListener("click", async event => {
   if (isSupabaseConfigured) {
     const result = await supabase("rpc/fn_decidir_fatura", {
       method: "POST",
-      body: JSON.stringify({ p_fatura_id: invoice.id, p_decisao: decision }),
+      body: JSON.stringify({ p_fatura_id: invoice.id, p_decisao: decision, p_observacao: approvalObservation }),
     });
     if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); button.disabled = false; return; }
   }
   if (decision === "aprovado") {
     if (isSupabaseConfigured) invoiceGuides.push(...createdGuides);
     else if (!existingGuides.length) invoiceGuides.push(...selectedGuides.map((file, index) => ({ id: `demo-guide-${Date.now()}-${index}`, fatura_id: invoice.id, arquivo_url: URL.createObjectURL(file), nome_arquivo: file.name, mime_type: file.type })));
-    financeInvoices.unshift({ ...invoice, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", aprovada_sem_guia: approvingWithoutGuide, data_aprovacao: new Date().toISOString() });
+    financeInvoices.unshift({ ...invoice, observacao: approvalObservation || null, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", aprovada_sem_guia: approvingWithoutGuide, data_aprovacao: new Date().toISOString(), aprovado_por_nome: accessContext.profile?.nome || null });
     renderFinance();
   }
   if (editingInvoiceId === String(invoice.id)) stopInvoiceEditing();
@@ -4883,6 +4894,9 @@ $("#workflow-dialog").addEventListener("click", event => {
   )) return;
   const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-action="${decisionButton.dataset.detailDecision}"]`);
   if (!cardButton) return toast("A fatura já não está pendente.", "error");
+  const cardObservation = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-approval-observation]`);
+  const detailObservation = detail.querySelector("[data-detail-approval-observation]");
+  if (cardObservation && detailObservation) cardObservation.value = detailObservation.value;
   closeWorkflowDialog();
   cardButton.click();
 });
