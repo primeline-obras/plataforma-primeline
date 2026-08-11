@@ -5,6 +5,8 @@ const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 assert.match(app, /data-invoice-detail=/, "pending cards must expose a detail action");
+const cardSummary = app.slice(app.indexOf('<article class="invoice-card"'), app.indexOf("</article>`", app.indexOf('<article class="invoice-card"')));
+assert.ok(cardSummary.indexOf("invoice-primary-actions") < cardSummary.indexOf("approval-fields"), "detail and decision actions must appear before guides and attachments");
 assert.match(app, /async function openInvoiceDetail/, "invoice detail loader must exist");
 assert.match(app, /faturas_itens\?select=/, "detail must load extracted invoice items");
 assert.match(app, /SOMA DOS ITENS/, "detail must reconcile item and document totals");
