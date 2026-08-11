@@ -16,6 +16,14 @@ window.PRIMELINE_CONFIG = {
 
 Nunca colocar a `service_role key` no frontend.
 
+### Visão Geral por papel
+
+Executar `supabase/visao_geral_final_por_papel.sql` para aplicar a leitura final
+dos alertas e integrar na rotina diária os lembretes pessoais da Equipa Técnica:
+horas no primeiro dia útil do mês e dados da RSP às quintas-feiras. A Visão Geral
+do Financeiro usa diretamente `faturas`, `faturacao`, `debitos_diretos` e
+`previsao_financeira_mensal`.
+
 ## Executar localmente
 
 Na pasta do projeto:

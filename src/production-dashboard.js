@@ -167,6 +167,50 @@ export function sortAlertsByPriority(alerts = []) {
     || String(left.titulo || left.tipo || "").localeCompare(String(right.titulo || right.tipo || ""), "pt-PT"));
 }
 
+const FINANCIAL_ALERT_PATTERN = /(fatura|pagamento|recebimento|cobran[cç]a|d[eé]bito|tesouraria|cash.?flow|financeir)/i;
+const TECHNICAL_RECURRING_TYPES = new Set(["pedido_mensal_horas", "pedido_semanal_horas", "informacao_reuniao_semanal", "informacao_reuniao_producao"]);
+
+export function invoiceDueDate(invoice = {}) {
+  if (invoice.condicao_pagamento === "outra_data") return invoice.data_vencimento || null;
+  const base = safeDate(invoice.data_fatura);
+  if (!base) return null;
+  const days = invoice.condicao_pagamento === "30_dias" ? 30 : invoice.condicao_pagamento === "15_dias" ? 15 : 0;
+  return localIso(addDaysDate(base, days));
+}
+
+export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = new Set(), currentUserId = "") {
+  if (["gerencia", "administrativo"].includes(role)) return sortAlertsByPriority(alerts);
+  if (role === "financeiro") return sortAlertsByPriority(alerts.filter(alert => FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`)));
+  if (["diretor_obra", "adjunto", "preparador"].includes(role)) {
+    return sortAlertsByPriority(alerts.filter(alert =>
+      (alert.obra_id && responsibleWorkIds.has(alert.obra_id))
+      || (TECHNICAL_RECURRING_TYPES.has(alert.tipo) && (!alert.entidade_id || alert.entidade_id === currentUserId))
+    ));
+  }
+  return [];
+}
+
+export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date()) {
+  const year = referenceDate.getFullYear();
+  const currentMonth = `${year}-${String(referenceDate.getMonth() + 1).padStart(2, "0")}`;
+  const values = rows.filter(row => String(row.mes || "").startsWith(String(year))).map(row => {
+    const useReal = Boolean(row.fechado) || number(row.entradas_reais) !== 0 || number(row.saidas_reais_sem_iva || row.saidas_reais_com_iva) !== 0;
+    const incoming = number(useReal ? row.entradas_reais : row.entradas_previstas);
+    const outgoing = number(useReal ? (row.saidas_reais_sem_iva || row.saidas_reais_com_iva) : (row.saidas_previstas_sem_iva || row.saidas_previstas_com_iva));
+    return { month: monthKey(row.mes), incoming, outgoing, real: useReal };
+  });
+  const total = key => values.reduce((accumulator, row) => accumulator + row[key], 0);
+  const monthRows = values.filter(row => row.month === currentMonth);
+  return {
+    currentMonth,
+    monthIncoming: monthRows.reduce((totalValue, row) => totalValue + row.incoming, 0),
+    monthOutgoing: monthRows.reduce((totalValue, row) => totalValue + row.outgoing, 0),
+    yearIncoming: total("incoming"),
+    yearOutgoing: total("outgoing"),
+    realMonths: new Set(values.filter(row => row.real).map(row => row.month)).size,
+  };
+}
+
 export function createProductionDashboard(options) {
   const {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
@@ -176,7 +220,8 @@ export function createProductionDashboard(options) {
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
     contracts: [], tees: [], investments: [], impacts: [], measurements: [], subcontracts: [], consultations: [],
     payments: [], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
-    planningItems: [], rncs: [], incidents: [], inspections: [], epis: [], activeCollaborators: [], warnings: [],
+    planningItems: [], rncs: [], incidents: [], inspections: [], epis: [], activeCollaborators: [],
+    customerBillings: [], financeForecast: [], warnings: [],
   });
   let overviewState = emptyOverviewState();
   let meetingState = null;
@@ -371,9 +416,6 @@ export function createProductionDashboard(options) {
   }
 
   function renderOverview() {
-    const notificationCount = document.querySelector("#notification-button i");
-    if (notificationCount) notificationCount.textContent = String(overviewState.alerts.length);
-    renderNotificationDrawer();
     const works = getWorks();
     const activeWorks = works.filter(work => work.situacao === "em_curso");
     const access = typeof getAccessContext === "function" ? getAccessContext() : {};
@@ -384,20 +426,21 @@ export function createProductionDashboard(options) {
     const responsibleWorkIds = new Set(overviewState.responsibilities.map(row => row.obra_id));
     const isProductionRole = ["diretor_obra", "adjunto", "preparador"].includes(role);
     const scopedWorks = isProductionRole ? activeWorks.filter(work => responsibleWorkIds.has(work.id)) : activeWorks;
+    const visibleAlerts = alertsForOverviewRole(overviewState.alerts, role, responsibleWorkIds, overviewState.profile?.id || "");
+    overviewState.visibleAlerts = visibleAlerts;
+    const notificationCount = document.querySelector("#notification-button i");
+    if (notificationCount) notificationCount.textContent = String(visibleAlerts.length);
+    renderNotificationDrawer();
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const epiLimit = new Date(today); epiLimit.setDate(epiLimit.getDate() + 30);
-    const activeCollaboratorIds = new Set(overviewState.activeCollaborators.map(row => row.id));
-    const expiringEpis = overviewState.epis.filter(row => {
-      const validity = safeDate(row.data_validade || row.data_renovacao || row.validade);
-      return validity && validity >= today && validity <= epiLimit && activeCollaboratorIds.has(row.colaborador_id);
-    });
     const dueDirectDebits = upcomingDirectDebitRows(overviewState.directDebits, overviewState.directDebitEntries, today, 7);
-    const administrativeCards = role === "administrativo" ? `<section class="overview-role-kpis alert-only">
-      <article class="${expiringEpis.length ? "attention" : ""}"><span>EPIs A VENCER · 30 DIAS</span><strong>${expiringEpis.length}</strong><small>colaboradores ativos</small></article>
-      <article class="${dueDirectDebits.length ? "attention" : ""}"><span>DÉBITOS DIRETOS · 7 DIAS</span><strong>${dueDirectDebits.length}</strong><small>${euro.format(sum(dueDirectDebits, "valor"))} · empresa e obras</small></article>
-    </section>` : "";
-    const financialCards = role === "financeiro" ? `<section class="overview-role-kpis financial">
-      <article class="${dueDirectDebits.length ? "attention" : ""}"><span>DÉBITOS DIRETOS · 7 DIAS</span><strong>${dueDirectDebits.length}</strong><small>${euro.format(sum(dueDirectDebits, "valor"))} previstos</small></article>
+    const supplierInvoices = role === "financeiro" ? getFinanceInvoices().filter(invoice => invoice.estado_aprovacao === "aprovado" && invoice.estado_pagamento === "por_pagar").map(invoice => ({ ...invoice, dueDate: invoiceDueDate(invoice) })).sort((left, right) => String(left.dueDate || "9999-12-31").localeCompare(String(right.dueDate || "9999-12-31"))) : [];
+    const customerInvoices = role === "financeiro" ? overviewState.customerBillings.filter(invoice => number(invoice.valor) > number(invoice.valor_recebido)).sort((left, right) => String(left.data_emissao_fatura || "").localeCompare(String(right.data_emissao_fatura || ""))) : [];
+    const cashFlow = consolidatedCashFlowSummary(overviewState.financeForecast, today);
+    const financialCards = role === "financeiro" ? `<section class="overview-financial-alerts">
+      <article class="panel"><header><span>FATURAS POR PAGAR</span><b>${supplierInvoices.length}</b></header><div>${supplierInvoices.length ? supplierInvoices.map(invoice => `<div class="overview-financial-row"><span><strong>${escapeHtml(invoice.numero_doc || "Sem número")}</strong><small>${escapeHtml(getSuppliers().find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor")}</small></span><span><b>${euro.format(number(invoice.valor))}</b><small class="${invoice.dueDate && safeDate(invoice.dueDate) < today ? "urgent" : ""}">${invoice.dueDate ? `Vence ${prettyDate.format(safeDate(invoice.dueDate))}` : "Sem vencimento"}</small></span></div>`).join("") : '<p class="overview-empty">SEM FATURAS POR PAGAR</p>'}</div></article>
+      <article class="panel"><header><span>FATURAS A CLIENTES · POR RECEBER</span><b>${customerInvoices.length}</b></header><div>${customerInvoices.length ? customerInvoices.map(invoice => `<div class="overview-financial-row"><span><strong>${escapeHtml(invoice.numero_fatura || "Sem número")}</strong><small>${escapeHtml(works.find(work => work.id === invoice.obra_id)?.nome || "Obra")}</small></span><span><b>${euro.format(number(invoice.valor) - number(invoice.valor_recebido))}</b><small>Emitida ${invoice.data_emissao_fatura ? prettyDate.format(safeDate(invoice.data_emissao_fatura)) : "—"}</small></span></div>`).join("") : '<p class="overview-empty">SEM VALORES POR RECEBER</p>'}</div></article>
+      <article class="panel"><header><span>DÉBITOS A VENCER · 7 DIAS</span><b>${dueDirectDebits.length}</b></header><div>${dueDirectDebits.length ? dueDirectDebits.map(debit => `<div class="overview-financial-row"><span><strong>${escapeHtml(debit.descricao || "Débito direto")}</strong><small>${debit.data ? prettyDate.format(safeDate(debit.data)) : "—"}</small></span><b>${euro.format(number(debit.valor))}</b></div>`).join("") : '<p class="overview-empty">SEM DÉBITOS NOS PRÓXIMOS 7 DIAS</p>'}</div></article>
+      <article class="panel overview-cash-summary"><header><span>CASH FLOW CONSOLIDADO</span><small>${escapeHtml(monthLabel(cashFlow.currentMonth))}</small></header><div class="overview-cash-values"><span><small>ENTRADAS DO MÊS</small><b>${euro.format(cashFlow.monthIncoming)}</b></span><span><small>SAÍDAS DO MÊS</small><b>${euro.format(cashFlow.monthOutgoing)}</b></span><span class="${cashFlow.monthIncoming - cashFlow.monthOutgoing < 0 ? "negative" : "positive"}"><small>SALDO DO MÊS</small><b>${euro.format(cashFlow.monthIncoming - cashFlow.monthOutgoing)}</b></span><span><small>SALDO ANUAL</small><b>${euro.format(cashFlow.yearIncoming - cashFlow.yearOutgoing)}</b></span></div><small>${cashFlow.realMonths} mês(es) com valores reais; restantes conforme previsão do Mapa Financeiro.</small></article>
     </section>` : "";
     const warning = overviewState.warnings.length
       ? `<div class="overview-warning">Alguns dados estão indisponíveis: ${escapeHtml(overviewState.warnings.join(" · "))}</div>` : "";
@@ -408,18 +451,18 @@ export function createProductionDashboard(options) {
         <div class="overview-today"><span>HOJE</span><strong>${prettyDate.format(new Date())}</strong></div>
       </div>
       ${warning}
-      ${administrativeCards}${financialCards}
+      ${financialCards}
       <section class="overview-alert-layout">
         <article class="panel overview-panel">
-          <div class="overview-section-head"><div><p class="eyebrow">PRIORIDADES</p><h2>ALERTAS PENDENTES</h2></div><span>${overviewState.alerts.length}</span></div>
-          <div class="overview-alerts">${overviewState.alerts.length ? overviewState.alerts.map(alert => `
+          <div class="overview-section-head"><div><p class="eyebrow">PRIORIDADES</p><h2>ALERTAS PENDENTES</h2></div><span>${visibleAlerts.length}</span></div>
+          <div class="overview-alerts">${visibleAlerts.length ? visibleAlerts.map(alert => `
             <div class="alert-${alertSeverity(alert)}"><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
               <span><strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong><small>${escapeHtml(alert.descricao || "")}</small></span>
               <span class="overview-alert-actions"><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></span>
             </div>`).join("") : `<div class="overview-empty">SEM ALERTAS PENDENTES</div>`}</div>
         </article>
       </section>
-      ${["diretor_obra", "adjunto", "preparador", "gerencia"].includes(role) && scopedWorks.length
+      ${isProductionRole && scopedWorks.length
         ? `<section class="overview-alert-work-sections">${scopedWorks.map(work => {
           const technical = technicalWorkData(work);
           if (!technical.blocked.length && !technical.rncs.length && !technical.delays.length) return "";
@@ -458,7 +501,8 @@ export function createProductionDashboard(options) {
   function renderNotificationDrawer() {
     const list = document.querySelector("#notification-drawer-list");
     if (!list) return;
-    list.innerHTML = overviewState.alerts.length ? sortAlertsByPriority(overviewState.alerts).map(alert => {
+    const alerts = overviewState.visibleAlerts || overviewState.alerts;
+    list.innerHTML = alerts.length ? sortAlertsByPriority(alerts).map(alert => {
       const destination = alertDestination(alert);
       return `<article class="notification-drawer-item alert-${alertSeverity(alert)}">
         <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><span><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><em class="notification-channel">${alert.enviar_email ? "PLATAFORMA + EMAIL" : "PLATAFORMA"}</em></span></div>
@@ -500,13 +544,12 @@ export function createProductionDashboard(options) {
     const access = typeof getAccessContext === "function" ? getAccessContext() : {};
     const requestedRole = access.isAdmin || access.role === "gerencia" ? "gerencia" : access.role || "";
     const technicalRole = ["diretor_obra", "adjunto", "preparador"].includes(requestedRole);
-    const technicalAlertRole = technicalRole || requestedRole === "gerencia";
-    const administrativeRole = requestedRole === "administrativo";
+    const technicalAlertRole = technicalRole;
     const needsDirectDebits = requestedRole !== "encarregado";
     const [
       alerts, profiles, phases, planning, budget, contracts, tees, investments, impacts,
       measurements, subcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries,
-      planningItems, rncs, incidents, inspections, epis, activeCollaborators,
+      planningItems, rncs, incidents, inspections, epis, activeCollaborators, customerBillings, financeForecast,
     ] = await Promise.all([
       query(`alertas?select=*&estado=eq.pendente&data_gatilho=lte.${new Date().toISOString().slice(0, 10)}&order=data_gatilho.asc`, "Alertas"),
       authId ? query(`utilizadores?select=id,nome,funcao,auth_user_id&auth_user_id=eq.${encodeURIComponent(authId)}&limit=1`, "Perfil") : [],
@@ -518,8 +561,9 @@ export function createProductionDashboard(options) {
       technicalAlertRole ? query("rnc?select=id,obra_id,numero,subempreitada_id,data_deteccao,data_fecho,local_ocorrencia,descricao,gravidade,estado", "RNCs") : [],
       [],
       [],
-      administrativeRole ? query("epis?select=*", "EPIs") : [],
-      administrativeRole ? query("colaboradores?select=id&data_saida=is.null", "Colaboradores ativos") : [],
+      [], [],
+      requestedRole === "financeiro" ? query("faturacao?select=id,obra_id,numero_fatura,data_emissao_fatura,valor,data_recebimento,valor_recebido&order=data_emissao_fatura.asc", "Faturação a clientes") : [],
+      requestedRole === "financeiro" ? query("previsao_financeira_mensal?select=obra_id,mes,fechado,entradas_reais,entradas_previstas,saidas_reais_sem_iva,saidas_reais_com_iva,saidas_previstas_sem_iva,saidas_previstas_com_iva&tipo=eq.previsao&order=mes.asc", "Cash flow") : [],
     ]);
     overviewState.alerts = sortAlertsByPriority(alerts);
     overviewState.profile = profiles[0] || null;
@@ -544,6 +588,8 @@ export function createProductionDashboard(options) {
     overviewState.inspections = inspections;
     overviewState.epis = epis;
     overviewState.activeCollaborators = activeCollaborators;
+    overviewState.customerBillings = customerBillings;
+    overviewState.financeForecast = financeForecast;
     overviewState.responsibilities = overviewState.profile
       ? await query(`obra_responsaveis?select=obra_id,utilizador_id,papel&utilizador_id=eq.${encodeURIComponent(overviewState.profile.id)}`, "Responsabilidades")
       : [];

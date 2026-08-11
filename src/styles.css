@@ -1952,6 +1952,20 @@ button, input, select, textarea,
 .overview-alert-work > header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .overview-alert-work > header h2 { margin:3px 0 0; font-size:20px; }
 .overview-technical-grid.alert-only { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.overview-financial-alerts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:18px; }
+.overview-financial-alerts > article { min-width:0; padding:18px; }
+.overview-financial-alerts > article > header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:12px; border-bottom:1px solid var(--card-border); }
+.overview-financial-alerts > article > header span { font:800 11px "Manrope"; letter-spacing:.06em; }
+.overview-financial-alerts > article > header b { display:grid; place-items:center; min-width:29px; height:29px; border-radius:999px; background:var(--sidebar-bg); color:#fff; font-size:12px; }
+.overview-financial-row { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:64px; padding:10px 2px; border-bottom:1px solid var(--card-border); }
+.overview-financial-row:last-child { border-bottom:0; }.overview-financial-row > span { display:grid; gap:3px; min-width:0; }.overview-financial-row > span:last-child { flex:none; text-align:right; }
+.overview-financial-row strong { overflow:hidden; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }.overview-financial-row small { color:var(--text-muted); font-size:10px; }.overview-financial-row small.urgent { color:var(--neg-text); font-weight:800; }
+.overview-cash-summary { grid-column:1/-1; }.overview-cash-summary > header small { color:var(--text-muted); font-weight:800; }
+.overview-cash-values { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:14px 0; border:1px solid var(--card-border); border-radius:10px; overflow:hidden; }
+.overview-cash-values > span { display:grid; gap:7px; padding:15px; border-right:1px solid var(--card-border); background:var(--bg-soft); }.overview-cash-values > span:last-child { border-right:0; }
+.overview-cash-values small { color:var(--text-muted); font:800 9px "Manrope"; letter-spacing:.06em; }.overview-cash-values b { color:var(--accent-value); font-size:17px; }.overview-cash-values .positive b { color:var(--pos-text); }.overview-cash-values .negative b { color:var(--neg-text); }
+@media (max-width:1100px) { .overview-financial-alerts { grid-template-columns:1fr 1fr; }.overview-cash-summary { grid-column:1/-1; } }
+@media (max-width:700px) { .overview-financial-alerts { grid-template-columns:1fr; }.overview-cash-summary { grid-column:auto; }.overview-cash-values { grid-template-columns:1fr 1fr; }.overview-cash-values > span:nth-child(2) { border-right:0; }.overview-cash-values > span { border-bottom:1px solid var(--card-border); } }
 
 .rsp-view { display:grid; gap:22px; }
 .rsp-heading { margin-bottom:0; }
