@@ -73,6 +73,7 @@ const NO_ACCESS = {
 };
 
 export function effectiveAccessRole(context = {}) {
+  if (context.role === "encarregado") return "encarregado";
   return context.isAdmin || context.role === "gerencia" ? "gerencia" : context.role || "";
 }
 

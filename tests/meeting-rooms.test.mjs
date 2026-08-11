@@ -15,9 +15,9 @@ assert(!accessFor({ role: "encarregado" }).views.includes("rooms"), "Encarregado
 assert.match(app, /data-view="rooms"/);
 assert.match(app, /createMeetingRoomsModule/);
 assert.match(moduleSource, /HORÁRIOS OCUPADOS/);
-assert.match(moduleSource, /overlaps\(fields\.data, fields\.hora_inicio, fields\.hora_fim\)/);
+assert.match(moduleSource, /overlaps\(fields\.data, fields\.hora_inicio, fields\.hora_fim, state\.editingId\)/);
 assert.match(moduleSource, /Este horário sobrepõe-se a uma reserva existente/);
-assert.match(moduleSource, /criado_por: getProfile\(\)\?\.id \|\| null/);
+assert.match(moduleSource, /criado_por:\s*getProfile\(\)\?\.id\s*\|\|\s*null/);
 assert.doesNotMatch(moduleSource, /name="sala_id"/);
 assert.match(moduleSource, /name="participantes"/);
 assert.match(moduleSource, /rpc\/fn_criar_reserva_sala/);
