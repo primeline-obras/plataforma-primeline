@@ -16,6 +16,7 @@ import { createMeetingRoomsModule } from "./meeting-rooms.js?v=2";
 import { createPropertiesModule } from "./properties.js?v=1";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
+import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=1";
 
@@ -235,6 +236,7 @@ document.querySelector("#root").innerHTML = `
           <button type="button" data-finance-tab="tracking">RASTREIO DE FATURAS</button>
           <button type="button" data-finance-tab="direct-debits">DÉBITOS DIRETOS</button>
           <button type="button" data-finance-tab="financial-map">MAPA FINANCEIRO</button>
+          <button type="button" data-finance-tab="management-map">MAPA DE GESTÃO DE OBRAS</button>
         </nav>
         <div data-finance-panel="invoices">
           <section class="finance-board" id="finance-board"></section>
@@ -278,6 +280,9 @@ document.querySelector("#root").innerHTML = `
         </div>
         <div data-finance-panel="financial-map" hidden>
           <div id="financial-map-content"></div>
+        </div>
+        <div data-finance-panel="management-map" hidden>
+          <div id="management-map-content"></div>
         </div>
       </div>
       <div class="page team-view" id="team-view" hidden>
@@ -1178,12 +1183,15 @@ function renderFinance() {
   renderDirectDebits();
   renderFinanceTabs();
   if (selectedFinanceTab === "financial-map") financialMapModule.show();
+  if (selectedFinanceTab === "management-map") managementMapModule.show();
 }
 
 function renderFinanceTabs() {
   const financialMapTab = document.querySelector('[data-finance-tab="financial-map"]');
+  const managementMapTab = document.querySelector('[data-finance-tab="management-map"]');
   if (financialMapTab) financialMapTab.hidden = !canViewFinancialMap();
-  if (selectedFinanceTab === "financial-map" && !canViewFinancialMap()) selectedFinanceTab = "invoices";
+  if (managementMapTab) managementMapTab.hidden = !canViewFinancialMap();
+  if (["financial-map", "management-map"].includes(selectedFinanceTab) && !canViewFinancialMap()) selectedFinanceTab = "invoices";
   document.querySelectorAll("[data-finance-tab]").forEach(button => {
     button.classList.toggle("active", button.dataset.financeTab === selectedFinanceTab);
   });
@@ -4859,6 +4867,10 @@ $("#invoice-list").addEventListener("click", async event => {
     ? `Fatura aprovada sem guia de remessa${isSupabaseConfigured ? "" : " em modo de demonstração"}.`
     : `Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`, approvingWithoutGuide ? "warning" : "success");
 });
+const managementMapModule = createManagementMapModule({
+  root: $("#management-map-content"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, euro, toast,
+});
 
 $("#workflow-dialog").addEventListener("click", event => {
   const pdfButton = event.target.closest("[data-open-invoice] [data-pdf]");
@@ -5067,13 +5079,14 @@ $("#paid-list").addEventListener("change", event => {
 document.querySelector(".finance-tabs").addEventListener("click", event => {
   const button = event.target.closest("[data-finance-tab]");
   if (!button) return;
-  if (button.dataset.financeTab === "financial-map" && !canViewFinancialMap()) {
-    toast("O Mapa Financeiro está reservado ao Financeiro e à Gerência.", "error");
+  if (["financial-map", "management-map"].includes(button.dataset.financeTab) && !canViewFinancialMap()) {
+    toast("Os mapas financeiros estão reservados ao Financeiro e à Gerência.", "error");
     return;
   }
   selectedFinanceTab = button.dataset.financeTab;
   renderFinanceTabs();
   if (selectedFinanceTab === "financial-map") financialMapModule.show();
+  if (selectedFinanceTab === "management-map") managementMapModule.show();
 });
 
 $("#invoice-trace-search").addEventListener("input", renderInvoiceTrace);
