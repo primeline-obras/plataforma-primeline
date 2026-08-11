@@ -591,7 +591,7 @@ function updateMaterialItemTotal(row, changedField = "") {
     percentInput.value = percent ? percent.toFixed(2) : "";
   }
   discount = Math.min(gross, Math.max(0, discount));
-  row.querySelector("[data-item-total]").textContent = euro.format(Math.max(0, gross - discount));
+  row.querySelector("[data-item-total]").textContent = euro.format(Math.round(Math.max(0, gross - discount) * 100) / 100);
 }
 
 function collectMaterialItems() {
@@ -610,7 +610,7 @@ function collectMaterialItems() {
       preco_unitario: unitPrice,
       desconto_percentual: discountPercent,
       valor_desconto: discountValue,
-      preco_total: Math.max(0, gross - effectiveDiscount),
+      preco_total: Math.round(Math.max(0, gross - effectiveDiscount) * 100) / 100,
     };
   }).filter(item => item.designacao || item.unidade || item.quantidade || item.preco_unitario);
 }
@@ -938,10 +938,59 @@ function renderInvoices() {
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
           <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
         </div>
+        <button type="button" class="invoice-detail-action" data-invoice-detail="${invoice.id}">${icon("invoice")} VER DETALHE</button>
         ${editable ? `<button type="button" class="invoice-edit-action" data-edit-invoice="${invoice.id}">EDITAR FATURA PENDENTE</button>` : ""}
         ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" title="${hasGuide ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
+}
+
+function invoiceMoneyCents(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? Math.round(number * 100) : 0;
+}
+
+async function loadInvoiceItems(invoiceId) {
+  if (!isSupabaseConfigured) return [];
+  const response = await supabase(`faturas_itens?select=id,designacao,unidade,quantidade,valor_unitario,valor_total,desconto_percentual,valor_desconto&fatura_id=eq.${encodeURIComponent(invoiceId)}&order=id`);
+  if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar os itens da fatura."));
+  return response.json();
+}
+
+async function openInvoiceDetail(invoiceId) {
+  const invoice = invoices.find(item => String(item.id) === String(invoiceId));
+  if (!invoice) return toast("A fatura já não está disponível na lista de pendentes.", "error");
+  const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor não identificado";
+  const work = works.find(item => item.id === invoice.obra_id);
+  $("#workflow-dialog-title").textContent = `FATURA · ${invoice.numero_doc || "SEM NÚMERO"}`;
+  $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-loading">A CARREGAR DETALHE…</div>`;
+  $("#workflow-dialog").hidden = false;
+  try {
+    const items = await loadInvoiceItems(invoice.id);
+    const documentCents = invoiceMoneyCents(invoice.valor);
+    const itemsCents = items.reduce((sum, item) => sum + invoiceMoneyCents(item.valor_total), 0);
+    const differenceCents = items.length ? documentCents - itemsCents : 0;
+    const reconciled = !items.length || differenceCents === 0;
+    const typeLabels = { subempreitada: "Subempreitada", material: "Material", estaleiro: "Estaleiro" };
+    $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail" data-open-invoice="${invoice.id}" data-difference-cents="${differenceCents}">
+      <section class="invoice-detail-summary">
+        <div><span>FORNECEDOR</span><strong>${safeText(supplier)}</strong></div>
+        <div><span>OBRA</span><strong>${safeText(work ? `${work.numero} · ${work.nome}` : "Não identificada")}</strong></div>
+        <div><span>TIPO</span><strong>${safeText(typeLabels[invoice.tipo_origem] || invoice.tipo_origem || "—")}</strong></div>
+        <div><span>DATA</span><strong>${invoice.data_fatura ? prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`)) : "—"}</strong></div>
+        <div><span>VALOR DO DOCUMENTO</span><strong>${euro.format(documentCents / 100)}</strong></div>
+      </section>
+      ${invoice.arquivo_url ? `<button type="button" class="outline-action invoice-detail-pdf" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} ABRIR PDF ORIGINAL</button>` : `<div class="invoice-detail-no-pdf">PDF ORIGINAL NÃO DISPONÍVEL</div>`}
+      <section class="invoice-detail-items">
+        <header><div><span>ITENS EXTRAÍDOS</span><strong>${items.length} LINHA${items.length === 1 ? "" : "S"}</strong></div><small>Confirme estes valores com o PDF antes de decidir.</small></header>
+        ${items.length ? `<div class="invoice-detail-table"><table><thead><tr><th>DESIGNAÇÃO</th><th>UN.</th><th>QTD.</th><th>PREÇO UNIT.</th><th>DESCONTO</th><th>TOTAL</th></tr></thead><tbody>${items.map(item => `<tr><td>${safeText(item.designacao || "—")}</td><td>${safeText(item.unidade || "—")}</td><td>${safeText(item.quantidade ?? "—")}</td><td>${euro.format(Number(item.valor_unitario || 0))}</td><td>${euro.format(Number(item.valor_desconto || 0))}</td><td>${euro.format(Number(item.valor_total || 0))}</td></tr>`).join("")}</tbody></table></div>` : `<div class="invoice-detail-empty">Esta fatura não tem itens extraídos registados.</div>`}
+        ${items.length ? `<div class="invoice-reconciliation ${reconciled ? "ok" : "warning"}"><span>SOMA DOS ITENS</span><strong>${euro.format(itemsCents / 100)}</strong><span>DIFERENÇA</span><strong>${euro.format(differenceCents / 100)}</strong><p>${reconciled ? "Os itens coincidem com o valor do documento." : "Os valores não coincidem. Confirme o PDF e peça a correção da fatura antes de aprovar."}</p></div>` : ""}
+      </section>
+      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button><button class="primary-button" type="button" data-detail-decision="aprovado" ${reconciled ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>APROVAR →</button>` : ""}</div>
+    </div>`;
+  } catch (error) {
+    $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-error"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><p>${safeText(error.message)}</p><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div>`;
+  }
 }
 
 function invoiceSortDate(invoice) { return new Date(`${invoice.data_fatura || "1970-01-01"}T12:00:00`).getTime(); }
@@ -4172,9 +4221,9 @@ function findFinalTotal(rows) {
   const labels = [/total\s+do\s+documento/i, /total\s+a\s+pagar/i, /total\s+geral/i, /valor\s+a\s+pagar/i];
   for (const label of labels) for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index], position = labelPosition(row, label); if (!position) continue;
-    const sameRow = moneyTokens(row).filter(token => token.x >= position.endX - 2); if (sameRow.length) return sameRow[0].value;
+    const sameRow = moneyTokens(row).filter(token => token.x >= position.endX - 2).sort((a, b) => b.x - a.x); if (sameRow.length) return Math.round(sameRow[0].value * 100) / 100;
     const below = rows.filter(candidate => candidate.pageNumber === row.pageNumber && candidate.y < row.y && row.y - candidate.y <= 45).sort((a, b) => b.y - a.y);
-    for (const candidate of below) { const aligned = moneyTokens(candidate).map(token => ({ ...token, distance: Math.abs(token.x - position.centerX) })).filter(token => token.distance <= 55).sort((a, b) => a.distance - b.distance); if (aligned.length) return aligned[0].value; }
+    for (const candidate of below) { const aligned = moneyTokens(candidate).map(token => ({ ...token, distance: Math.abs(token.x - position.centerX) })).filter(token => token.distance <= 55).sort((a, b) => a.distance - b.distance); if (aligned.length) return Math.round(aligned[0].value * 100) / 100; }
   }
   return null;
 }
@@ -4670,6 +4719,11 @@ form.addEventListener("submit", async event => {
 });
 
 $("#invoice-list").addEventListener("click", async event => {
+  const detailButton = event.target.closest("[data-invoice-detail]");
+  if (detailButton) {
+    await openInvoiceDetail(detailButton.dataset.invoiceDetail);
+    return;
+  }
   const editButton = event.target.closest("[data-edit-invoice]");
   if (editButton) {
     editButton.disabled = true;
@@ -4743,6 +4797,26 @@ $("#invoice-list").addEventListener("click", async event => {
   toast(approvingWithoutGuide
     ? `Fatura aprovada sem guia de remessa${isSupabaseConfigured ? "" : " em modo de demonstração"}.`
     : `Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`, approvingWithoutGuide ? "warning" : "success");
+});
+
+$("#workflow-dialog").addEventListener("click", event => {
+  const pdfButton = event.target.closest("[data-open-invoice] [data-pdf]");
+  if (pdfButton) {
+    const cardPdfButton = document.querySelector(`[data-invoice-card="${event.target.closest("[data-open-invoice]").dataset.openInvoice}"] [data-pdf]`);
+    cardPdfButton?.click();
+    return;
+  }
+  const decisionButton = event.target.closest("[data-detail-decision]");
+  if (!decisionButton) return;
+  const detail = decisionButton.closest("[data-open-invoice]");
+  const differenceCents = Number(detail.dataset.differenceCents || 0);
+  if (decisionButton.dataset.detailDecision === "aprovado" && differenceCents !== 0 && !window.confirm(
+    `O valor do documento e a soma dos itens diferem ${euro.format(Math.abs(differenceCents) / 100)}. Confirma que verificou o PDF e pretende aprovar mesmo assim?`,
+  )) return;
+  const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-action="${decisionButton.dataset.detailDecision}"]`);
+  if (!cardButton) return toast("A fatura já não está pendente.", "error");
+  closeWorkflowDialog();
+  cardButton.click();
 });
 
 $("#invoice-list").addEventListener("change", event => {
