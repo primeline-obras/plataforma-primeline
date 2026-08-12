@@ -1359,13 +1359,14 @@ function workforceRowKey(allocation) {
 }
 
 function workforceRows(activeWorks, allocations) {
+  const availableWorkById = new Map(activeWorks.map(work => [work.id, work]));
   const realWorkIds = new Set(activeWorks.map(work => work.id));
   allocations.filter(item => workforceAllocationType(item) === "obra" && item.obra_id)
     .forEach(item => realWorkIds.add(item.obra_id));
   pendingWorkforceRows.filter(row => row.type === "obra" && row.workId)
     .forEach(row => realWorkIds.add(row.workId));
 
-  const realRows = [...realWorkIds].map(workId => works.find(work => work.id === workId)).filter(Boolean)
+  const realRows = [...realWorkIds].map(workId => availableWorkById.get(workId) || works.find(work => work.id === workId)).filter(Boolean)
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }))
     .map(work => ({ key: `obra:${work.id}`, type: "obra", workId: work.id, description: "", work }));
 

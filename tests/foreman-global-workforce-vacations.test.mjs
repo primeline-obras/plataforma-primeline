@@ -33,3 +33,10 @@ test("frontend usa todas as obras e apresenta férias num mapa mensal", () => {
   assert.match(styles, /\.vacation-map-grid/i);
   assert.match(styles, /grid-template-columns:\s*230px repeat\(var\(--vacation-days\), 31px\)/i);
 });
+
+test("linhas vazias usam a lista global e não voltam ao portefólio restrito", () => {
+  const workforceRows = app.match(/function workforceRows\(activeWorks, allocations\) \{[\s\S]*?\n\}/)?.[0] || "";
+  assert.match(workforceRows, /availableWorkById = new Map\(activeWorks\.map/i);
+  assert.match(workforceRows, /availableWorkById\.get\(workId\)/i);
+  assert.match(workforceRows, /const realWorkIds = new Set\(activeWorks\.map/i);
+});
