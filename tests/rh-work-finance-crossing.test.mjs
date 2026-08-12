@@ -21,8 +21,8 @@ assert.match(app, /rpc\/fn_listar_rastreio_faturas/);
 assert.match(app, /invoiceJourneyState/);
 assert.match(app, /effectiveRole\(\) === "encarregado"\) return \["absences", "medicine"\]/);
 assert.match(app, /allowedViews\(\)\.has\("team"\)/);
-assert.match(app, /item\.papel === "encarregado"/);
-assert.match(app, /workforceAllocationType\(item\) === "obra" && foremanWorkIds\.has\(item\.obra_id\)/);
+assert.match(app, /rpc\/fn_quadro_ferias_encarregado_global/);
+assert.match(app, /teamData\.boardWorks = globalPayload\.obras/);
 assert.match(app, /#workforce-movements/);
 
 assert.match(sql, /add column if not exists criado_por uuid/);

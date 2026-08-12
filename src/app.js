@@ -77,7 +77,8 @@ let workDetails = {
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
-let teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
+let selectedVacationMonth = new Date().toISOString().slice(0, 7);
+let teamData = { allocations: [], absences: [], vacations: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let teamQuickFilter = "";
 let selectedTeamEntity = null;
@@ -293,13 +294,13 @@ document.querySelector("#root").innerHTML = `
         <section class="team-alert-summary" id="team-alert-summary"></section>
         <nav class="team-tabs">
           <button class="active" data-team-tab="collaborators">COLABORADORES</button>
-          <button data-team-tab="absences">AUSÊNCIAS</button>
+          <button data-team-tab="absences">MAPA DE FÉRIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
           <button data-team-tab="medicine">MEDICINA DO TRABALHO</button>
         </nav>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
-          <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>AUSÊNCIAS DA SEMANA</h2></div></div>
+          <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>MAPA DE FÉRIAS E AUSÊNCIAS</h2></div></div>
           <div id="team-absences"></div>
         </section>
         <section class="panel team-directory-panel team-tab-panel" data-team-panel="collaborators">
@@ -1461,6 +1462,39 @@ function isVacation(absence) {
   return String(absence?.tipo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT").includes("ferias");
 }
 
+function vacationMonthBounds(month = selectedVacationMonth) {
+  const [year, monthNumber] = String(month).split("-").map(Number);
+  const start = `${year}-${String(monthNumber).padStart(2, "0")}-01`;
+  const end = new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
+  return { start, end, days: Number(end.slice(8)) };
+}
+
+function shiftVacationMonth(amount) {
+  const [year, monthNumber] = selectedVacationMonth.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, monthNumber - 1 + amount, 1));
+  selectedVacationMonth = shifted.toISOString().slice(0, 7);
+}
+
+function renderVacationMap(people, vacations) {
+  const { start, end, days } = vacationMonthBounds();
+  const monthDate = new Date(`${start}T12:00:00Z`);
+  const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric", timeZone: "UTC" }).format(monthDate).toUpperCase();
+  const vacationKeys = new Set(vacations.filter(item => isVacation(item) && item.data >= start && item.data <= end)
+    .map(item => `${item.colaborador_id}|${item.data}`));
+  const ordered = [...people].sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || ""), "pt-PT"));
+  const dayHeaders = Array.from({ length: days }, (_, index) => {
+    const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
+    const weekday = new Intl.DateTimeFormat("pt-PT", { weekday: "narrow", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+    return `<b class="${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""}"><span>${index + 1}</span><small>${weekday}</small></b>`;
+  }).join("");
+  const rows = ordered.map(person => `<div class="vacation-map-row"><strong title="${safeText(person.nome)}">${safeText(person.nome)}</strong>${Array.from({ length: days }, (_, index) => {
+    const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
+    const onVacation = vacationKeys.has(`${person.id}|${date}`);
+    return `<i class="${onVacation ? "vacation" : ""} ${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""}" title="${safeText(person.nome)} · ${formatOptionalDate(date)}${onVacation ? " · Férias" : ""}">${onVacation ? "F" : ""}</i>`;
+  }).join("")}</div>`).join("");
+  return `<section class="vacation-map"><header><div><p class="eyebrow">MAPA MENSAL · TODAS AS OBRAS</p><h3>${monthLabel}</h3></div><div><button type="button" data-vacation-month="-1" aria-label="Mês anterior">←</button><button type="button" data-vacation-month="1" aria-label="Mês seguinte">→</button></div></header><div class="vacation-map-scroll"><div class="vacation-map-grid" style="--vacation-days:${days}"><div class="vacation-map-head"><strong>COLABORADOR</strong>${dayHeaders}</div>${rows || `<div class="empty-state"><strong>SEM COLABORADORES ATIVOS</strong></div>`}</div></div><footer><i></i><span>Férias confirmadas</span></footer></section>`;
+}
+
 function entityDocuments(entityType, entityId) {
   return teamData.entityDocuments.filter(item => item.entidade_tipo === entityType && item.entidade_id === entityId);
 }
@@ -1631,32 +1665,29 @@ function renderTeam() {
   if ($("#team-lifecycle-actions")) $("#team-lifecycle-actions").hidden = !canManageTeam();
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
-  const workById = new Map(works.map(work => [work.id, work]));
-  const personById = new Map(collaborators.map(person => [person.id, person]));
+  const isForemanReadOnly = effectiveRole() === "encarregado";
+  const boardPeople = isForemanReadOnly && teamData.boardCollaborators.length ? teamData.boardCollaborators : collaborators;
+  const boardWorkList = isForemanReadOnly && teamData.boardWorks.length ? teamData.boardWorks : works;
+  const workById = new Map([...works, ...boardWorkList].map(work => [work.id, work]));
+  const personById = new Map([...collaborators, ...boardPeople].map(person => [person.id, person]));
   const activeAbsences = teamData.absences.filter(item => personById.has(item.colaborador_id));
   const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
   const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
   const activeMedicine = teamData.medicine.filter(item => personById.has(item.colaborador_id));
-  const isForemanReadOnly = effectiveRole() === "encarregado";
-  const foremanWorkIds = new Set(teamData.responsibles
-    .filter(item => item.utilizador_id === accessContext.profile?.id && item.papel === "encarregado")
-    .map(item => item.obra_id));
-  const operationalPeople = collaborators.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
+  const operationalPeople = boardPeople.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
   const allocations = teamData.allocations.filter(item =>
     personById.has(item.colaborador_id)
-    && workforceRoleClass(personById.get(item.colaborador_id))
-    && (!isForemanReadOnly || (workforceAllocationType(item) === "obra" && foremanWorkIds.has(item.obra_id))));
+    && workforceRoleClass(personById.get(item.colaborador_id)));
   const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
   const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
-  const activeWorks = works
+  const activeWorks = boardWorkList
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
-    .filter(work => !isForemanReadOnly || foremanWorkIds.has(work.id))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const boardRows = workforceRows(activeWorks, allocations);
-  const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
+  const unallocated = boardPeople.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = activeOvertime.reduce((total, item) => total + Number(item.horas || 0), 0);
   const todayIso = new Date().toISOString().slice(0, 10);
   const currentMonth = Number(todayIso.slice(5, 7));
@@ -1671,7 +1702,7 @@ function renderTeam() {
   $("#team-week").value = selectedTeamWeek;
   $("#team-week-label").textContent = `SEMANA ATUAL · ${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))}`;
   $("#team-kpis").innerHTML = [
-    ["COLABORADORES ATIVOS", collaborators.length],
+    ["COLABORADORES ATIVOS", boardPeople.length],
     ["ALOCADOS", currentAllocatedIds.size],
     ["SEM ALOCAÇÃO", unallocated.length],
     ["AUSENTES NA SEMANA", absentIds.size],
@@ -1740,13 +1771,14 @@ function renderTeam() {
   };
   const absenceStateLabels = { ausente_pendente: "Justificação pendente", justificada: "Justificada", confirmada: "Confirmada" };
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const vacationMap = renderVacationMap(isForemanReadOnly ? boardPeople : collaborators, teamData.vacations);
   const absenceForm = canManageTeam() ? `<form class="absence-entry-form" id="absence-entry-form">
     <div><label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
     <label>TIPO<select name="tipo" required><option value="ferias">Férias</option><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
     <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
     <label>ANEXO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label></div>
     <button class="primary-button" type="submit">REGISTAR AUSÊNCIA <span>→</span></button><p class="form-error"></p>
-  </form><details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · AUSÊNCIAS DOS COLABORADORES DISTRIBUÍDOS PELAS SUAS OBRAS</div>`;
+  </form><details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO</div>`;
   const absenceRows = absences.length ? absences.map(item => {
     const person = personById.get(item.colaborador_id);
     const attachments = teamData.absenceAttachments.filter(file => file.ausencia_id === item.id);
@@ -1757,7 +1789,7 @@ function renderTeam() {
       ${canManageTeam() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
     </article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
-  $("#team-absences").innerHTML = `${absenceForm}${absenceRows}`;
+  $("#team-absences").innerHTML = `${vacationMap}${absenceForm}${absenceRows}`;
 
   const contractByPerson = new Map(activeContracts.map(item => [item.colaborador_id, item]));
   const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
@@ -2133,11 +2165,12 @@ async function saveVacationDays(event) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], vacations: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
+  const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
     supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
@@ -2150,12 +2183,25 @@ async function loadTeamData(force = false) {
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
+    effectiveRole() === "encarregado"
+      ? supabase("rpc/fn_quadro_ferias_encarregado_global", { method: "POST", body: JSON.stringify({ p_data_inicio: boardStart < vacationBounds.start ? boardStart : vacationBounds.start, p_data_fim: boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end }) })
+      : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
   ]);
-  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"];
+  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
-  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.map(payload => Array.isArray(payload) ? payload : []);
-  const essentialFailures = failures.filter(item => ["alocações", "ausências"].includes(item.failed));
+  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.slice(0, 11).map(payload => Array.isArray(payload) ? payload : []);
+  const globalPayload = payloads[11];
+  if (effectiveRole() === "encarregado" && globalPayload && !globalPayload.failed) {
+    teamData.allocations = globalPayload.alocacoes || [];
+    teamData.vacations = globalPayload.ferias || [];
+    teamData.absences = [...teamData.absences.filter(item => !isVacation(item)), ...teamData.vacations];
+    teamData.boardWorks = globalPayload.obras || [];
+    teamData.boardCollaborators = globalPayload.colaboradores || [];
+    teamData.responsibles = globalPayload.responsaveis || [];
+    teamData.users = globalPayload.utilizadores || [];
+  } else if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
+  const essentialFailures = failures.filter(item => ["alocações", "ausências", "mapa global de férias"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
   const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
@@ -3365,6 +3411,12 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const vacationMonthButton = event.target.closest("[data-vacation-month]");
+  if (vacationMonthButton) {
+    shiftVacationMonth(Number(vacationMonthButton.dataset.vacationMonth));
+    await loadTeamData(true);
+    return;
+  }
   const editCollaboratorButton = event.target.closest("[data-edit-collaborator]");
   if (editCollaboratorButton) {
     const person = collaborators.find(item => item.id === editCollaboratorButton.dataset.editCollaborator);
