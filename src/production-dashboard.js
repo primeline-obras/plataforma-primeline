@@ -16,6 +16,14 @@ const calendarDays = (start, end) => Math.max(0, Math.ceil(((safeDate(end)?.getT
 const plannedStart = plan => plan?.data_inicio_prevista || plan?.data_inicio_planeada || plan?.inicio_previsto || plan?.inicio_planeado || plan?.data_inicio || plan?.inicio || null;
 const plannedEnd = plan => plan?.data_fim_prevista || plan?.data_fim_planeada || plan?.fim_previsto || plan?.fim_planeado || plan?.data_fim || plan?.fim || null;
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+export const teeClientState = value => String(value ?? "")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .trim()
+  .toLowerCase()
+  .replace(/[\s-]+/g, "_");
+export const isApprovedTee = row => teeClientState(row?.estado_aprovacao_cliente) === "aprovado";
+export const isPendingTee = row => !["aprovado", "recusado", "rejeitado"].includes(teeClientState(row?.estado_aprovacao_cliente));
 const measurementBilledValue = row => number(row?.valor_a_faturar);
 export const totalClientBilling = (contract, measurements) =>
   number(contract?.valor_adiantamento) + measurements.reduce((total, row) => total + measurementBilledValue(row), 0);
@@ -297,8 +305,8 @@ export function createProductionDashboard(options) {
       };
     }
     const contract = selectCurrentContract(overviewState.contracts.filter(row => row.obra_id === workId));
-    const approvedTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "aprovado");
-    const pendingTees = overviewState.tees.filter(row => row.obra_id === workId && row.estado_aprovacao_cliente === "pendente");
+    const approvedTees = overviewState.tees.filter(row => row.obra_id === workId && isApprovedTee(row));
+    const pendingTees = overviewState.tees.filter(row => row.obra_id === workId && isPendingTee(row));
     const sale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial);
     const approvedTeeSale = sum(approvedTees, "valor");
     const approvedTeeCost = sum(approvedTees, "preco_custo");
@@ -861,8 +869,8 @@ export function createProductionDashboard(options) {
     const contract = selectCurrentContract(data.contracts);
     const investment = selectCurrentInvestment(data.investments || []);
     const impacts = data.impacts || [];
-    const approvedTees = investmentMode ? [] : data.tees.filter(row => row.estado_aprovacao_cliente === "aprovado");
-    const pendingTees = investmentMode ? [] : data.tees.filter(row => row.estado_aprovacao_cliente === "pendente");
+    const approvedTees = investmentMode ? [] : data.tees.filter(isApprovedTee);
+    const pendingTees = investmentMode ? [] : data.tees.filter(isPendingTee);
     const approvedTeeSale = sum(approvedTees, "valor");
     const approvedTeeCost = sum(approvedTees, "preco_custo");
     const pendingTeeSale = sum(pendingTees, "valor");

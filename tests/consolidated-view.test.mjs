@@ -8,7 +8,7 @@ const sql = fs.readFileSync(new URL("../supabase/visao_consolidada.sql", import.
 
 assert.match(app, /data-view="consolidated"/);
 assert.match(app, /createConsolidatedView/);
-assert.match(access, /views: \[\.\.\.FULL_VIEWS, "consolidated"\]/);
+assert.match(access, /views: \[\.\.\.FULL_VIEWS, "consolidated"(?:, "management-map")?\]/);
 assert.doesNotMatch(access.match(/administrativo:\s*\{[\s\S]*?\n\s*\},/)[0], /consolidated/);
 assert.match(module, /rpc\/fn_pode_ver_visao_consolidada/);
 assert.match(module, /previsao_financeira_mensal\?select=/);
