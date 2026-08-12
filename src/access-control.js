@@ -22,7 +22,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "rsp", "meeting", "works", "planning", "finance", "rooms", "settings"],
+    views: ["overview", "rsp", "meeting", "works", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
