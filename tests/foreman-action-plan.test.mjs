@@ -59,3 +59,12 @@ test("prioridades e semana ficam lado a lado e o calendário usa descrição leg
   assert.match(actionPlan, /calendarTaskLabel\(item\)/i);
   assert.match(styles, /\.action-priority-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2/i);
 });
+
+test("tarefas concluídas podem ser desmarcadas diretamente no calendário", () => {
+  assert.match(actionPlan, /action-calendar-task completed[\s\S]*data-action-complete/i);
+  assert.match(actionPlan, /✓ DESMARCAR/i);
+  assert.match(actionPlan, /const wasCompleted = item\.estado === "concluido"/i);
+  assert.match(actionPlan, /p_concluida:\s*!wasCompleted/i);
+  assert.match(migration, /when coalesce\(p_concluida, false\) then 'concluido'[\s\S]*data_inicio_prevista[\s\S]*then 'em_execucao'[\s\S]*else 'por_iniciar'/i);
+  assert.match(styles, /\.action-calendar-task\s*\{/i);
+});
