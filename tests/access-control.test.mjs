@@ -31,8 +31,8 @@ const matrix = {
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "rooms", "team", "workforce", "settings"],
-    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles"],
+    views: ["action-plan", "planning", "documents", "rnc", "team", "workforce", "settings"],
+    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "rooms"],
     actions: [],
     deniedActions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
@@ -52,6 +52,6 @@ assert.equal(platformAdmin.createWorks, true);
 assert(platformAdmin.views.includes("team"));
 
 const noProfile = accessFor({ role: "", isAdmin: false });
-assert.deepEqual(noProfile.views, ["rooms", "settings"]);
+assert.deepEqual(noProfile.views, ["settings"]);
 
 console.log("Matriz de acesso do frontend validada para 6 papéis e administrador da plataforma.");

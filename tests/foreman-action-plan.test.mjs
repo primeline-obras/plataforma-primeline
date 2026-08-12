@@ -47,7 +47,8 @@ test("Plano de Ação oferece calendário, atrasadas, conclusão e impedimentos"
 
 test("encarregado vê as áreas autorizadas e a consulta de ausências", () => {
   const foremanAccess = access.match(/encarregado:\s*\{[\s\S]*?\n\s*\},/i)?.[0] || "";
-  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"rooms",\s*"team",\s*"workforce",\s*"settings"\]/i);
+  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"team",\s*"workforce",\s*"settings"\]/i);
+  assert.doesNotMatch(foremanAccess, /"rooms"/i);
   assert.doesNotMatch(foremanAccess, /"overview"|"meeting"|"works"/i);
   assert.match(app, /function defaultViewForCurrentUser\(\)/i);
   assert.match(app, /permitted\.includes\("action-plan"\)/i);
@@ -58,4 +59,13 @@ test("prioridades e semana ficam lado a lado e o calendário usa descrição leg
   assert.match(actionPlan, /\$\{calendar\(\)\}/i);
   assert.match(actionPlan, /calendarTaskLabel\(item\)/i);
   assert.match(styles, /\.action-priority-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2/i);
+});
+
+test("tarefas concluídas podem ser desmarcadas diretamente no calendário", () => {
+  assert.match(actionPlan, /action-calendar-task completed[\s\S]*data-action-complete/i);
+  assert.match(actionPlan, /✓ DESMARCAR/i);
+  assert.match(actionPlan, /const wasCompleted = item\.estado === "concluido"/i);
+  assert.match(actionPlan, /p_concluida:\s*!wasCompleted/i);
+  assert.match(migration, /when coalesce\(p_concluida, false\) then 'concluido'[\s\S]*data_inicio_prevista[\s\S]*then 'em_execucao'[\s\S]*else 'por_iniciar'/i);
+  assert.match(styles, /\.action-calendar-task\s*\{/i);
 });

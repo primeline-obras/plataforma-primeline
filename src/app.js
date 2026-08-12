@@ -1,21 +1,22 @@
 import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=5";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=15";
+import { createProductionDashboard } from "./production-dashboard.js?v=17";
 import { createPlanningModule } from "./planning.js?v=7";
 import { createSubcontractorsModule } from "./subcontractors.js?v=3";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=12";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=13";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=4";
 import { createProcurementModule } from "./procurement.js?v=1";
-import { createActionPlanModule } from "./action-plan.js?v=2";
+import { createActionPlanModule } from "./action-plan.js?v=3";
 import { createDocumentsModule } from "./documents.js?v=1";
 import { createRncModule } from "./rnc.js?v=2";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=1";
-import { createMeetingRoomsModule } from "./meeting-rooms.js?v=1";
+import { createMeetingRoomsModule } from "./meeting-rooms.js?v=2";
 import { createPropertiesModule } from "./properties.js?v=1";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
+import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=1";
 
@@ -77,7 +78,8 @@ let workDetails = {
 const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
-let teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
+let selectedVacationMonth = new Date().toISOString().slice(0, 7);
+let teamData = { allocations: [], absences: [], vacations: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let teamQuickFilter = "";
 let selectedTeamEntity = null;
@@ -129,7 +131,7 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="works">▥ <span>Obras</span></button>
         <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">▣ <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
@@ -141,6 +143,7 @@ document.querySelector("#root").innerHTML = `
       </header>
       <div class="page overview-view" id="overview-view"></div>
       <div class="page rsp-view" id="rsp-view" hidden></div>
+      <div class="page management-map-view" id="management-map-view" hidden><div id="management-map-content"></div></div>
       <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
@@ -167,6 +170,7 @@ document.querySelector("#root").innerHTML = `
               </section>
               <label>CONDIÇÃO DE PAGAMENTO<div class="select-wrap"><select name="condicao_pagamento" required><option value="">Selecionar condição</option><option value="imediato">Imediato</option><option value="15_dias">15 dias</option><option value="30_dias">30 dias</option><option value="outra_data">Outra data</option></select><b>⌄</b></div><em id="payment-condition-suggestion"></em></label>
               <label id="custom-payment-date-field" hidden>DATA DE VENCIMENTO<input name="data_vencimento" type="date"><em>Definida manualmente para esta fatura.</em></label>
+              <label>OBSERVAÇÃO<textarea name="observacao" rows="3" maxlength="1000" placeholder="Informação relevante para quem vai verificar e aprovar a fatura"></textarea></label>
               <input id="pdf-input" type="file" accept="application/pdf,.pdf" hidden>
               <div class="pdf-attachment" id="pdf-attachment" hidden>
                 <div class="pdf-attachment-head">
@@ -293,13 +297,13 @@ document.querySelector("#root").innerHTML = `
         <section class="team-alert-summary" id="team-alert-summary"></section>
         <nav class="team-tabs">
           <button class="active" data-team-tab="collaborators">COLABORADORES</button>
-          <button data-team-tab="absences">AUSÊNCIAS</button>
+          <button data-team-tab="absences">MAPA DE FÉRIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
           <button data-team-tab="medicine">MEDICINA DO TRABALHO</button>
         </nav>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
-          <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>AUSÊNCIAS DA SEMANA</h2></div></div>
+          <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>MAPA DE FÉRIAS E AUSÊNCIAS</h2></div></div>
           <div id="team-absences"></div>
         </section>
         <section class="panel team-directory-panel team-tab-panel" data-team-panel="collaborators">
@@ -504,6 +508,7 @@ async function startInvoiceEditing(invoiceId) {
   form.valor.value = invoice.valor ?? "";
   form.condicao_pagamento.value = invoice.condicao_pagamento || "";
   form.data_vencimento.value = invoice.condicao_pagamento === "outra_data" ? invoice.data_vencimento || "" : "";
+  form.observacao.value = invoice.observacao || "";
   toggleCustomPaymentDate();
   resetMaterialItems();
   if (invoice.tipo_origem === "material" && isSupabaseConfigured) {
@@ -591,7 +596,7 @@ function updateMaterialItemTotal(row, changedField = "") {
     percentInput.value = percent ? percent.toFixed(2) : "";
   }
   discount = Math.min(gross, Math.max(0, discount));
-  row.querySelector("[data-item-total]").textContent = euro.format(Math.max(0, gross - discount));
+  row.querySelector("[data-item-total]").textContent = euro.format(Math.round(Math.max(0, gross - discount) * 100) / 100);
 }
 
 function collectMaterialItems() {
@@ -610,7 +615,7 @@ function collectMaterialItems() {
       preco_unitario: unitPrice,
       desconto_percentual: discountPercent,
       valor_desconto: discountValue,
-      preco_total: Math.max(0, gross - effectiveDiscount),
+      preco_total: Math.round(Math.max(0, gross - effectiveDiscount) * 100) / 100,
     };
   }).filter(item => item.designacao || item.unidade || item.quantidade || item.preco_unitario);
 }
@@ -701,6 +706,10 @@ const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
   onImportExcel: context => operationalXlsxImportModule?.openFinancial(context),
+});
+const managementMapModule = createManagementMapModule({
+  root: $("#management-map-content"), supabase, isConfigured: isSupabaseConfigured,
+  getWorks: () => works, euro, toast,
 });
 const consolidatedView = createConsolidatedView({
   root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
@@ -926,6 +935,11 @@ function renderInvoices() {
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
+        <div class="invoice-primary-actions">
+          <button type="button" class="invoice-detail-action" data-invoice-detail="${invoice.id}">${icon("invoice")} VER DETALHE</button>
+          ${actionable ? `<button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" title="${hasGuide ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa"}">${icon("check")} APROVAR</button>` : ""}
+        </div>
+        ${!actionable ? `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>` : ""}
         <div class="approval-fields ${actionable ? "" : "readonly"}">
           <label class="guide-picker ${hasGuide ? "ready" : ""}">
             ${icon("upload")}<span>${hasGuide ? `${guides.length} GUIA(S) ANEXADA(S)` : "ANEXAR GUIAS"}</span>
@@ -934,14 +948,64 @@ function renderInvoices() {
           <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
         </div>
         ${!hasGuide ? `<div class="invoice-guide-warning" data-guide-warning="${invoice.id}"><strong>SEM GUIA DE REMESSA</strong><span>Esta fatura não tem guia de remessa anexada. A aprovação é permitida temporariamente.</span></div>` : ""}
+        ${actionable ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="3" maxlength="1000" data-approval-observation="${invoice.id}" placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
+        ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p><small>É necessária uma nova verificação e aprovação antes do pagamento.</small></div>` : ""}
         <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substituem a guia de remessa</small></div>
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
           <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
         </div>
         ${editable ? `<button type="button" class="invoice-edit-action" data-edit-invoice="${invoice.id}">EDITAR FATURA PENDENTE</button>` : ""}
-        ${actionable ? `<div class="card-actions"><button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" title="${hasGuide ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa"}">${icon("check")} APROVAR</button></div>` : `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>`}
       </div></article>`;
   }).join("");
+}
+
+function invoiceMoneyCents(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? Math.round(number * 100) : 0;
+}
+
+async function loadInvoiceItems(invoiceId) {
+  if (!isSupabaseConfigured) return [];
+  const response = await supabase(`faturas_itens?select=id,designacao,unidade,quantidade,valor_unitario,valor_total,desconto_percentual,valor_desconto&fatura_id=eq.${encodeURIComponent(invoiceId)}&order=id`);
+  if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar os itens da fatura."));
+  return response.json();
+}
+
+async function openInvoiceDetail(invoiceId) {
+  const invoice = invoices.find(item => String(item.id) === String(invoiceId));
+  if (!invoice) return toast("A fatura já não está disponível na lista de pendentes.", "error");
+  const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor não identificado";
+  const work = works.find(item => item.id === invoice.obra_id);
+  $("#workflow-dialog-title").textContent = `FATURA · ${invoice.numero_doc || "SEM NÚMERO"}`;
+  $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-loading">A CARREGAR DETALHE…</div>`;
+  $("#workflow-dialog").hidden = false;
+  try {
+    const items = await loadInvoiceItems(invoice.id);
+    const documentCents = invoiceMoneyCents(invoice.valor);
+    const itemsCents = items.reduce((sum, item) => sum + invoiceMoneyCents(item.valor_total), 0);
+    const differenceCents = items.length ? documentCents - itemsCents : 0;
+    const reconciled = !items.length || differenceCents === 0;
+    const typeLabels = { subempreitada: "Subempreitada", material: "Material", estaleiro: "Estaleiro" };
+    $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail" data-open-invoice="${invoice.id}" data-difference-cents="${differenceCents}">
+      <section class="invoice-detail-summary">
+        <div><span>FORNECEDOR</span><strong>${safeText(supplier)}</strong></div>
+        <div><span>OBRA</span><strong>${safeText(work ? `${work.numero} · ${work.nome}` : "Não identificada")}</strong></div>
+        <div><span>TIPO</span><strong>${safeText(typeLabels[invoice.tipo_origem] || invoice.tipo_origem || "—")}</strong></div>
+        <div><span>DATA</span><strong>${invoice.data_fatura ? prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`)) : "—"}</strong></div>
+        <div><span>VALOR DO DOCUMENTO</span><strong>${euro.format(documentCents / 100)}</strong></div>
+      </section>
+      ${invoice.arquivo_url ? `<button type="button" class="outline-action invoice-detail-pdf" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} ABRIR PDF ORIGINAL</button>` : `<div class="invoice-detail-no-pdf">PDF ORIGINAL NÃO DISPONÍVEL</div>`}
+      ${canApproveInvoices() ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="4" maxlength="1000" data-detail-approval-observation placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
+      <section class="invoice-detail-items">
+        <header><div><span>ITENS EXTRAÍDOS</span><strong>${items.length} LINHA${items.length === 1 ? "" : "S"}</strong></div><small>Confirme estes valores com o PDF antes de decidir.</small></header>
+        ${items.length ? `<div class="invoice-detail-table"><table><thead><tr><th>DESIGNAÇÃO</th><th>UN.</th><th>QTD.</th><th>PREÇO UNIT.</th><th>DESCONTO</th><th>TOTAL</th></tr></thead><tbody>${items.map(item => `<tr><td>${safeText(item.designacao || "—")}</td><td>${safeText(item.unidade || "—")}</td><td>${safeText(item.quantidade ?? "—")}</td><td>${euro.format(Number(item.valor_unitario || 0))}</td><td>${euro.format(Number(item.valor_desconto || 0))}</td><td>${euro.format(Number(item.valor_total || 0))}</td></tr>`).join("")}</tbody></table></div>` : `<div class="invoice-detail-empty">Esta fatura não tem itens extraídos registados.</div>`}
+        ${items.length ? `<div class="invoice-reconciliation ${reconciled ? "ok" : "warning"}"><span>SOMA DOS ITENS</span><strong>${euro.format(itemsCents / 100)}</strong><span>DIFERENÇA</span><strong>${euro.format(differenceCents / 100)}</strong><p>${reconciled ? "Os itens coincidem com o valor do documento." : "Os valores não coincidem. Confirme o PDF e peça a correção da fatura antes de aprovar."}</p></div>` : ""}
+      </section>
+      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button><button class="primary-button" type="button" data-detail-decision="aprovado" ${reconciled ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>APROVAR →</button>` : ""}</div>
+    </div>`;
+  } catch (error) {
+    $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-error"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><p>${safeText(error.message)}</p><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div>`;
+  }
 }
 
 function invoiceSortDate(invoice) { return new Date(`${invoice.data_fatura || "1970-01-01"}T12:00:00`).getTime(); }
@@ -952,16 +1016,39 @@ function financeCard(invoice) {
   const guides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
   const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
   const today = new Date().toISOString().slice(0, 10);
+  const trace = invoiceTrace.find(item => String(item.id) === String(invoice.id)) || {};
+  const approverName = invoice.aprovado_por_nome || trace.aprovado_por_nome || "Utilizador não identificado";
+  const approvalDate = invoice.data_aprovacao || trace.data_aprovacao;
   return `<article class="finance-card">
     <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
     <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
     ${invoice.aprovada_sem_guia ? `<div class="invoice-guide-status missing">APROVADA SEM GUIA DE REMESSA</div>` : ""}
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
+    <div class="finance-approval"><span>APROVADA POR</span><strong>${escapeHtml(approverName)}</strong><small>${traceMoment(approvalDate)}</small></div>
+    ${invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
     ${invoice.condicao_pagamento === "outra_data" && invoice.data_vencimento ? `<div class="finance-date"><span>VENCIMENTO DEFINIDO</span><strong>${prettyDate.format(new Date(`${invoice.data_vencimento}T12:00:00`))}</strong></div>` : ""}
     <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
     <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
+    ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p></div>` : ""}
     ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
-    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
+    <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>
+    <button class="finance-return-action" data-return-invoice="${invoice.id}">DEVOLVER COM OBSERVAÇÃO</button>
+    <label class="finance-attachment-action">${icon("upload")} ADICIONAR ANEXO<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-finance-attachment-input="${invoice.id}"></label>` : `<div class="readonly-note">CONSULTA · PAGAMENTO RESERVADO AO FINANCEIRO</div>`}
+  </article>`;
+}
+
+function paidFinanceRow(invoice) {
+  const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
+  const work = works.find(item => item.id === invoice.obra_id);
+  const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
+  return `<article class="paid-invoice-row">
+    <div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div>
+    <strong>${euro.format(Number(invoice.valor))}</strong>
+    <time>PAGA EM ${prettyDate.format(new Date(`${String(invoice.data_pagamento).slice(0, 10)}T12:00:00`))}</time>
+    <div class="paid-invoice-actions">
+      ${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("")}
+      ${canPayInvoices() ? `<label>${icon("upload")} ANEXAR COMPROVATIVO<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-finance-attachment-input="${invoice.id}"></label><button type="button" data-unmark-paid="${invoice.id}">DESMARCAR COMO PAGA</button>` : ""}
+    </div>
   </article>`;
 }
 
@@ -978,6 +1065,13 @@ function traceMoment(value) {
 
 function invoiceTraceStage(label, date, actor, state = "waiting") {
   return `<div class="invoice-trace-stage ${state}"><i></i><span>${label}</span><strong>${traceMoment(date)}</strong><small>${actor ? `POR ${escapeHtml(actor)}` : ["done", "rejected"].includes(state) ? "UTILIZADOR NÃO REGISTADO" : "—"}</small></div>`;
+}
+
+function invoiceTraceEvents(invoice) {
+  const events = Array.isArray(invoice.eventos) ? invoice.eventos : [];
+  if (!events.length) return "";
+  const labels = { paga: "MARCADA COMO PAGA", pagamento_revertido: "PAGAMENTO REVERTIDO", devolvida: "DEVOLVIDA PELO FINANCEIRO", anexo_adicionado: "ANEXO ADICIONADO" };
+  return `<div class="invoice-trace-events">${events.map(event => `<div><time>${traceMoment(event.criado_em)}</time><strong>${escapeHtml(labels[event.tipo] || event.tipo || "AÇÃO")}</strong><span>${event.utilizador_nome ? `POR ${escapeHtml(event.utilizador_nome)}` : "—"}</span>${event.observacao ? `<p>${escapeHtml(event.observacao)}</p>` : ""}</div>`).join("")}</div>`;
 }
 
 function renderInvoiceTrace() {
@@ -1011,6 +1105,7 @@ function renderInvoiceTrace() {
         ${invoiceTraceStage(decisionLabel, invoice.data_aprovacao, invoice.aprovado_por_nome, decisionDone ? state === "recusado" ? "rejected" : "done" : "waiting")}
         ${invoiceTraceStage(paid ? "PAGA" : "A AGUARDAR PAGAMENTO", invoice.data_pagamento, invoice.pago_por_nome, paid ? "done" : state === "aprovado" ? "waiting" : "disabled")}
       </div>
+      ${invoiceTraceEvents(invoice)}
     </article>`;
   }).join("") : `<div class="finance-empty">SEM FATURAS NESTE FILTRO</div>`;
 }
@@ -1094,11 +1189,7 @@ function renderFinance() {
     </div>`;
   }).join("");
   $("#paid-count").textContent = `${paid.length} ${paid.length === 1 ? "FATURA" : "FATURAS"}`;
-  $("#paid-list").innerHTML = paid.length ? paid.map(invoice => {
-    const supplier = suppliers.find(item => item.id === invoice.fornecedor_id)?.nome || "Fornecedor";
-    const work = works.find(item => item.id === invoice.obra_id);
-    return `<article><div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div><strong>${euro.format(Number(invoice.valor))}</strong><time>PAGA EM ${prettyDate.format(new Date(invoice.data_pagamento))}</time></article>`;
-  }).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
+  $("#paid-list").innerHTML = paid.length ? paid.map(paidFinanceRow).join("") : `<div class="finance-empty">AINDA NÃO EXISTEM FATURAS PAGAS</div>`;
   renderInvoiceTrace();
   renderDirectDebits();
   renderFinanceTabs();
@@ -1360,13 +1451,14 @@ function workforceRowKey(allocation) {
 }
 
 function workforceRows(activeWorks, allocations) {
+  const availableWorkById = new Map(activeWorks.map(work => [work.id, work]));
   const realWorkIds = new Set(activeWorks.map(work => work.id));
   allocations.filter(item => workforceAllocationType(item) === "obra" && item.obra_id)
     .forEach(item => realWorkIds.add(item.obra_id));
   pendingWorkforceRows.filter(row => row.type === "obra" && row.workId)
     .forEach(row => realWorkIds.add(row.workId));
 
-  const realRows = [...realWorkIds].map(workId => works.find(work => work.id === workId)).filter(Boolean)
+  const realRows = [...realWorkIds].map(workId => availableWorkById.get(workId) || works.find(work => work.id === workId)).filter(Boolean)
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }))
     .map(work => ({ key: `obra:${work.id}`, type: "obra", workId: work.id, description: "", work }));
 
@@ -1461,6 +1553,39 @@ function workforceStateSignature(items) {
 
 function isVacation(absence) {
   return String(absence?.tipo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT").includes("ferias");
+}
+
+function vacationMonthBounds(month = selectedVacationMonth) {
+  const [year, monthNumber] = String(month).split("-").map(Number);
+  const start = `${year}-${String(monthNumber).padStart(2, "0")}-01`;
+  const end = new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
+  return { start, end, days: Number(end.slice(8)) };
+}
+
+function shiftVacationMonth(amount) {
+  const [year, monthNumber] = selectedVacationMonth.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, monthNumber - 1 + amount, 1));
+  selectedVacationMonth = shifted.toISOString().slice(0, 7);
+}
+
+function renderVacationMap(people, vacations) {
+  const { start, end, days } = vacationMonthBounds();
+  const monthDate = new Date(`${start}T12:00:00Z`);
+  const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric", timeZone: "UTC" }).format(monthDate).toUpperCase();
+  const vacationKeys = new Set(vacations.filter(item => isVacation(item) && item.data >= start && item.data <= end)
+    .map(item => `${item.colaborador_id}|${item.data}`));
+  const ordered = [...people].sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || ""), "pt-PT"));
+  const dayHeaders = Array.from({ length: days }, (_, index) => {
+    const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
+    const weekday = new Intl.DateTimeFormat("pt-PT", { weekday: "narrow", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+    return `<b class="${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""}"><span>${index + 1}</span><small>${weekday}</small></b>`;
+  }).join("");
+  const rows = ordered.map(person => `<div class="vacation-map-row"><strong title="${safeText(person.nome)}">${safeText(person.nome)}</strong>${Array.from({ length: days }, (_, index) => {
+    const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
+    const onVacation = vacationKeys.has(`${person.id}|${date}`);
+    return `<i class="${onVacation ? "vacation" : ""} ${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""}" title="${safeText(person.nome)} · ${formatOptionalDate(date)}${onVacation ? " · Férias" : ""}">${onVacation ? "F" : ""}</i>`;
+  }).join("")}</div>`).join("");
+  return `<section class="vacation-map"><header><div><p class="eyebrow">MAPA MENSAL · TODAS AS OBRAS</p><h3>${monthLabel}</h3></div><div><button type="button" data-vacation-month="-1" aria-label="Mês anterior">←</button><button type="button" data-vacation-month="1" aria-label="Mês seguinte">→</button></div></header><div class="vacation-map-scroll"><div class="vacation-map-grid" style="--vacation-days:${days}"><div class="vacation-map-head"><strong>COLABORADOR</strong>${dayHeaders}</div>${rows || `<div class="empty-state"><strong>SEM COLABORADORES ATIVOS</strong></div>`}</div></div><footer><i></i><span>Férias confirmadas</span></footer></section>`;
 }
 
 function entityDocuments(entityType, entityId) {
@@ -1633,32 +1758,29 @@ function renderTeam() {
   if ($("#team-lifecycle-actions")) $("#team-lifecycle-actions").hidden = !canManageTeam();
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
-  const workById = new Map(works.map(work => [work.id, work]));
-  const personById = new Map(collaborators.map(person => [person.id, person]));
+  const isForemanReadOnly = effectiveRole() === "encarregado";
+  const boardPeople = isForemanReadOnly && teamData.boardCollaborators.length ? teamData.boardCollaborators : collaborators;
+  const boardWorkList = isForemanReadOnly && teamData.boardWorks.length ? teamData.boardWorks : works;
+  const workById = new Map([...works, ...boardWorkList].map(work => [work.id, work]));
+  const personById = new Map([...collaborators, ...boardPeople].map(person => [person.id, person]));
   const activeAbsences = teamData.absences.filter(item => personById.has(item.colaborador_id));
   const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
   const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
   const activeMedicine = teamData.medicine.filter(item => personById.has(item.colaborador_id));
-  const isForemanReadOnly = effectiveRole() === "encarregado";
-  const foremanWorkIds = new Set(teamData.responsibles
-    .filter(item => item.utilizador_id === accessContext.profile?.id && item.papel === "encarregado")
-    .map(item => item.obra_id));
-  const operationalPeople = collaborators.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
+  const operationalPeople = boardPeople.filter(person => workforceRoleClass(person)).sort(compareWorkforcePeople);
   const boardWeeks = [-7, 0, 7, 14].map(offset => addDaysIso(selectedTeamWeek, offset));
   const allocations = teamData.allocations.filter(item =>
     personById.has(item.colaborador_id)
-    && workforceRoleClass(personById.get(item.colaborador_id))
-    && (!isForemanReadOnly || (workforceAllocationType(item) === "obra" && foremanWorkIds.has(item.obra_id))));
+    && workforceRoleClass(personById.get(item.colaborador_id)));
   const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
   const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
-  const activeWorks = works
+  const activeWorks = boardWorkList
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
-    .filter(work => !isForemanReadOnly || foremanWorkIds.has(work.id))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const boardRows = workforceRows(activeWorks, allocations);
-  const unallocated = collaborators.filter(person => !currentAllocatedIds.has(person.id));
+  const unallocated = boardPeople.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = activeOvertime.reduce((total, item) => total + Number(item.horas || 0), 0);
   const todayIso = new Date().toISOString().slice(0, 10);
   const currentMonth = Number(todayIso.slice(5, 7));
@@ -1673,7 +1795,7 @@ function renderTeam() {
   $("#team-week").value = selectedTeamWeek;
   $("#team-week-label").textContent = `SEMANA ATUAL · ${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))}`;
   $("#team-kpis").innerHTML = [
-    ["COLABORADORES ATIVOS", collaborators.length],
+    ["COLABORADORES ATIVOS", boardPeople.length],
     ["ALOCADOS", currentAllocatedIds.size],
     ["SEM ALOCAÇÃO", unallocated.length],
     ["AUSENTES NA SEMANA", absentIds.size],
@@ -1742,13 +1864,14 @@ function renderTeam() {
   };
   const absenceStateLabels = { ausente_pendente: "Justificação pendente", justificada: "Justificada", confirmada: "Confirmada" };
   const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const vacationMap = renderVacationMap(isForemanReadOnly ? boardPeople : collaborators, teamData.vacations);
   const absenceForm = canManageTeam() ? `<form class="absence-entry-form" id="absence-entry-form">
     <div><label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
     <label>TIPO<select name="tipo" required><option value="ferias">Férias</option><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
     <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
     <label>ANEXO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label></div>
     <button class="primary-button" type="submit">REGISTAR AUSÊNCIA <span>→</span></button><p class="form-error"></p>
-  </form><details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · AUSÊNCIAS DOS COLABORADORES DISTRIBUÍDOS PELAS SUAS OBRAS</div>`;
+  </form><details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO</div>`;
   const absenceRows = absences.length ? absences.map(item => {
     const person = personById.get(item.colaborador_id);
     const attachments = teamData.absenceAttachments.filter(file => file.ausencia_id === item.id);
@@ -1759,7 +1882,7 @@ function renderTeam() {
       ${canManageTeam() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
     </article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
-  $("#team-absences").innerHTML = `${absenceForm}${absenceRows}`;
+  $("#team-absences").innerHTML = `${vacationMap}${absenceForm}${absenceRows}`;
 
   const contractByPerson = new Map(activeContracts.map(item => [item.colaborador_id, item]));
   const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
@@ -2135,11 +2258,12 @@ async function saveVacationDays(event) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], vacations: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
+  const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
     supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
@@ -2152,12 +2276,25 @@ async function loadTeamData(force = false) {
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
+    effectiveRole() === "encarregado"
+      ? supabase("rpc/fn_quadro_ferias_encarregado_global", { method: "POST", body: JSON.stringify({ p_data_inicio: boardStart < vacationBounds.start ? boardStart : vacationBounds.start, p_data_fim: boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end }) })
+      : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
   ]);
-  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"];
+  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
-  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.map(payload => Array.isArray(payload) ? payload : []);
-  const essentialFailures = failures.filter(item => ["alocações", "ausências"].includes(item.failed));
+  [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.slice(0, 11).map(payload => Array.isArray(payload) ? payload : []);
+  const globalPayload = payloads[11];
+  if (effectiveRole() === "encarregado" && globalPayload && !globalPayload.failed) {
+    teamData.allocations = globalPayload.alocacoes || [];
+    teamData.vacations = globalPayload.ferias || [];
+    teamData.absences = [...teamData.absences.filter(item => !isVacation(item)), ...teamData.vacations];
+    teamData.boardWorks = globalPayload.obras || [];
+    teamData.boardCollaborators = globalPayload.colaboradores || [];
+    teamData.responsibles = globalPayload.responsaveis || [];
+    teamData.users = globalPayload.utilizadores || [];
+  } else if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
+  const essentialFailures = failures.filter(item => ["alocações", "ausências", "mapa global de férias"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
   const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
@@ -3166,6 +3303,7 @@ function switchView(view, context = {}) {
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
   $("#rsp-view").hidden = view !== "rsp";
+  $("#management-map-view").hidden = view !== "management-map";
   $("#consolidated-view").hidden = view !== "consolidated";
   $("#action-plan-view").hidden = view !== "action-plan";
   $("#meeting-view").hidden = view !== "meeting";
@@ -3184,8 +3322,8 @@ function switchView(view, context = {}) {
   $("#rooms-view").hidden = view !== "rooms";
   $("#properties-view").hidden = view !== "properties";
   $("#budget-requests-view").hidden = view !== "budget-requests";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -3209,6 +3347,7 @@ function switchView(view, context = {}) {
   if (view === "company-documents") companyDocumentsModule.show();
   if (view === "overview") productionDashboard.refreshOverview();
   if (view === "rsp") productionDashboard.showRsp();
+  if (view === "management-map") managementMapModule.show();
   if (view === "consolidated") consolidatedView.show();
   closeSidebar();
 }
@@ -3367,6 +3506,12 @@ document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventLi
   renderTeam();
 }));
 $("#team-view").addEventListener("click", async event => {
+  const vacationMonthButton = event.target.closest("[data-vacation-month]");
+  if (vacationMonthButton) {
+    shiftVacationMonth(Number(vacationMonthButton.dataset.vacationMonth));
+    await loadTeamData(true);
+    return;
+  }
   const editCollaboratorButton = event.target.closest("[data-edit-collaborator]");
   if (editCollaboratorButton) {
     const person = collaborators.find(item => item.id === editCollaboratorButton.dataset.editCollaborator);
@@ -4174,9 +4319,9 @@ function findFinalTotal(rows) {
   const labels = [/total\s+do\s+documento/i, /total\s+a\s+pagar/i, /total\s+geral/i, /valor\s+a\s+pagar/i];
   for (const label of labels) for (let index = rows.length - 1; index >= 0; index -= 1) {
     const row = rows[index], position = labelPosition(row, label); if (!position) continue;
-    const sameRow = moneyTokens(row).filter(token => token.x >= position.endX - 2); if (sameRow.length) return sameRow[0].value;
+    const sameRow = moneyTokens(row).filter(token => token.x >= position.endX - 2).sort((a, b) => b.x - a.x); if (sameRow.length) return Math.round(sameRow[0].value * 100) / 100;
     const below = rows.filter(candidate => candidate.pageNumber === row.pageNumber && candidate.y < row.y && row.y - candidate.y <= 45).sort((a, b) => b.y - a.y);
-    for (const candidate of below) { const aligned = moneyTokens(candidate).map(token => ({ ...token, distance: Math.abs(token.x - position.centerX) })).filter(token => token.distance <= 55).sort((a, b) => a.distance - b.distance); if (aligned.length) return aligned[0].value; }
+    for (const candidate of below) { const aligned = moneyTokens(candidate).map(token => ({ ...token, distance: Math.abs(token.x - position.centerX) })).filter(token => token.distance <= 55).sort((a, b) => a.distance - b.distance); if (aligned.length) return Math.round(aligned[0].value * 100) / 100; }
   }
   return null;
 }
@@ -4503,22 +4648,43 @@ $("#recovery-form").addEventListener("submit", async event => {
   }
 });
 
-async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber }, excludedInvoiceId = "") {
+async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber, valor }, excludedInvoiceId = "") {
   const normalizedNumber = String(documentNumber || "").trim();
-  const localDuplicate = invoices.find(invoice =>
+  const localCandidates = [...invoices, ...financeInvoices].filter((invoice, index, rows) =>
+    rows.findIndex(candidate => String(candidate.id) === String(invoice.id)) === index
+    && invoice.fornecedor_id === supplierId
+    && String(invoice.id) !== String(excludedInvoiceId));
+  const localDuplicate = localCandidates.find(invoice =>
     invoice.fornecedor_id === supplierId
     && String(invoice.numero_doc || "").trim() === normalizedNumber
     && String(invoice.id) !== String(excludedInvoiceId));
-  if (localDuplicate || !isSupabaseConfigured) return localDuplicate || null;
+  if (!isSupabaseConfigured) {
+    if (localDuplicate) return { ...localDuplicate, tipo_correspondencia: "exata" };
+    const tolerance = Math.max(1, Math.abs(Number(valor || 0)) * 0.005);
+    const similar = localCandidates.find(invoice => Math.abs(Number(invoice.valor || 0) - Number(valor || 0)) <= tolerance);
+    return similar ? { ...similar, tipo_correspondencia: "semelhante" } : null;
+  }
 
-  const response = await supabase(
-    `faturas?select=id,fornecedor_id,numero_doc&fornecedor_id=eq.${encodeURIComponent(supplierId)}&numero_doc=eq.${encodeURIComponent(normalizedNumber)}${excludedInvoiceId ? `&id=neq.${encodeURIComponent(excludedInvoiceId)}` : ""}&limit=1`,
-  );
+  const response = await supabase("rpc/fn_verificar_fatura_semelhante", {
+    method: "POST",
+    body: JSON.stringify({
+      p_fornecedor_id: supplierId,
+      p_valor: Number(valor),
+      p_numero_doc: normalizedNumber,
+      p_excluir_fatura_id: excludedInvoiceId || null,
+    }),
+  });
   if (!response.ok) {
     throw new Error("Não foi possível confirmar se esta fatura já existe. Tente novamente antes de gravar.");
   }
   const [duplicate] = await response.json();
   return duplicate || null;
+}
+
+function confirmSimilarInvoice(match, actionLabel = "continuar") {
+  return window.confirm(
+    `AVISO DE POSSÍVEL DUPLICAÇÃO ENTRE OBRAS\n\nJá existe a fatura ${match.numero_doc || "sem número"} na Obra ${match.obra_numero || "—"}, do mesmo fornecedor, com o valor ${euro.format(Number(match.valor || 0))}.\n\nConfirma que são documentos diferentes e pretende ${actionLabel}?`,
+  );
 }
 
 form.addEventListener("submit", async event => {
@@ -4563,15 +4729,21 @@ form.addEventListener("submit", async event => {
     submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
-  if (duplicateInvoice && !hasFullAccess()) {
+  const exactDuplicate = duplicateInvoice?.tipo_correspondencia === "exata";
+  if (exactDuplicate && !hasFullAccess()) {
     toast("Já existe uma fatura com este número para este fornecedor — possível duplicação.", "error");
     submit.disabled = false;
     submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
-  if (duplicateInvoice && !window.confirm(
+  if (exactDuplicate && !window.confirm(
     "Isto vai criar uma fatura duplicada — só continues se tiveres a certeza absoluta.\n\nPretendes mesmo continuar?",
   )) {
+    submit.disabled = false;
+    submit.firstChild.textContent = idleSubmitLabel;
+    return;
+  }
+  if (duplicateInvoice?.tipo_correspondencia === "semelhante" && !confirmSimilarInvoice(duplicateInvoice, "registar esta fatura")) {
     submit.disabled = false;
     submit.firstChild.textContent = idleSubmitLabel;
     return;
@@ -4599,6 +4771,7 @@ form.addEventListener("submit", async event => {
           p_valor: payload.valor,
           p_condicao_pagamento: payload.condicao_pagamento,
           p_data_vencimento: payload.data_vencimento,
+          p_observacao: payload.observacao || null,
           p_itens: materialItems.map(materialItemDatabasePayload),
         }),
       });
@@ -4672,6 +4845,11 @@ form.addEventListener("submit", async event => {
 });
 
 $("#invoice-list").addEventListener("click", async event => {
+  const detailButton = event.target.closest("[data-invoice-detail]");
+  if (detailButton) {
+    await openInvoiceDetail(detailButton.dataset.invoiceDetail);
+    return;
+  }
   const editButton = event.target.closest("[data-edit-invoice]");
   if (editButton) {
     editButton.disabled = true;
@@ -4698,7 +4876,16 @@ $("#invoice-list").addEventListener("click", async event => {
   if (!canApproveInvoices()) return toast("Não tem permissão para aprovar ou recusar faturas.", "error");
   const invoice = invoices.find(item => String(item.id) === button.dataset.id); if (!invoice) return;
   const decision = button.dataset.action;
+  if (decision === "aprovado") {
+    try {
+      const match = await findDuplicateInvoice(invoice, invoice.id);
+      if (match && !confirmSimilarInvoice(match, "aprovar esta fatura")) return;
+    } catch (error) {
+      return toast(error.message, "error");
+    }
+  }
   const card = button.closest("[data-invoice-card]");
+  const approvalObservation = card?.querySelector(`[data-approval-observation="${invoice.id}"]`)?.value.trim() || "";
   const guideInput = card?.querySelector("[data-guide-input]");
   const existingGuides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
   const selectedGuides = [...(guideInput?.files || [])];
@@ -4729,14 +4916,14 @@ $("#invoice-list").addEventListener("click", async event => {
   if (isSupabaseConfigured) {
     const result = await supabase("rpc/fn_decidir_fatura", {
       method: "POST",
-      body: JSON.stringify({ p_fatura_id: invoice.id, p_decisao: decision }),
+      body: JSON.stringify({ p_fatura_id: invoice.id, p_decisao: decision, p_observacao: approvalObservation }),
     });
     if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); button.disabled = false; return; }
   }
   if (decision === "aprovado") {
     if (isSupabaseConfigured) invoiceGuides.push(...createdGuides);
     else if (!existingGuides.length) invoiceGuides.push(...selectedGuides.map((file, index) => ({ id: `demo-guide-${Date.now()}-${index}`, fatura_id: invoice.id, arquivo_url: URL.createObjectURL(file), nome_arquivo: file.name, mime_type: file.type })));
-    financeInvoices.unshift({ ...invoice, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", aprovada_sem_guia: approvingWithoutGuide, data_aprovacao: new Date().toISOString() });
+    financeInvoices.unshift({ ...invoice, observacao: approvalObservation || null, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", aprovada_sem_guia: approvingWithoutGuide, data_aprovacao: new Date().toISOString(), aprovado_por_nome: accessContext.profile?.nome || null });
     renderFinance();
   }
   if (editingInvoiceId === String(invoice.id)) stopInvoiceEditing();
@@ -4745,6 +4932,28 @@ $("#invoice-list").addEventListener("click", async event => {
   toast(approvingWithoutGuide
     ? `Fatura aprovada sem guia de remessa${isSupabaseConfigured ? "" : " em modo de demonstração"}.`
     : `Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`, approvingWithoutGuide ? "warning" : "success");
+});
+$("#workflow-dialog").addEventListener("click", event => {
+  const pdfButton = event.target.closest("[data-open-invoice] [data-pdf]");
+  if (pdfButton) {
+    const cardPdfButton = document.querySelector(`[data-invoice-card="${event.target.closest("[data-open-invoice]").dataset.openInvoice}"] [data-pdf]`);
+    cardPdfButton?.click();
+    return;
+  }
+  const decisionButton = event.target.closest("[data-detail-decision]");
+  if (!decisionButton) return;
+  const detail = decisionButton.closest("[data-open-invoice]");
+  const differenceCents = Number(detail.dataset.differenceCents || 0);
+  if (decisionButton.dataset.detailDecision === "aprovado" && differenceCents !== 0 && !window.confirm(
+    `O valor do documento e a soma dos itens diferem ${euro.format(Math.abs(differenceCents) / 100)}. Confirma que verificou o PDF e pretende aprovar mesmo assim?`,
+  )) return;
+  const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-action="${decisionButton.dataset.detailDecision}"]`);
+  if (!cardButton) return toast("A fatura já não está pendente.", "error");
+  const cardObservation = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-approval-observation]`);
+  const detailObservation = detail.querySelector("[data-detail-approval-observation]");
+  if (cardObservation && detailObservation) cardObservation.value = detailObservation.value;
+  closeWorkflowDialog();
+  cardButton.click();
 });
 
 $("#invoice-list").addEventListener("change", event => {
@@ -4795,6 +5004,60 @@ $("#invoice-list").addEventListener("change", event => {
   approve.title = "Aprovar fatura";
 });
 
+async function addFinanceAttachments(input) {
+  if (!canPayInvoices()) throw new Error("Os anexos financeiros estão reservados ao papel Financeiro.");
+  const invoice = financeInvoices.find(item => String(item.id) === String(input.dataset.financeAttachmentInput));
+  if (!invoice) throw new Error("A fatura já não está disponível.");
+  const files = [...(input.files || [])];
+  if (!files.length) return;
+  input.disabled = true;
+  try {
+    for (const file of files) {
+      const path = isSupabaseConfigured ? await uploadInvoiceAttachment(file, invoice.obra_id, invoice.id) : URL.createObjectURL(file);
+      if (isSupabaseConfigured) {
+        const response = await supabase("faturas_anexos?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: path, nome_arquivo: file.name }) });
+        if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível registar o anexo."));
+        invoiceAttachments.push((await response.json())[0]);
+      } else invoiceAttachments.push({ id: crypto.randomUUID(), fatura_id: invoice.id, arquivo_url: path, nome_arquivo: file.name });
+    }
+    if (allowedViews().has("finance")) await loadInvoiceTrace();
+    renderFinance();
+    toast("Anexo financeiro adicionado ao histórico da fatura.");
+  } finally {
+    input.disabled = false;
+  }
+}
+
+async function returnInvoiceToReview(invoice) {
+  const observation = window.prompt("Indique obrigatoriamente o motivo da devolução:", "")?.trim();
+  if (!observation) return toast("A observação é obrigatória para devolver a fatura.", "error");
+  if (!window.confirm("Devolver esta fatura para nova verificação e aprovação?")) return;
+  if (isSupabaseConfigured) {
+    const response = await supabase("rpc/fn_devolver_fatura_financeiro", { method: "POST", body: JSON.stringify({ p_fatura_id: invoice.id, p_observacao: observation }) });
+    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível devolver a fatura."));
+  }
+  financeInvoices = financeInvoices.filter(item => String(item.id) !== String(invoice.id));
+  invoices.unshift({ ...invoice, estado_aprovacao: "pendente", estado_pagamento: "por_pagar", observacao_devolucao: observation });
+  await loadInvoiceTrace();
+  renderInvoices();
+  renderFinance();
+  toast("Fatura devolvida para nova verificação.", "warning");
+}
+
+async function unmarkInvoicePaid(invoice) {
+  if (!window.confirm("Desmarcar esta fatura como paga e devolvê-la à lista por pagar?")) return;
+  if (isSupabaseConfigured) {
+    const response = await supabase("rpc/fn_desmarcar_fatura_paga", { method: "POST", body: JSON.stringify({ p_fatura_id: invoice.id }) });
+    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível reverter o pagamento."));
+  }
+  invoice.estado_pagamento = "por_pagar";
+  invoice.data_pagamento = null;
+  invoice.pago_por = null;
+  await loadInvoiceTrace();
+  renderFinance();
+  toast("Pagamento revertido. A fatura voltou a ficar por pagar.", "warning");
+}
+
 $("#finance-board").addEventListener("click", async event => {
   const guideButton = event.target.closest("[data-guide], [data-invoice-attachment]");
   if (guideButton) {
@@ -4808,11 +5071,25 @@ $("#finance-board").addEventListener("click", async event => {
     } catch (error) { toast(error.message || "Não foi possível abrir a guia.", "error"); }
     return;
   }
+  const returnButton = event.target.closest("[data-return-invoice]");
+  if (returnButton) {
+    const invoice = financeInvoices.find(item => String(item.id) === returnButton.dataset.returnInvoice);
+    if (!invoice) return;
+    returnButton.disabled = true;
+    try { await returnInvoiceToReview(invoice); } catch (error) { toast(error.message, "error"); returnButton.disabled = false; }
+    return;
+  }
   const button = event.target.closest("[data-mark-paid]");
   if (!button) return;
   if (!canPayInvoices()) return toast("O pagamento está reservado ao papel Financeiro.", "error");
   const invoice = financeInvoices.find(item => String(item.id) === button.dataset.markPaid);
   if (!invoice) return;
+  try {
+    const match = await findDuplicateInvoice(invoice, invoice.id);
+    if (match && !confirmSimilarInvoice(match, "marcar esta fatura como paga")) return;
+  } catch (error) {
+    return toast(error.message, "error");
+  }
   button.disabled = true;
   const paymentDate = button.closest(".finance-card")?.querySelector("[data-payment-date]")?.value || new Date().toISOString().slice(0, 10);
   const paidAt = `${paymentDate}T12:00:00`;
@@ -4833,6 +5110,34 @@ $("#finance-board").addEventListener("click", async event => {
   if (allowedViews().has("finance")) await loadInvoiceTrace();
   renderFinance();
   toast(`Fatura marcada como paga${isSupabaseConfigured ? "" : " em modo de demonstração"}.`);
+});
+
+$("#finance-board").addEventListener("change", event => {
+  const input = event.target.closest("[data-finance-attachment-input]");
+  if (input) addFinanceAttachments(input).catch(error => toast(error.message, "error"));
+});
+
+$("#paid-list").addEventListener("click", async event => {
+  const attachment = event.target.closest("[data-invoice-attachment]");
+  if (attachment) {
+    try {
+      const blob = await downloadInvoicePdf(decodeURIComponent(attachment.dataset.invoiceAttachment));
+      openedPdfUrl = URL.createObjectURL(blob);
+      openPdfModal(openedPdfUrl, "ANEXO FINANCEIRO");
+    } catch (error) { toast(error.message || "Não foi possível abrir o anexo.", "error"); }
+    return;
+  }
+  const button = event.target.closest("[data-unmark-paid]");
+  if (!button || !canPayInvoices()) return;
+  const invoice = financeInvoices.find(item => String(item.id) === button.dataset.unmarkPaid);
+  if (!invoice) return;
+  button.disabled = true;
+  try { await unmarkInvoicePaid(invoice); } catch (error) { toast(error.message, "error"); button.disabled = false; }
+});
+
+$("#paid-list").addEventListener("change", event => {
+  const input = event.target.closest("[data-finance-attachment-input]");
+  if (input) addFinanceAttachments(input).catch(error => toast(error.message, "error"));
 });
 
 document.querySelector(".finance-tabs").addEventListener("click", event => {

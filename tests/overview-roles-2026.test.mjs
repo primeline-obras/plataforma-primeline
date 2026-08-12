@@ -33,8 +33,11 @@ assert.deepEqual(composition.margin, [300, 400, 110, 510]);
 assert.deepEqual(composition.fixedCosts, [59.5, 68, 7.65, 75.65]);
 
 assert.doesNotMatch(source, /INCIDENTES ESTE MÊS/);
-assert.match(source, /EPIs A VENCER · 30 DIAS/);
-assert.match(source, /DÉBITOS DIRETOS · 7 DIAS/);
+assert.doesNotMatch(source, /EPIs A VENCER · 30 DIAS/);
+assert.match(source, /FATURAS POR PAGAR/);
+assert.match(source, /FATURAS A CLIENTES · POR RECEBER/);
+assert.match(source, /DÉBITOS A VENCER · 7 DIAS/);
+assert.match(source, /CASH FLOW CONSOLIDADO/);
 assert.doesNotMatch(source, /RNCs FECHADAS SEM AVALIAÇÃO/);
 const overviewRenderer = source.slice(source.indexOf("function renderOverview()"), source.indexOf("function alertDestination"));
 assert.doesNotMatch(overviewRenderer, /MAPA DE COMPOSIÇÃO DOS TOTAIS/);

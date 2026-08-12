@@ -1,4 +1,4 @@
-const FULL_VIEWS = [
+﻿const FULL_VIEWS = [
   "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors",
   "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests",
   "team", "workforce", "company-documents", "settings",
@@ -6,7 +6,7 @@ const FULL_VIEWS = [
 
 const ACCESS_BY_ROLE = {
   gerencia: {
-    views: [...FULL_VIEWS, "consolidated"],
+    views: [...FULL_VIEWS, "consolidated", "management-map"],
     insertInvoices: true,
     approveInvoices: true,
     payInvoices: true,
@@ -22,7 +22,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "rsp", "meeting", "works", "finance", "rooms", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "works", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
@@ -54,7 +54,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "rooms", "team", "workforce", "settings"],
+    views: ["action-plan", "planning", "documents", "rnc", "team", "workforce", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: false,
@@ -64,7 +64,7 @@ const ACCESS_BY_ROLE = {
 };
 
 const NO_ACCESS = {
-  views: ["rooms", "settings"],
+  views: ["settings"],
   insertInvoices: false,
   approveInvoices: false,
   payInvoices: false,
@@ -73,6 +73,7 @@ const NO_ACCESS = {
 };
 
 export function effectiveAccessRole(context = {}) {
+  if (context.role === "encarregado") return "encarregado";
   return context.isAdmin || context.role === "gerencia" ? "gerencia" : context.role || "";
 }
 
@@ -81,3 +82,4 @@ export function accessFor(context = {}) {
   const access = ACCESS_BY_ROLE[role] || NO_ACCESS;
   return { ...access, role, views: [...access.views] };
 }
+
