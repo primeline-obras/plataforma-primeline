@@ -1,4 +1,4 @@
-const FULL_VIEWS = [
+﻿const FULL_VIEWS = [
   "overview", "rsp", "meeting", "invoices", "works", "planning", "subcontractors",
   "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests",
   "team", "workforce", "company-documents", "settings",
@@ -22,7 +22,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "rsp", "management-map", "meeting", "works", "planning", "finance", "rooms", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "works", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
@@ -82,3 +82,4 @@ export function accessFor(context = {}) {
   const access = ACCESS_BY_ROLE[role] || NO_ACCESS;
   return { ...access, role, views: [...access.views] };
 }
+

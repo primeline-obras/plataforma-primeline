@@ -1268,7 +1268,9 @@ async function loadData() {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
       supabase("fornecedores?select=id,nome&order=nome"),
-      supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
+      isFinancial()
+        ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
+        : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
       supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
       supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
       supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
@@ -2526,7 +2528,7 @@ async function loadWorkDetails(workId) {
     investmentMode ? emptyResult() : supabase(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encodeURIComponent(workId)}`),
     investmentMode ? supabase(`investimentos?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
     investmentMode ? supabase(`impactos_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`) : emptyResult(),
-    investmentMode ? emptyResult() : supabase(`alteracoes_tee?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=criado_em.desc`),
+    investmentMode || isFinancial() ? emptyResult() : supabase(`alteracoes_tee?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=criado_em.desc`),
     supabase(`fases?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
     investmentMode ? emptyResult() : supabase(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encodeURIComponent(workId)}&order=mes_referencia.desc`),
     investmentMode ? supabase(`lancamentos_mao_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}`) : emptyResult(),
@@ -2547,7 +2549,7 @@ async function loadWorkDetails(workId) {
   }
   if (phasesResult.ok) workDetails.phases = await phasesResult.json();
   else detailErrors.push((await phasesResult.json().catch(() => ({}))).message || "Fases indisponíveis");
-  if (workDetails.phases.length) {
+  if (workDetails.phases.length && !isFinancial()) {
     const phaseIds = workDetails.phases.map(phase => phase.id);
     const planningResult = await supabase(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`);
     if (planningResult.ok) workDetails.phasePlanning = await planningResult.json();
@@ -2587,6 +2589,10 @@ async function loadWorkDetails(workId) {
       workDetails.billingError = "Não foi possível consultar a faturação desta obra.";
     }
   }
+  if (isFinancial()) {
+    renderWorkDetail(work);
+    return;
+  }
   const subcontractIds = subcontracts.filter(item => item.obra_id === workId).map(item => item.id);
   const [consultationsResult, paymentsResult] = await Promise.all([
     supabase(`consultas_subempreitada?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
@@ -2601,10 +2607,6 @@ async function loadWorkDetails(workId) {
   } else {
     workDetails.consultations = await consultationsResult.json();
     workDetails.payments = await paymentsResult.json();
-  }
-  if (isFinancial()) {
-    renderWorkDetail(work);
-    return;
   }
   const securityRequests = [
     supabase(`seguranca_incidentes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
@@ -3269,7 +3271,7 @@ function renderWorkTab(work) {
 function renderWorkDetail(work) {
   if (!work) return;
   const financialReadOnly = isFinancial();
-  if (financialReadOnly && !["summary", "subcontracts", "tees"].includes(selectedWorkTab)) selectedWorkTab = "summary";
+  if (financialReadOnly) selectedWorkTab = "summary";
   if (work.modalidade === "investimento_proprio" && selectedWorkTab === "tees") selectedWorkTab = "summary";
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
@@ -3280,8 +3282,8 @@ function renderWorkDetail(work) {
     ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
     <nav class="work-tabs">
       <button data-work-tab="summary" class="${selectedWorkTab === "summary" ? "active" : ""}">RESUMO</button>
-      <button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
-      ${work.modalidade === "investimento_proprio" ? "" : `<button data-work-tab="tees" class="${selectedWorkTab === "tees" ? "active" : ""}">TEEs</button>`}
+      ${financialReadOnly ? "" : `<button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
+      ${work.modalidade === "investimento_proprio" ? "" : `<button data-work-tab="tees" class="${selectedWorkTab === "tees" ? "active" : ""}">TEEs</button>`}`}
       ${financialReadOnly ? "" : `<button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
       <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
       <button data-work-tab="documents" class="${selectedWorkTab === "documents" ? "active" : ""}">DOCUMENTOS</button>
