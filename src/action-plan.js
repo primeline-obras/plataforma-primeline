@@ -82,7 +82,12 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
           ${dayItems.slice(0, 3).map(item => {
             const work = workFor(item);
             const context = `Obra ${work?.numero || "—"} · ${item.codigo || "Tarefa"} · ${item.descricao || ""}`;
-            return `<i class="${item.estado === "concluido" ? "completed" : ""}" title="${escapeHtml(context)}">${escapeHtml(calendarTaskLabel(item))}</i>`;
+            if (item.estado === "concluido") {
+              return `<button type="button" class="action-calendar-task completed" data-action-complete="${item.id}" title="${escapeHtml(`${context} · Desmarcar tarefa concluída`)}">
+                <span>${escapeHtml(calendarTaskLabel(item))}</span><em>✓ DESMARCAR</em>
+              </button>`;
+            }
+            return `<i title="${escapeHtml(context)}">${escapeHtml(calendarTaskLabel(item))}</i>`;
           }).join("")}
           ${dayItems.length > 3 ? `<small>+${dayItems.length - 3}</small>` : ""}</div>`;
       }).join("")}</div></section>`;
@@ -146,8 +151,9 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
     const button = completeButton || blockButton; button.disabled = true;
     try {
       if (completeButton) {
-        await update(item, { p_concluida: item.estado !== "concluido", p_impedido: false, p_observacao_impedimento: null });
-        toast(item.estado === "concluido" ? "Tarefa concluída." : "Tarefa reaberta.");
+        const wasCompleted = item.estado === "concluido";
+        await update(item, { p_concluida: !wasCompleted, p_impedido: false, p_observacao_impedimento: null });
+        toast(wasCompleted ? `Tarefa reaberta como ${stateLabel(item).toLowerCase()}.` : "Tarefa concluída.");
       } else if (item.impedido) {
         await update(item, { p_concluida: false, p_impedido: false, p_observacao_impedimento: null });
         toast("Impedimento retirado.");
