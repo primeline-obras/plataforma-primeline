@@ -1683,6 +1683,11 @@ function collaboratorFormFields(person = null) {
     <div class="form-row"><label>NIF<input name="nif" maxlength="20" inputmode="numeric" value="${safeText(person?.nif || "")}"></label><label>EMAIL<input name="email" type="email" maxlength="160" value="${safeText(person?.email || "")}"></label></div>
     <div class="form-row"><label>CONTACTO<input name="contacto" type="tel" maxlength="40" value="${safeText(person?.contacto || "")}"></label><label>MORADA<input name="morada" maxlength="240" value="${safeText(person?.morada || "")}"></label></div>
     <div class="form-row"><label>DATA DE ADMISSÃO<input name="data_admissao" type="date" value="${person?.data_admissao || new Date().toISOString().slice(0, 10)}" required></label><label>DATA DE NASCIMENTO (OPCIONAL)<input name="data_nascimento" type="date" value="${person?.data_nascimento || ""}"></label></div>
+    ${isNew ? `<fieldset class="collaborator-rh-initial"><legend>DADOS RH E CONFORMIDADE</legend>
+      <div class="form-row"><label>CÓDIGO RH<input name="codigo_rh" maxlength="30" inputmode="numeric" placeholder="Número inserido manualmente"></label><label>N.º S.S.<select name="seguranca_social"><option value="false">Não</option><option value="true">Sim</option></select></label></div>
+      <div class="form-row"><label>REGISTO TRABALHADOR<select name="registo_trabalhador"><option value="false">Não</option><option value="true">Sim</option></select></label><label>SEGURO<select name="seguro"><option value="false">Não</option><option value="true">Sim</option></select></label></div>
+      <div class="form-row"><label>EPI · DATA DE ENTREGA<input name="epi_data" type="date"></label><label>MEDICINA DO TRABALHO · DATA DA CONSULTA<input name="medicina_data" type="date"></label></div>
+    </fieldset>` : ""}
     ${isNew ? `<div class="collaborator-initial-allocation"><p class="eyebrow">ALOCAÇÃO INICIAL OBRIGATÓRIA</p><div class="form-row"><label>LOCAL INICIAL<select name="alocacao_tipo" required><option value="obra">Obra ativa</option><option value="escritorio">Escritório</option></select></label><label data-initial-work>OBRA<select name="obra_id" required><option value="">Selecionar obra</option>${activeWorkOptions()}</select></label></div><small>Esta alocação é operacional. Não altera as responsabilidades como diretor, adjunto ou preparador.</small></div>` : `<label>DATA DE SAÍDA<input name="data_saida" type="date" value="${person?.data_saida || ""}"><small>Preencher esta data marca o colaborador como inativo sem apagar o histórico.</small></label>`}
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${isNew ? "CRIAR COLABORADOR" : "GUARDAR ALTERAÇÕES"} <span>→</span></button></div>
   </form>`;
@@ -1738,7 +1743,10 @@ async function submitCollaboratorLifecycle(event) {
       };
       const payload = personId
         ? { p_colaborador_id: personId, ...commonFields, p_data_saida: fields.data_saida || null }
-        : { ...commonFields, p_alocacao_tipo: fields.alocacao_tipo, p_obra_id: fields.obra_id || null };
+        : { ...commonFields, p_alocacao_tipo: fields.alocacao_tipo, p_obra_id: fields.obra_id || null,
+            p_codigo_rh: fields.codigo_rh.trim() || null, p_seguranca_social: fields.seguranca_social === "true",
+            p_registo_trabalhador: fields.registo_trabalhador === "true", p_seguro: fields.seguro === "true",
+            p_epi_data: fields.epi_data || null, p_medicina_data: fields.medicina_data || null };
       const response = await supabase(`rpc/${functionName}`, { method: "POST", body: JSON.stringify(payload) });
       if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível guardar o colaborador."));
       await reloadActiveCollaborators();

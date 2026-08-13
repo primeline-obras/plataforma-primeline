@@ -14,7 +14,7 @@ assert.match(app, /name="nome"[^>]*required/);
 assert.match(app, /name="funcao"[^>]*required/);
 assert.match(app, /name="data_admissao"[^>]*required/);
 assert.match(app, /ALOCAÇÃO INICIAL OBRIGATÓRIA/);
-assert.doesNotMatch(app.match(/function collaboratorFormFields[\s\S]*?function openCollaboratorDialog/)?.[0] || "", /name="codigo_rh"|name="observacoes"|name="registo_trabalhador"/);
+assert.doesNotMatch(app.match(/function collaboratorFormFields[\s\S]*?function openCollaboratorDialog/)?.[0] || "", /name="observacoes"/);
 assert.match(sql, /p_valor_hora is not null and p_valor_hora < 0/);
 
 console.log("Campos completos do colaborador validados.");

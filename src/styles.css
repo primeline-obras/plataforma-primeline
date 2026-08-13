@@ -2346,3 +2346,7 @@ button, input, select, textarea,
 .cost-adjustments form input { min-height: 38px; padding: 0 10px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--text-primary); }
 .cost-adjustments form .form-error { grid-column: 1 / -1; }
 @media (max-width: 720px) { .cost-trace-grid { grid-template-columns: 1fr; } .cost-trace-grid section + section { border-left: 0; border-top: 1px solid var(--card-border); } .cost-adjustments form { grid-template-columns: 1fr; } }
+
+/* Dados iniciais de conformidade RH na admissão */
+.collaborator-rh-initial { margin: 4px 0 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-soft); display: grid; gap: 12px; }
+.collaborator-rh-initial legend { padding: 0 8px; color: var(--text-muted); font-size: 10px; font-weight: 850; letter-spacing: .8px; }
