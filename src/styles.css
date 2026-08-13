@@ -2292,3 +2292,36 @@ button, input, select, textarea,
   .xlsx-import-summary > div:first-child, .xlsx-import-summary button { grid-column: 1 / -1; }
   .xlsx-import-dialog footer { align-items: stretch; flex-direction: column; }
 }
+.projects-layout { display: grid; grid-template-columns: minmax(250px, .34fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.projects-list-panel { overflow: hidden; padding: 0; }
+.projects-list { display: grid; }
+.project-list-item { border: 0; border-bottom: 1px solid var(--card-border); background: transparent; color: var(--text-primary); padding: 18px 20px; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.project-list-item:hover, .project-list-item.selected { background: var(--bg-soft); box-shadow: inset 3px 0 var(--accent); }
+.project-list-item strong { font-size: .9rem; }
+.project-list-item small { color: var(--muted); white-space: nowrap; }
+.project-detail { padding: 24px; }
+.project-detail > header { display: flex; justify-content: space-between; gap: 24px; align-items: end; padding-bottom: 18px; border-bottom: 1px solid var(--card-border); }
+.project-detail > header h2 { margin: 4px 0; }
+.project-detail > header span, .project-detail > header > p { color: var(--muted); }
+.project-summary { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0; border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; }
+.project-summary > div { padding: 20px; display: grid; gap: 8px; background: var(--bg-soft); }
+.project-summary > div + div { border-left: 1px solid var(--card-border); }
+.project-summary span, .project-stage dt { color: var(--muted); font-size: .68rem; letter-spacing: .12em; font-weight: 700; }
+.project-summary strong { font-size: 1.3rem; }
+.project-summary .positive { color: var(--pos-text); }
+.project-summary .negative { color: var(--neg-text); }
+.project-investment-summary { display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 14px 16px; margin-bottom: 18px; border-radius: 10px; background: var(--info-bg); color: var(--text-primary); }
+.project-stage-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 0 14px; }
+.project-stage-head h3 { margin: 2px 0 0; }
+.project-stage-head > span { min-width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--sidebar-bg); color: white; }
+.project-stages { display: grid; gap: 10px; }
+.project-stage { width: 100%; padding: 17px; border: 1px solid var(--card-border); border-radius: 11px; background: var(--card); color: var(--text-primary); text-align: left; display: grid; grid-template-columns: minmax(210px, 1fr) minmax(360px, 1.4fr) auto; align-items: center; gap: 18px; }
+.project-stage:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.project-stage > div { display: grid; gap: 4px; }
+.project-stage > div > span { color: var(--neutral-value); font-size: .7rem; font-weight: 800; }
+.project-stage > div > small { color: var(--muted); }
+.project-stage dl { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.project-stage dl div { display: grid; gap: 5px; }
+.project-stage dd { margin: 0; font-weight: 750; }
+@media (max-width: 980px) { .projects-layout { grid-template-columns: 1fr; } .project-stage { grid-template-columns: 1fr auto; } .project-stage dl { grid-column: 1 / -1; } }
+@media (max-width: 620px) { .project-summary { grid-template-columns: 1fr; } .project-summary > div + div { border-left: 0; border-top: 1px solid var(--card-border); } .project-detail > header { align-items: start; flex-direction: column; } .project-stage dl { grid-template-columns: 1fr; } }

@@ -426,3 +426,6 @@ primeira alocação na mesma transação. A alocação pode ser uma obra ativa o
 Administrativo e Gerência podem editar a ficha, preencher `data_saida` para
 inativar e limpar essa data para reativar. Nenhuma destas operações elimina
 horas, ausências, documentos, registos de medicina, EPI ou alocações históricas.
+## Projetos e etapas
+
+Executar `supabase/projetos_agrupador_obras.sql` para criar o agrupador opcional de obras. A migração cria o projeto inicial “Av. Bombeiros Voluntários” e associa apenas a Obra 122; a futura Obra 128 deve selecionar esse projeto no formulário de criação. Cada obra mantém dados financeiros e operacionais totalmente independentes.

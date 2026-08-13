@@ -19,6 +19,7 @@ import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=1";
+import { createProjectsModule } from "./projects.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -131,7 +132,7 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="works">▥ <span>Obras</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">◫ <span>Projetos</span></button><button data-view="works">▥ <span>Obras</span></button>
         <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">▣ <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
@@ -214,6 +215,7 @@ document.querySelector("#root").innerHTML = `
           </section>
         </div>
       </div>
+      <div class="page projects-view" id="projects-view" hidden></div>
       <div class="page planning-view" id="planning-view" hidden>
         <div class="page-heading">
           <div><p class="eyebrow">PROGRAMAÇÃO DE OBRA</p><h1>PLANEAMENTO</h1><p>Tarefas, dependências e prazos detalhados por fase.</p></div>
@@ -382,6 +384,7 @@ document.querySelector("#root").innerHTML = `
           <div class="form-row"><label>CLIENTE<input name="cliente" maxlength="160"></label><label>DIRETOR DE OBRA<div class="select-wrap"><select name="diretor_obra_id"><option value="">Não definido</option></select><b>⌄</b></div></label></div>
           <label>MORADA<input name="morada" maxlength="240"></label>
           <div class="form-row"><label>TIPO<input name="tipo" maxlength="80" placeholder="Ex. Construção nova"></label><label>MODALIDADE<input name="modalidade" maxlength="80" placeholder="Ex. Empreitada geral"></label></div>
+          <label>PROJETO (OPCIONAL)<div class="select-wrap"><select name="projeto_id"><option value="">Obra independente</option></select><b>⌄</b></div><em>Preencha apenas quando esta obra for uma etapa de um projeto maior.</em></label>
           <fieldset class="work-template-fieldset"><legend>MODELO DE ESTRUTURA</legend>
             <label>BASEAR NESTA OBRA<div class="select-wrap"><select name="modelo_obra_id"><option value="">Começar sem modelo</option></select><b>⌄</b></div></label>
             <label class="work-template-check"><input name="copiar_orcamento" type="checkbox" checked><span><strong>COPIAR CATEGORIAS DO ORÇAMENTO</strong><small>Replica designações e unidades, sempre sem quantidades, custos ou preços.</small></span></label>
@@ -710,6 +713,11 @@ const financialMapModule = createFinancialMapModule({
 const managementMapModule = createManagementMapModule({
   root: $("#management-map-content"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, euro, toast,
+});
+const projectsModule = createProjectsModule({
+  root: $("#projects-view"), api: supabase, isConfigured: isSupabaseConfigured, euro, escapeHtml,
+  getWorks: () => works, canManage: hasFullAccess, companyId: PRIMELINE_COMPANY_ID, toast,
+  openWork: workId => { switchView("works"); loadWorkDetails(workId); },
 });
 const consolidatedView = createConsolidatedView({
   root: $("#consolidated-view"), supabase, isConfigured: isSupabaseConfigured,
@@ -1266,7 +1274,7 @@ async function loadData() {
     directDebitEntries = [];
   } else {
     const results = await Promise.all([
-      supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
+      supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,projeto_id,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
       supabase("fornecedores?select=id,nome&order=nome"),
       isFinancial()
         ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
@@ -1305,6 +1313,8 @@ async function loadData() {
   renderSelectors(); renderInvoices(); renderFinance();
   renderWorks();
   renderWorkDirectors();
+  if (allowedViews().has("projects")) await projectsModule.refresh();
+  renderWorkProjects();
   await productionDashboard.refreshOverview();
   if (effectiveRole() === "encarregado" && activeView === "overview") switchView("action-plan");
 }
@@ -1322,6 +1332,15 @@ function renderWorkTemplates() {
   select.innerHTML = `<option value="">Começar sem modelo</option>${[...works]
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }))
     .map(work => `<option value="${work.id}">Obra ${escapeHtml(work.numero)} — ${escapeHtml(work.nome)}</option>`).join("")}`;
+  select.value = selected;
+}
+
+function renderWorkProjects() {
+  const select = $("#work-form")?.projeto_id;
+  if (!select) return;
+  const selected = select.value;
+  const projects = projectsModule.options();
+  select.innerHTML = `<option value="">Obra independente</option>${projects.map(project => `<option value="${project.id}">${escapeHtml(project.nome)}</option>`).join("")}`;
   select.value = selected;
 }
 
@@ -3309,6 +3328,7 @@ function switchView(view, context = {}) {
   $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
   $("#works-view").hidden = view !== "works";
+  $("#projects-view").hidden = view !== "projects";
   $("#planning-view").hidden = view !== "planning";
   $("#subcontractors-view").hidden = view !== "subcontractors";
   $("#finance-view").hidden = view !== "finance";
@@ -3322,8 +3342,8 @@ function switchView(view, context = {}) {
   $("#rooms-view").hidden = view !== "rooms";
   $("#properties-view").hidden = view !== "properties";
   $("#budget-requests-view").hidden = view !== "budget-requests";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -3331,6 +3351,7 @@ function switchView(view, context = {}) {
     if (!selectedWorkId && works[0]) loadWorkDetails(works[0].id);
   }
   if (view === "finance") renderFinance();
+  if (view === "projects") projectsModule.show();
   if (view === "planning") planningModule.show(context);
   if (view === "action-plan") actionPlanModule.show();
   if (view === "documents") documentsModule.show();
@@ -3776,6 +3797,7 @@ $("#new-work").addEventListener("click", () => {
   if (!hasFullAccess()) return toast("A criação de obras está reservada à Gerência.", "error");
   renderWorkDirectors();
   renderWorkTemplates();
+  renderWorkProjects();
   $("#work-dialog").hidden = false;
   $("#work-form").numero.focus();
 });
@@ -3808,6 +3830,7 @@ $("#work-form").addEventListener("submit", async event => {
     morada: fields.morada.trim() || null,
     tipo: fields.tipo.trim() || null,
     modalidade: fields.modalidade.trim() || null,
+    projeto_id: fields.projeto_id || null,
     diretor_obra_id: fields.diretor_obra_id || null,
     situacao: fields.situacao || "em_curso",
     data_inicio: fields.data_inicio || null,
@@ -3844,7 +3867,7 @@ $("#work-form").addEventListener("submit", async event => {
       templateResult = await response.json();
       Object.assign(payload, templateResult.obra);
     } else {
-      const response = await supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em", {
+      const response = await supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,projeto_id,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em", {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify(payload),
@@ -3854,6 +3877,12 @@ $("#work-form").addEventListener("submit", async event => {
         throw new Error(detail.message || detail.details || "Não foi possível criar a obra.");
       }
       Object.assign(payload, (await response.json())[0]);
+    }
+    if (fields.modelo_obra_id && payload.id && payload.projeto_id) {
+      const projectResponse = await supabase(`obras?id=eq.${encodeURIComponent(payload.id)}`, {
+        method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ projeto_id: payload.projeto_id }),
+      });
+      if (!projectResponse.ok) throw new Error("A obra foi criada, mas não foi possível associá-la ao projeto.");
     }
     works.unshift(payload);
     renderSelectors();
