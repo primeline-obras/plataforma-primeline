@@ -2325,3 +2325,5 @@ button, input, select, textarea,
 .project-stage dd { margin: 0; font-weight: 750; }
 @media (max-width: 980px) { .projects-layout { grid-template-columns: 1fr; } .project-stage { grid-template-columns: 1fr auto; } .project-stage dl { grid-column: 1 / -1; } }
 @media (max-width: 620px) { .project-summary { grid-template-columns: 1fr; } .project-summary > div + div { border-left: 0; border-top: 1px solid var(--card-border); } .project-detail > header { align-items: start; flex-direction: column; } .project-stage dl { grid-template-columns: 1fr; } }
+.collaborator-rh-initial { margin: 4px 0 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-soft); display: grid; gap: 12px; }
+.collaborator-rh-initial legend { padding: 0 8px; color: var(--text-muted); font-size: 10px; font-weight: 850; letter-spacing: .8px; }
