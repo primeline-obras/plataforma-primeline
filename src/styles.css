@@ -2325,5 +2325,28 @@ button, input, select, textarea,
 .project-stage dd { margin: 0; font-weight: 750; }
 @media (max-width: 980px) { .projects-layout { grid-template-columns: 1fr; } .project-stage { grid-template-columns: 1fr auto; } .project-stage dl { grid-column: 1 / -1; } }
 @media (max-width: 620px) { .project-summary { grid-template-columns: 1fr; } .project-summary > div + div { border-left: 0; border-top: 1px solid var(--card-border); } .project-detail > header { align-items: start; flex-direction: column; } .project-stage dl { grid-template-columns: 1fr; } }
+.cost-trace { margin-top: 14px; border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; background: var(--bg-soft); }
+.cost-trace > summary { padding: 13px 15px; color: var(--text-primary); font: 800 10px "Manrope"; letter-spacing: .7px; cursor: pointer; }
+.cost-trace-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--card-border); }
+.cost-trace-grid section { padding: 14px 15px; display: grid; gap: 8px; }
+.cost-trace-grid section + section { border-left: 1px solid var(--card-border); }
+.cost-trace-grid section > strong { color: var(--text-muted); font: 800 9px "Manrope"; letter-spacing: .7px; }
+.cost-trace-grid section > span, .cost-trace-grid section > em { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; font-style: normal; }
+.cost-trace-grid section > em { padding-top: 8px; border-top: 1px solid var(--card-border); font-weight: 850; }
+.cost-trace-warning { margin: 0 14px 14px; padding: 10px 12px; border-left: 3px solid var(--attention-text); border-radius: 7px; background: var(--attention-bg); display: grid; gap: 4px; }
+.cost-trace-warning strong { color: var(--attention-text); font-size: 9px; letter-spacing: .6px; }
+.cost-trace-warning span { color: var(--text-secondary); font-size: 11px; line-height: 1.4; }
+.cost-adjustments { border-top: 1px solid var(--card-border); padding: 14px; display: grid; gap: 8px; }
+.cost-adjustments > header { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; }
+.cost-adjustments article { padding: 9px 11px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; }
+.cost-adjustments article > div { display: grid; gap: 3px; }.cost-adjustments article small { color: var(--text-muted); font-size: 9px; }
+.cost-adjustments article button { border: 0; background: transparent; color: var(--neg-text); font: 800 9px "Manrope"; }
+.cost-adjustments form { padding-top: 7px; display: grid; grid-template-columns: minmax(100px,.35fr) minmax(220px,1fr) auto; gap: 9px; align-items: end; }
+.cost-adjustments form label { display: grid; gap: 5px; color: var(--text-muted); font: 800 9px "Manrope"; letter-spacing: .6px; }
+.cost-adjustments form input { min-height: 38px; padding: 0 10px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--text-primary); }
+.cost-adjustments form .form-error { grid-column: 1 / -1; }
+@media (max-width: 720px) { .cost-trace-grid { grid-template-columns: 1fr; } .cost-trace-grid section + section { border-left: 0; border-top: 1px solid var(--card-border); } .cost-adjustments form { grid-template-columns: 1fr; } }
+
+/* Dados iniciais de conformidade RH na admissão */
 .collaborator-rh-initial { margin: 4px 0 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-soft); display: grid; gap: 12px; }
 .collaborator-rh-initial legend { padding: 0 8px; color: var(--text-muted); font-size: 10px; font-weight: 850; letter-spacing: .8px; }

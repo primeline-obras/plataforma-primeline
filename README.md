@@ -433,3 +433,7 @@ horas, ausências, documentos, registos de medicina, EPI ou alocações históri
 ## Projetos e etapas
 
 Executar `supabase/projetos_agrupador_obras.sql` para criar o agrupador opcional de obras. A migração cria o projeto inicial “Av. Bombeiros Voluntários” e associa apenas a Obra 122; a futura Obra 128 deve selecionar esse projeto no formulário de criação. Cada obra mantém dados financeiros e operacionais totalmente independentes.
+
+## Custos automáticos da obra
+
+Executar `supabase/custos_obra_automaticos.sql` para ativar o resumo canónico de custos reais, compromissos por concluir, custos fixos, projeção de pessoal/viatura e ajustes obrigatoriamente justificados. A Reunião Semanal passa a consumir a RPC `fn_resumo_custos_obra`, sem campos manuais escondidos na fórmula.

@@ -758,9 +758,20 @@ export function createProductionDashboard(options) {
     const projectedFinish = dailyProgress
       ? addDaysDate(today, Math.ceil(Math.max(0, 100 - progress) / dailyProgress))
       : contractualEnd || today;
-    const estimatedFinalCost = actualCost + remainingCommitments + monthlyStaffVehicle * remainingMonths;
+    const automatic = data.costSummary || null;
+    const automaticReal = number(automatic?.real?.total);
+    const automaticRemaining = number(automatic?.por_concluir?.total);
+    const estimatedFinalCost = automatic
+      ? number(automatic.estimativa_terminus_total)
+      : actualCost + remainingCommitments + monthlyStaffVehicle * remainingMonths;
     return {
-      totalSale, updatedBudgetCost, actualCost, remainingCommitments, monthlyStaffVehicle, investmentMode,
+      totalSale, updatedBudgetCost,
+      actualCost: automatic ? automaticReal : actualCost,
+      remainingCommitments: automatic ? automaticRemaining : remainingCommitments,
+      monthlyStaffVehicle: automatic ? number(automatic.pessoal_viatura_estimado) : monthlyStaffVehicle,
+      fixedCosts: number(automatic?.custos_fixos), adjustments: number(automatic?.ajustes_total),
+      directFinalCost: number(automatic?.estimativa_terminus_direta), costSummary: automatic,
+      investmentMode,
       remainingMonths, estimatedFinalCost, contractualEnd, projectedFinish, progress, start, dailyProgress,
     };
   }
@@ -773,6 +784,27 @@ export function createProductionDashboard(options) {
     const deviationDays = model.dailyProgress && model.contractualEnd
       ? Math.ceil((finish.getTime() - model.contractualEnd.getTime()) / DAY_MS) : 0;
     return { label, description, finish, deviationDays, available: Boolean(model.dailyProgress && model.contractualEnd) };
+  }
+
+  const canAdjustWorkCosts = () => ["gerencia", "diretor_obra", "adjunto", "preparador"]
+    .includes(getAccessContext()?.role || "");
+
+  function renderCostTrace(model) {
+    const summary = model.costSummary;
+    const real = summary.real || {};
+    const remaining = summary.por_concluir || {};
+    const adjustments = summary.ajustes || [];
+    return `<details class="cost-trace" open><summary>COMPOSIÇÃO AUDITÁVEL DO CUSTO</summary>
+      <div class="cost-trace-grid">
+        <section><strong>REAL ACUMULADO</strong><span>Materiais <b>${euro.format(number(real.materiais))}</b></span><span>Mão de obra <b>${euro.format(number(real.mao_obra))}</b></span><span>Estaleiro <b>${euro.format(number(real.estaleiro))}</b></span><span>Subempreitadas pagas <b>${euro.format(number(real.subempreitadas))}</b></span><em>Total ${euro.format(number(real.total))}</em></section>
+        <section><strong>POR CONCLUIR</strong><span>Subempreitadas adjudicadas <b>${euro.format(number(remaining.subempreitadas))}</b></span><span>TEEs aprovados <b>${euro.format(number(remaining.tees))}</b></span><span>Orçamento não contratado <b>${euro.format(number(remaining.orcamento_nao_contratado))}</b></span><em>Total ${euro.format(number(remaining.total))}</em></section>
+      </div>
+      ${number(summary.lancamentos_sem_apropriacao) ? `<div class="cost-trace-warning"><strong>${number(summary.lancamentos_sem_apropriacao)} LANÇAMENTOS SEM APROPRIAÇÃO</strong><span>Contam no realizado, mas ainda não indicam TEE/artigo de origem. Não foram abatidos por inferência.</span></div>` : ""}
+      <div class="cost-adjustments"><header><strong>AJUSTES MANUAIS JUSTIFICADOS</strong><span>${euro.format(number(summary.ajustes_total))}</span></header>
+        ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${canAdjustWorkCosts() ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
+        ${canAdjustWorkCosts() ? `<form data-cost-adjustment><label>VALOR (€)<input name="valor" type="number" step="0.01" required></label><label>MOTIVO OBRIGATÓRIO<input name="motivo" minlength="3" required placeholder="Explique a origem do ajuste"></label><button class="secondary-button" type="submit">REGISTAR AJUSTE</button><p class="form-error"></p></form>` : ""}
+      </div>
+    </details>`;
   }
 
   function renderFinancialForecast(work, model) {
@@ -791,11 +823,12 @@ export function createProductionDashboard(options) {
           <dl class="financial-forecast-values">
             <div><dt>Orçamento de custo</dt><dd>${euro.format(model.updatedBudgetCost)}</dd></div>
             <div><dt>Custo real incorrido</dt><dd>${euro.format(model.actualCost)}</dd></div>
-            <div><dt>Compromissos por executar</dt><dd>${euro.format(model.remainingCommitments)}</dd></div>
+            <div><dt>Custo estimado até à conclusão</dt><dd>${euro.format(model.remainingCommitments)}</dd></div>
+            ${model.costSummary ? `<div><dt>Estimativa no términus · custo direto</dt><dd>${euro.format(model.directFinalCost)}</dd></div><div><dt>Custos fixos · 8,5%</dt><dd>${euro.format(model.fixedCosts)}</dd></div><div><dt>Pessoal + viatura estimado</dt><dd>${euro.format(model.monthlyStaffVehicle)}</dd></div><div><dt>Ajustes justificados</dt><dd>${euro.format(model.adjustments)}</dd></div>` : ""}
             <div><dt>Estimativa final</dt><dd data-estimated-final>${euro.format(model.estimatedFinalCost)}</dd></div>
             <div class="forecast-deviation"><dt>Desvio ao orçamento</dt><dd data-budget-deviation class="${initialDeviation > 0 ? "negative" : "positive"}">${euro.format(initialDeviation)}</dd></div>
           </dl>
-          <label class="financial-number-control"><span>PESSOAL + VIATURA / MÊS</span><input id="staff-vehicle-cost" type="number" min="0" step="250" value="${Math.round(model.monthlyStaffVehicle)}"><small>Base: média histórica da mão de obra. Ajuste para incluir a viatura.</small></label>
+          ${model.costSummary ? renderCostTrace(model) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
         </article>
         <article class="panel financial-forecast-card">
           <header><span>CENÁRIOS DE PRAZO</span><strong>${Math.round(model.progress)}% EXECUTADO</strong></header>
@@ -823,13 +856,12 @@ export function createProductionDashboard(options) {
 
   function bindFinancialForecast(model) {
     const root = document.querySelector("#meeting-view .financial-forecast");
-    const monthlyInput = root?.querySelector("#staff-vehicle-cost");
     const delayInput = root?.querySelector("#delay-simulator");
-    if (!root || !monthlyInput || !delayInput) return;
+    if (!root || !delayInput) return;
     const update = () => {
-      const monthly = Math.max(0, number(monthlyInput.value));
       const delayDays = Math.max(0, number(delayInput.value));
-      const estimatedFinal = model.actualCost + model.remainingCommitments + monthly * model.remainingMonths;
+      const monthly = model.remainingMonths ? model.monthlyStaffVehicle / model.remainingMonths : 0;
+      const estimatedFinal = model.estimatedFinalCost;
       const deviation = estimatedFinal - model.updatedBudgetCost;
       const delayCost = monthly / 30.4375 * delayDays;
       const finalWithDelay = estimatedFinal + delayCost;
@@ -858,7 +890,6 @@ export function createProductionDashboard(options) {
           : delayDays > 0 ? "O ATRASO AUMENTA O CUSTO DE ESTRUTURA DA OBRA" : "SEM ATRASO ADICIONAL SIMULADO";
       }
     };
-    monthlyInput.addEventListener("input", update);
     delayInput.addEventListener("input", update);
     update();
   }
@@ -991,7 +1022,43 @@ export function createProductionDashboard(options) {
     const materialInvoiceItems = materialInvoiceIds.length
       ? await meetingQuery(`faturas_itens?select=*&fatura_id=in.(${materialInvoiceIds.map(encodeURIComponent).join(",")})`, "Itens das faturas de materiais", warnings)
       : [];
-    return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems } };
+    let costSummary = null;
+    if (isSupabaseConfigured) {
+      const costResponse = await supabase("rpc/fn_resumo_custos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) });
+      if (costResponse.ok) costSummary = await costResponse.json();
+      else warnings.push("Custos automáticos: execute a migração custos_obra_automaticos.sql");
+    }
+    return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
+  }
+
+  async function saveCostAdjustment(form) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const fields = Object.fromEntries(new FormData(form));
+    const button = form.querySelector('[type="submit"]');
+    const error = form.querySelector(".form-error");
+    error.textContent = "";
+    button.disabled = true;
+    const response = await supabase("ajustes_custo_obra", {
+      method: "POST", headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ obra_id: meetingState.work.id, valor: number(fields.valor), motivo: fields.motivo.trim(), criado_por: getAccessContext()?.profile?.id }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      error.textContent = detail.message || "Não foi possível registar o ajuste.";
+      button.disabled = false;
+      return;
+    }
+    toast("Ajuste de custo registado e auditado.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
+  }
+
+  async function deleteCostAdjustment(id, button) {
+    if (!meetingState || !canAdjustWorkCosts() || !confirm("Remover este ajuste de custo? O evento continuará registado na auditoria.")) return;
+    button.disabled = true;
+    const response = await supabase(`ajustes_custo_obra?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!response.ok) return toast("Não foi possível remover o ajuste.", "error");
+    toast("Ajuste removido.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
   }
 
   async function openMeeting(workId, returnView = "overview") {
@@ -1110,6 +1177,14 @@ export function createProductionDashboard(options) {
     document.querySelector("#rsp-view")?.addEventListener("click", event => {
       const meetingButton = event.target.closest("[data-rsp-open-meeting]");
       if (meetingButton) openMeeting(meetingButton.dataset.rspOpenMeeting, "rsp");
+    });
+    document.querySelector("#meeting-view")?.addEventListener("submit", event => {
+      const form = event.target.closest("[data-cost-adjustment]");
+      if (form) { event.preventDefault(); saveCostAdjustment(form); }
+    });
+    document.querySelector("#meeting-view")?.addEventListener("click", event => {
+      const button = event.target.closest("[data-delete-cost-adjustment]");
+      if (button) deleteCostAdjustment(button.dataset.deleteCostAdjustment, button);
     });
   }
 
