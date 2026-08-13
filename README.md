@@ -16,6 +16,10 @@ window.PRIMELINE_CONFIG = {
 
 Nunca colocar a `service_role key` no frontend.
 
+O formulário completo de colaboradores requer também a execução de
+`supabase/colaboradores_campos_completos.sql`, que alarga as funções atómicas de
+criação/edição sem remover as assinaturas antigas.
+
 ### Visão Geral por papel
 
 Executar `supabase/visao_geral_final_por_papel.sql` para aplicar a leitura final

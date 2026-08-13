@@ -1304,7 +1304,7 @@ async function loadData() {
       directDebitEntries = [];
     }
     if (hasFullAccess() || isAdministrative() || allowedViews().has("team")) {
-      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
+      const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
   }
@@ -1679,6 +1679,9 @@ function collaboratorFormFields(person = null) {
   const isNew = !person;
   return `<form id="collaborator-lifecycle-form" data-collaborator-id="${person?.id || ""}">
     <div class="form-row"><label>NOME<input name="nome" maxlength="160" value="${safeText(person?.nome || "")}" required></label><label>FUNÇÃO<input name="funcao" maxlength="100" value="${safeText(person?.funcao || "")}" required></label></div>
+    <div class="form-row"><label>NÍVEL<input name="nivel" maxlength="80" list="collaborator-levels" value="${safeText(person?.nivel || "")}" placeholder="Ex.: Nível 1"><datalist id="collaborator-levels"><option value="Nível 1"><option value="Nível 2"><option value="Nível 3"></datalist></label><label>VALOR/HORA (EUR)<input name="valor_hora" type="number" min="0" step="0.01" inputmode="decimal" value="${person?.valor_hora ?? ""}" placeholder="Opcional"></label></div>
+    <div class="form-row"><label>NIF<input name="nif" maxlength="20" inputmode="numeric" value="${safeText(person?.nif || "")}"></label><label>EMAIL<input name="email" type="email" maxlength="160" value="${safeText(person?.email || "")}"></label></div>
+    <div class="form-row"><label>CONTACTO<input name="contacto" type="tel" maxlength="40" value="${safeText(person?.contacto || "")}"></label><label>MORADA<input name="morada" maxlength="240" value="${safeText(person?.morada || "")}"></label></div>
     <div class="form-row"><label>DATA DE ADMISSÃO<input name="data_admissao" type="date" value="${person?.data_admissao || new Date().toISOString().slice(0, 10)}" required></label><label>DATA DE NASCIMENTO (OPCIONAL)<input name="data_nascimento" type="date" value="${person?.data_nascimento || ""}"></label></div>
     ${isNew ? `<div class="collaborator-initial-allocation"><p class="eyebrow">ALOCAÇÃO INICIAL OBRIGATÓRIA</p><div class="form-row"><label>LOCAL INICIAL<select name="alocacao_tipo" required><option value="obra">Obra ativa</option><option value="escritorio">Escritório</option></select></label><label data-initial-work>OBRA<select name="obra_id" required><option value="">Selecionar obra</option>${activeWorkOptions()}</select></label></div><small>Esta alocação é operacional. Não altera as responsabilidades como diretor, adjunto ou preparador.</small></div>` : `<label>DATA DE SAÍDA<input name="data_saida" type="date" value="${person?.data_saida || ""}"><small>Preencher esta data marca o colaborador como inativo sem apagar o histórico.</small></label>`}
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${isNew ? "CRIAR COLABORADOR" : "GUARDAR ALTERAÇÕES"} <span>→</span></button></div>
@@ -1710,7 +1713,7 @@ function openCollaboratorDialog(person = null) {
 
 async function reloadActiveCollaborators() {
   if (!isSupabaseConfigured) return;
-  const response = await supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
+  const response = await supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
   if (!response.ok) throw new Error(await response.text());
   collaborators = await response.json();
 }
@@ -1727,20 +1730,26 @@ async function submitCollaboratorLifecycle(event) {
   try {
     if (isSupabaseConfigured) {
       const functionName = personId ? "fn_atualizar_colaborador_ciclo_vida" : "fn_criar_colaborador_com_alocacao";
+      const commonFields = {
+        p_nome: fields.nome.trim(), p_funcao: fields.funcao.trim(), p_data_admissao: fields.data_admissao,
+        p_data_nascimento: fields.data_nascimento || null, p_nivel: fields.nivel.trim() || null,
+        p_valor_hora: fields.valor_hora === "" ? null : Number(fields.valor_hora), p_nif: fields.nif.trim() || null,
+        p_email: fields.email.trim() || null, p_contacto: fields.contacto.trim() || null, p_morada: fields.morada.trim() || null
+      };
       const payload = personId
-        ? { p_colaborador_id: personId, p_nome: fields.nome.trim(), p_funcao: fields.funcao.trim(), p_data_admissao: fields.data_admissao, p_data_nascimento: fields.data_nascimento || null, p_data_saida: fields.data_saida || null }
-        : { p_nome: fields.nome.trim(), p_funcao: fields.funcao.trim(), p_data_admissao: fields.data_admissao, p_data_nascimento: fields.data_nascimento || null, p_alocacao_tipo: fields.alocacao_tipo, p_obra_id: fields.obra_id || null };
+        ? { p_colaborador_id: personId, ...commonFields, p_data_saida: fields.data_saida || null }
+        : { ...commonFields, p_alocacao_tipo: fields.alocacao_tipo, p_obra_id: fields.obra_id || null };
       const response = await supabase(`rpc/${functionName}`, { method: "POST", body: JSON.stringify(payload) });
       if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível guardar o colaborador."));
       await reloadActiveCollaborators();
     } else if (personId) {
       const current = collaborators.find(item => item.id === personId) || teamData.inactiveCollaborators.find(item => item.id === personId);
-      const updated = { ...current, nome: fields.nome.trim(), funcao: fields.funcao.trim(), data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null, data_saida: fields.data_saida || null };
+      const updated = { ...current, nome: fields.nome.trim(), funcao: fields.funcao.trim(), nivel: fields.nivel.trim() || null, valor_hora: fields.valor_hora === "" ? null : Number(fields.valor_hora), nif: fields.nif.trim() || null, email: fields.email.trim() || null, contacto: fields.contacto.trim() || null, morada: fields.morada.trim() || null, data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null, data_saida: fields.data_saida || null };
       collaborators = collaborators.filter(item => item.id !== personId);
       teamData.inactiveCollaborators = teamData.inactiveCollaborators.filter(item => item.id !== personId);
       (updated.data_saida ? teamData.inactiveCollaborators : collaborators).push(updated);
     } else {
-      const created = { id: crypto.randomUUID(), nome: fields.nome.trim(), funcao: fields.funcao.trim(), data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null };
+      const created = { id: crypto.randomUUID(), nome: fields.nome.trim(), funcao: fields.funcao.trim(), nivel: fields.nivel.trim() || null, valor_hora: fields.valor_hora === "" ? null : Number(fields.valor_hora), nif: fields.nif.trim() || null, email: fields.email.trim() || null, contacto: fields.contacto.trim() || null, morada: fields.morada.trim() || null, data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null };
       collaborators.push(created);
       teamData.allocations.push({ id: crypto.randomUUID(), colaborador_id: created.id, obra_id: fields.alocacao_tipo === "obra" ? fields.obra_id : null, tipo_alocacao: fields.alocacao_tipo, descricao_livre: fields.alocacao_tipo === "escritorio" ? "Escritório" : null, semana_inicio: mondayIso(fields.data_admissao), data: fields.data_admissao, periodo: "dia_inteiro" });
     }
@@ -1760,7 +1769,7 @@ async function reactivateCollaborator(personId) {
   if (!window.confirm(`Reativar ${person.nome}? Todo o histórico anterior continuará associado.`)) return;
   try {
     if (isSupabaseConfigured) {
-      const response = await supabase("rpc/fn_atualizar_colaborador_ciclo_vida", { method: "POST", body: JSON.stringify({ p_colaborador_id: person.id, p_nome: person.nome, p_funcao: person.funcao, p_data_admissao: person.data_admissao, p_data_nascimento: person.data_nascimento || null, p_data_saida: null }) });
+      const response = await supabase("rpc/fn_atualizar_colaborador_ciclo_vida", { method: "POST", body: JSON.stringify({ p_colaborador_id: person.id, p_nome: person.nome, p_funcao: person.funcao, p_data_admissao: person.data_admissao, p_data_nascimento: person.data_nascimento || null, p_data_saida: null, p_nivel: person.nivel || null, p_valor_hora: person.valor_hora ?? null, p_nif: person.nif || null, p_email: person.email || null, p_contacto: person.contacto || null, p_morada: person.morada || null }) });
       if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível reativar o colaborador."));
       await reloadActiveCollaborators();
     } else {
@@ -2294,7 +2303,7 @@ async function loadTeamData(force = false) {
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
-    canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
     effectiveRole() === "encarregado"
       ? supabase("rpc/fn_quadro_ferias_encarregado_global", { method: "POST", body: JSON.stringify({ p_data_inicio: boardStart < vacationBounds.start ? boardStart : vacationBounds.start, p_data_fim: boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end }) })
       : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
