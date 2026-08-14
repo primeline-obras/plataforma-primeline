@@ -1,0 +1,284 @@
+/*
+ * PRIMELINE visual identity
+ * Central presentation layer for reusable KPI cards, data tables and status
+ * badges. It is deliberately loaded after styles.css and does not change
+ * layout, data or business behaviour.
+ */
+:root {
+  --pl-anthracite: #20242b;
+  --pl-gold: #d9a441;
+  --pl-on-anthracite: #f1efe8;
+  --pl-on-anthracite-muted: #b4b2a9;
+  --pl-state-positive-bg: #eaf3de;
+  --pl-state-positive-text: #27500a;
+  --pl-state-progress-bg: #faeeda;
+  --pl-state-progress-text: #633806;
+  --pl-state-waiting-bg: #f1efe8;
+  --pl-state-waiting-text: #5f5e5a;
+  --pl-state-negative-bg: #fcebeb;
+  --pl-state-negative-text: #8b2f2f;
+}
+
+/* Shared KPI / summary cards. These brand colours remain fixed in both themes. */
+:where(
+  .overview-kpis article,
+  .overview-role-kpis article,
+  .meeting-kpis article,
+  .rsp-kpis > div,
+  .team-kpis article,
+  .planning-summary-kpis article,
+  .subcontractors-kpis article,
+  .supplier-detail-kpis > div,
+  .work-kpis > div,
+  .work-phase-kpis article,
+  .work-limited-summary > div,
+  .invoice-detail-summary > div,
+  .procurement-summary > div,
+  .measurement-kpis > div,
+  .management-map-summary > span,
+  .tee-kpis article,
+  .overview-cash-values > span,
+  .financial-summary > div,
+  .map-financial-summary > div,
+  .consolidated-kpis article,
+  .project-summary > div
+) {
+  background: var(--pl-anthracite) !important;
+  border: 1px solid #343a43 !important;
+  color: var(--pl-on-anthracite) !important;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 22%);
+}
+
+:where(
+  .overview-kpis article,
+  .overview-role-kpis article,
+  .meeting-kpis article,
+  .rsp-kpis > div,
+  .team-kpis article,
+  .planning-summary-kpis article,
+  .subcontractors-kpis article,
+  .supplier-detail-kpis > div,
+  .work-kpis > div,
+  .work-phase-kpis article,
+  .work-limited-summary > div,
+  .invoice-detail-summary > div,
+  .procurement-summary > div,
+  .measurement-kpis > div,
+  .management-map-summary > span,
+  .tee-kpis article,
+  .overview-cash-values > span,
+  .financial-summary > div,
+  .map-financial-summary > div,
+  .consolidated-kpis article,
+  .project-summary > div
+) > :where(span, small, label):first-child {
+  color: var(--pl-on-anthracite-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+:where(
+  .overview-kpis article,
+  .overview-role-kpis article,
+  .meeting-kpis article,
+  .rsp-kpis > div,
+  .team-kpis article,
+  .planning-summary-kpis article,
+  .subcontractors-kpis article,
+  .supplier-detail-kpis > div,
+  .work-kpis > div,
+  .work-phase-kpis article,
+  .work-limited-summary > div,
+  .invoice-detail-summary > div,
+  .procurement-summary > div,
+  .measurement-kpis > div,
+  .management-map-summary > span,
+  .tee-kpis article,
+  .overview-cash-values > span,
+  .financial-summary > div,
+  .map-financial-summary > div,
+  .consolidated-kpis article,
+  .project-summary > div
+) > :where(strong, b) {
+  color: var(--pl-on-anthracite) !important;
+  font-size: clamp(22px, 1.6vw, 24px) !important;
+  font-weight: 500 !important;
+}
+
+:where(
+  .overview-kpis article,
+  .overview-role-kpis article,
+  .meeting-kpis article,
+  .rsp-kpis > div,
+  .team-kpis article,
+  .planning-summary-kpis article,
+  .subcontractors-kpis article,
+  .supplier-detail-kpis > div,
+  .work-kpis > div,
+  .work-phase-kpis article,
+  .work-limited-summary > div,
+  .invoice-detail-summary > div,
+  .procurement-summary > div,
+  .measurement-kpis > div,
+  .management-map-summary > span,
+  .tee-kpis article,
+  .overview-cash-values > span,
+  .financial-summary > div,
+  .map-financial-summary > div,
+  .consolidated-kpis article,
+  .project-summary > div
+) :where(small, em) {
+  color: var(--pl-on-anthracite-muted) !important;
+}
+
+/* Opt-in emphasis for the main KPI in any present or future group. */
+:where(.kpi-highlight, .kpi-featured, [data-kpi-highlight="true"]) {
+  border-color: var(--pl-gold) !important;
+}
+
+:where(.kpi-highlight, .kpi-featured, [data-kpi-highlight="true"]) :where(span, small, strong, b) {
+  color: var(--pl-gold) !important;
+}
+
+/* Data tables: one quiet, reusable treatment throughout the application. */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+table thead th {
+  color: var(--text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+table tbody tr,
+table tbody tr:nth-child(odd),
+table tbody tr:nth-child(even) {
+  background: transparent !important;
+}
+
+table tbody :where(td, th) {
+  border-bottom: .5px solid var(--line) !important;
+}
+
+table tbody :where(td, th) :where(a, strong),
+table tbody th {
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  text-decoration: none;
+}
+
+/* Common badge geometry. */
+:where(
+  .work-status,
+  .approval-badge,
+  .measurement-state,
+  .planning-state,
+  .supplier-work-state,
+  .index-state,
+  .settings-status,
+  .direct-debit-status,
+  .absence-state,
+  .tee-status,
+  .action-state,
+  .chosen-candidate,
+  .invoice-guide-status,
+  .birthday-badge,
+  .status-badge,
+  .state-badge,
+  .rnc-gravity,
+  .rnc-status,
+  [data-status-badge]
+) {
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px !important;
+  font-style: normal;
+  font-weight: 700 !important;
+  letter-spacing: .07em;
+  line-height: 1.2;
+  padding: .45em .8em;
+  text-transform: uppercase;
+}
+
+/* Positive / completed. */
+:where(
+  .work-status, .approval-badge, .measurement-state, .planning-state,
+  .supplier-work-state, .index-state, .settings-status, .direct-debit-status,
+  .absence-state, .tee-status, .action-state, .invoice-guide-status,
+  .status-badge, .state-badge, .rnc-status, [data-status-badge]
+):where(
+  .adjudicado, .aprovado, .aprovada, .concluido, .concluida, .pago,
+  .ativa, .ativo, .respondido, .valid, .positive, .justificada,
+  [data-state="adjudicado"], [data-state="aprovado"],
+  [data-state="concluido"], [data-state="pago"]
+),
+.chosen-candidate,
+.status-positive {
+  background: var(--pl-state-positive-bg) !important;
+  color: var(--pl-state-positive-text) !important;
+}
+
+/* In progress / neutral. */
+:where(
+  .work-status, .approval-badge, .measurement-state, .planning-state,
+  .supplier-work-state, .index-state, .settings-status, .direct-debit-status,
+  .absence-state, .tee-status, .action-state, .invoice-guide-status,
+  .status-badge, .state-badge, .rnc-status, [data-status-badge]
+):where(
+  .em_comparacao, .em_curso, .em_execucao, .pendente, .por_iniciar,
+  .warning, .attention, [data-state="em_comparacao"],
+  [data-state="em_curso"], [data-state="em_execucao"],
+  [data-state="pendente"], [data-state="por_iniciar"]
+),
+.status-progress {
+  background: var(--pl-state-progress-bg) !important;
+  color: var(--pl-state-progress-text) !important;
+}
+
+/* Waiting / analysis. */
+:where(
+  .work-status, .approval-badge, .measurement-state, .planning-state,
+  .supplier-work-state, .index-state, .settings-status, .direct-debit-status,
+  .absence-state, .tee-status, .action-state, .invoice-guide-status,
+  .status-badge, .state-badge, .rnc-status, [data-status-badge]
+):where(
+  .em_analise, .aguarda_resposta, .enviado, .nao_avaliado, .inativo,
+  [data-state="em_analise"], [data-state="aguarda_resposta"],
+  [data-state="enviado"]
+),
+.status-waiting {
+  background: var(--pl-state-waiting-bg) !important;
+  color: var(--pl-state-waiting-text) !important;
+}
+
+/* Negative / delayed. */
+:where(
+  .work-status, .approval-badge, .measurement-state, .planning-state,
+  .supplier-work-state, .index-state, .settings-status, .direct-debit-status,
+  .absence-state, .tee-status, .action-state, .invoice-guide-status,
+  .status-badge, .state-badge, .rnc-status, [data-status-badge]
+):where(
+  .recusado, .recusada, .atrasado, .em_atraso, .cancelado, .cancelada,
+  .bloqueado, .nao_recomendado, .impedido, .urgent, .negative,
+  [data-state="recusado"], [data-state="atrasado"],
+  [data-state="cancelado"], [data-state="impedido"]
+),
+.status-negative {
+  background: var(--pl-state-negative-bg) !important;
+  color: var(--pl-state-negative-text) !important;
+}
+
+/* RNC gravity follows the same semantic palette. */
+.rnc-gravity.critica { background: var(--pl-state-negative-bg) !important; color: var(--pl-state-negative-text) !important; }
+.rnc-gravity.maior { background: var(--pl-state-progress-bg) !important; color: var(--pl-state-progress-text) !important; }
+.rnc-gravity.menor { background: #fff5c2 !important; color: #6b5200 !important; }
