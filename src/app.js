@@ -2516,7 +2516,7 @@ async function loadWorkDetails(workId) {
     workDetails = {
       contract: { venda_contratual_inicial: 553619.19, venda_contratual_efetiva: 472179.26, custo_direto_efetivo: 355023.64, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
       investment: null, impacts: [], tees: [
-        { id: "tee-demo-1", obra_id: work.id, fase_id: "f-0", numero: "TEE 01", revisao: "REV00", descricao: "Trabalhos adicionais de demonstração", especialidade: "Construção civil", valor: 12500, preco_custo: 8200, dias_prorrogacao: 3, estado_aprovacao_gerencia: "aprovado", estado_aprovacao_cliente: "pendente", data_envio: "2026-07-20" },
+        { id: "tee-demo-1", obra_id: work.id, fase_id: "f-0", numero: "TEE 01", revisao: "REV00", descricao: "Trabalhos adicionais de demonstração", especialidade: "Construção civil", valor: 12500, preco_custo: 8200, dias_prorrogacao: 3, estado_aprovacao_cliente: "pendente", data_envio: "2026-07-20" },
       ], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
       phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, descricao: `Fase ${index + 1}` })),
       phasePlanning: Array.from({ length: 10 }, (_, index) => ({
@@ -3115,7 +3115,7 @@ function renderTeesTab(work) {
       return `<article class="tee-card">
         <div class="tee-card-main"><span>${safeText(tee.numero || "TEE")} · ${safeText(tee.revisao || "REV00")}</span><strong>${safeText(tee.descricao || "Sem descrição")}</strong><small>${safeText(tee.especialidade || "Sem especialidade")} · ${safeText(phase ? `${phase.codigo || ""} ${phase.descricao || ""}`.trim() : "Sem fase")}</small></div>
         <div><span>VENDA</span><strong>${euro.format(Number(tee.valor || 0))}</strong><small>Custo ${euro.format(Number(tee.preco_custo || 0))}</small></div>
-        <div><span>GERÊNCIA</span><b class="tee-status ${safeText(tee.estado_aprovacao_gerencia || "pendente")}">${teeApprovalLabel(tee.estado_aprovacao_gerencia)}</b><small>Cliente: ${teeApprovalLabel(tee.estado_aprovacao_cliente)}</small></div>
+        <div><span>CLIENTE</span><b class="tee-status ${safeText(tee.estado_aprovacao_cliente || "pendente")}">${teeApprovalLabel(tee.estado_aprovacao_cliente)}</b><small>Estado de aprovação do dono de obra</small></div>
         <div><span>EXECUÇÃO</span><strong>${execution}</strong><small>${Number(tee.dias_prorrogacao || 0)} dias de prorrogação</small></div>
         ${canEditWork() ? `<button class="outline-action" type="button" data-edit-tee="${tee.id}">EDITAR</button>` : ""}
       </article>`;
@@ -3133,7 +3133,6 @@ function teeFormOptions(selectedId) {
 function openTeeDialog(teeId = "") {
   if (!canEditWork()) return toast("Não tem permissão para alterar TEEs nesta obra.", "error");
   const tee = workDetails.tees.find(item => item.id === teeId) || null;
-  const managementState = tee?.estado_aprovacao_gerencia || "pendente";
   const rfiOptions = workDetails.rfis.map(rfi => `<option value="${rfi.id}" ${rfi.id === tee?.rfi_id ? "selected" : ""}>${safeText(rfi.numero || rfi.assunto || "PDE")}</option>`).join("");
   $("#workflow-dialog-title").textContent = tee ? `EDITAR ${tee.numero || "TEE"}` : "NOVO TEE";
   $("#workflow-dialog-content").innerHTML = `<form id="tee-form" data-tee-id="${tee?.id || ""}">
@@ -3145,7 +3144,7 @@ function openTeeDialog(teeId = "") {
     <div class="form-row"><label>VALOR DE VENDA (€)<input name="valor" type="number" step="0.01" value="${tee?.valor ?? ""}"></label><label>PREÇO DE CUSTO (€)<input name="preco_custo" type="number" step="0.01" value="${tee?.preco_custo ?? ""}"></label></div>
     <div class="form-row"><label>DIAS DE PRORROGAÇÃO<input name="dias_prorrogacao" type="number" step="1" value="${tee?.dias_prorrogacao ?? 0}"></label><label>DATA DE ENVIO<input name="data_envio" type="date" value="${tee?.data_envio || ""}"></label></div>
     <div class="form-row"><label>ESTADO DO CLIENTE<div class="select-wrap"><select name="estado_aprovacao_cliente"><option value="pendente" ${tee?.estado_aprovacao_cliente !== "aprovado" && tee?.estado_aprovacao_cliente !== "recusado" ? "selected" : ""}>Pendente</option><option value="aprovado" ${tee?.estado_aprovacao_cliente === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${tee?.estado_aprovacao_cliente === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label><label>DATA DA RESPOSTA<input name="data_resposta" type="date" value="${tee?.data_resposta || ""}"></label></div>
-    <div class="form-row"><label>DATA DE APROVAÇÃO DO CLIENTE<input name="data_aprovacao_cliente" type="date" value="${tee?.data_aprovacao_cliente || ""}"></label>${hasFullAccess() ? `<label>APROVAÇÃO DA GERÊNCIA<div class="select-wrap"><select name="estado_aprovacao_gerencia"><option value="pendente" ${managementState === "pendente" ? "selected" : ""}>Pendente</option><option value="aprovado" ${managementState === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${managementState === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label>` : `<label>APROVAÇÃO DA GERÊNCIA<input value="${teeApprovalLabel(managementState)}" disabled></label>`}</div>
+    <label>DATA DE APROVAÇÃO DO CLIENTE<input name="data_aprovacao_cliente" type="date" value="${tee?.data_aprovacao_cliente || ""}"></label>
     <fieldset class="tee-execution"><legend>EXECUÇÃO PREVISTA</legend><div class="form-row"><label>INÍCIO<input name="data_inicio_execucao" type="date" value="${tee?.data_inicio_execucao || ""}"></label><label>FIM<input name="data_fim_execucao" type="date" value="${tee?.data_fim_execucao || ""}"></label></div><small>Quando o TEE estiver aprovado pelo cliente e estas datas estiverem preenchidas, o planeamento e a previsão financeira são atualizados automaticamente.</small></fieldset>
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${tee ? "GUARDAR ALTERAÇÕES" : "CRIAR TEE"} <span>→</span></button></div>
   </form>`;
@@ -3206,12 +3205,6 @@ async function submitTee(event) {
     data_inicio_execucao: start || null,
     data_fim_execucao: end || null,
   };
-  if (hasFullAccess()) {
-    const managementState = String(data.get("estado_aprovacao_gerencia") || "pendente");
-    payload.estado_aprovacao_gerencia = managementState;
-    payload.aprovado_por_gerencia = managementState === "aprovado" ? accessContext.profile?.id || existing?.aprovado_por_gerencia || null : null;
-    payload.data_aprovacao_gerencia = managementState === "aprovado" ? existing?.data_aprovacao_gerencia || new Date().toISOString() : null;
-  }
   button.disabled = true;
   errorElement.textContent = "";
   try {
