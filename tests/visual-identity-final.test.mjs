@@ -19,6 +19,17 @@ test("usa a paleta final exata", () => {
     "#F7EDD6"].forEach(color => assert.ok(css.includes(color), `falta ${color}`));
 });
 
+test("preserva o toggle com tokens próprios para claro e escuro", () => {
+  assert.match(css, /:root\[data-theme="light"\]/);
+  assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--bg:\s*#1A1D23/);
+  assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--card:\s*#23262D/);
+  assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--card-border:\s*#3A3D45/);
+  assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--action:\s*#D4A854/);
+  assert.match(css, /--pos-bg:\s*#1F2E22[\s\S]*?--pos-text:\s*#A8C4AE/);
+  assert.match(css, /--neg-bg:\s*#352321[\s\S]*?--neg-text:\s*#E0A49B/);
+  assert.match(css, /--warn-bg:\s*#342B1D[\s\S]*?--warn-text:\s*#E0BD78/);
+});
+
 test("usa IBM Plex e geometria final", () => {
   assert.match(css, /IBM\+Plex\+Mono/);
   assert.match(css, /IBM\+Plex\+Sans/);
@@ -34,7 +45,7 @@ test("botão primário é antracite e não dourado", () => {
 
 test("tabelas recebem números monoespaçados e links sem azul", () => {
   assert.match(css, /table \.ui-number-cell[\s\S]*?text-align:\s*right/);
-  assert.match(css, /table a[\s\S]*?color:\s*#8A6420/);
+  assert.match(css, /table a[\s\S]*?color:\s*var\(--action\)/);
   assert.match(js, /numericPattern/);
   assert.match(js, /ui-number-cell/);
 });

@@ -2,8 +2,7 @@
 
 /* PRIMELINE — camada visual final e transversal. Carregada depois de todos os estilos legados. */
 :root,
-:root[data-theme="light"],
-:root[data-theme="dark"] {
+:root[data-theme="light"] {
   color-scheme: light;
   font-family: "IBM Plex Sans", Arial, sans-serif;
   color: #3B3830;
@@ -19,6 +18,7 @@
   --text-primary: #3B3830;
   --text-secondary: #6B685F;
   --text-muted: #8A8578;
+  --text-hint: #A8A398;
   --ink: #3B3830;
   --muted: #6B685F;
   --charcoal: #20242B;
@@ -40,11 +40,48 @@
   --info-border: #F1EFE8;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #F1EFE8;
+  background: #1A1D23;
+  --bg: #1A1D23;
+  --bg-soft: #202329;
+  --sidebar-bg: #20242B;
+  --card: #23262D;
+  --paper: #23262D;
+  --card-border: #3A3D45;
+  --line: #3A3D45;
+  --border-strong: #4A4D55;
+  --text-primary: #F1EFE8;
+  --text-secondary: #B4B2A9;
+  --text-muted: #8A8578;
+  --text-hint: #8A8578;
+  --ink: #F1EFE8;
+  --muted: #B4B2A9;
+  --charcoal: #20242B;
+  --charcoal-2: #20242B;
+  --brand-amber: #D9A441;
+  --accent: #D9A441;
+  --action: #D4A854;
+  --pos-bg: #1F2E22;
+  --pos-text: #A8C4AE;
+  --pos-border: #1F2E22;
+  --neg-bg: #352321;
+  --neg-text: #E0A49B;
+  --neg-border: #352321;
+  --warn-bg: #342B1D;
+  --warn-text: #E0BD78;
+  --warn-border: #342B1D;
+  --info-bg: #2C2D30;
+  --info-text: #C2BFB6;
+  --info-border: #2C2D30;
+}
+
 html, body, main, .page { font-family: "IBM Plex Sans", Arial, sans-serif; }
-:root body, :root main, :root[data-theme="dark"] body, :root[data-theme="dark"] main { background: #FAF8F3; color: #3B3830; }
-h1, h2, h3, h4, h5, h6, .brand strong { font-family: "IBM Plex Sans", Arial, sans-serif; color: #3B3830; }
-p, small, .eyebrow, label, dt { color: #6B685F; }
-.eyebrow, [class*="hint"], [class*="meta"] small { color: #8A8578; }
+:root body, :root main { background: var(--bg); color: var(--text-primary); }
+h1, h2, h3, h4, h5, h6, .brand strong { font-family: "IBM Plex Sans", Arial, sans-serif; color: var(--text-primary); }
+p, small, .eyebrow, label, dt { color: var(--text-secondary); }
+.eyebrow, [class*="hint"], [class*="meta"] small { color: var(--text-muted); }
 
 /* A sidebar conserva a identidade escura em qualquer tema. */
 .sidebar { background: #20242B; color: #F1EFE8; }
@@ -60,9 +97,9 @@ p, small, .eyebrow, label, dt { color: #6B685F; }
   .supplier-directory-panel, .supplier-detail, .documents-center-panel,
   .planning-panel, .team-board-panel, .team-directory-panel,
   .cash-month-details article) {
-  background: #FFFDF9;
-  color: #3B3830;
-  border-color: #DDD8CC;
+  background: var(--card);
+  color: var(--text-primary);
+  border-color: var(--card-border);
   border-radius: 6px;
 }
 
@@ -71,15 +108,15 @@ p, small, .eyebrow, label, dt { color: #6B685F; }
   .subcontractors-kpis, .planning-summary-kpis) > article,
 :is(.work-kpis, .measurement-kpis, .supplier-detail-kpis) > div {
   position: relative;
-  background: #FFFDF9;
-  color: #3B3830;
-  border-color: #DDD8CC;
+  background: var(--card);
+  color: var(--text-primary);
+  border-color: var(--card-border);
   border-radius: 6px;
 }
 :is(.overview-kpis, .meeting-kpis, .rsp-kpis, .team-kpis, .tee-kpis,
   .subcontractors-kpis, .planning-summary-kpis) > article > span,
 :is(.work-kpis, .measurement-kpis, .supplier-detail-kpis) > div > span {
-  color: #6B685F;
+  color: var(--text-secondary);
   font: 600 11px "IBM Plex Sans", Arial, sans-serif;
   text-transform: uppercase;
 }
@@ -87,7 +124,7 @@ p, small, .eyebrow, label, dt { color: #6B685F; }
   .subcontractors-kpis, .planning-summary-kpis) > article > strong,
 :is(.work-kpis, .measurement-kpis, .supplier-detail-kpis) > div > strong,
 .heading-stat strong {
-  color: #3B3830;
+  color: var(--text-primary);
   font-family: "IBM Plex Mono", Consolas, monospace;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -112,21 +149,21 @@ p, small, .eyebrow, label, dt { color: #6B685F; }
 }
 
 /* Tabelas: sem zebra, hierarquia consistente e números alinhados. */
-table { width: 100%; border-collapse: collapse; border-radius: 6px; background: #FFFDF9; color: #3B3830; }
-table thead, table thead tr, table th { background: #FFFDF9 !important; }
+table { width: 100%; border-collapse: collapse; border-radius: 6px; background: var(--card); color: var(--text-primary); }
+table thead, table thead tr, table th { background: var(--card) !important; }
 table th {
   padding: 10px 12px;
-  border-bottom: 1px solid #CFC9BB;
-  color: #6B685F !important;
+  border-bottom: 1px solid var(--border-strong);
+  color: var(--text-secondary) !important;
   font: 600 10px "IBM Plex Sans", Arial, sans-serif !important;
   letter-spacing: .65px;
   text-transform: uppercase;
 }
 table tbody tr, table tr { background: transparent !important; }
-table td { padding: 10px 12px; border-bottom: .5px solid #DDD8CC; color: #3B3830; font-family: "IBM Plex Sans", Arial, sans-serif; }
+table td { padding: 10px 12px; border-bottom: .5px solid var(--card-border); color: var(--text-primary); font-family: "IBM Plex Sans", Arial, sans-serif; }
 table tr:last-child td { border-bottom: 0; }
-table a, table button:not(.primary-button), .document-link, a:not(.primary-button) { color: #8A6420; }
-table .ui-identifier-cell { color: #3B3830; font-weight: 500; }
+table a, table button:not(.primary-button), .document-link, a:not(.primary-button) { color: var(--action); }
+table .ui-identifier-cell { color: var(--text-primary); font-weight: 500; }
 table .ui-number-cell,
 [data-number], [data-numeric], .numeric, .number, .amount, .currency, .percentage,
 .invoice-value, dd, .meeting-dl dd, .cash-month-details dd {
@@ -148,22 +185,22 @@ table .ui-number-cell { text-align: right !important; }
   letter-spacing: .55px;
   text-transform: uppercase;
 }
-.ui-state-positive, :is(.approved, .aprovado, .adjudicado, .concluido, .pago, .positive)[class*="status"] { background: #E6EDE4 !important; color: #3F6248 !important; }
-.ui-state-negative, :is(.rejected, .recusado, .cancelado, .atrasado, .urgent, .negative)[class*="status"] { background: #F2E3E0 !important; color: #8C4A40 !important; }
-.ui-state-progress, :is(.pending, .pendente, .em_curso, .em_execucao)[class*="status"] { background: #F7EDD6 !important; color: #8A6420 !important; }
-.ui-state-waiting { background: #F1EFE8 !important; color: #5F5E5A !important; }
+.ui-state-positive, :is(.approved, .aprovado, .adjudicado, .concluido, .pago, .positive)[class*="status"] { background: var(--pos-bg) !important; color: var(--pos-text) !important; }
+.ui-state-negative, :is(.rejected, .recusado, .cancelado, .atrasado, .urgent, .negative)[class*="status"] { background: var(--neg-bg) !important; color: var(--neg-text) !important; }
+.ui-state-progress, :is(.pending, .pendente, .em_curso, .em_execucao)[class*="status"] { background: var(--warn-bg) !important; color: var(--warn-text) !important; }
+.ui-state-waiting { background: var(--info-bg) !important; color: var(--info-text) !important; }
 .ui-state-decision { background: #D9A441 !important; color: #20242B !important; }
 
 /* Formulários e controlos. */
 button, input, select, textarea, .select-wrap, .search-box, .display-toggle,
 .outline-action, .primary-button, .secondary-button { border-radius: 4px !important; }
 input, select, textarea, .search-box {
-  border: 1px solid #DDD8CC;
-  background: #FFFDF9;
-  color: #3B3830;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text-primary);
   font-family: "IBM Plex Sans", Arial, sans-serif;
 }
-input::placeholder, textarea::placeholder { color: #A8A398; }
+input::placeholder, textarea::placeholder { color: var(--text-hint); }
 input:focus, select:focus, textarea:focus, .search-box:focus-within {
   border-color: #D9A441 !important;
   outline: 0;
@@ -177,12 +214,13 @@ input:focus, select:focus, textarea:focus, .search-box:focus-within {
 .primary-button:hover, button[type="submit"]:hover { background: #30353D !important; }
 .outline-action, .secondary-button, .upload-button {
   background: transparent !important;
-  border: 1px solid #CFC9BB !important;
-  color: #3B3830 !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--text-primary) !important;
 }
 
 /* O topo acompanha o fundo final; o login continua claro por definição. */
-.topbar, :root[data-theme="dark"] .topbar { background: rgba(250,248,243,.94); border-color: #DDD8CC; }
+.topbar { background: rgba(250,248,243,.94); border-color: var(--card-border); }
+:root[data-theme="dark"] .topbar { background: rgba(26,29,35,.94); }
 .auth-screen { background: #FAF8F3; }
 .auth-card { background: #FFFDF9; color: #3B3830; border-radius: 6px; }
 
