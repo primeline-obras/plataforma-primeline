@@ -6,6 +6,8 @@ assert.equal(teeClientState("Aprovado"), "aprovado");
 assert.equal(teeClientState("Em elaboração"), "em_elaboracao");
 assert.equal(teeClientState("AGUARDA RESPOSTA"), "aguarda_resposta");
 assert.equal(isApprovedTee({ estado_aprovacao_cliente: "APROVADO" }), true);
+assert.equal(isApprovedTee({ estado_aprovacao_cliente: "aprovado", estado_aprovacao_gerencia: "recusado" }), true);
+assert.equal(isApprovedTee({ estado_aprovacao_cliente: "pendente", estado_aprovacao_gerencia: "aprovado" }), false);
 assert.equal(isPendingTee({ estado_aprovacao_cliente: "em_elaboracao" }), true);
 assert.equal(isPendingTee({ estado_aprovacao_cliente: "aguarda resposta" }), true);
 assert.equal(isPendingTee({ estado_aprovacao_cliente: "pendente" }), true);

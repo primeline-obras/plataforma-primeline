@@ -24,6 +24,16 @@ assert.match(properties, /NOVA REUNIÃO DE CONDOMÍNIO/);
 assert.match(properties, /imoveis_reunioes_condominio\?select=/);
 assert.match(budgets, /ENVIOS E RETIFICAÇÕES/);
 assert.match(budgets, /pedidos_orcamento_versoes\?select=/);
+assert.match(budgets, /recusado:\s*"Recusado"/);
+assert.match(budgets, /cancelado:\s*"Cancelado"/);
+assert.match(budgets, /prioritario/);
+assert.match(budgets, /orderedRequests/);
+
+const migration = readFileSync(new URL("../supabase/pedidos_orcamento_estados_prioridade.sql", import.meta.url), "utf8");
+assert.match(migration, /add column if not exists prioritario boolean not null default false/i);
+assert.match(migration, /where estado = 'perdido'/i);
+assert.match(migration, /'recusado'::text, 'cancelado'::text/i);
+assert.doesNotMatch(migration, /update\s+public\.pedidos_orcamento[\s\S]+set\s+estado\s*=\s*'recusado'/i);
 assert.match(budgets, /situacao_atual/);
 assert.match(sql, /cross join \(values \(15\), \(7\), \(3\)\)/i);
 assert.match(sql, /'reuniao_condominio'[\s\S]*?\n\s*7,/i);

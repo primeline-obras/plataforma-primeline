@@ -32,8 +32,9 @@ create table if not exists public.pedidos_orcamento (
   estado text not null default 'em_curso'
     check (estado = any (array[
       'em_curso'::text, 'enviado'::text, 'aguarda_resposta'::text,
-      'adjudicado'::text, 'perdido'::text
+      'adjudicado'::text, 'recusado'::text, 'cancelado'::text
     ])),
+  prioritario boolean not null default false,
   situacao_atual text,
   criado_por uuid references public.utilizadores(id),
   criado_em timestamptz not null default now()
