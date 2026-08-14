@@ -12,9 +12,9 @@ const teeHeaders = ["Nº TEE*", "Obra (nº)*", "Fase (código)", "Descrição", 
 const teeItemHeaders = ["Nº TEE*", "Nº Artigo*", "Descrição*", "Unidade", "Quantidade", "Preço Unitário (€)", "Valor Total (€)"];
 
 test("Subempreitadas valida o modelo, fornecedor e estado antes de gravar", () => {
-  const workbook = { Sheets: { Subempreitadas: [subcontractHeaders, [120, "F03", "Caixilharia", "Fornecedor A", 100, 130, 30, "01/08/2026", "02/08/2026", "03/08/2026", 100, "por_fase", "15_dias", "04/08/2026", "30/08/2026", "em_execucao"]] } };
+  const workbook = { Sheets: { Subempreitadas: [subcontractHeaders, [120, "F03", "Caixilharia", "Fornecedor A", 100, 130, 30, "01/08/2026", "02/08/2026", "03/08/2026", 100, "por_fase", "15_dias", "04/08/2026", "30/08/2026", "em_execucao"], [120, "F03", "Pintura", "Fornecedor A", 80, 100, 20, "01/08/2026", "02/08/2026", "03/08/2026", 80, "por_fase", "15_dias", "04/08/2026", "30/08/2026", "adjudicado"]] } };
   const rows = __test.parseSubcontracts(workbook, { work: { id: "w1", numero: 120 }, phases: [{ id: "f3", codigo: "F03" }], suppliers: [{ id: "s1", nome: "Fornecedor A" }], consultations: [], subcontracts: [] });
-  assert.equal(rows.length, 1); assert.deepEqual(rows[0].errors, []); assert.equal(rows[0].payload.fornecedor_id, "s1"); assert.equal(rows[0].payload.data_inicio_prevista, "2026-08-04");
+  assert.equal(rows.length, 2); assert.deepEqual(rows[0].errors, []); assert.deepEqual(rows[1].errors, []); assert.equal(rows[0].payload.fornecedor_id, "s1"); assert.equal(rows[0].payload.data_inicio_prevista, "2026-08-04");
 });
 
 test("TEEs liga cabeçalho e itens pelo Nº TEE e avisa quando não há itens", () => {
@@ -36,5 +36,13 @@ test("Mapa Financeiro reconhece Obra + Jan-Dez e os três grupos fixos", () => {
 test("Os três ecrãs expõem o botão e a confirmação explícita", () => {
   const sources = ["src/procurement.js", "src/app.js", "src/financial-map.js", "src/xlsx-operational-import.js"].map(path => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8")).join("\n");
   assert.match(sources, /data-import-subcontracts/); assert.match(sources, /data-import-tees/); assert.match(sources, /data-import-financial-map/); assert.match(sources, /CONFIRMAR IMPORTAÇÃO/);
+});
+
+test("o importador é inicializado antes dos módulos que o consomem", () => {
+  const app = fs.readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+  const initialization = app.indexOf("const operationalXlsxImportModule = createOperationalXlsxImport");
+  assert.ok(initialization >= 0);
+  assert.ok(initialization < app.indexOf("const financialMapModule = createFinancialMapModule"));
+  assert.match(fs.readFileSync(new URL("../src/procurement.js", import.meta.url), "utf8"), /typeof onImportExcel !== "function"/);
 });
 
