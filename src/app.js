@@ -44,6 +44,17 @@ const icon = (name) => {
     x: '<path d="m6 6 12 12M18 6 6 18"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
     upload: '<path d="M12 16V4m0 0L7 9m5-5 5 5M5 20h14"/>',
+    "layout-dashboard": '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    "users-round": '<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3-1.5-5.5-4-7M16 3.5a5 5 0 0 1 0 9"/>',
+    "layout-kanban": '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7M12 7v4M16 7v9"/>',
+    building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2M10 6h4M10 10h4M10 14h4M10 18h4"/>',
+    receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6M16 12h-6M13 16h-3"/>',
+    hardhat: '<path d="M2 18a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2H2Z"/><path d="M6 16v-3a6 6 0 0 1 12 0v3M10 5v5M14 5v5"/>',
+    gantt: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h7M8 12h6M11 16h5"/>',
+    "file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/>',
+    "alert-triangle": '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+    presentation: '<path d="M2 3h20M4 3v13h16V3M8 21l4-5 4 5M8 9h8M8 12h5"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
@@ -132,8 +143,8 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">◫ <span>Projetos</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">▣ <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">${icon("layout-dashboard")} <span>Visão geral</span></button><button data-view="rsp">${icon("users-round")} <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">${icon("layout-kanban")} <span>Projetos</span></button><button data-view="works">${icon("building")} <span>Obras</span></button>
+        <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
