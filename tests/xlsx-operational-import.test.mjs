@@ -8,7 +8,7 @@ const { __test } = await import("../src/xlsx-operational-import.js");
 const subcontractHeaders = [
   "Obra (nº)*", "Fase (código)", "Trabalho / Especialidade*", "Fornecedor (nome)", "Custo Direto (€)", "Preço de Venda (€)", "Margem Prevista (€)", "Data do Pedido", "Data da Proposta", "Data do Contrato", "Valor Adjudicado (€)", "Tipo de Pagamento", "Condição de Pagamento", "Data Início Prevista", "Data Fim Prevista", "Estado*",
 ];
-const teeHeaders = ["Nº TEE*", "Obra (nº)*", "Fase (código)", "Descrição", "Especialidade", "Valor (€)", "Preço de Custo (€)", "Dias de Prorrogação", "Data de Envio", "Data de Resposta", "Estado Aprovação Gerência", "Estado Aprovação Cliente", "Revisão", "Data Início Execução", "Data Fim Execução"];
+const teeHeaders = ["Nº TEE*", "Obra (nº)*", "Fase (código)", "Descrição", "Especialidade", "Valor (€)", "Preço de Custo (€)", "Dias de Prorrogação", "Data de Envio", "Data de Resposta", "Estado Aprovação Cliente", "Revisão", "Data Início Execução", "Data Fim Execução"];
 const teeItemHeaders = ["Nº TEE*", "Nº Artigo*", "Descrição*", "Unidade", "Quantidade", "Preço Unitário (€)", "Valor Total (€)"];
 
 test("Subempreitadas valida o modelo, fornecedor e estado antes de gravar", () => {
@@ -19,7 +19,7 @@ test("Subempreitadas valida o modelo, fornecedor e estado antes de gravar", () =
 
 test("TEEs liga cabeçalho e itens pelo Nº TEE e avisa quando não há itens", () => {
   const workbook = { Sheets: {
-    "TEE_Cabeçalho": [teeHeaders, ["TEE 01", 120, "F01", "Trabalho", "Geral", 1000, 700, 0, "01/08/2026", "", "aprovado", "pendente", "REV00", "", ""], ["TEE 02", 120, "F01", "Sem itens", "Geral", 10, 5, 0, "", "", "pendente", "pendente", "REV00", "", ""]],
+    "TEE_Cabeçalho": [teeHeaders, ["TEE 01", 120, "F01", "Trabalho", "Geral", 1000, 700, 0, "01/08/2026", "", "pendente", "REV00", "", ""], ["TEE 02", 120, "F01", "Sem itens", "Geral", 10, 5, 0, "", "", "pendente", "REV00", "", ""]],
     "TEE_Itens": [teeItemHeaders, ["TEE 01", "1.1", "Artigo", "un", 2, 5, 10]],
   } };
   const rows = __test.parseTees(workbook, { work: { id: "w1", numero: 120 }, phases: [{ id: "f1", codigo: "F01", descricao: "Estaleiro" }], tees: [] });
