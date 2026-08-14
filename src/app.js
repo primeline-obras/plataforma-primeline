@@ -748,6 +748,7 @@ const subcontractorsModule = createSubcontractorsModule({
   getSubcontracts: () => subcontracts,
   euro,
   toast,
+  canManageSpecialties: () => hasFullAccess() || isAdministrative(),
 });
 
 function renderUser() {
