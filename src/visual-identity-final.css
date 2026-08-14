@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+/* PRIMELINE — camada visual final e transversal. Carregada depois de todos os estilos legados. */
+:root,
+:root[data-theme="light"],
+:root[data-theme="dark"] {
+  color-scheme: light;
+  font-family: "IBM Plex Sans", Arial, sans-serif;
+  color: #3B3830;
+  background: #FAF8F3;
+  --bg: #FAF8F3;
+  --bg-soft: #EFEBE1;
+  --sidebar-bg: #20242B;
+  --card: #FFFDF9;
+  --paper: #FFFDF9;
+  --card-border: #DDD8CC;
+  --line: #DDD8CC;
+  --border-strong: #CFC9BB;
+  --text-primary: #3B3830;
+  --text-secondary: #6B685F;
+  --text-muted: #8A8578;
+  --ink: #3B3830;
+  --muted: #6B685F;
+  --charcoal: #20242B;
+  --charcoal-2: #20242B;
+  --brand-amber: #D9A441;
+  --accent: #D9A441;
+  --action: #8A6420;
+  --pos-bg: #E6EDE4;
+  --pos-text: #3F6248;
+  --pos-border: #E6EDE4;
+  --neg-bg: #F2E3E0;
+  --neg-text: #8C4A40;
+  --neg-border: #F2E3E0;
+  --warn-bg: #F7EDD6;
+  --warn-text: #8A6420;
+  --warn-border: #F7EDD6;
+  --info-bg: #F1EFE8;
+  --info-text: #5F5E5A;
+  --info-border: #F1EFE8;
+}
+
+html, body, main, .page { font-family: "IBM Plex Sans", Arial, sans-serif; }
+:root body, :root main, :root[data-theme="dark"] body, :root[data-theme="dark"] main { background: #FAF8F3; color: #3B3830; }
+h1, h2, h3, h4, h5, h6, .brand strong { font-family: "IBM Plex Sans", Arial, sans-serif; color: #3B3830; }
+p, small, .eyebrow, label, dt { color: #6B685F; }
+.eyebrow, [class*="hint"], [class*="meta"] small { color: #8A8578; }
+
+/* A sidebar conserva a identidade escura em qualquer tema. */
+.sidebar { background: #20242B; color: #F1EFE8; }
+.sidebar .brand strong, .sidebar nav button.active, .sidebar nav button:hover { color: #F1EFE8; }
+.sidebar .brand small, .sidebar nav p, .sidebar-user small { color: #B4B2A9; }
+.sidebar nav button { color: #B4B2A9; border-radius: 4px; }
+.sidebar nav button.active { background: rgba(255,255,255,.10); border-left-color: #D9A441; }
+
+/* Superfícies e cards partilhados. */
+:is(.panel, .work-detail, .works-list, .finance-column, .finance-card, .dialog-card,
+  .work-dialog-card, .workflow-dialog-card, .invoice-card, .paid-history,
+  .overview-panel, .meeting-card, .subcontract-card, .measurement-card,
+  .supplier-directory-panel, .supplier-detail, .documents-center-panel,
+  .planning-panel, .team-board-panel, .team-directory-panel,
+  .cash-month-details article) {
+  background: #FFFDF9;
+  color: #3B3830;
+  border-color: #DDD8CC;
+  border-radius: 6px;
+}
+
+/* KPI normal; apenas elementos explicitamente assinalados podem ser principais. */
+:is(.overview-kpis, .meeting-kpis, .rsp-kpis, .team-kpis, .tee-kpis,
+  .subcontractors-kpis, .planning-summary-kpis) > article,
+:is(.work-kpis, .measurement-kpis, .supplier-detail-kpis) > div {
+  position: relative;
+  background: #FFFDF9;
+  color: #3B3830;
+  border-color: #DDD8CC;
+  border-radius: 6px;
+}
+:is(.overview-kpis, .meeting-kpis, .rsp-kpis, .team-kpis, .tee-kpis,
+  .subcontractors-kpis, .planning-summary-kpis) > article > span,
+:is(.work-kpis, .measurement-kpis, .supplier-detail-kpis) > div > span {
+  color: #6B685F;
+  font: 600 11px "IBM Plex Sans", Arial, sans-serif;
+  text-transform: uppercase;
+}
+:is(.overview-kpis, .meeting-kpis, .rsp-kpis, .team-kpis, .tee-kpis,
+  .subcontractors-kpis, .planning-summary-kpis) > article > strong,
+:is(.work-kpis, .measurement-kpis, .supplier-detail-kpis) > div > strong,
+.heading-stat strong {
+  color: #3B3830;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+:is([data-kpi-principal="true"], .kpi-principal, .kpi-primary) {
+  background: #20242B !important;
+  color: #F1EFE8 !important;
+  border: 1px solid #D9A441 !important;
+}
+:is([data-kpi-principal="true"], .kpi-principal, .kpi-primary) > :is(span, strong) { color: #D9A441 !important; }
+:is([data-kpi-principal="true"], .kpi-principal, .kpi-primary)::after {
+  content: "PRINCIPAL";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #D9A441;
+  color: #20242B;
+  font: 600 9px "IBM Plex Sans", Arial, sans-serif;
+  letter-spacing: .6px;
+}
+
+/* Tabelas: sem zebra, hierarquia consistente e números alinhados. */
+table { width: 100%; border-collapse: collapse; border-radius: 6px; background: #FFFDF9; color: #3B3830; }
+table thead, table thead tr, table th { background: #FFFDF9 !important; }
+table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid #CFC9BB;
+  color: #6B685F !important;
+  font: 600 10px "IBM Plex Sans", Arial, sans-serif !important;
+  letter-spacing: .65px;
+  text-transform: uppercase;
+}
+table tbody tr, table tr { background: transparent !important; }
+table td { padding: 10px 12px; border-bottom: .5px solid #DDD8CC; color: #3B3830; font-family: "IBM Plex Sans", Arial, sans-serif; }
+table tr:last-child td { border-bottom: 0; }
+table a, table button:not(.primary-button), .document-link, a:not(.primary-button) { color: #8A6420; }
+table .ui-identifier-cell { color: #3B3830; font-weight: 500; }
+table .ui-number-cell,
+[data-number], [data-numeric], .numeric, .number, .amount, .currency, .percentage,
+.invoice-value, dd, .meeting-dl dd, .cash-month-details dd {
+  font-family: "IBM Plex Mono", Consolas, monospace !important;
+  font-variant-numeric: tabular-nums;
+}
+table .ui-number-cell { text-align: right !important; }
+
+/* Estados semânticos partilhados. */
+.ui-state-badge,
+:is(span, em, b, strong):is([class*="status"], [class*="badge"], [class*="pill"]) {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  border: 0 !important;
+  border-radius: 999px !important;
+  padding: 5px 9px;
+  font: 600 9px "IBM Plex Sans", Arial, sans-serif !important;
+  letter-spacing: .55px;
+  text-transform: uppercase;
+}
+.ui-state-positive, :is(.approved, .aprovado, .adjudicado, .concluido, .pago, .positive)[class*="status"] { background: #E6EDE4 !important; color: #3F6248 !important; }
+.ui-state-negative, :is(.rejected, .recusado, .cancelado, .atrasado, .urgent, .negative)[class*="status"] { background: #F2E3E0 !important; color: #8C4A40 !important; }
+.ui-state-progress, :is(.pending, .pendente, .em_curso, .em_execucao)[class*="status"] { background: #F7EDD6 !important; color: #8A6420 !important; }
+.ui-state-waiting { background: #F1EFE8 !important; color: #5F5E5A !important; }
+.ui-state-decision { background: #D9A441 !important; color: #20242B !important; }
+
+/* Formulários e controlos. */
+button, input, select, textarea, .select-wrap, .search-box, .display-toggle,
+.outline-action, .primary-button, .secondary-button { border-radius: 4px !important; }
+input, select, textarea, .search-box {
+  border: 1px solid #DDD8CC;
+  background: #FFFDF9;
+  color: #3B3830;
+  font-family: "IBM Plex Sans", Arial, sans-serif;
+}
+input::placeholder, textarea::placeholder { color: #A8A398; }
+input:focus, select:focus, textarea:focus, .search-box:focus-within {
+  border-color: #D9A441 !important;
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(217,164,65,.18) !important;
+}
+.primary-button, button[type="submit"], .card-actions .approve, .invoice-primary-actions > .approve {
+  background: #20242B !important;
+  border-color: #20242B !important;
+  color: #F1EFE8 !important;
+}
+.primary-button:hover, button[type="submit"]:hover { background: #30353D !important; }
+.outline-action, .secondary-button, .upload-button {
+  background: transparent !important;
+  border: 1px solid #CFC9BB !important;
+  color: #3B3830 !important;
+}
+
+/* O topo acompanha o fundo final; o login continua claro por definição. */
+.topbar, :root[data-theme="dark"] .topbar { background: rgba(250,248,243,.94); border-color: #DDD8CC; }
+.auth-screen { background: #FAF8F3; }
+.auth-card { background: #FFFDF9; color: #3B3830; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
