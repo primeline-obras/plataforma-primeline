@@ -14,6 +14,7 @@ export function createSettingsModule({
   getSession,
   getWorks,
   isAdmin,
+  canManageHolidays = isAdmin,
   toast,
   requestPasswordReset,
   toggleTheme,
@@ -22,7 +23,7 @@ export function createSettingsModule({
 }) {
   const state = {
     loaded: false, users: [], responsibilities: [], admins: [], company: null,
-    parameters: [],
+    parameters: [], holidays: [], holidayYear: new Date().getFullYear(), holidaysLoaded: false,
     adminTab: "management", audit: [], auditLoaded: false, auditLoading: false,
   };
 
@@ -33,6 +34,11 @@ export function createSettingsModule({
         <section class="panel settings-card"><header><div><p class="eyebrow">CONTA</p><h2>PERFIL</h2></div></header><div id="settings-profile"></div></section>
         <section class="panel settings-card"><header><div><p class="eyebrow">INTERFACE</p><h2>PREFERÊNCIAS</h2></div></header><div class="settings-preferences"><button type="button" data-settings-theme>ALTERAR TEMA</button><button type="button" data-settings-tv>MODO TV</button><p>As preferências ficam guardadas neste dispositivo.</p></div></section>
       </div>
+      <section id="settings-holidays" class="panel settings-card settings-holidays" hidden>
+        <header><div><p class="eyebrow">CALENDÁRIO DA EMPRESA</p><h2>FERIADOS E DIAS DE FOLGA</h2></div><span id="settings-holiday-count"></span></header>
+        <div class="settings-holiday-toolbar"><label>ANO<select data-holiday-year></select></label><p>Marque apenas os feriados que contam efetivamente como dia de folga da Primeline.</p></div>
+        <div id="settings-holiday-list" class="settings-holiday-list"></div>
+      </section>
       <section id="settings-admin" class="settings-admin" hidden>
         <div class="settings-divider"><span>ADMINISTRAÇÃO DA PLATAFORMA</span></div>
         <nav class="settings-admin-tabs" aria-label="Áreas de administração">
@@ -152,6 +158,34 @@ export function createSettingsModule({
     }).join("") || `<div class="settings-empty">SEM PARÂMETROS CONFIGURADOS</div>`;
   }
 
+  function renderHolidays() {
+    const section = root.querySelector("#settings-holidays");
+    if (!section) return;
+    section.hidden = !canManageHolidays();
+    if (!canManageHolidays()) return;
+    const years = [...new Set([state.holidayYear, ...state.holidays.map(item => Number(String(item.data).slice(0, 4)))])].sort();
+    const select = section.querySelector("[data-holiday-year]");
+    select.innerHTML = years.map(year => `<option value="${year}" ${year === state.holidayYear ? "selected" : ""}>${year}</option>`).join("");
+    const rows = state.holidays.filter(item => Number(String(item.data).slice(0, 4)) === state.holidayYear);
+    section.querySelector("#settings-holiday-count").textContent = `${rows.filter(item => item.folga).length} FOLGAS · ${rows.length} DATAS`;
+    section.querySelector("#settings-holiday-list").innerHTML = rows.map(item => `<article class="settings-holiday-row">
+      <time>${new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short" }).format(new Date(`${item.data}T12:00:00`))}</time>
+      <div><strong>${escapeHtml(item.nome)}</strong><span>${escapeHtml(item.ambito === "municipal" ? `Municipal · ${item.municipio}` : "Nacional")}</span></div>
+      <span>${item.folga ? "DESTACADO NOS MAPAS" : "DIA NORMAL"}</span>
+      <label><input type="checkbox" data-holiday-toggle="${item.id}" ${item.folga ? "checked" : ""}> FOLGA</label>
+    </article>`).join("") || `<div class="settings-empty">SEM FERIADOS CONFIGURADOS PARA ESTE ANO</div>`;
+  }
+
+  async function loadHolidays(force = false) {
+    if (!canManageHolidays() || (state.holidaysLoaded && !force)) return;
+    if (!isConfigured) { state.holidays = []; state.holidaysLoaded = true; renderHolidays(); return; }
+    try {
+      state.holidays = await request(`feriados_empresa?select=id,empresa_id,data,nome,ambito,municipio,folga,atualizado_por,atualizado_em&empresa_id=eq.${companyId}&order=data`, {}, "Não foi possível carregar os feriados");
+      state.holidaysLoaded = true;
+    } catch (error) { toast(error.message, "error"); }
+    renderHolidays();
+  }
+
   function auditTableLabel(value) {
     const table = String(value || "").replace(/^public\./, "");
     return ({
@@ -261,6 +295,8 @@ export function createSettingsModule({
     if (!root.innerHTML) shell();
     renderProfile();
     syncPreferences();
+    renderHolidays();
+    await loadHolidays(force);
     root.querySelector("#settings-admin").hidden = !isAdmin();
     if (!isAdmin() || (state.loaded && !force)) return;
     if (!isConfigured) {
@@ -340,6 +376,17 @@ export function createSettingsModule({
         await request(`administradores_plataforma?id=eq.${id}`, { method: "DELETE", headers: { Prefer: "return=minimal" } }, "Não foi possível remover o administrador");
         state.admins = state.admins.filter(item => item.id !== id); renderAdmins(); toast("Acesso total removido.");
       });
+      const holidayToggle = event.target.closest("[data-holiday-toggle]");
+      if (holidayToggle) return withButton(holidayToggle, async () => {
+        const holiday = state.holidays.find(item => item.id === holidayToggle.dataset.holidayToggle);
+        if (!holiday) return;
+        const folga = holidayToggle.checked;
+        const rows = await request(`feriados_empresa?id=eq.${holiday.id}&select=id,empresa_id,data,nome,ambito,municipio,folga,atualizado_por,atualizado_em`, {
+          method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ folga }),
+        }, "Não foi possível atualizar o feriado");
+        Object.assign(holiday, rows[0] || { folga });
+        renderHolidays(); toast(folga ? "Dia marcado como folga." : "Dia removido das folgas.");
+      });
     });
 
     root.addEventListener("input", event => {
@@ -347,6 +394,7 @@ export function createSettingsModule({
     });
     root.addEventListener("change", event => {
       if (event.target.matches("[data-audit-table], [data-audit-user], [data-audit-from], [data-audit-to]")) renderAudit();
+      if (event.target.matches("[data-holiday-year]")) { state.holidayYear = Number(event.target.value); renderHolidays(); }
     });
 
     root.addEventListener("submit", event => {
