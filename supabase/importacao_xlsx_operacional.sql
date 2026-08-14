@@ -214,17 +214,13 @@ begin
 
     insert into public.alteracoes_tee (
       obra_id, fase_id, numero, descricao, especialidade, valor, preco_custo,
-      dias_prorrogacao, data_envio, data_resposta, estado_aprovacao_gerencia,
-      estado_aprovacao_cliente, revisao, data_inicio_execucao, data_fim_execucao
+      dias_prorrogacao, data_envio, data_resposta, estado_aprovacao_cliente,
+      revisao, data_inicio_execucao, data_fim_execucao
     ) values (
       v_obra_id, v_fase_id, btrim(v_linha ->> 'numero'), nullif(v_linha ->> 'descricao', ''),
       nullif(v_linha ->> 'especialidade', ''), nullif(v_linha ->> 'valor', '')::numeric,
       nullif(v_linha ->> 'preco_custo', '')::numeric, coalesce(nullif(v_linha ->> 'dias_prorrogacao', '')::numeric, 0),
       nullif(v_linha ->> 'data_envio', '')::date, nullif(v_linha ->> 'data_resposta', '')::date,
-      case when public.fn_e_admin()
-        then coalesce(nullif(v_linha ->> 'estado_aprovacao_gerencia', ''), 'pendente')
-        else 'pendente'
-      end,
       coalesce(nullif(v_linha ->> 'estado_aprovacao_cliente', ''), 'pendente'),
       coalesce(nullif(v_linha ->> 'revisao', ''), 'REV00'),
       nullif(v_linha ->> 'data_inicio_execucao', '')::date,

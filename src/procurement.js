@@ -225,7 +225,12 @@ export function createProcurementModule({
 
   host.addEventListener("click", event => {
     if (event.target.closest("[data-import-subcontracts]")) {
-      onImportExcel?.({ work: state.work, phases: phases(), suppliers: getSuppliers(), consultations: state.consultations, subcontracts: getSubcontracts().filter(item => item.obra_id === state.work.id), onComplete: () => load(state.work, true) });
+      event.preventDefault();
+      if (typeof onImportExcel !== "function") {
+        toast("O importador de Excel não ficou disponível. Atualize a página e tente novamente.", "error");
+        return;
+      }
+      onImportExcel({ work: state.work, phases: phases(), suppliers: getSuppliers(), consultations: state.consultations, subcontracts: getSubcontracts().filter(item => item.obra_id === state.work.id), onComplete: () => load(state.work, true) });
       return;
     }
     const newButton = event.target.closest("[data-toggle-new-consultation]");

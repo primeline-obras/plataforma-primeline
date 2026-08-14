@@ -6,7 +6,7 @@ import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=13";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=4";
-import { createProcurementModule } from "./procurement.js?v=1";
+import { createProcurementModule } from "./procurement.js?v=2";
 import { createActionPlanModule } from "./action-plan.js?v=3";
 import { createDocumentsModule } from "./documents.js?v=1";
 import { createRncModule } from "./rnc.js?v=2";
@@ -18,7 +18,7 @@ import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
-import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=1";
+import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
 import { createProjectsModule } from "./projects.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
@@ -44,6 +44,17 @@ const icon = (name) => {
     x: '<path d="m6 6 12 12M18 6 6 18"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
     upload: '<path d="M12 16V4m0 0L7 9m5-5 5 5M5 20h14"/>',
+    "layout-dashboard": '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+    "users-round": '<path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3-1.5-5.5-4-7M16 3.5a5 5 0 0 1 0 9"/>',
+    "layout-kanban": '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7M12 7v4M16 7v9"/>',
+    building: '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M6 12H4a2 2 0 0 0-2 2v8h20v-8a2 2 0 0 0-2-2h-2M10 6h4M10 10h4M10 14h4M10 18h4"/>',
+    receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6M16 12h-6M13 16h-3"/>',
+    hardhat: '<path d="M2 18a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2H2Z"/><path d="M6 16v-3a6 6 0 0 1 12 0v3M10 5v5M14 5v5"/>',
+    gantt: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h7M8 12h6M11 16h5"/>',
+    "file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/>',
+    "alert-triangle": '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+    presentation: '<path d="M2 3h20M4 3v13h16V3M8 21l4-5 4 5M8 9h8M8 12h5"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   };
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || paths.invoice}</svg>`;
 };
@@ -132,8 +143,8 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">▦ <span>Visão geral</span></button><button data-view="rsp">▤ <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">◫ <span>Projetos</span></button><button data-view="works">▥ <span>Obras</span></button>
-        <button data-view="invoices">▤ <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">◇ <span>Subempreiteiros</span></button><button data-view="planning">▤ <span>Planeamento</span></button><button data-view="documents">□ <span>Documentos</span></button><button data-view="rnc">! <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">▣ <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">♙ <span>Equipa</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">${icon("layout-dashboard")} <span>Visão geral</span></button><button data-view="rsp">${icon("users-round")} <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">${icon("layout-kanban")} <span>Projetos</span></button><button data-view="works">${icon("building")} <span>Obras</span></button>
+        <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -704,7 +715,12 @@ const budgetRequestsModule = createBudgetRequestsModule({
   root: $("#budget-requests-view"), supabase, isConfigured: isSupabaseConfigured,
   getProfile: () => accessContext.profile, euro, prettyDate, toast,
 });
-let operationalXlsxImportModule;
+const operationalXlsxImportModule = createOperationalXlsxImport({
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getProfile: () => accessContext.profile,
+  toast,
+});
 const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
@@ -2516,7 +2532,7 @@ async function loadWorkDetails(workId) {
     workDetails = {
       contract: { venda_contratual_inicial: 553619.19, venda_contratual_efetiva: 472179.26, custo_direto_efetivo: 355023.64, valor_adiantamento: 110723.84, data_assinatura: "2026-02-11" },
       investment: null, impacts: [], tees: [
-        { id: "tee-demo-1", obra_id: work.id, fase_id: "f-0", numero: "TEE 01", revisao: "REV00", descricao: "Trabalhos adicionais de demonstração", especialidade: "Construção civil", valor: 12500, preco_custo: 8200, dias_prorrogacao: 3, estado_aprovacao_gerencia: "aprovado", estado_aprovacao_cliente: "pendente", data_envio: "2026-07-20" },
+        { id: "tee-demo-1", obra_id: work.id, fase_id: "f-0", numero: "TEE 01", revisao: "REV00", descricao: "Trabalhos adicionais de demonstração", especialidade: "Construção civil", valor: 12500, preco_custo: 8200, dias_prorrogacao: 3, estado_aprovacao_cliente: "pendente", data_envio: "2026-07-20" },
       ], labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
       phases: Array.from({ length: 10 }, (_, index) => ({ id: `f-${index}`, codigo: `F${String(index + 1).padStart(2, "0")}`, descricao: `Fase ${index + 1}` })),
       phasePlanning: Array.from({ length: 10 }, (_, index) => ({
@@ -3115,7 +3131,7 @@ function renderTeesTab(work) {
       return `<article class="tee-card">
         <div class="tee-card-main"><span>${safeText(tee.numero || "TEE")} · ${safeText(tee.revisao || "REV00")}</span><strong>${safeText(tee.descricao || "Sem descrição")}</strong><small>${safeText(tee.especialidade || "Sem especialidade")} · ${safeText(phase ? `${phase.codigo || ""} ${phase.descricao || ""}`.trim() : "Sem fase")}</small></div>
         <div><span>VENDA</span><strong>${euro.format(Number(tee.valor || 0))}</strong><small>Custo ${euro.format(Number(tee.preco_custo || 0))}</small></div>
-        <div><span>GERÊNCIA</span><b class="tee-status ${safeText(tee.estado_aprovacao_gerencia || "pendente")}">${teeApprovalLabel(tee.estado_aprovacao_gerencia)}</b><small>Cliente: ${teeApprovalLabel(tee.estado_aprovacao_cliente)}</small></div>
+        <div><span>CLIENTE</span><b class="tee-status ${safeText(tee.estado_aprovacao_cliente || "pendente")}">${teeApprovalLabel(tee.estado_aprovacao_cliente)}</b><small>Estado de aprovação do dono de obra</small></div>
         <div><span>EXECUÇÃO</span><strong>${execution}</strong><small>${Number(tee.dias_prorrogacao || 0)} dias de prorrogação</small></div>
         ${canEditWork() ? `<button class="outline-action" type="button" data-edit-tee="${tee.id}">EDITAR</button>` : ""}
       </article>`;
@@ -3130,14 +3146,22 @@ function teeFormOptions(selectedId) {
     .join("");
 }
 
+function nextTeeNumber(tees = workDetails.tees) {
+  const highest = tees.reduce((maximum, tee) => {
+    const matches = String(tee.numero || "").match(/\d+/g);
+    const sequence = matches?.length ? Number(matches.at(-1)) : 0;
+    return Number.isFinite(sequence) ? Math.max(maximum, sequence) : maximum;
+  }, 0);
+  return `TEE ${highest + 1}`;
+}
+
 function openTeeDialog(teeId = "") {
   if (!canEditWork()) return toast("Não tem permissão para alterar TEEs nesta obra.", "error");
   const tee = workDetails.tees.find(item => item.id === teeId) || null;
-  const managementState = tee?.estado_aprovacao_gerencia || "pendente";
   const rfiOptions = workDetails.rfis.map(rfi => `<option value="${rfi.id}" ${rfi.id === tee?.rfi_id ? "selected" : ""}>${safeText(rfi.numero || rfi.assunto || "PDE")}</option>`).join("");
   $("#workflow-dialog-title").textContent = tee ? `EDITAR ${tee.numero || "TEE"}` : "NOVO TEE";
   $("#workflow-dialog-content").innerHTML = `<form id="tee-form" data-tee-id="${tee?.id || ""}">
-    <div class="form-row"><label>NÚMERO<input name="numero" required maxlength="40" value="${safeText(tee?.numero || "")}" placeholder="Ex.: TEE 21"></label><label>REVISÃO<input name="revisao" maxlength="20" value="${safeText(tee?.revisao || "REV00")}"></label></div>
+    <div class="form-row"><label>NÚMERO<input name="numero" required maxlength="40" value="${safeText(tee?.numero || nextTeeNumber())}"></label><label>REVISÃO<input name="revisao" maxlength="20" value="${safeText(tee?.revisao || "REV00")}"></label></div>
     <label>DESCRIÇÃO<textarea name="descricao" required rows="3" maxlength="500">${safeText(tee?.descricao || "")}</textarea></label>
     <div class="form-row"><label>ESPECIALIDADE<input name="especialidade" maxlength="120" value="${safeText(tee?.especialidade || "")}"></label><label>PDE / RFI ASSOCIADO<div class="select-wrap"><select name="rfi_id"><option value="">Sem associação</option>${rfiOptions}</select><b>⌄</b></div></label></div>
     <label>FASE<div class="select-wrap"><select name="fase_id" required><option value="">Selecionar fase</option>${teeFormOptions(tee?.fase_id)}</select><b>⌄</b></div></label>
@@ -3145,7 +3169,7 @@ function openTeeDialog(teeId = "") {
     <div class="form-row"><label>VALOR DE VENDA (€)<input name="valor" type="number" step="0.01" value="${tee?.valor ?? ""}"></label><label>PREÇO DE CUSTO (€)<input name="preco_custo" type="number" step="0.01" value="${tee?.preco_custo ?? ""}"></label></div>
     <div class="form-row"><label>DIAS DE PRORROGAÇÃO<input name="dias_prorrogacao" type="number" step="1" value="${tee?.dias_prorrogacao ?? 0}"></label><label>DATA DE ENVIO<input name="data_envio" type="date" value="${tee?.data_envio || ""}"></label></div>
     <div class="form-row"><label>ESTADO DO CLIENTE<div class="select-wrap"><select name="estado_aprovacao_cliente"><option value="pendente" ${tee?.estado_aprovacao_cliente !== "aprovado" && tee?.estado_aprovacao_cliente !== "recusado" ? "selected" : ""}>Pendente</option><option value="aprovado" ${tee?.estado_aprovacao_cliente === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${tee?.estado_aprovacao_cliente === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label><label>DATA DA RESPOSTA<input name="data_resposta" type="date" value="${tee?.data_resposta || ""}"></label></div>
-    <div class="form-row"><label>DATA DE APROVAÇÃO DO CLIENTE<input name="data_aprovacao_cliente" type="date" value="${tee?.data_aprovacao_cliente || ""}"></label>${hasFullAccess() ? `<label>APROVAÇÃO DA GERÊNCIA<div class="select-wrap"><select name="estado_aprovacao_gerencia"><option value="pendente" ${managementState === "pendente" ? "selected" : ""}>Pendente</option><option value="aprovado" ${managementState === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${managementState === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label>` : `<label>APROVAÇÃO DA GERÊNCIA<input value="${teeApprovalLabel(managementState)}" disabled></label>`}</div>
+    <label>DATA DE APROVAÇÃO DO CLIENTE<input name="data_aprovacao_cliente" type="date" value="${tee?.data_aprovacao_cliente || ""}"></label>
     <fieldset class="tee-execution"><legend>EXECUÇÃO PREVISTA</legend><div class="form-row"><label>INÍCIO<input name="data_inicio_execucao" type="date" value="${tee?.data_inicio_execucao || ""}"></label><label>FIM<input name="data_fim_execucao" type="date" value="${tee?.data_fim_execucao || ""}"></label></div><small>Quando o TEE estiver aprovado pelo cliente e estas datas estiverem preenchidas, o planeamento e a previsão financeira são atualizados automaticamente.</small></fieldset>
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${tee ? "GUARDAR ALTERAÇÕES" : "CRIAR TEE"} <span>→</span></button></div>
   </form>`;
@@ -3206,12 +3230,6 @@ async function submitTee(event) {
     data_inicio_execucao: start || null,
     data_fim_execucao: end || null,
   };
-  if (hasFullAccess()) {
-    const managementState = String(data.get("estado_aprovacao_gerencia") || "pendente");
-    payload.estado_aprovacao_gerencia = managementState;
-    payload.aprovado_por_gerencia = managementState === "aprovado" ? accessContext.profile?.id || existing?.aprovado_por_gerencia || null : null;
-    payload.data_aprovacao_gerencia = managementState === "aprovado" ? existing?.data_aprovacao_gerencia || new Date().toISOString() : null;
-  }
   button.disabled = true;
   errorElement.textContent = "";
   try {
@@ -5357,12 +5375,6 @@ procurementModule = createProcurementModule({
     const existing = subcontracts.find(item => item.id === row.id);
     if (existing) Object.assign(existing, row); else subcontracts.push(row);
   },
-});
-operationalXlsxImportModule = createOperationalXlsxImport({
-  supabase,
-  isConfigured: isSupabaseConfigured,
-  getProfile: () => accessContext.profile,
-  toast,
 });
 renderUser();
 loadData();

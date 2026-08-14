@@ -32,7 +32,7 @@ const SUBCONTRACT_HEADERS = [
   "Preço de Venda (€)", "Margem Prevista (€)", "Data do Pedido", "Data da Proposta", "Data do Contrato",
   "Valor Adjudicado (€)", "Tipo de Pagamento", "Condição de Pagamento", "Data Início Prevista", "Data Fim Prevista", "Estado*",
 ];
-const TEE_HEADERS = ["Nº TEE*", "Obra (nº)*", "Fase (código)", "Descrição", "Especialidade", "Valor (€)", "Preço de Custo (€)", "Dias de Prorrogação", "Data de Envio", "Data de Resposta", "Estado Aprovação Gerência", "Estado Aprovação Cliente", "Revisão", "Data Início Execução", "Data Fim Execução"];
+const TEE_HEADERS = ["Nº TEE*", "Obra (nº)*", "Fase (código)", "Descrição", "Especialidade", "Valor (€)", "Preço de Custo (€)", "Dias de Prorrogação", "Data de Envio", "Data de Resposta", "Estado Aprovação Cliente", "Revisão", "Data Início Execução", "Data Fim Execução"];
 const TEE_ITEM_HEADERS = ["Nº TEE*", "Nº Artigo*", "Descrição*", "Unidade", "Quantidade", "Preço Unitário (€)", "Valor Total (€)"];
 const MONTH_NAMES = [["jan", "janeiro"], ["fev", "fevereiro"], ["mar", "marco", "março"], ["abr", "abril"], ["mai", "maio"], ["jun", "junho"], ["jul", "julho"], ["ago", "agosto"], ["set", "setembro"], ["out", "outubro"], ["nov", "novembro"], ["dez", "dezembro"]];
 const FIXED_LABELS = new Map([
@@ -108,18 +108,16 @@ function parseTees(workbook, context) {
     const errors = []; const warnings = [];
     const teeNumber = String(row[0] ?? "").trim(); const workNumber = String(row[1] ?? "").trim();
     const phase = row[2] ? phases.get(normalize(row[2])) : f01;
-    const management = normalize(row[10]).replaceAll(" ", "_"); const client = normalize(row[11]).replaceAll(" ", "_");
+    const client = normalize(row[10]).replaceAll(" ", "_");
     const items = itemsByTee.get(normalize(teeNumber)) || [];
     if (!teeNumber) errors.push("Nº TEE obrigatório.");
     if (!String(row[3] ?? "").trim()) errors.push("Descrição obrigatória.");
     if (!workNumber || Number(workNumber) !== Number(context.work.numero)) errors.push(`A obra tem de ser ${context.work.numero}.`);
     if (!phase) errors.push(row[2] ? `Fase “${row[2]}” não encontrada.` : "A fase F01 não existe nesta obra.");
-    if (!validApproval.has(management)) errors.push(`Estado da gerência inválido: ${row[10]}.`);
-    if (!validApproval.has(client)) errors.push(`Estado do cliente inválido: ${row[11]}.`);
-    if (!context.isAdmin && management && management !== "pendente") warnings.push("A aprovação da gerência será importada como pendente; só a Gerência pode alterar este estado.");
-    const start = excelDate(row[13]); const end = excelDate(row[14]);
-    if (row[13] && !start) errors.push("Data de início inválida.");
-    if (row[14] && !end) errors.push("Data de fim inválida.");
+    if (!validApproval.has(client)) errors.push(`Estado do cliente inválido: ${row[10]}.`);
+    const start = excelDate(row[12]); const end = excelDate(row[13]);
+    if (row[12] && !start) errors.push("Data de início inválida.");
+    if (row[13] && !end) errors.push("Data de fim inválida.");
     if ((start && !end) || (!start && end)) errors.push("Datas de execução incompletas.");
     if (start && end && end < start) errors.push("A data de fim é anterior à data de início.");
     items.forEach(item => { if (!item.numero_artigo || !item.descricao) errors.push(`Item da linha ${item.linha} sem Nº Artigo ou Descrição.`); });
@@ -128,7 +126,7 @@ function parseTees(workbook, context) {
     if (duplicate) warnings.push("Nº TEE já existente; por omissão será ignorado.");
     return { row: index + 2, label: teeNumber || `Linha ${index + 2}`, errors, warnings, duplicate, selected: !duplicate && !errors.length,
       payload: { obra_id: context.work.id, fase_id: phase?.id || null, numero: teeNumber, descricao: String(row[3] ?? "").trim() || null, especialidade: String(row[4] ?? "").trim() || null,
-        valor: number(row[5]), preco_custo: number(row[6]), dias_prorrogacao: number(row[7]) || 0, data_envio: excelDate(row[8]), data_resposta: excelDate(row[9]), estado_aprovacao_gerencia: context.isAdmin ? (management || "pendente") : "pendente", estado_aprovacao_cliente: client || "pendente", revisao: String(row[12] ?? "").trim() || "REV00", data_inicio_execucao: start, data_fim_execucao: end, itens: items },
+        valor: number(row[5]), preco_custo: number(row[6]), dias_prorrogacao: number(row[7]) || 0, data_envio: excelDate(row[8]), data_resposta: excelDate(row[9]), estado_aprovacao_cliente: client || "pendente", revisao: String(row[11] ?? "").trim() || "REV00", data_inicio_execucao: start, data_fim_execucao: end, itens: items },
     };
   });
 }
