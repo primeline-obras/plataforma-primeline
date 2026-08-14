@@ -6,7 +6,7 @@ import { createSubcontractorsModule } from "./subcontractors.js?v=3";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=13";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=4";
-import { createProcurementModule } from "./procurement.js?v=1";
+import { createProcurementModule } from "./procurement.js?v=2";
 import { createActionPlanModule } from "./action-plan.js?v=3";
 import { createDocumentsModule } from "./documents.js?v=1";
 import { createRncModule } from "./rnc.js?v=2";
@@ -18,7 +18,7 @@ import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
-import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=1";
+import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
 import { createProjectsModule } from "./projects.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
@@ -715,7 +715,12 @@ const budgetRequestsModule = createBudgetRequestsModule({
   root: $("#budget-requests-view"), supabase, isConfigured: isSupabaseConfigured,
   getProfile: () => accessContext.profile, euro, prettyDate, toast,
 });
-let operationalXlsxImportModule;
+const operationalXlsxImportModule = createOperationalXlsxImport({
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getProfile: () => accessContext.profile,
+  toast,
+});
 const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
@@ -3141,13 +3146,22 @@ function teeFormOptions(selectedId) {
     .join("");
 }
 
+function nextTeeNumber(tees = workDetails.tees) {
+  const highest = tees.reduce((maximum, tee) => {
+    const matches = String(tee.numero || "").match(/\d+/g);
+    const sequence = matches?.length ? Number(matches.at(-1)) : 0;
+    return Number.isFinite(sequence) ? Math.max(maximum, sequence) : maximum;
+  }, 0);
+  return `TEE ${highest + 1}`;
+}
+
 function openTeeDialog(teeId = "") {
   if (!canEditWork()) return toast("Não tem permissão para alterar TEEs nesta obra.", "error");
   const tee = workDetails.tees.find(item => item.id === teeId) || null;
   const rfiOptions = workDetails.rfis.map(rfi => `<option value="${rfi.id}" ${rfi.id === tee?.rfi_id ? "selected" : ""}>${safeText(rfi.numero || rfi.assunto || "PDE")}</option>`).join("");
   $("#workflow-dialog-title").textContent = tee ? `EDITAR ${tee.numero || "TEE"}` : "NOVO TEE";
   $("#workflow-dialog-content").innerHTML = `<form id="tee-form" data-tee-id="${tee?.id || ""}">
-    <div class="form-row"><label>NÚMERO<input name="numero" required maxlength="40" value="${safeText(tee?.numero || "")}" placeholder="Ex.: TEE 21"></label><label>REVISÃO<input name="revisao" maxlength="20" value="${safeText(tee?.revisao || "REV00")}"></label></div>
+    <div class="form-row"><label>NÚMERO<input name="numero" required maxlength="40" value="${safeText(tee?.numero || nextTeeNumber())}"></label><label>REVISÃO<input name="revisao" maxlength="20" value="${safeText(tee?.revisao || "REV00")}"></label></div>
     <label>DESCRIÇÃO<textarea name="descricao" required rows="3" maxlength="500">${safeText(tee?.descricao || "")}</textarea></label>
     <div class="form-row"><label>ESPECIALIDADE<input name="especialidade" maxlength="120" value="${safeText(tee?.especialidade || "")}"></label><label>PDE / RFI ASSOCIADO<div class="select-wrap"><select name="rfi_id"><option value="">Sem associação</option>${rfiOptions}</select><b>⌄</b></div></label></div>
     <label>FASE<div class="select-wrap"><select name="fase_id" required><option value="">Selecionar fase</option>${teeFormOptions(tee?.fase_id)}</select><b>⌄</b></div></label>
@@ -5361,12 +5375,6 @@ procurementModule = createProcurementModule({
     const existing = subcontracts.find(item => item.id === row.id);
     if (existing) Object.assign(existing, row); else subcontracts.push(row);
   },
-});
-operationalXlsxImportModule = createOperationalXlsxImport({
-  supabase,
-  isConfigured: isSupabaseConfigured,
-  getProfile: () => accessContext.profile,
-  toast,
 });
 renderUser();
 loadData();
