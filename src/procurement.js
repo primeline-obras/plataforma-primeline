@@ -1,6 +1,8 @@
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const isoToday = () => new Date().toISOString().slice(0, 10);
+const normalizeSpecialty = value => String(value || "").trim().toLocaleLowerCase("pt-PT")
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 export function createProcurementModule({
   host,
@@ -25,6 +27,9 @@ export function createProcurementModule({
     consultationItems: [],
     candidates: [],
     candidateItems: [],
+    specialties: [],
+    specialtyAliases: [],
+    supplierSpecialties: [],
     expandedId: "",
     newFormOpen: false,
   };
@@ -46,10 +51,35 @@ export function createProcurementModule({
   };
   const candidatesFor = consultationId => state.candidates.filter(item => item.consulta_subempreitada_id === consultationId);
   const priceFor = (candidateId, itemId) => state.candidateItems.find(item => item.candidato_id === candidateId && item.item_orcamento_id === itemId);
+  const specialtyIdsFor = work => {
+    const normalized = normalizeSpecialty(work);
+    const aliasIds = state.specialtyAliases
+      .filter(item => normalizeSpecialty(item.alias) === normalized)
+      .map(item => item.especialidade_id);
+    const canonicalIds = state.specialties
+      .filter(item => normalizeSpecialty(item.nome) === normalized)
+      .map(item => item.id);
+    return new Set([...aliasIds, ...canonicalIds]);
+  };
+  const rankedSuppliers = (work, needle = "") => {
+    const specialtyIds = specialtyIdsFor(work);
+    const search = normalizeSpecialty(needle);
+    return getSuppliers().filter(item => !search || normalizeSpecialty(item.nome).includes(search))
+      .map(item => ({
+        ...item,
+        recommended: specialtyIds.size > 0 && state.supplierSpecialties.some(link =>
+          link.fornecedor_id === item.id && specialtyIds.has(link.especialidade_id)),
+      }))
+      .sort((a, b) => Number(b.recommended) - Number(a.recommended)
+        || String(a.nome || "").localeCompare(String(b.nome || ""), "pt-PT", { sensitivity: "base" }));
+  };
+  const supplierOptions = (work, needle = "") => rankedSuppliers(work, needle).map(item =>
+    `<option value="${item.id}">${item.recommended ? "★ ESPECIALISTA · " : ""}${escapeHtml(item.nome)}</option>`).join("");
 
   function renderNewConsultation() {
     if (!state.canEdit) return "";
     const specialties = [...new Set([
+      ...state.specialties.map(item => item.nome),
       ...state.consultations.map(item => item.trabalho),
       ...getSubcontracts().filter(item => item.obra_id === state.work.id).map(item => item.especialidade),
     ].filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt"));
@@ -82,7 +112,7 @@ export function createProcurementModule({
   function renderCandidateForm(consultation) {
     if (!state.canEdit) return "";
     return `<form class="procurement-candidate-form" data-add-candidate="${consultation.id}">
-      <div><label>PESQUISAR FORNECEDOR<input data-supplier-search placeholder="Nome do fornecedor"></label><label>FORNECEDOR EXISTENTE<select name="fornecedor_id" required><option value="">Selecionar fornecedor</option>${getSuppliers().map(item => `<option value="${item.id}">${escapeHtml(item.nome)}</option>`).join("")}</select></label></div>
+      <div><label>PESQUISAR FORNECEDOR<input data-supplier-search placeholder="Nome do fornecedor"></label><label>FORNECEDOR EXISTENTE<select name="fornecedor_id" required><option value="">Selecionar fornecedor</option>${supplierOptions(consultation.trabalho)}</select><small class="specialty-priority-note">Os especialistas desta consulta aparecem primeiro, assinalados com ★.</small></label></div>
       <label>CONTACTO DESTA CONSULTA<input name="contacto" maxlength="160"></label><label>TELEFONE<input name="telefone" maxlength="50"></label>
       <button type="submit">＋ ADICIONAR</button><p class="supplier-not-found" data-supplier-message></p><p class="form-error"></p>
     </form>`;
@@ -151,16 +181,25 @@ export function createProcurementModule({
         state.consultationItems = [{ consulta_subempreitada_id: "demo-consulta", item_orcamento_id: "demo-item-1" }];
         state.candidates = [];
         state.candidateItems = [];
+        state.specialties = [];
+        state.specialtyAliases = [];
+        state.supplierSpecialties = [];
       } else {
         const phaseIds = phases().map(item => item.id);
-        const [consultations, budgetItems, permission] = await Promise.all([
+        const [consultations, budgetItems, permission, specialties, aliases, supplierSpecialties] = await Promise.all([
           api(`consultas_subempreitada?select=*&obra_id=eq.${encodeURIComponent(work.id)}&order=criado_em.desc`),
           phaseIds.length ? api(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=numero_artigo`) : [],
           api("rpc/fn_pode_editar_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) }),
+          api("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
+          api("especialidades_aliases?select=*"),
+          api("fornecedores_especialidades?select=*"),
         ]);
         state.consultations = consultations;
         state.budgetItems = budgetItems;
         state.canEdit = Boolean(permission);
+        state.specialties = specialties;
+        state.specialtyAliases = aliases;
+        state.supplierSpecialties = supplierSpecialties;
         const consultationIds = consultations.map(item => item.id);
         if (consultationIds.length) {
           const encoded = consultationIds.map(encodeURIComponent).join(",");
@@ -242,8 +281,9 @@ export function createProcurementModule({
     if (event.target.matches("[data-supplier-search]")) {
       const form = event.target.closest("form");
       const needle = event.target.value.trim().toLocaleLowerCase("pt");
-      const matches = getSuppliers().filter(item => !needle || item.nome.toLocaleLowerCase("pt").includes(needle));
-      form.elements.fornecedor_id.innerHTML = `<option value="">Selecionar fornecedor</option>${matches.map(item => `<option value="${item.id}">${escapeHtml(item.nome)}</option>`).join("")}`;
+      const consultation = state.consultations.find(item => item.id === form.dataset.addCandidate);
+      const matches = rankedSuppliers(consultation?.trabalho, needle);
+      form.elements.fornecedor_id.innerHTML = `<option value="">Selecionar fornecedor</option>${supplierOptions(consultation?.trabalho, needle)}`;
       form.querySelector("[data-supplier-message]").textContent = matches.length ? "" : "Fornecedor não encontrado. Contacte o administrativo ou a gerência para o criarem primeiro.";
     }
   });
