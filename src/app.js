@@ -2,10 +2,10 @@ import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isS
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=17";
 import { createPlanningModule } from "./planning.js?v=7";
-import { createSubcontractorsModule } from "./subcontractors.js?v=3";
+import { createSubcontractorsModule } from "./subcontractors.js?v=4";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=13";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
-import { createSettingsModule } from "./settings.js?v=4";
+import { createSettingsModule } from "./settings.js?v=5";
 import { createProcurementModule } from "./procurement.js?v=2";
 import { createActionPlanModule } from "./action-plan.js?v=3";
 import { createDocumentsModule } from "./documents.js?v=1";
@@ -91,7 +91,7 @@ const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
 let selectedVacationMonth = new Date().toISOString().slice(0, 7);
-let teamData = { allocations: [], absences: [], vacations: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
+let teamData = { allocations: [], absences: [], vacations: [], holidays: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let teamQuickFilter = "";
 let selectedTeamEntity = null;
@@ -1604,6 +1604,20 @@ function shiftVacationMonth(amount) {
   selectedVacationMonth = shifted.toISOString().slice(0, 7);
 }
 
+function activeHoliday(date) {
+  return teamData.holidays.find(item => item.folga && item.data === date);
+}
+
+function personFunctionClass(person) {
+  const role = String(person?.funcao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (/gerencia|diretor|dir\. obra/.test(role)) return "function-direction";
+  if (role.includes("encarregado")) return "function-foreman";
+  if (/administrativo|recursos humanos|\brh\b/.test(role)) return "function-admin";
+  if (role.includes("pedreiro")) return "function-mason";
+  if (role.includes("servente")) return "function-helper";
+  return "function-other";
+}
+
 function renderVacationMap(people, vacations) {
   const { start, end, days } = vacationMonthBounds();
   const monthDate = new Date(`${start}T12:00:00Z`);
@@ -1614,12 +1628,14 @@ function renderVacationMap(people, vacations) {
   const dayHeaders = Array.from({ length: days }, (_, index) => {
     const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
     const weekday = new Intl.DateTimeFormat("pt-PT", { weekday: "narrow", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
-    return `<b class="${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""}"><span>${index + 1}</span><small>${weekday}</small></b>`;
+    const holiday = activeHoliday(date);
+    return `<b class="${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""} ${holiday ? "holiday" : ""}" title="${holiday ? safeText(holiday.nome) : ""}"><span>${index + 1}</span><small>${weekday}</small></b>`;
   }).join("");
-  const rows = ordered.map(person => `<div class="vacation-map-row"><strong title="${safeText(person.nome)}">${safeText(person.nome)}</strong>${Array.from({ length: days }, (_, index) => {
+  const rows = ordered.map(person => `<div class="vacation-map-row"><strong class="${personFunctionClass(person)}" title="${safeText(person.nome)}">${safeText(person.nome)}</strong>${Array.from({ length: days }, (_, index) => {
     const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
     const onVacation = vacationKeys.has(`${person.id}|${date}`);
-    return `<i class="${onVacation ? "vacation" : ""} ${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""}" title="${safeText(person.nome)} · ${formatOptionalDate(date)}${onVacation ? " · Férias" : ""}">${onVacation ? "F" : ""}</i>`;
+    const holiday = activeHoliday(date);
+    return `<i class="${onVacation ? "vacation" : ""} ${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""} ${holiday ? "holiday" : ""}" title="${safeText(person.nome)} · ${formatOptionalDate(date)}${holiday ? ` · ${safeText(holiday.nome)}` : ""}${onVacation ? " · Férias" : ""}">${onVacation ? "F" : ""}</i>`;
   }).join("")}</div>`).join("");
   return `<section class="vacation-map"><header><div><p class="eyebrow">MAPA MENSAL · TODAS AS OBRAS</p><h3>${monthLabel}</h3></div><div><button type="button" data-vacation-month="-1" aria-label="Mês anterior">←</button><button type="button" data-vacation-month="1" aria-label="Mês seguinte">→</button></div></header><div class="vacation-map-scroll"><div class="vacation-map-grid" style="--vacation-days:${days}"><div class="vacation-map-head"><strong>COLABORADOR</strong>${dayHeaders}</div>${rows || `<div class="empty-state"><strong>SEM COLABORADORES ATIVOS</strong></div>`}</div></div><footer><i></i><span>Férias confirmadas</span></footer></section>`;
 }
@@ -1858,10 +1874,10 @@ function renderTeam() {
     $("#team-board").innerHTML = `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${teamData.error}</span></div>`;
   } else {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
-    const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX"];
+    const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
     const boardHead = `<div class="workforce-grid workforce-grid-head"><div>LINHA / OBRA E RESPONSÁVEIS</div>${boardWeeks.map((week, index) => {
       const vacationPeople = operationalPeople.filter(person => activeAbsences.some(absence => absence.colaborador_id === person.id && isVacation(absence) && absence.data >= week && absence.data <= addDaysIso(week, 4)));
-      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 4)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para editar os dias de férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => `<b>${day}<small>${addDaysIso(week, dayIndex).slice(8)}</small></b>`).join("")}</div></div>`;
+      return `<div><strong>${weekLabels[index]}</strong><span>${prettyDate.format(new Date(`${week}T12:00:00`))} — ${prettyDate.format(new Date(`${addDaysIso(week, 6)}T12:00:00`))}</span><div class="workforce-vacation-box" data-vacation-week="${week}" title="Selecione um íman e clique aqui para editar os dias de férias"><b>FÉRIAS</b><span>${vacationPeople.length ? vacationPeople.map(person => `<i title="${shortPersonName(person.nome)}">${workforceInitials(person.nome)}</i>`).join("") : "—"}</span></div><div class="workforce-day-labels">${weekdays.map((day, dayIndex) => { const date = addDaysIso(week, dayIndex); const holiday = activeHoliday(date); return `<b class="${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""}" title="${holiday ? safeText(holiday.nome) : ""}">${day}<small>${date.slice(8)}</small></b>`; }).join("")}</div></div>`;
     }).join("")}</div>`;
     const rows = boardRows.map(row => {
       const work = row.work;
@@ -1901,7 +1917,8 @@ function renderTeam() {
               : unchanged
                 ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
                 : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
-            return `<div class="workforce-day-cell ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}</div>`;
+            const holiday = activeHoliday(date);
+            return `<div class="workforce-day-cell ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}</div>`;
           }).join("")}</div>`;
         }).join("")}
       </article>`;
@@ -2311,7 +2328,7 @@ async function saveVacationDays(event) {
 
 async function loadTeamData(force = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
-  teamData = { allocations: [], absences: [], vacations: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
+  teamData = { allocations: [], absences: [], vacations: [], holidays: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
   const boardStart = addDaysIso(selectedTeamWeek, -7);
@@ -2332,12 +2349,14 @@ async function loadTeamData(force = false) {
     effectiveRole() === "encarregado"
       ? supabase("rpc/fn_quadro_ferias_encarregado_global", { method: "POST", body: JSON.stringify({ p_data_inicio: boardStart < vacationBounds.start ? boardStart : vacationBounds.start, p_data_fim: boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end }) })
       : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
+    supabase(`feriados_empresa?select=id,data,nome,ambito,municipio,folga&folga=eq.true&data=gte.${boardStart < vacationBounds.start ? boardStart : vacationBounds.start}&data=lte.${boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end}&order=data`),
   ]);
-  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias"];
+  const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias", "feriados"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
   const failures = payloads.filter(payload => payload?.failed);
   [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.slice(0, 11).map(payload => Array.isArray(payload) ? payload : []);
   const globalPayload = payloads[11];
+  teamData.holidays = Array.isArray(payloads[12]) ? payloads[12] : [];
   if (effectiveRole() === "encarregado" && globalPayload && !globalPayload.failed) {
     teamData.allocations = globalPayload.alocacoes || [];
     teamData.vacations = globalPayload.ferias || [];
@@ -5344,6 +5363,7 @@ settingsModule = createSettingsModule({
   getSession,
   getWorks: () => works,
   isAdmin: hasFullAccess,
+  canManageHolidays: () => hasFullAccess() || isAdministrative(),
   toast,
   requestPasswordReset,
   toggleTheme: toggleThemePreference,

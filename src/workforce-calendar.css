@@ -1,0 +1,57 @@
+/* Calendários de RH: fins de semana, feriados e leitura rápida por função. */
+.workforce-day-labels,
+.workforce-week-cell {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.workforce-day-cell:first-child { grid-template-columns: 27px; }
+.workforce-day-cell.weekend,
+.workforce-day-labels .weekend { background: #f1efe8; }
+.workforce-day-cell.holiday,
+.workforce-day-labels .holiday { background: #f7edd6; box-shadow: inset 0 2px 0 #d9a441; }
+
+.vacation-map .weekend { background: #f1efe8; }
+.vacation-map .holiday { background: #f7edd6; box-shadow: inset 0 2px 0 #d9a441; }
+.vacation-map-row > i.vacation {
+  background: #d9a441;
+  color: #20242b;
+  box-shadow: inset 0 0 0 1px #8a6420;
+}
+
+.vacation-map-row > strong.function-direction { color: #20242b; }
+.vacation-map-row > strong.function-foreman { color: #3f6248; }
+.vacation-map-row > strong.function-admin { color: #5b584f; }
+.vacation-map-row > strong.function-mason { color: #8a6420; }
+.vacation-map-row > strong.function-helper { color: #6b685f; }
+.vacation-map-row > strong.function-other { color: #46566e; }
+
+:root[data-theme="dark"] .workforce-day-cell.weekend,
+:root[data-theme="dark"] .workforce-day-labels .weekend,
+:root[data-theme="dark"] .vacation-map .weekend { background: #292c33; }
+:root[data-theme="dark"] .workforce-day-cell.holiday,
+:root[data-theme="dark"] .workforce-day-labels .holiday,
+:root[data-theme="dark"] .vacation-map .holiday { background: #332b1d; }
+:root[data-theme="dark"] .vacation-map-row > strong.function-direction { color: #f1efe8; }
+:root[data-theme="dark"] .vacation-map-row > strong.function-foreman { color: #a8c4ae; }
+:root[data-theme="dark"] .vacation-map-row > strong.function-admin { color: #c8c4b9; }
+:root[data-theme="dark"] .vacation-map-row > strong.function-mason { color: #d4a854; }
+:root[data-theme="dark"] .vacation-map-row > strong.function-helper { color: #b4b2a9; }
+:root[data-theme="dark"] .vacation-map-row > strong.function-other { color: #a8b8cf; }
+
+.settings-holidays { margin-top: 22px; }
+.settings-holiday-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--card-border); }
+.settings-holiday-toolbar label { display: grid; gap: 6px; color: var(--text-secondary); font-size: 10px; font-weight: 800; letter-spacing: .8px; }
+.settings-holiday-toolbar select { min-width: 130px; min-height: 40px; }
+.settings-holiday-list { display: grid; }
+.settings-holiday-row { min-height: 60px; padding: 10px 20px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 110px minmax(220px,1fr) 140px auto; gap: 16px; align-items: center; }
+.settings-holiday-row:last-child { border-bottom: 0; }
+.settings-holiday-row time { font-family: "IBM Plex Mono", monospace; font-weight: 700; }
+.settings-holiday-row div { display: grid; gap: 3px; }
+.settings-holiday-row div span { color: var(--text-secondary); font-size: 10px; text-transform: uppercase; }
+.settings-holiday-row label { display: flex; align-items: center; gap: 8px; color: var(--text-primary); font-size: 11px; font-weight: 800; }
+.settings-holiday-row input { width: 18px; height: 18px; accent-color: #d9a441; }
+
+@media (max-width: 900px) {
+  .settings-holiday-row { grid-template-columns: 95px 1fr auto; }
+  .settings-holiday-row > span { display: none; }
+}

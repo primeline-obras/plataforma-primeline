@@ -483,13 +483,18 @@ export function createSubcontractorsModule({
       return;
     }
     try {
-      [state.suppliers, state.subcontracts, state.evaluations, state.specialties, state.supplierSpecialties] = await Promise.all([
-        query("fornecedores?select=*&tipo_entidade=eq.subempreiteiro&order=nome"),
+      state.suppliers = await query("fornecedores?select=*&tipo_entidade=eq.subempreiteiro&order=nome");
+      const optional = await Promise.allSettled([
         query("subempreitadas?select=*&order=criado_em.desc"),
         query("avaliacoes_subempreiteiro?select=*&order=criado_em.desc"),
         query("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
         query("fornecedores_especialidades?select=*&order=criado_em"),
       ]);
+      [state.subcontracts, state.evaluations, state.specialties, state.supplierSpecialties] = optional
+        .map(result => result.status === "fulfilled" ? result.value : []);
+      if (optional.some(result => result.status === "rejected")) {
+        toast("O diretório foi carregado, mas alguns dados complementares estão indisponíveis.", "warning");
+      }
       state.allSuppliers = getSuppliers();
       state.priceRows = [];
       state.priceError = "";
