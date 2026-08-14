@@ -4,8 +4,10 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
 const today = () => new Date().toISOString().slice(0, 10);
 const STATES = {
   em_curso: "Em curso", enviado: "Enviado", aguarda_resposta: "Aguarda resposta",
-  adjudicado: "Adjudicado", perdido: "Perdido",
+  adjudicado: "Adjudicado", recusado: "Recusado", cancelado: "Cancelado",
+  perdido: "Revisão necessária",
 };
+const CLOSED_STATES = new Set(["adjudicado", "recusado", "cancelado", "perdido"]);
 
 export function createBudgetRequestsModule({ root, supabase, isConfigured, getProfile, euro, prettyDate, toast }) {
   const state = { loaded: false, loading: false, requests: [], versions: [], selectedId: "", error: "" };
@@ -36,21 +38,29 @@ export function createBudgetRequestsModule({ root, supabase, isConfigured, getPr
 
   const selected = () => state.requests.find(row => row.id === state.selectedId) || null;
   const dateLabel = value => value ? prettyDate.format(new Date(`${value}T12:00:00`)) : "Sem data limite";
+  const orderedRequests = rows => [...rows].sort((left, right) => {
+    const priority = Number(Boolean(right.prioritario)) - Number(Boolean(left.prioritario));
+    if (priority) return priority;
+    if (!left.data_limite_entrega && !right.data_limite_entrega) return 0;
+    if (!left.data_limite_entrega) return 1;
+    if (!right.data_limite_entrega) return -1;
+    return left.data_limite_entrega.localeCompare(right.data_limite_entrega);
+  });
 
   function newRequestForm() {
     return `<details class="operations-form-card budget-new-form"><summary>＋ NOVO PEDIDO DE ORÇAMENTO</summary><form data-budget-request-form>
       <div class="operations-form-grid"><label>CLIENTE<input name="cliente_nome" required maxlength="200"></label><label>CONTACTO<input name="cliente_contacto" maxlength="200"></label></div>
       <label>INTERMEDIÁRIO (OPCIONAL)<input name="intermediario" maxlength="200"></label>
       <label>DESCRIÇÃO DO TRABALHO<textarea name="descricao_trabalho" rows="4" required></textarea></label>
-      <label>DATA LIMITE DE ENTREGA<input name="data_limite_entrega" type="date"></label>
+      <div class="operations-form-grid"><label>DATA LIMITE DE ENTREGA<input name="data_limite_entrega" type="date"></label><label class="budget-priority-field"><input name="prioritario" type="checkbox"> PRIORITÁRIO</label></div>
       <button class="primary-button" type="submit">CRIAR PEDIDO <span>→</span></button><p class="form-error"></p>
     </form></details>`;
   }
 
   function board() {
     return `<section class="budget-board">${Object.entries(STATES).map(([stateName, label]) => {
-      const rows = state.requests.filter(row => row.estado === stateName);
-      return `<article class="budget-column ${stateName}"><header><strong>${label}</strong><span>${rows.length}</span></header><div>${rows.length ? rows.map(row => `<button type="button" class="budget-card ${row.id === state.selectedId ? "active" : ""}" data-budget-id="${row.id}"><strong>${esc(row.cliente_nome)}</strong><p>${esc(row.descricao_trabalho)}</p><small>LIMITE · ${esc(dateLabel(row.data_limite_entrega))}</small></button>`).join("") : `<p class="operations-empty">SEM PEDIDOS</p>`}</div></article>`;
+      const rows = orderedRequests(state.requests.filter(row => row.estado === stateName));
+      return `<article class="budget-column ${stateName}"><header><strong>${label}</strong><span>${rows.length}</span></header><div>${rows.length ? rows.map(row => `<button type="button" class="budget-card ${row.id === state.selectedId ? "active" : ""}" data-budget-id="${row.id}"><span class="budget-card-title"><strong>${esc(row.cliente_nome)}</strong>${row.prioritario ? `<em>PRIORITÁRIO</em>` : ""}</span><p>${esc(row.descricao_trabalho)}</p><small>LIMITE · ${esc(dateLabel(row.data_limite_entrega))}</small></button>`).join("") : `<p class="operations-empty">SEM PEDIDOS</p>`}</div></article>`;
     }).join("")}</section>`;
   }
 
@@ -64,13 +74,14 @@ export function createBudgetRequestsModule({ root, supabase, isConfigured, getPr
     const versions = state.versions.filter(row => row.pedido_id === item.id);
     return `<section class="panel budget-detail"><header><div><p class="eyebrow">PEDIDO DE ORÇAMENTO</p><h2>${esc(item.cliente_nome)}</h2><p>${esc(item.cliente_contacto || "Contacto não indicado")}${item.intermediario ? ` · Intermediário: ${esc(item.intermediario)}` : ""}</p></div><span>${versions.length} VERSÃO${versions.length === 1 ? "" : "ÕES"}</span></header>
       <p class="budget-description">${esc(item.descricao_trabalho)}</p>
-      <form class="budget-status-form" data-budget-status-form data-request-id="${item.id}"><label>ESTADO<select name="estado">${Object.entries(STATES).map(([value, label]) => `<option value="${value}" ${value === item.estado ? "selected" : ""}>${label}</option>`).join("")}</select></label><label>SITUAÇÃO ATUAL<textarea name="situacao_atual" rows="3" placeholder="Próximo passo, bloqueio ou informação relevante">${esc(item.situacao_atual || "")}</textarea></label><button type="submit">GUARDAR SITUAÇÃO</button><p class="form-error"></p></form>
+      ${item.estado === "perdido" ? `<div class="work-warning"><strong>CLASSIFICAÇÃO PENDENTE</strong><span>Este pedido tinha o estado antigo “Perdido”. Confirme se foi recusado pelo cliente ou cancelado antes da decisão.</span></div>` : ""}
+      <form class="budget-status-form" data-budget-status-form data-request-id="${item.id}"><label>ESTADO<select name="estado">${Object.entries(STATES).filter(([value]) => value !== "perdido" || item.estado === "perdido").map(([value, label]) => `<option value="${value}" ${value === item.estado ? "selected" : ""} ${value === "perdido" ? "disabled" : ""}>${label}</option>`).join("")}</select></label><label>SITUAÇÃO ATUAL<textarea name="situacao_atual" rows="3" placeholder="Próximo passo, bloqueio ou informação relevante">${esc(item.situacao_atual || "")}</textarea></label><label class="budget-priority-field"><input name="prioritario" type="checkbox" ${item.prioritario ? "checked" : ""}> PRIORITÁRIO</label><button type="submit">GUARDAR SITUAÇÃO</button><p class="form-error"></p></form>
       <div class="budget-versions"><div><p class="eyebrow">HISTÓRICO</p><h3>ENVIOS E RETIFICAÇÕES</h3></div>${versionForm(item)}<div>${versions.length ? versions.map((row, index) => `<article><span>V${String(versions.length - index).padStart(2, "0")}</span><time>${dateLabel(row.data_envio)}</time><strong>${row.valor == null ? "Valor não indicado" : euro.format(Number(row.valor))}</strong><p>${esc(row.notas || "Sem notas")}</p></article>`).join("") : `<p class="operations-empty">AINDA SEM VERSÕES ENVIADAS</p>`}</div></div>
     </section>`;
   }
 
   function render() {
-    root.innerHTML = `<div class="page-heading"><div><p class="eyebrow">ÁREA COMERCIAL</p><h1>PEDIDOS DE ORÇAMENTO</h1><p>Acompanhe prazos, situação atual e todas as versões enviadas ao cliente.</p></div><div class="heading-stat"><span>ATIVOS</span><strong>${String(state.requests.filter(row => !["adjudicado", "perdido"].includes(row.estado)).length).padStart(2, "0")}</strong></div></div>
+    root.innerHTML = `<div class="page-heading"><div><p class="eyebrow">ÁREA COMERCIAL</p><h1>PEDIDOS DE ORÇAMENTO</h1><p>Acompanhe prazos, situação atual e todas as versões enviadas ao cliente.</p></div><div class="heading-stat"><span>ATIVOS</span><strong>${String(state.requests.filter(row => !CLOSED_STATES.has(row.estado)).length).padStart(2, "0")}</strong></div></div>
       ${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)}</span></div>` : ""}
       ${state.loading ? `<div class="fleet-loading">A CARREGAR PEDIDOS…</div>` : `${newRequestForm()}${board()}${detail()}`}`;
   }
@@ -91,7 +102,7 @@ export function createBudgetRequestsModule({ root, supabase, isConfigured, getPr
     try {
       const fields = Object.fromEntries(new FormData(form));
       if (requestForm) {
-        const payload = { empresa_id: getProfile()?.empresa_id, cliente_nome: fields.cliente_nome.trim(), cliente_contacto: fields.cliente_contacto.trim() || null, intermediario: fields.intermediario.trim() || null, descricao_trabalho: fields.descricao_trabalho.trim(), data_limite_entrega: fields.data_limite_entrega || null, estado: "em_curso", criado_por: getProfile()?.id || null };
+        const payload = { empresa_id: getProfile()?.empresa_id, cliente_nome: fields.cliente_nome.trim(), cliente_contacto: fields.cliente_contacto.trim() || null, intermediario: fields.intermediario.trim() || null, descricao_trabalho: fields.descricao_trabalho.trim(), data_limite_entrega: fields.data_limite_entrega || null, prioritario: fields.prioritario === "on", estado: "em_curso", criado_por: getProfile()?.id || null };
         let saved = { id: crypto.randomUUID(), criado_em: new Date().toISOString(), situacao_atual: null, ...payload };
         if (isConfigured) [saved] = await api("pedidos_orcamento?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
         state.requests.unshift(saved); state.selectedId = saved.id; toast("Pedido de orçamento criado.");
@@ -101,7 +112,7 @@ export function createBudgetRequestsModule({ root, supabase, isConfigured, getPr
         if (isConfigured) [saved] = await api("pedidos_orcamento_versoes?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
         state.versions.unshift(saved); toast("Versão registada no histórico.");
       } else {
-        const payload = { estado: fields.estado, situacao_atual: fields.situacao_atual.trim() || null };
+        const payload = { estado: fields.estado, situacao_atual: fields.situacao_atual.trim() || null, prioritario: fields.prioritario === "on" };
         if (isConfigured) await api(`pedidos_orcamento?id=eq.${encodeURIComponent(form.dataset.requestId)}&select=*`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
         Object.assign(state.requests.find(row => row.id === form.dataset.requestId), payload); toast("Situação atualizada.");
       }
