@@ -21,3 +21,13 @@ test("cada login concluído redireciona para o ecrã inicial do papel", () => {
   assert.match(app, /session\s*=\s*await signIn[\s\S]*await loadData\(\);\s*redirectToRoleHome\(\)/);
   assert.match(app, /defaultViewForCurrentUser[\s\S]*includes\("action-plan"\)[\s\S]*includes\("overview"\)/);
 });
+
+test("um refresh restaura a aba da URL sem aplicar o redirecionamento de login", () => {
+  assert.match(app, /initialView\s*=\s*new URL\(window\.location\.href\)\.searchParams\.get\(VIEW_URL_PARAM\)\s*\|\|\s*"overview"/);
+  assert.match(app, /let activeView\s*=\s*initialView/);
+  assert.match(app, /function persistActiveViewInUrl\(view\)[\s\S]*searchParams\.set\(VIEW_URL_PARAM, view\)/);
+  assert.match(app, /async function loadData\(\)[\s\S]*switchView\(activeView\)/);
+  assert.doesNotMatch(app, /effectiveRole\(\) === "encarregado" && activeView === "overview"/);
+  const loginHandler = app.slice(app.indexOf('$("#login-form").addEventListener'), app.indexOf('$("#show-recovery").addEventListener'));
+  assert.match(loginHandler, /redirectToRoleHome\(\)/);
+});

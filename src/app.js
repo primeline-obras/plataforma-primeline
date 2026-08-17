@@ -29,6 +29,8 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character =>
 const UI_THEME_KEY = "primeline_theme";
 const UI_TV_KEY = "primeline_tv_mode";
 const UI_SIDEBAR_KEY = "primeline_sidebar_collapsed";
+const VIEW_URL_PARAM = "view";
+const initialView = new URL(window.location.href).searchParams.get(VIEW_URL_PARAM) || "overview";
 const initialSession = getSession();
 const savedTheme = localStorage.getItem(UI_THEME_KEY);
 const applySavedThemeInitially = Boolean(initialSession || !isSupabaseConfigured);
@@ -72,7 +74,7 @@ let localPdfUrl = "";
 let extractedMaterialItems = [];
 let extractedMaterialItemsApplied = false;
 let openedPdfUrl = "";
-let activeView = "overview";
+let activeView = initialView;
 let selectedFinanceTab = "invoices";
 let invoiceTraceState = "all";
 let selectedInvoiceTraceId = "";
@@ -851,6 +853,12 @@ function redirectToRoleHome() {
   switchView(defaultViewForCurrentUser());
 }
 
+function persistActiveViewInUrl(view) {
+  const url = new URL(window.location.href);
+  url.searchParams.set(VIEW_URL_PARAM, view);
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 function applyAccessVisibility() {
   const permitted = allowedViews();
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => {
@@ -1333,7 +1341,7 @@ async function loadData() {
   if (allowedViews().has("projects")) await projectsModule.refresh();
   renderWorkProjects();
   await productionDashboard.refreshOverview();
-  if (effectiveRole() === "encarregado" && activeView === "overview") switchView("action-plan");
+  switchView(activeView);
 }
 
 function renderWorkDirectors() {
@@ -3432,6 +3440,7 @@ function switchView(view, context = {}) {
     view = defaultViewForCurrentUser();
   }
   activeView = view;
+  persistActiveViewInUrl(view);
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
   $("#rsp-view").hidden = view !== "rsp";
