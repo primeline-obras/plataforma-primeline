@@ -1599,6 +1599,27 @@ function isVacation(absence) {
   return String(absence?.tipo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT").includes("ferias");
 }
 
+const workforceAbsenceLabels = {
+  ferias: "Férias",
+  falta_injustificada: "Falta injustificada",
+  falta_justificada_sem_remuneracao: "Falta justificada sem remuneração",
+  falta_justificada_com_remuneracao: "Falta justificada com remuneração",
+};
+
+function workforceAbsencePresentation(absences, effective, date) {
+  const names = new Map(effective.map(item => [item.person.id, shortPersonName(item.person.nome)]));
+  const matches = absences.filter(item => item.data === date && names.has(item.colaborador_id));
+  if (!matches.length) return null;
+  const visualType = matches.some(item => item.tipo === "falta_injustificada")
+    ? "unjustified"
+    : matches.some(item => String(item.tipo || "").startsWith("falta_justificada")) ? "justified" : "vacation";
+  const tooltip = matches.map(item => {
+    const label = workforceAbsenceLabels[item.tipo] || String(item.tipo || "Ausência").replaceAll("_", " ");
+    return names.get(item.colaborador_id) + " · " + label + (item.comentario ? " — " + item.comentario : "");
+  }).join("\n");
+  return { visualType, tooltip, badge: visualType === "vacation" ? "F" : visualType === "justified" ? "J" : "!" };
+}
+
 function vacationMonthBounds(month = selectedVacationMonth) {
   const [year, monthNumber] = String(month).split("-").map(Number);
   const start = `${year}-${String(monthNumber).padStart(2, "0")}-01`;
@@ -1971,13 +1992,15 @@ function renderTeam() {
             previousSignature = signature;
             previousEffective = effective;
             const functionTint = workforceFunctionTint(effective);
+            const absence = workforceAbsencePresentation(activeAbsences, effective, date);
             const content = !effective.length
               ? '<span class="no-workforce" title="Sem equipa nesta obra"></span>'
               : unchanged
                 ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
                 : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
             const holiday = activeHoliday(date);
-            return `<div class="workforce-day-cell ${functionTint ? "function-tinted" : ""} ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" ${functionTint ? `style="--function-row-tint:${functionTint}"` : ""} title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}</div>`;
+            const absenceBadge = absence ? `<span class="workforce-absence-badge ${absence.visualType}" tabindex="0" role="button" aria-label="${safeText(absence.tooltip)}" data-absence-detail data-tooltip="${safeText(absence.tooltip)}">${absence.badge}</span>` : "";
+            return `<div class="workforce-day-cell ${functionTint ? "function-tinted" : ""} ${absence ? `has-absence absence-${absence.visualType}` : ""} ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" ${functionTint ? `style="--function-row-tint:${functionTint}"` : ""} title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}${absenceBadge}</div>`;
           }).join("")}</div>`;
         }).join("")}
       </article>`;
@@ -3579,6 +3602,13 @@ $("#team-board").addEventListener("keydown", event => {
   } else if (event.key === "Escape") renderTeam();
 });
 $("#team-board").addEventListener("click", async event => {
+  const absenceBadge = event.target.closest("[data-absence-detail]");
+  if (absenceBadge) {
+    event.preventDefault();
+    event.stopPropagation();
+    absenceBadge.focus();
+    return;
+  }
   if (!workforceEditing) return;
   const vacationBox = event.target.closest("[data-vacation-week]");
   if (vacationBox) {
