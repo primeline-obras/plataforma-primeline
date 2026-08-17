@@ -1636,6 +1636,38 @@ function workforceFunctionTint(effective) {
   return `linear-gradient(90deg, ${stops.join(", ")})`;
 }
 
+function renderTeamPreservingScroll() {
+  const pagePosition = { x: window.scrollX, y: window.scrollY };
+  const scrollPositions = [...document.querySelectorAll("#team-board, #team-board *")]
+    .filter(element => element.scrollTop || element.scrollLeft)
+    .map(element => ({
+      selector: element.id ? `#${CSS.escape(element.id)}` : element.classList.length ? `#team-board .${CSS.escape(element.classList[0])}` : "",
+      top: element.scrollTop,
+      left: element.scrollLeft,
+    }))
+    .filter(item => item.selector);
+  renderTeam();
+  window.scrollTo(pagePosition.x, pagePosition.y);
+  scrollPositions.forEach(position => {
+    const element = document.querySelector(position.selector);
+    if (element) element.scrollTo({ top: position.top, left: position.left, behavior: "instant" });
+  });
+}
+
+async function returnedAllocationRows(response) {
+  const payload = await response.json().catch(() => []);
+  return Array.isArray(payload) ? payload : payload ? [payload] : [];
+}
+
+function replaceLocalAllocations(predicate, rows) {
+  teamData.allocations = teamData.allocations.filter(item => !predicate(item));
+  rows.forEach(row => {
+    const index = teamData.allocations.findIndex(item => item.id === row.id);
+    if (index >= 0) teamData.allocations[index] = row;
+    else teamData.allocations.push(row);
+  });
+}
+
 function renderVacationMap(people, vacations) {
   const { start, end, days } = vacationMonthBounds();
   const monthDate = new Date(`${start}T12:00:00Z`);
@@ -2217,23 +2249,28 @@ async function saveWorkforceAllocation(personId, date, target) {
   const currentUser = teamData.users.find(user => user.auth_user_id === session?.user?.id);
   $("#workforce-edit-message").textContent = `A guardar ${shortPersonName(person.nome)}…`;
   let response = null;
+  let removedDay = false;
   if (!allowsMultipleWorks && period === "dia_inteiro" && dayAllocations.length) {
     response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}`, { method: "DELETE" });
     if (!response.ok) {
       toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
       return;
     }
+    removedDay = true;
   } else if (!allowsMultipleWorks && conflicting.length) {
     response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}&periodo=eq.${period}`, {
       method: "PATCH",
+      headers: { Prefer: "return=representation" },
       body: JSON.stringify({ obra_id: workId, tipo_alocacao: type, descricao_livre: description, criado_por: currentUser?.id || null }),
     });
     if (response.ok) {
+      const updatedRows = await returnedAllocationRows(response);
+      replaceLocalAllocations(item => item.colaborador_id === personId && item.data === date && item.periodo === period, updatedRows);
       selectedWorkforceSourceDate = "";
       selectedWorkforceSourcePeriod = "";
       selectedWorkforceSourceRowKey = "";
       selectedWorkforceSourceIds = [];
-      await loadTeamData(true);
+      renderTeamPreservingScroll();
       $("#remove-workforce-allocation").hidden = true;
       $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
       toast("Alocação adicionada. O íman continua selecionado.");
@@ -2243,7 +2280,7 @@ async function saveWorkforceAllocation(personId, date, target) {
   if (!response || response.ok) {
     response = await supabase("quadro_pessoal_alocacao", {
       method: "POST",
-      headers: { Prefer: "return=minimal" },
+      headers: { Prefer: "return=representation" },
       body: JSON.stringify({ colaborador_id: personId, obra_id: workId, tipo_alocacao: type, descricao_livre: description, semana_inicio: mondayIso(date), data: date, periodo: period, criado_por: currentUser?.id || null }),
     });
   }
@@ -2252,11 +2289,13 @@ async function saveWorkforceAllocation(personId, date, target) {
     $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões e tente novamente.";
     return;
   }
+  const insertedRows = await returnedAllocationRows(response);
+  replaceLocalAllocations(item => removedDay && item.colaborador_id === personId && item.data === date, insertedRows);
   selectedWorkforceSourceDate = "";
   selectedWorkforceSourcePeriod = "";
   selectedWorkforceSourceRowKey = "";
   selectedWorkforceSourceIds = [];
-  await loadTeamData(true);
+  renderTeamPreservingScroll();
   $("#remove-workforce-allocation").hidden = true;
   $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
   toast("Alocação adicionada. O íman continua selecionado.");
