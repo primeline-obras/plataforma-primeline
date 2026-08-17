@@ -19,12 +19,12 @@
 .workforce-absence-badge:focus::after,
 .workforce-absence-badge:focus-visible::after { opacity: 1; transform: translateY(0); }
 .workforce-day-cell.weekend,
-.workforce-day-labels .weekend { background: #f1efe8; }
+.workforce-day-labels .weekend { background: rgba(107, 104, 95, .09); }
 .workforce-day-cell.holiday,
-.workforce-day-labels .holiday { background: #f7edd6; box-shadow: inset 0 2px 0 #d9a441; }
+.workforce-day-labels .holiday { background: rgba(217, 164, 65, .17); box-shadow: inset 0 2px 0 #d9a441; }
 
-.vacation-map .weekend { background: #f1efe8; }
-.vacation-map .holiday { background: #f7edd6; box-shadow: inset 0 2px 0 #d9a441; }
+.vacation-map .weekend { background: rgba(107, 104, 95, .09); }
+.vacation-map .holiday { background: rgba(217, 164, 65, .17); box-shadow: inset 0 2px 0 #d9a441; }
 .vacation-map-row > strong,
 .vacation-map-row > i { background: transparent; }
 .vacation-map-row > i.vacation {
@@ -33,21 +33,22 @@
   box-shadow: inset 0 0 0 1px #8a6420;
 }
 
-.vacation-map-row.function-direction { background: rgba(32, 36, 43, .12); }
-.vacation-map-row.function-foreman { background: rgba(63, 98, 72, .12); }
-.vacation-map-row.function-admin { background: rgba(91, 88, 79, .12); }
-.vacation-map-row.function-mason { background: rgba(138, 100, 32, .12); }
-.vacation-map-row.function-helper { background: rgba(107, 104, 95, .12); }
-.vacation-map-row.function-other { background: rgba(70, 86, 110, .12); }
-.vacation-map-row > strong { color: #3b3830; }
+.vacation-map-row.function-direction { background: rgba(32, 36, 43, .14); }
+.vacation-map-row.function-foreman { background: rgba(63, 152, 98, .22); }
+.vacation-map-row.function-admin { background: rgba(140, 74, 120, .16); }
+.vacation-map-row.function-mason { background: rgba(140, 74, 64, .16); }
+.vacation-map-row.function-helper { background: rgba(70, 86, 110, .16); }
+.vacation-map-row > strong { color: #3b3830; border-left: 4px solid transparent; }
+.vacation-map-row.function-direction > strong { border-left-color: #20242b; }
+.vacation-map-row.function-foreman > strong { border-left-color: #3f6248; }
+.vacation-map-row.function-admin > strong { border-left-color: #8c4a78; }
+.vacation-map-row.function-mason > strong { border-left-color: #8c4a40; }
+.vacation-map-row.function-helper > strong { border-left-color: #46566e; }
 
-:root[data-theme="dark"] .workforce-day-cell.weekend,
-:root[data-theme="dark"] .workforce-day-labels .weekend,
-:root[data-theme="dark"] .vacation-map .weekend { background: #292c33; }
-:root[data-theme="dark"] .workforce-day-cell.holiday,
-:root[data-theme="dark"] .workforce-day-labels .holiday,
-:root[data-theme="dark"] .vacation-map .holiday { background: #332b1d; }
-:root[data-theme="dark"] .vacation-map-row > strong { color: #f1efe8; }
+/* No Quadro, o nome é representado pelo íman de iniciais. */
+.workforce-magnet.foreman { border-left: 4px solid #3f6248; }
+.workforce-magnet.mason { border-left: 4px solid #8c4a40; }
+.workforce-magnet.helper { border-left: 4px solid #46566e; }
 
 .settings-holidays { margin-top: 22px; }
 .settings-holiday-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--card-border); }

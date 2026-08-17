@@ -1648,12 +1648,11 @@ function personFunctionClass(person) {
 }
 
 const functionRowTints = {
-  "function-direction": "rgba(32, 36, 43, .12)",
-  "function-foreman": "rgba(63, 98, 72, .12)",
-  "function-admin": "rgba(91, 88, 79, .12)",
-  "function-mason": "rgba(138, 100, 32, .12)",
-  "function-helper": "rgba(107, 104, 95, .12)",
-  "function-other": "rgba(70, 86, 110, .12)",
+  "function-direction": "rgba(32, 36, 43, .14)",
+  "function-foreman": "rgba(63, 152, 98, .22)",
+  "function-admin": "rgba(140, 74, 120, .16)",
+  "function-mason": "rgba(140, 74, 64, .16)",
+  "function-helper": "rgba(70, 86, 110, .16)",
 };
 
 function workforceFunctionTint(effective) {
