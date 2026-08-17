@@ -1618,6 +1618,24 @@ function personFunctionClass(person) {
   return "function-other";
 }
 
+const functionRowTints = {
+  "function-direction": "rgba(32, 36, 43, .12)",
+  "function-foreman": "rgba(63, 98, 72, .12)",
+  "function-admin": "rgba(91, 88, 79, .12)",
+  "function-mason": "rgba(138, 100, 32, .12)",
+  "function-helper": "rgba(107, 104, 95, .12)",
+  "function-other": "rgba(70, 86, 110, .12)",
+};
+
+function workforceFunctionTint(effective) {
+  const colors = [...new Set(effective.map(item => functionRowTints[personFunctionClass(item.person)]).filter(Boolean))];
+  if (!colors.length) return "";
+  if (colors.length === 1) return colors[0];
+  const size = 100 / colors.length;
+  const stops = colors.flatMap((color, index) => [`${color} ${(index * size).toFixed(2)}%`, `${color} ${((index + 1) * size).toFixed(2)}%`]);
+  return `linear-gradient(90deg, ${stops.join(", ")})`;
+}
+
 function renderVacationMap(people, vacations) {
   const { start, end, days } = vacationMonthBounds();
   const monthDate = new Date(`${start}T12:00:00Z`);
@@ -1631,7 +1649,7 @@ function renderVacationMap(people, vacations) {
     const holiday = activeHoliday(date);
     return `<b class="${[0, 6].includes(new Date(`${date}T12:00:00Z`).getUTCDay()) ? "weekend" : ""} ${holiday ? "holiday" : ""}" title="${holiday ? safeText(holiday.nome) : ""}"><span>${index + 1}</span><small>${weekday}</small></b>`;
   }).join("");
-  const rows = ordered.map(person => `<div class="vacation-map-row"><strong class="${personFunctionClass(person)}" title="${safeText(person.nome)}">${safeText(person.nome)}</strong>${Array.from({ length: days }, (_, index) => {
+  const rows = ordered.map(person => `<div class="vacation-map-row ${personFunctionClass(person)}"><strong title="${safeText(person.nome)}">${safeText(person.nome)}</strong>${Array.from({ length: days }, (_, index) => {
     const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
     const onVacation = vacationKeys.has(`${person.id}|${date}`);
     const holiday = activeHoliday(date);
@@ -1912,13 +1930,14 @@ function renderTeam() {
             const unchanged = dayIndex > 0 && !exact.length && signature && signature === previousSignature;
             previousSignature = signature;
             previousEffective = effective;
+            const functionTint = workforceFunctionTint(effective);
             const content = !effective.length
               ? '<span class="no-workforce" title="Sem equipa nesta obra"></span>'
               : unchanged
                 ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
                 : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
             const holiday = activeHoliday(date);
-            return `<div class="workforce-day-cell ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}</div>`;
+            return `<div class="workforce-day-cell ${functionTint ? "function-tinted" : ""} ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" ${functionTint ? `style="--function-row-tint:${functionTint}"` : ""} title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}</div>`;
           }).join("")}</div>`;
         }).join("")}
       </article>`;
