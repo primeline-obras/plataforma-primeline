@@ -15,10 +15,14 @@ test("mapas distinguem fins de semana, feriados e férias", () => {
   assert.match(styles, /\.vacation-map-row > i\.vacation[\s\S]*#d9a441/);
 });
 
-test("nomes no mapa de férias têm cor por função", () => {
+test("linhas e alocações têm fundo suave por função", () => {
   for (const role of ["direction", "foreman", "admin", "mason", "helper", "other"]) {
     assert.match(styles, new RegExp(`function-${role}`));
   }
+  assert.match(styles, /vacation-map-row\.function-direction[\s\S]*rgba\(32, 36, 43, \.12\)/);
+  assert.match(styles, /vacation-map-row > strong \{ color: #3b3830; \}/);
+  assert.match(app, /workforceFunctionTint/);
+  assert.match(styles, /workforce-day-cell\.function-tinted/);
 });
 
 test("feriados são configuráveis por administrativo e gerência", () => {

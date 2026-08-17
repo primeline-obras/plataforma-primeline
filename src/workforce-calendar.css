@@ -5,6 +5,7 @@
 }
 
 .workforce-day-cell:first-child { grid-template-columns: 27px; }
+.workforce-day-cell.function-tinted { background: var(--function-row-tint); }
 .workforce-day-cell.weekend,
 .workforce-day-labels .weekend { background: #f1efe8; }
 .workforce-day-cell.holiday,
@@ -12,18 +13,21 @@
 
 .vacation-map .weekend { background: #f1efe8; }
 .vacation-map .holiday { background: #f7edd6; box-shadow: inset 0 2px 0 #d9a441; }
+.vacation-map-row > strong,
+.vacation-map-row > i { background: transparent; }
 .vacation-map-row > i.vacation {
   background: #d9a441;
   color: #20242b;
   box-shadow: inset 0 0 0 1px #8a6420;
 }
 
-.vacation-map-row > strong.function-direction { color: #20242b; }
-.vacation-map-row > strong.function-foreman { color: #3f6248; }
-.vacation-map-row > strong.function-admin { color: #5b584f; }
-.vacation-map-row > strong.function-mason { color: #8a6420; }
-.vacation-map-row > strong.function-helper { color: #6b685f; }
-.vacation-map-row > strong.function-other { color: #46566e; }
+.vacation-map-row.function-direction { background: rgba(32, 36, 43, .12); }
+.vacation-map-row.function-foreman { background: rgba(63, 98, 72, .12); }
+.vacation-map-row.function-admin { background: rgba(91, 88, 79, .12); }
+.vacation-map-row.function-mason { background: rgba(138, 100, 32, .12); }
+.vacation-map-row.function-helper { background: rgba(107, 104, 95, .12); }
+.vacation-map-row.function-other { background: rgba(70, 86, 110, .12); }
+.vacation-map-row > strong { color: #3b3830; }
 
 :root[data-theme="dark"] .workforce-day-cell.weekend,
 :root[data-theme="dark"] .workforce-day-labels .weekend,
@@ -31,12 +35,7 @@
 :root[data-theme="dark"] .workforce-day-cell.holiday,
 :root[data-theme="dark"] .workforce-day-labels .holiday,
 :root[data-theme="dark"] .vacation-map .holiday { background: #332b1d; }
-:root[data-theme="dark"] .vacation-map-row > strong.function-direction { color: #f1efe8; }
-:root[data-theme="dark"] .vacation-map-row > strong.function-foreman { color: #a8c4ae; }
-:root[data-theme="dark"] .vacation-map-row > strong.function-admin { color: #c8c4b9; }
-:root[data-theme="dark"] .vacation-map-row > strong.function-mason { color: #d4a854; }
-:root[data-theme="dark"] .vacation-map-row > strong.function-helper { color: #b4b2a9; }
-:root[data-theme="dark"] .vacation-map-row > strong.function-other { color: #a8b8cf; }
+:root[data-theme="dark"] .vacation-map-row > strong { color: #f1efe8; }
 
 .settings-holidays { margin-top: 22px; }
 .settings-holiday-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--card-border); }
