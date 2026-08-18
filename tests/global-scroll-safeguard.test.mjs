@@ -15,5 +15,11 @@ test("as grelhas mantêm barras de rolagem visíveis", () => {
   assert.match(styles, /\.vacation-map-scroll::\-webkit-scrollbar[\s\S]*?height:\s*12px/);
   assert.match(styles, /\.management-map-scroll/);
   assert.match(styles, /\.financial-map-scroll/);
-  assert.match(html, /workforce-calendar\.css\?v=3/);
+  assert.match(html, /workforce-calendar\.css\?v=4/);
+});
+
+test("a área central tem rolagem própria sem deslocar a barra lateral", () => {
+  assert.match(styles, /\.app-shell\s*\{[\s\S]*?height:\s*100vh[\s\S]*?overflow:\s*hidden/);
+  assert.match(styles, /main\s*\{[\s\S]*?height:\s*100vh[\s\S]*?overflow-y:\s*scroll/);
+  assert.match(styles, /main::\-webkit-scrollbar\s*\{[\s\S]*?width:\s*12px/);
 });
