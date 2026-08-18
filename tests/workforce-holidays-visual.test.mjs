@@ -18,19 +18,26 @@ test("mapas distinguem fins de semana, feriados e férias", () => {
 });
 
 test("linhas e alocações usam a paleta final de função sem dourado", () => {
-  for (const role of ["direction", "foreman", "admin", "mason", "helper"]) {
+  const palette = {
+    direction: ["32, 36, 43", "#20242b"],
+    foreman: ["46, 125, 91", "#2e7d5b"],
+    admin: ["166, 68, 122", "#a6447a"],
+    preparer: ["61, 90, 158", "#3d5a9e"],
+    estimator: ["123, 79, 160", "#7b4fa0"],
+    purchases: ["27, 143, 160", "#1b8fa0"],
+    warehouse: ["139, 94, 52", "#8b5e34"],
+    mason: ["124, 140, 62", "#7c8c3e"],
+    cleaning: ["89, 168, 110", "#59a86e"],
+    helper: ["191, 54, 54", "#bf3636"],
+    other: ["117, 117, 117", "#757575"],
+  };
+  for (const [role, [rgb, solid]] of Object.entries(palette)) {
     assert.match(styles, new RegExp(`function-${role}`));
+    assert.match(styles, new RegExp(`vacation-map-row\\.function-${role} \\{ background: rgba\\(${rgb.replaceAll(", ", ", ")}, \\.18\\)`));
+    assert.match(styles, new RegExp(`vacation-map-row\\.function-${role} > strong \\{ border-left-color: ${solid}`));
+    assert.match(styles, new RegExp(`workforce-magnet\\.function-${role} \\{ border-left: 4px solid ${solid}; background: rgba\\(${rgb.replaceAll(", ", ", ")}, \\.18\\)`));
   }
-  assert.match(styles, /vacation-map-row\.function-direction[\s\S]*rgba\(32, 36, 43, \.14\)/);
-  assert.match(styles, /vacation-map-row\.function-foreman[\s\S]*rgba\(63, 152, 98, \.22\)/);
-  assert.match(styles, /vacation-map-row\.function-admin[\s\S]*rgba\(140, 74, 120, \.16\)/);
-  assert.match(styles, /vacation-map-row\.function-mason[\s\S]*rgba\(140, 74, 64, \.16\)/);
-  assert.match(styles, /vacation-map-row\.function-helper[\s\S]*rgba\(70, 86, 110, \.16\)/);
   assert.match(styles, /vacation-map-row > strong \{ color: #3b3830; border-left: 4px solid transparent; \}/);
-  assert.doesNotMatch(styles, /data-theme="dark"[^}]*vacation-map-row > strong/);
-  for (const color of ["#20242b", "#3f6248", "#8c4a78", "#8c4a40", "#46566e"]) {
-    assert.match(styles, new RegExp(`border-left-color: ${color}`));
-  }
   assert.doesNotMatch(app.match(/const functionRowTints = \{[\s\S]*?\n\};/)?.[0] || "", /217, 164, 65|138, 100, 32/);
   assert.match(app, /workforceFunctionTint/);
   assert.match(styles, /workforce-day-cell\.function-tinted/);

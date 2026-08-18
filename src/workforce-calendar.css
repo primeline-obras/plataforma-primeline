@@ -33,22 +33,43 @@
   box-shadow: inset 0 0 0 1px #8a6420;
 }
 
-.vacation-map-row.function-direction { background: rgba(32, 36, 43, .14); }
-.vacation-map-row.function-foreman { background: rgba(63, 152, 98, .22); }
-.vacation-map-row.function-admin { background: rgba(140, 74, 120, .16); }
-.vacation-map-row.function-mason { background: rgba(140, 74, 64, .16); }
-.vacation-map-row.function-helper { background: rgba(70, 86, 110, .16); }
+.vacation-map-row.function-direction { background: rgba(32, 36, 43, .18); }
+.vacation-map-row.function-foreman { background: rgba(46, 125, 91, .18); }
+.vacation-map-row.function-admin { background: rgba(166, 68, 122, .18); }
+.vacation-map-row.function-preparer { background: rgba(61, 90, 158, .18); }
+.vacation-map-row.function-estimator { background: rgba(123, 79, 160, .18); }
+.vacation-map-row.function-purchases { background: rgba(27, 143, 160, .18); }
+.vacation-map-row.function-warehouse { background: rgba(139, 94, 52, .18); }
+.vacation-map-row.function-mason { background: rgba(124, 140, 62, .18); }
+.vacation-map-row.function-cleaning { background: rgba(89, 168, 110, .18); }
+.vacation-map-row.function-helper { background: rgba(191, 54, 54, .18); }
+.vacation-map-row.function-other { background: rgba(117, 117, 117, .18); }
 .vacation-map-row > strong { color: #3b3830; border-left: 4px solid transparent; }
 .vacation-map-row.function-direction > strong { border-left-color: #20242b; }
-.vacation-map-row.function-foreman > strong { border-left-color: #3f6248; }
-.vacation-map-row.function-admin > strong { border-left-color: #8c4a78; }
-.vacation-map-row.function-mason > strong { border-left-color: #8c4a40; }
-.vacation-map-row.function-helper > strong { border-left-color: #46566e; }
+.vacation-map-row.function-foreman > strong { border-left-color: #2e7d5b; }
+.vacation-map-row.function-admin > strong { border-left-color: #a6447a; }
+.vacation-map-row.function-preparer > strong { border-left-color: #3d5a9e; }
+.vacation-map-row.function-estimator > strong { border-left-color: #7b4fa0; }
+.vacation-map-row.function-purchases > strong { border-left-color: #1b8fa0; }
+.vacation-map-row.function-warehouse > strong { border-left-color: #8b5e34; }
+.vacation-map-row.function-mason > strong { border-left-color: #7c8c3e; }
+.vacation-map-row.function-cleaning > strong { border-left-color: #59a86e; }
+.vacation-map-row.function-helper > strong { border-left-color: #bf3636; }
+.vacation-map-row.function-other > strong { border-left-color: #757575; }
 
 /* No Quadro, o nome é representado pelo íman de iniciais. */
-.workforce-magnet.foreman { border-left: 4px solid #3f6248; }
-.workforce-magnet.mason { border-left: 4px solid #8c4a40; }
-.workforce-magnet.helper { border-left: 4px solid #46566e; }
+.workforce-magnet.function-direction { border-left: 4px solid #20242b; background: rgba(32, 36, 43, .18); }
+.workforce-magnet.function-foreman { border-left: 4px solid #2e7d5b; background: rgba(46, 125, 91, .18); }
+.workforce-magnet.function-admin { border-left: 4px solid #a6447a; background: rgba(166, 68, 122, .18); }
+.workforce-magnet.function-preparer { border-left: 4px solid #3d5a9e; background: rgba(61, 90, 158, .18); }
+.workforce-magnet.function-estimator { border-left: 4px solid #7b4fa0; background: rgba(123, 79, 160, .18); }
+.workforce-magnet.function-purchases { border-left: 4px solid #1b8fa0; background: rgba(27, 143, 160, .18); }
+.workforce-magnet.function-warehouse { border-left: 4px solid #8b5e34; background: rgba(139, 94, 52, .18); }
+.workforce-magnet.function-mason { border-left: 4px solid #7c8c3e; background: rgba(124, 140, 62, .18); }
+.workforce-magnet.function-cleaning { border-left: 4px solid #59a86e; background: rgba(89, 168, 110, .18); }
+.workforce-magnet.function-helper { border-left: 4px solid #bf3636; background: rgba(191, 54, 54, .18); }
+.workforce-magnet.function-other { border-left: 4px solid #757575; background: rgba(117, 117, 117, .18); }
+:root[data-theme="dark"] .workforce-magnet.function-helper { border-left-color: #bf3636; background: rgba(191, 54, 54, .18); }
 
 .settings-holidays { margin-top: 22px; }
 .settings-holiday-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--card-border); }

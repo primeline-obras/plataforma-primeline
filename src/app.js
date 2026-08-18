@@ -1542,7 +1542,7 @@ function renderWorkforceMagnet(person, allocation = null) {
     && (!allocation || (selectedWorkforceSourceDate === allocation.data
       && selectedWorkforceSourcePeriod === period
       && selectedWorkforceSourceRowKey === (allocation.row_key || "")));
-  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" data-source-row-key="${safeText(allocation?.row_key || "")}" data-source-ids="${safeText((allocation?.ids || []).join(","))}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
+  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${personFunctionClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" data-source-row-key="${safeText(allocation?.row_key || "")}" data-source-ids="${safeText((allocation?.ids || []).join(","))}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
 }
 
 function effectiveWorkforceForDate(events, date, personById) {
@@ -1639,20 +1639,31 @@ function activeHoliday(date) {
 
 function personFunctionClass(person) {
   const role = String(person?.funcao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (/gerencia|diretor|dir\. obra/.test(role)) return "function-direction";
+  if (/direcao|gerencia|diretor|dir\. obra/.test(role)) return "function-direction";
   if (role.includes("encarregado")) return "function-foreman";
   if (/administrativo|recursos humanos|\brh\b/.test(role)) return "function-admin";
+  if (/preparador|desenhador/.test(role)) return "function-preparer";
+  if (role.includes("orcamentista")) return "function-estimator";
+  if (role.includes("compras")) return "function-purchases";
+  if (role.includes("armazem")) return "function-warehouse";
   if (role.includes("pedreiro")) return "function-mason";
+  if (/empregada.*limpeza|limpeza/.test(role)) return "function-cleaning";
   if (role.includes("servente")) return "function-helper";
   return "function-other";
 }
 
 const functionRowTints = {
-  "function-direction": "rgba(32, 36, 43, .14)",
-  "function-foreman": "rgba(63, 152, 98, .22)",
-  "function-admin": "rgba(140, 74, 120, .16)",
-  "function-mason": "rgba(140, 74, 64, .16)",
-  "function-helper": "rgba(70, 86, 110, .16)",
+  "function-direction": "rgba(32, 36, 43, .18)",
+  "function-foreman": "rgba(46, 125, 91, .18)",
+  "function-admin": "rgba(166, 68, 122, .18)",
+  "function-preparer": "rgba(61, 90, 158, .18)",
+  "function-estimator": "rgba(123, 79, 160, .18)",
+  "function-purchases": "rgba(27, 143, 160, .18)",
+  "function-warehouse": "rgba(139, 94, 52, .18)",
+  "function-mason": "rgba(124, 140, 62, .18)",
+  "function-cleaning": "rgba(89, 168, 110, .18)",
+  "function-helper": "rgba(191, 54, 54, .18)",
+  "function-other": "rgba(117, 117, 117, .18)",
 };
 
 function workforceFunctionTint(effective) {
@@ -3094,11 +3105,13 @@ function renderWorkDocumentsTab() {
       <div>
         <p class="eyebrow">ARQUIVO DA OBRA</p>
         <h3>ADICIONAR DOCUMENTO</h3>
-        <span>PDF, imagem, Excel, Word, MS Project, DWG/DXF, ZIP ou TXT · máximo 25 MB</span>
+        <span>Cada envio fica registado como uma revisão, com autor, data e destinatários.</span>
       </div>
       <label>TIPO<div class="select-wrap"><select name="tipo" required>${WORK_DOCUMENT_TYPES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select><b>⌄</b></div></label>
-      <label class="work-document-index-field" data-document-number hidden>NÚMERO DO DOCUMENTO<input name="numero_documento" maxlength="80" placeholder="Ex.: DES-042 ou PDE-018"></label>
-      <label class="work-document-index-field" data-document-revision hidden>REVISÃO<input name="revisao" maxlength="30" placeholder="Ex.: A ou 02"></label>
+      <label class="work-document-index-field" data-document-number>NÚMERO DO DOCUMENTO<input name="numero_documento" maxlength="80" required placeholder="Ex.: DES-042 ou CONTRATO-01"></label>
+      <label class="work-document-index-field" data-document-revision>REVISÃO<input name="revisao" maxlength="30" required placeholder="Ex.: A ou 02"></label>
+      <label class="work-document-index-field">ENVIADO PARA<input name="destinatarios" maxlength="300" required placeholder="Ex.: Fiscalização; projetista"></label>
+      <label class="work-document-index-field">DATA DE ENVIO<input name="enviado_em" type="datetime-local" required></label>
       <label class="work-document-file">FICHEIRO<input name="arquivo" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.doc,.docx,.mpp,.dwg,.dxf,.zip,.txt"></label>
       <button class="primary-button" type="submit">ENVIAR <span>→</span></button>
       <p class="form-error"></p>
@@ -3110,15 +3123,18 @@ function renderWorkDocumentsTab() {
         return `<section class="work-document-group">
           <header><div><p class="eyebrow">${label}</p><h3>${label.toUpperCase()}</h3></div><span>${documents.length}</span></header>
           <div class="work-document-list">
-            ${documents.length ? documents.map(document => {
+            ${documents.length ? [...documents].sort((a, b) => String(b.enviado_em || b.criado_em || "").localeCompare(String(a.enviado_em || a.criado_em || ""))).map((document, index, ordered) => {
               const uploader = workDetails.documentUsers[document.enviado_por] || "Utilizador";
-              const createdAt = document.criado_em ? prettyDate.format(new Date(document.criado_em)) : "—";
+              const sentAt = document.enviado_em || document.criado_em;
+              const createdAt = sentAt ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(sentAt)) : "—";
               const path = encodeURIComponent(document.arquivo_url || "");
+              const sameDocument = ordered.filter(item => item.numero_documento && item.numero_documento === document.numero_documento);
+              const isLatest = !document.numero_documento || sameDocument[0]?.id === document.id;
               return `<article class="work-document-row">
                 <div class="work-document-icon">${safeText(workDocumentExtension(document.nome_arquivo).slice(0, 4).toUpperCase() || "DOC")}</div>
-                <div class="work-document-name"><strong title="${safeText(document.nome_arquivo)}">${safeText(document.nome_arquivo)}</strong><span>${safeText(workDocumentLabel(document.tipo))}</span></div>
+                <div class="work-document-name"><strong title="${safeText(document.nome_arquivo)}">${safeText(document.numero_documento || document.nome_arquivo)} · REV. ${safeText(document.revisao || "—")}</strong><span>${isLatest ? '<b class="document-latest-badge">VERSÃO MAIS RECENTE</b>' : "HISTÓRICO"} · ${safeText(document.nome_arquivo)}</span></div>
                 <div class="work-document-meta"><span>ENVIADO POR</span><strong>${safeText(uploader)}</strong></div>
-                <div class="work-document-meta"><span>DATA</span><strong>${safeText(createdAt)}</strong></div>
+                <div class="work-document-meta"><span>QUANDO / PARA QUEM</span><strong>${safeText(createdAt)} · ${safeText(document.destinatarios || "Não registado")}</strong></div>
                 <div class="work-document-actions">
                   ${canPreviewWorkDocument(document) ? `<button type="button" data-work-document-preview="${path}" data-document-name="${safeText(document.nome_arquivo)}">PRÉ-VISUALIZAR</button>` : ""}
                   <button type="button" data-work-document-download="${path}" data-document-name="${safeText(document.nome_arquivo)}">DESCARREGAR</button>
@@ -4199,16 +4215,8 @@ $("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
 $("#workflow-dialog").addEventListener("click", event => { if (event.target === $("#workflow-dialog") || event.target.closest("[data-close-workflow]")) closeWorkflowDialog(); });
 $("#work-detail").addEventListener("change", event => {
   if (event.target.name !== "tipo" || event.target.form?.id !== "work-document-upload") return;
-  const formElement = event.target.form;
-  const isDrawing = event.target.value === "desenhos_preparacao";
-  const isPde = event.target.value === "pdes_rfis";
-  const numberField = formElement.querySelector("[data-document-number]");
-  const revisionField = formElement.querySelector("[data-document-revision]");
-  numberField.hidden = !isDrawing && !isPde;
-  revisionField.hidden = !isDrawing;
-  formElement.elements.numero_documento.required = isDrawing || isPde;
-  if (!isDrawing && !isPde) formElement.elements.numero_documento.value = "";
-  if (!isDrawing) formElement.elements.revisao.value = "";
+  event.target.form.elements.numero_documento.required = true;
+  event.target.form.elements.revisao.required = true;
 });
 $("#work-detail").addEventListener("submit", async event => {
   if (event.target.id === "safety-incident-form" || event.target.id === "safety-inspection-form") {
@@ -4254,11 +4262,13 @@ $("#work-detail").addEventListener("submit", async event => {
   const indexed = ["desenhos_preparacao", "pdes_rfis"].includes(type);
   const documentNumber = uploadForm.elements.numero_documento.value.trim();
   const revision = uploadForm.elements.revisao.value.trim();
+  const recipients = uploadForm.elements.destinatarios.value.trim();
+  const sentAt = uploadForm.elements.enviado_em.value;
   const submitButton = uploadForm.querySelector('button[type="submit"]');
   const errorNode = uploadForm.querySelector(".form-error");
   if (!file) return;
-  if (indexed && !documentNumber) {
-    errorNode.textContent = "O número do documento é obrigatório para Desenhos e PDEs.";
+  if (!documentNumber || !revision || !recipients || !sentAt) {
+    errorNode.textContent = "Número, revisão, destinatários e data de envio são obrigatórios.";
     uploadForm.elements.numero_documento.focus();
     return;
   }
@@ -4277,8 +4287,10 @@ $("#work-detail").addEventListener("submit", async event => {
           nome_arquivo: file.name,
           arquivo_url: objectPath,
           enviado_por: accessContext.profile?.id,
-          numero_documento: indexed ? documentNumber : null,
-          revisao: type === "desenhos_preparacao" ? revision || null : null,
+          numero_documento: documentNumber,
+          revisao: revision,
+          destinatarios: recipients,
+          enviado_em: new Date(sentAt).toISOString(),
         }),
       });
       if (!response.ok) {
@@ -4296,8 +4308,10 @@ $("#work-detail").addEventListener("submit", async event => {
         tipo: type,
         nome_arquivo: file.name,
         arquivo_url: localPath,
-        numero_documento: indexed ? documentNumber : null,
-        revisao: type === "desenhos_preparacao" ? revision || null : null,
+        numero_documento: documentNumber,
+        revisao: revision,
+        destinatarios: recipients,
+        enviado_em: new Date(sentAt).toISOString(),
         enviado_por: "demo",
         criado_em: new Date().toISOString(),
       };
