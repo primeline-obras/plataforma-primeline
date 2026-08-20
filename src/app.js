@@ -20,6 +20,7 @@ import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
 import { createProjectsModule } from "./projects.js?v=1";
+import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=3";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -84,7 +85,7 @@ let workDetails = {
   contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [],
   labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
   billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
-  drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
+  drawings: [], rfis: [], pames: [], extensionRequests: [], safetyIncidents: [], safetyInspections: [], epis: [],
   safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
   error: "", procurementError: "", billingError: "", workDocumentsError: "",
   documentIndexesError: "", safetyError: "", teesError: "",
@@ -2639,7 +2640,7 @@ async function loadWorkDetails(workId) {
     contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [],
     labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
     billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
-    drawings: [], rfis: [], safetyIncidents: [], safetyInspections: [], epis: [],
+    drawings: [], rfis: [], pames: [], extensionRequests: [], safetyIncidents: [], safetyInspections: [], epis: [],
     safetyCollaborators: [], canEditDocuments: false, canEditSafety: false,
     error: "", procurementError: "", billingError: "", workDocumentsError: "",
     documentIndexesError: "", safetyError: "", teesError: "",
@@ -2676,6 +2677,8 @@ async function loadWorkDetails(workId) {
       documentUsers: {},
       drawings: [],
       rfis: [],
+      pames: [],
+      extensionRequests: [],
       safetyIncidents: [],
       safetyInspections: [],
       epis: [],
@@ -2788,11 +2791,13 @@ async function loadWorkDetails(workId) {
   if (hasFullAccess() || isAdministrative()) {
     securityRequests.push(supabase("epis?select=*&order=data_validade.asc.nullslast,data_entrega.desc"));
   }
-  const [workDocumentsResult, editPermissionResult, drawingsResult, rfisResult, ...securityResults] = await Promise.all([
+  const [workDocumentsResult, editPermissionResult, drawingsResult, rfisResult, pamesResult, extensionRequestsResult, ...securityResults] = await Promise.all([
     supabase(`documentos_obra?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=criado_em.desc`),
     supabase("rpc/fn_pode_editar_documentos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: workId }) }),
     supabase(`desenhos?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=numero.asc,revisao.desc`),
     supabase(`rfis?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=numero.asc`),
+    supabase(`pames?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=numero.asc,revisao.asc`),
+    supabase(`pedidos_prorrogacao?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=numero.asc,data_pedido.asc`),
     ...securityRequests,
   ]);
   if (workDocumentsResult.ok) {
@@ -2813,6 +2818,10 @@ async function loadWorkDetails(workId) {
   else workDetails.documentIndexesError = "Não foi possível consultar o índice de desenhos.";
   if (rfisResult.ok) workDetails.rfis = await rfisResult.json();
   else workDetails.documentIndexesError += `${workDetails.documentIndexesError ? " " : ""}Não foi possível consultar o índice de PDEs.`;
+  if (pamesResult.ok) workDetails.pames = await pamesResult.json();
+  else workDetails.documentIndexesError += `${workDetails.documentIndexesError ? " " : ""}Não foi possível consultar o índice de PAME.`;
+  if (extensionRequestsResult.ok) workDetails.extensionRequests = await extensionRequestsResult.json();
+  else workDetails.documentIndexesError += `${workDetails.documentIndexesError ? " " : ""}Não foi possível consultar o índice de Pedidos de Prorrogação.`;
   const [incidentsResult, inspectionsResult, safetyPeopleResult, safetyPermissionResult, episResult] = securityResults;
   const safetyFailures = [];
   if (incidentsResult?.ok) workDetails.safetyIncidents = await incidentsResult.json();
@@ -3051,44 +3060,89 @@ function documentIndexNumber(item) {
   return item.numero_documento || item.numero || item.codigo || "Sem número";
 }
 
-function latestDrawingRows() {
-  const grouped = new Map();
-  workDetails.drawings.forEach(item => {
-    const number = documentIndexNumber(item);
-    const current = grouped.get(number);
-    const itemSort = `${item.revisao || ""}|${item.data_emissao || ""}`;
-    const currentSort = current ? `${current.revisao || ""}|${current.data_emissao || ""}` : "";
-    if (!current || itemSort.localeCompare(currentSort, "pt-PT", { numeric: true }) > 0) grouped.set(number, item);
+function sortedIndexRows(rows) {
+  return [...rows].sort((left, right) => {
+    const number = documentIndexNumber(left).localeCompare(documentIndexNumber(right), "pt-PT", { numeric: true });
+    return number || String(left.revisao || "").localeCompare(String(right.revisao || ""), "pt-PT", { numeric: true });
   });
-  return [...grouped.values()].sort((a, b) =>
-    documentIndexNumber(a).localeCompare(documentIndexNumber(b), "pt-PT", { numeric: true }));
 }
 
+function indexStateClass(value) {
+  return String(value || "sem_estado").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function indexCell(value, type = "text") {
+  const display = type === "date" ? formatOptionalDate(String(value || "").slice(0, 10))
+    : type === "currency" ? euro.format(Number(value || 0)) : safeText(value || "—");
+  return `<td>${display}</td>`;
+}
+
+function renderOperationalIndex({ kind, eyebrow, title, rows, columns }) {
+  return `<section class="document-index-card document-index-card-wide">
+    <header><div><p class="eyebrow">${eyebrow}</p><h3>${title}</h3></div><div class="document-index-actions"><span>${rows.length}</span><button type="button" data-export-index-pdf="${kind}">EXPORTAR PDF</button></div></header>
+    <div class="document-index-table-wrap"><table><thead><tr>${columns.map(column => `<th>${column.label}</th>`).join("")}</tr></thead>
+    <tbody>${rows.length ? rows.map(item => `<tr>${columns.map(column => column.key === "estado" || column.key === "aprovado"
+      ? `<td><strong class="index-state ${indexStateClass(item[column.key])}">${safeText(item[column.key] || "—")}</strong></td>`
+      : indexCell(item[column.key], column.type)).join("")}</tr>`).join("")
+      : `<tr><td colspan="${columns.length}" class="document-index-empty">SEM REGISTOS NESTE ÍNDICE</td></tr>`}</tbody></table></div>
+  </section>`;
+}
+
+function teeIndexRows() {
+  return sortedIndexRows(workDetails.tees).map(tee => {
+    const phase = teePhase(tee);
+    return {
+      ...tee,
+      fase: phase ? `${phase.codigo || ""} ${phase.descricao || ""}`.trim() : "Sem fase",
+      aprovado: tee.estado_aprovacao_cliente === "aprovado" ? "Sim" : "Não",
+    };
+  });
+}
+
+function extensionRequestIndexRows() {
+  const teeNumbers = new Map(workDetails.tees.map(tee => [tee.id, documentIndexNumber(tee)]));
+  return sortedIndexRows(workDetails.extensionRequests).map(request => ({
+    ...request,
+    tee_origem: request.tee_id ? teeNumbers.get(request.tee_id) || "TEE não disponível" : "—",
+  }));
+}
+
+const PDE_COLUMNS = [
+  { key: "numero", label: "Número" }, { key: "descricao", label: "Descrição" }, { key: "revisao", label: "Revisão" },
+  { key: "data_emissao", label: "Data Emissão", type: "date" }, { key: "data_envio", label: "Data Envio", type: "date" },
+  { key: "data_resposta", label: "Data de Aprovação", type: "date" }, { key: "estado", label: "Estado" }, { key: "notas", label: "Notas" },
+];
+const DRAWING_COLUMNS = [
+  { key: "numero", label: "Número" }, { key: "descricao", label: "Descrição" }, { key: "revisao", label: "Revisão" },
+  { key: "data_emissao", label: "Data Emissão", type: "date" }, { key: "data_envio_do", label: "Data Envio DO", type: "date" },
+  { key: "data_resposta_do", label: "Resposta DO/Fiscalização", type: "date" }, { key: "estado", label: "Estado" }, { key: "notas", label: "Notas" },
+];
+const TEE_INDEX_COLUMNS = [
+  { key: "fase", label: "Fase" }, { key: "numero", label: "Número" }, { key: "descricao", label: "Descrição" },
+  { key: "data_envio", label: "Data Envio", type: "date" }, { key: "data_resposta", label: "Data Resposta", type: "date" },
+  { key: "valor", label: "Valor (s/IVA)", type: "currency" }, { key: "dias_prorrogacao", label: "Prorrogação (dias)" }, { key: "aprovado", label: "Aprovado (S/N)" },
+];
+const EXTENSION_REQUEST_COLUMNS = [
+  { key: "numero", label: "Número" }, { key: "motivo", label: "Motivo" },
+  { key: "dias_solicitados", label: "Dias Solicitados" }, { key: "tee_origem", label: "TEE de Origem" },
+  { key: "data_pedido", label: "Data do Pedido", type: "date" }, { key: "data_resposta", label: "Data de Resposta", type: "date" },
+  { key: "estado", label: "Estado" }, { key: "notas", label: "Notas" },
+];
+
 function renderDocumentIndexes() {
-  const drawings = latestDrawingRows();
-  const rfis = [...workDetails.rfis].sort((a, b) =>
-    String(b.data_envio || "").localeCompare(String(a.data_envio || "")));
+  const drawings = sortedIndexRows(workDetails.drawings);
+  const rfis = sortedIndexRows(workDetails.rfis);
+  const pames = sortedIndexRows(workDetails.pames);
+  const tees = teeIndexRows();
+  const extensionRequests = extensionRequestIndexRows();
   return `<section class="document-indexes">
-    ${workDetails.documentIndexesError ? `<div class="work-warning"><strong>ÍNDICES PARCIAIS</strong><span>${safeText(workDetails.documentIndexesError)} Confirme as políticas RLS dos índices.</span></div>` : ""}
+    ${workDetails.documentIndexesError ? `<div class="work-warning"><strong>ÍNDICES PARCIAIS</strong><span>${safeText(workDetails.documentIndexesError)} Confirme a migração e as políticas RLS.</span></div>` : ""}
     <div class="document-index-grid">
-      <section class="document-index-card">
-        <header><div><p class="eyebrow">CONTROLO DE REVISÕES</p><h3>ÍNDICE DE DESENHOS</h3></div><span>${drawings.length}</span></header>
-        <div class="document-index-list">${drawings.length ? drawings.map(item => `
-          <article><div><span>NÚMERO</span><strong>${safeText(documentIndexNumber(item))}</strong></div>
-            <div><span>REVISÃO MAIS RECENTE</span><strong>${safeText(item.revisao || "—")}</strong></div>
-            <div><span>DATA</span><strong>${formatOptionalDate(String(item.data_emissao || "").slice(0, 10))}</strong></div>
-          </article>`).join("") : `<div class="work-document-empty">SEM DESENHOS INDEXADOS</div>`}</div>
-      </section>
-      <section class="document-index-card">
-        <header><div><p class="eyebrow">PEDIDOS DE ESCLARECIMENTO</p><h3>ÍNDICE DE PDEs</h3></div><span>${rfis.length}</span></header>
-        <div class="document-index-list">${rfis.length ? rfis.map(item => {
-          const status = String(item.estado || (item.data_resposta ? "respondido" : "enviado")).toLocaleLowerCase("pt-PT");
-          return `<article><div><span>NÚMERO</span><strong>${safeText(documentIndexNumber(item))}</strong></div>
-            <div><span>ESTADO</span><strong class="index-state ${safeText(status)}">${safeText(status.replaceAll("_", " ").toUpperCase())}</strong></div>
-            <div><span>DATA</span><strong>${formatOptionalDate(String(item.data_envio || "").slice(0, 10))}</strong></div>
-          </article>`;
-        }).join("") : `<div class="work-document-empty">SEM PDEs INDEXADOS</div>`}</div>
-      </section>
+      ${renderOperationalIndex({ kind: "pdes", eyebrow: "PEDIDOS DE ESCLARECIMENTO", title: "ÍNDICE DE PDEs", rows: rfis, columns: PDE_COLUMNS })}
+      ${renderOperationalIndex({ kind: "desenhos", eyebrow: "CONTROLO DE REVISÕES", title: "DESENHOS DE PREPARAÇÃO", rows: drawings, columns: DRAWING_COLUMNS })}
+      ${renderOperationalIndex({ kind: "pames", eyebrow: "MATERIAIS E EQUIPAMENTOS", title: "ÍNDICE DE PAME", rows: pames, columns: PDE_COLUMNS })}
+      ${renderOperationalIndex({ kind: "tees", eyebrow: "TRABALHOS EXTRA-EMPREITADA", title: "ÍNDICE DE TEEs", rows: tees, columns: TEE_INDEX_COLUMNS })}
+      ${renderOperationalIndex({ kind: "prorrogacoes", eyebrow: "PRAZOS CONTRATUAIS", title: "PEDIDOS DE PRORROGAÇÃO", rows: extensionRequests, columns: EXTENSION_REQUEST_COLUMNS })}
     </div>
   </section>`;
 }
@@ -3110,8 +3164,13 @@ function renderWorkDocumentsTab() {
       <label>TIPO<div class="select-wrap"><select name="tipo" required>${WORK_DOCUMENT_TYPES.map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select><b>⌄</b></div></label>
       <label class="work-document-index-field" data-document-number>NÚMERO DO DOCUMENTO<input name="numero_documento" maxlength="80" required placeholder="Ex.: DES-042 ou CONTRATO-01"></label>
       <label class="work-document-index-field" data-document-revision>REVISÃO<input name="revisao" maxlength="30" required placeholder="Ex.: A ou 02"></label>
+      <label class="work-document-index-field work-document-description">DESCRIÇÃO<input name="descricao" maxlength="500" placeholder="Descrição da linha do índice"></label>
+      <label class="work-document-index-field">DATA DE EMISSÃO<input name="data_emissao" type="date"></label>
       <label class="work-document-index-field">ENVIADO PARA<input name="destinatarios" maxlength="300" required placeholder="Ex.: Fiscalização; projetista"></label>
       <label class="work-document-index-field">DATA DE ENVIO<input name="enviado_em" type="datetime-local" required></label>
+      <label class="work-document-index-field">DATA DE RESPOSTA<input name="data_resposta_indice" type="date"></label>
+      <label class="work-document-index-field">ESTADO<div class="select-wrap"><select name="estado_indice"><option value="">Sem estado</option><option>Não enviado</option><option>Enviado ao DO</option><option>Respondido</option><option>Discutido em Reunião</option><option>Em elaboração</option><option>Cancelado</option><option>Pedido de revisão</option><option>Emitido</option><option>Analisado em reunião</option><option>Apresentado em reunião</option></select><b>⌄</b></div></label>
+      <label class="work-document-index-field work-document-notes">NOTAS<textarea name="notas" rows="2" maxlength="1000"></textarea></label>
       <label class="work-document-file">FICHEIRO<input name="arquivo" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.doc,.docx,.mpp,.dwg,.dxf,.zip,.txt"></label>
       <button class="primary-button" type="submit">ENVIAR <span>→</span></button>
       <p class="form-error"></p>
@@ -4259,7 +4318,7 @@ $("#work-detail").addEventListener("submit", async event => {
   const uploadForm = event.target;
   const file = uploadForm.elements.arquivo.files[0];
   const type = uploadForm.elements.tipo.value;
-  const indexed = ["desenhos_preparacao", "pdes_rfis"].includes(type);
+  const indexed = ["desenhos_preparacao", "pdes_rfis", "pames"].includes(type);
   const documentNumber = uploadForm.elements.numero_documento.value.trim();
   const revision = uploadForm.elements.revisao.value.trim();
   const recipients = uploadForm.elements.destinatarios.value.trim();
@@ -4289,8 +4348,13 @@ $("#work-detail").addEventListener("submit", async event => {
           enviado_por: accessContext.profile?.id,
           numero_documento: documentNumber,
           revisao: revision,
+          descricao: uploadForm.elements.descricao.value.trim() || null,
+          data_emissao: uploadForm.elements.data_emissao.value || null,
           destinatarios: recipients,
           enviado_em: new Date(sentAt).toISOString(),
+          data_resposta_indice: uploadForm.elements.data_resposta_indice.value || null,
+          estado_indice: uploadForm.elements.estado_indice.value || null,
+          notas: uploadForm.elements.notas.value.trim() || null,
         }),
       });
       if (!response.ok) {
@@ -4310,8 +4374,13 @@ $("#work-detail").addEventListener("submit", async event => {
         arquivo_url: localPath,
         numero_documento: documentNumber,
         revisao: revision,
+        descricao: uploadForm.elements.descricao.value.trim() || null,
+        data_emissao: uploadForm.elements.data_emissao.value || null,
         destinatarios: recipients,
         enviado_em: new Date(sentAt).toISOString(),
+        data_resposta_indice: uploadForm.elements.data_resposta_indice.value || null,
+        estado_indice: uploadForm.elements.estado_indice.value || null,
+        notas: uploadForm.elements.notas.value.trim() || null,
         enviado_por: "demo",
         criado_em: new Date().toISOString(),
       };
@@ -4320,13 +4389,13 @@ $("#work-detail").addEventListener("submit", async event => {
     workDetails.workDocuments.unshift(document);
     if (indexed) {
       if (isSupabaseConfigured) {
-        const table = type === "desenhos_preparacao" ? "desenhos" : "rfis";
-        const order = table === "desenhos" ? "numero.asc,revisao.desc" : "numero.asc";
+        const table = type === "desenhos_preparacao" ? "desenhos" : type === "pdes_rfis" ? "rfis" : "pames";
+        const order = table === "rfis" ? "numero.asc" : "numero.asc,revisao.asc";
         const indexResult = await supabase(`${table}?select=*&obra_id=eq.${encodeURIComponent(selectedWorkId)}&order=${order}`);
-        if (indexResult.ok) workDetails[type === "desenhos_preparacao" ? "drawings" : "rfis"] = await indexResult.json();
+        if (indexResult.ok) workDetails[type === "desenhos_preparacao" ? "drawings" : type === "pdes_rfis" ? "rfis" : "pames"] = await indexResult.json();
       } else {
-        const indexItem = { ...document, documento_obra_id: document.id };
-        workDetails[type === "desenhos_preparacao" ? "drawings" : "rfis"].unshift(indexItem);
+        const indexItem = { ...document, numero: document.numero_documento, estado: document.estado_indice, data_envio: String(document.enviado_em).slice(0, 10), data_resposta: document.data_resposta_indice, data_envio_do: String(document.enviado_em).slice(0, 10), data_resposta_do: document.data_resposta_indice, documento_obra_id: document.id };
+        workDetails[type === "desenhos_preparacao" ? "drawings" : type === "pdes_rfis" ? "rfis" : "pames"].unshift(indexItem);
       }
     }
     renderWorkDetail(works.find(item => item.id === selectedWorkId));
@@ -4348,6 +4417,22 @@ $("#work-detail").addEventListener("click", async event => {
   if (tabButton) {
     selectedWorkTab = tabButton.dataset.workTab;
     renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    return;
+  }
+  const exportIndexButton = event.target.closest("[data-export-index-pdf]");
+  if (exportIndexButton) {
+    const kind = exportIndexButton.dataset.exportIndexPdf;
+    const rows = kind === "pdes" ? sortedIndexRows(workDetails.rfis)
+      : kind === "desenhos" ? sortedIndexRows(workDetails.drawings)
+        : kind === "pames" ? sortedIndexRows(workDetails.pames)
+          : kind === "tees" ? teeIndexRows()
+            : extensionRequestIndexRows();
+    const work = works.find(item => item.id === selectedWorkId);
+    try {
+      generateDocumentIndexPdf({ kind, work, rows });
+    } catch (error) {
+      toast(error.message || "Não foi possível exportar o índice.", "error");
+    }
     return;
   }
   if (event.target.closest("[data-import-tees]")) {

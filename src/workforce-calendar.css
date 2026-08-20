@@ -166,3 +166,22 @@ main::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: #777f83;
 }
+
+/* Índices operacionais: tabelas completas e exportação PDF. */
+.document-index-card-wide { grid-column: 1 / -1; }
+.document-index-actions { display: flex; align-items: center; gap: 9px; }
+.document-index-actions > span { min-width: 28px; height: 28px; border-radius: 999px; background: var(--sidebar-bg); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
+.document-index-actions button { min-height: 34px; padding: 0 12px; border: 1px solid var(--sidebar-bg); border-radius: 7px; background: var(--sidebar-bg); color: #fff; font: 800 9px "Manrope"; letter-spacing: .6px; cursor: pointer; }
+.document-index-table-wrap { width: 100%; overflow: auto; scrollbar-gutter: stable; }
+.document-index-table-wrap table { width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; background: var(--card); }
+.document-index-table-wrap th, .document-index-table-wrap td { padding: 10px 11px; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); font-size: 11px; text-align: left; vertical-align: top; }
+.document-index-table-wrap th { position: sticky; top: 0; z-index: 2; background: var(--sidebar-bg); color: #fff; font: 800 9px "Manrope"; letter-spacing: .55px; white-space: nowrap; }
+.document-index-table-wrap td:nth-child(2), .document-index-table-wrap td:last-child { min-width: 210px; white-space: normal; line-height: 1.4; }
+.document-index-table-wrap tbody tr:hover td { background: color-mix(in srgb, var(--card) 90%, var(--info-bg)); }
+.document-index-empty { padding: 24px !important; color: var(--text-muted); font-weight: 800; text-align: center !important; }
+.index-state.nao-enviado, .index-state.em-elaboracao, .index-state.pedido-de-revisao, .index-state.pendente { color: var(--warn-text); background: var(--warn-bg); border-color: var(--warn-border); }
+.index-state.enviado-ao-do, .index-state.discutido-em-reuniao, .index-state.analisado-em-reuniao { color: var(--info-text); background: var(--info-bg); border-color: var(--info-border); }
+.index-state.respondido, .index-state.emitido, .index-state.apresentado-em-reuniao, .index-state.sim, .index-state.aprovado { color: var(--pos-text); background: var(--pos-bg); border-color: var(--pos-border); }
+.index-state.cancelado, .index-state.nao, .index-state.recusado { color: var(--neg-text); background: var(--neg-bg); border-color: var(--neg-border); }
+.work-document-description, .work-document-notes { grid-column: span 2; }
+.work-document-index-field textarea, .work-document-index-field select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--card-border); background: var(--bg); color: var(--text-primary); resize: vertical; }
