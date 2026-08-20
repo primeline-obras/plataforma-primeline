@@ -6,7 +6,7 @@ import { createSubcontractorsModule } from "./subcontractors.js?v=4";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=13";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=5";
-import { createProcurementModule } from "./procurement.js?v=2";
+import { createProcurementModule } from "./procurement.js?v=3";
 import { createActionPlanModule } from "./action-plan.js?v=3";
 import { createDocumentsModule } from "./documents.js?v=1";
 import { createRncModule } from "./rnc.js?v=2";
@@ -2976,7 +2976,7 @@ function billingForMeasurement(measurementId) {
 function renderMeasurementsTab(work) {
   const rows = workDetails.measurements;
   const measured = totalClientBilling(workDetails.contract, rows);
-  const invoiced = workDetails.billings.reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  const invoiced = workDetails.billings.filter(item => item.estado_aprovacao === "aprovado").reduce((sum, item) => sum + Number(item.valor || 0), 0);
   const received = workDetails.billings.reduce((sum, item) => sum + Number(item.valor_recebido || 0), 0);
   return `
     ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.billingError} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
@@ -2993,7 +2993,8 @@ function renderMeasurementsTab(work) {
         const billing = billingForMeasurement(item.id);
         const autoPdf = documentFor(item.id, "auto_medicao_pdf");
         const invoicePdf = billing && documentFor(billing.id, "fatura_cliente_pdf");
-        const paid = billing && Number(billing.valor_recebido || 0) >= Number(billing.valor || 0);
+        const billingApproved = billing?.estado_aprovacao === "aprovado";
+        const paid = billing?.estado_pagamento === "pago" || (billing && Number(billing.valor_recebido || 0) >= Number(billing.valor || 0));
         return `<article class="measurement-card">
           <div class="measurement-head">
             <div><span>${item.tipo || "contratual"}</span><strong>Auto ${item.numero_auto || "sem número"}</strong><small>${prettyDate.format(new Date(`${item.mes_referencia}T12:00:00`))}</small></div>
@@ -3008,17 +3009,18 @@ function renderMeasurementsTab(work) {
           <div class="workflow-line">
             <span class="${item.estado !== "rascunho" ? "done" : ""}">AUTO ENVIADO</span>
             <i></i><span class="${["aprovado_cliente"].includes(item.estado) ? "done" : ""}">AUTO APROVADO</span>
-            <i></i><span class="${billing ? "done" : ""}">FATURA EMITIDA</span>
+            <i></i><span class="${billingApproved ? "done" : ""}">${billingApproved ? "FATURA APROVADA" : billing ? "FATURA PENDENTE" : "FATURA"}</span>
             <i></i><span class="${paid ? "done" : ""}">PAGO</span>
           </div>
-          ${billing ? `<div class="billing-summary"><span>FATURA ${billing.numero_fatura}</span><strong>${euro.format(Number(billing.valor))}</strong><small>${paid ? `Recebida em ${formatOptionalDate(billing.data_recebimento)}` : "Pagamento pendente"}</small></div>` : ""}
+          ${billing ? `<div class="billing-summary"><span>FATURA ${billing.numero_fatura}</span><strong>${euro.format(Number(billing.valor))}</strong><small>${billing.estado_aprovacao === "pendente" ? "Pendente de aprovação do Diretor" : billing.estado_aprovacao === "recusado" ? "Recusada" : paid ? `Paga em ${formatOptionalDate(billing.data_pagamento || billing.data_recebimento)}` : "Aprovada · pagamento pendente"}</small></div>` : ""}
           <div class="measurement-actions">
             ${autoPdf ? `<button data-workflow-pdf="${encodeURIComponent(autoPdf.url_arquivo)}">VER AUTO PDF</button>` : ""}
             ${invoicePdf ? `<button data-workflow-pdf="${encodeURIComponent(invoicePdf.url_arquivo)}">VER FATURA PDF</button>` : ""}
             ${canEditWork() && item.estado === "rascunho" ? `<button data-measure-action="enviado_cliente" data-id="${item.id}">MARCAR ENVIADO</button>` : ""}
             ${canEditWork() && item.estado === "enviado_cliente" ? `<button data-measure-action="recusado_cliente" data-id="${item.id}">RECUSAR</button><button data-measure-action="aprovado_cliente" data-id="${item.id}">APROVAR</button>` : ""}
-            ${canEditWork() && item.estado === "aprovado_cliente" && !billing ? `<button class="dark" data-new-billing="${item.id}">EMITIR FATURA</button>` : ""}
-            ${canEditWork() && billing && !paid ? `<button class="dark" data-mark-paid="${billing.id}">MARCAR PAGO</button>` : ""}
+            ${canEditWork() && item.estado === "aprovado_cliente" && !billing ? `<button class="dark" data-new-billing="${item.id}">PREPARAR FATURA</button>` : ""}
+            ${canApproveInvoices() && billing?.estado_aprovacao === "pendente" ? `<button data-decide-billing="recusado" data-billing-id="${billing.id}">RECUSAR FATURA</button><button class="dark" data-decide-billing="aprovado" data-billing-id="${billing.id}">APROVAR FATURA</button>` : ""}
+            ${canPayInvoices() && billingApproved && !paid ? `<button class="dark" data-mark-paid="${billing.id}">MARCAR PAGA</button>` : ""}
           </div>
         </article>`;
       }).join("") : `<div class="empty-state"><strong>SEM AUTOS DE MEDIÇÃO</strong><span>Crie o primeiro auto desta obra.</span></div>`}
@@ -4191,13 +4193,14 @@ async function submitMeasurement(event) {
 
 function openBillingDialog(measurementId) {
   const eligible = workDetails.measurements.filter(item => item.estado === "aprovado_cliente" && !billingForMeasurement(item.id));
-  $("#workflow-dialog-title").textContent = "EMITIR FATURA";
+  $("#workflow-dialog-title").textContent = "PREPARAR RASCUNHO DE FATURA";
   $("#workflow-dialog-content").innerHTML = `<form id="billing-form">
     <div class="form-row"><label>N.º DA FATURA<input name="numero_fatura" required></label><label>DATA DE EMISSÃO<input name="data_emissao_fatura" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label></div>
     <fieldset class="measurement-picker"><legend>AUTOS INCLUÍDOS</legend>${eligible.map(item => `<label><input type="checkbox" name="autos" value="${item.id}" ${item.id === measurementId ? "checked" : ""}><span>${item.numero_auto || "Sem número"} · ${item.tipo} · ${euro.format(Number(item.valor_a_faturar || 0))}</span></label>`).join("")}</fieldset>
     <label>VALOR DA FATURA<input name="valor" type="number" min="0.01" step="0.01" required value="${Number(eligible.find(item => item.id === measurementId)?.valor_a_faturar || 0).toFixed(2)}"></label>
     <label>PDF DA FATURA (OPCIONAL)<input name="pdf" type="file" accept="application/pdf,.pdf"></label>
-    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">REGISTAR FATURA <span>→</span></button></div>
+    <p class="dialog-copy">A obra, o valor e a referência aos autos ficam associados automaticamente. O rascunho seguirá para aprovação do Diretor.</p>
+    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">CRIAR RASCUNHO <span>→</span></button></div>
   </form>`;
   $("#workflow-dialog").hidden = false;
   $("#billing-form").addEventListener("submit", submitBilling);
@@ -4217,7 +4220,7 @@ async function submitBilling(event) {
     numero_fatura: String(data.get("numero_fatura")).trim(),
     descricao_auto: selected.map(item => item.numero_auto).filter(Boolean).join(" + "),
     data_emissao_auto: selected.map(item => item.data_medicao).filter(Boolean).sort().at(-1) || null,
-    data_emissao_fatura: data.get("data_emissao_fatura"), valor: Number(data.get("valor")), estado: "emitida",
+    data_emissao_fatura: data.get("data_emissao_fatura"), valor: Number(data.get("valor")), estado: "rascunho",
   };
   button.disabled = true;
   try {
@@ -4238,7 +4241,7 @@ async function submitBilling(event) {
     workDetails.billings.unshift(billing);
     workDetails.billingLinks.push(...autoIds.map(autoId => ({ faturacao_id: billing.id, auto_medicao_id: autoId })));
     closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId));
-    toast("Fatura emitida e associada aos autos.");
+    toast("Rascunho de fatura criado e enviado para aprovação do Diretor.");
   } catch (error) { errorElement.textContent = error.message; }
   finally { button.disabled = false; }
 }
@@ -4260,10 +4263,10 @@ function openPaymentDialog(billingId) {
     button.disabled = true;
     try {
       if (isSupabaseConfigured) {
-        const response = await supabase(`faturacao?id=eq.${billingId}`, { method: "PATCH", body: JSON.stringify({ data_recebimento: data.data_recebimento, valor_recebido: Number(data.valor_recebido) }) });
+        const response = await supabase("rpc/fn_marcar_faturacao_auto_paga", { method: "POST", body: JSON.stringify({ p_faturacao_id: billingId, p_data_pagamento: data.data_recebimento, p_valor_pago: Number(data.valor_recebido) }) });
         if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível registar o pagamento.");
       }
-      billing.data_recebimento = data.data_recebimento; billing.valor_recebido = Number(data.valor_recebido);
+      billing.data_recebimento = data.data_recebimento; billing.data_pagamento = data.data_recebimento; billing.valor_recebido = Number(data.valor_recebido); billing.estado_pagamento = "pago";
       closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId)); toast("Pagamento registado.");
     } catch (error) { formElement.querySelector(".form-error").textContent = error.message; }
     finally { button.disabled = false; }
@@ -4446,6 +4449,24 @@ $("#work-detail").addEventListener("click", async event => {
   if (event.target.closest("[data-new-measurement]")) return openNewMeasurementDialog();
   const billingButton = event.target.closest("[data-new-billing]");
   if (billingButton) return openBillingDialog(billingButton.dataset.newBilling);
+  const decideBillingButton = event.target.closest("[data-decide-billing]");
+  if (decideBillingButton) {
+    const billing = workDetails.billings.find(item => item.id === decideBillingButton.dataset.billingId);
+    if (!billing || !canApproveInvoices()) return toast("Não tem permissão para decidir esta fatura.", "error");
+    decideBillingButton.disabled = true;
+    try {
+      if (isSupabaseConfigured) {
+        const response = await supabase("rpc/fn_decidir_faturacao_auto", { method: "POST", body: JSON.stringify({ p_faturacao_id: billing.id, p_decisao: decideBillingButton.dataset.decideBilling }) });
+        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível decidir a fatura.");
+      }
+      billing.estado_aprovacao = decideBillingButton.dataset.decideBilling;
+      billing.estado = billing.estado_aprovacao === "aprovado" ? "emitida" : "rascunho";
+      renderWorkDetail(works.find(item => item.id === selectedWorkId));
+      toast(billing.estado_aprovacao === "aprovado" ? "Fatura aprovada e enviada ao Financeiro." : "Fatura recusada.");
+    } catch (error) { toast(error.message, "error"); }
+    finally { decideBillingButton.disabled = false; }
+    return;
+  }
   const paidButton = event.target.closest("[data-mark-paid]");
   if (paidButton) return openPaymentDialog(paidButton.dataset.markPaid);
   const pdfButton = event.target.closest("[data-workflow-pdf]");

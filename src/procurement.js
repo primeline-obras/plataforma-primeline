@@ -186,13 +186,20 @@ export function createProcurementModule({
         state.supplierSpecialties = [];
       } else {
         const phaseIds = phases().map(item => item.id);
+        const optionalClassification = async (path, fallback = []) => {
+          try { return await api(path); }
+          catch (error) {
+            if (/schema cache|especialidades_aliases|fornecedores_especialidades|aplicavel_subempreiteiro/i.test(error.message || "")) return fallback;
+            throw error;
+          }
+        };
         const [consultations, budgetItems, permission, specialties, aliases, supplierSpecialties] = await Promise.all([
           api(`consultas_subempreitada?select=*&obra_id=eq.${encodeURIComponent(work.id)}&order=criado_em.desc`),
           phaseIds.length ? api(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=numero_artigo`) : [],
           api("rpc/fn_pode_editar_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) }),
-          api("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
-          api("especialidades_aliases?select=*"),
-          api("fornecedores_especialidades?select=*"),
+          optionalClassification("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
+          optionalClassification("especialidades_aliases?select=*"),
+          optionalClassification("fornecedores_especialidades?select=*"),
         ]);
         state.consultations = consultations;
         state.budgetItems = budgetItems;
