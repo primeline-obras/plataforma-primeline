@@ -240,3 +240,9 @@ input:focus, select:focus, textarea:focus, .search-box:focus-within {
 .procurement-pending > div { display: grid; }
 .procurement-pending > div > button { display: flex; justify-content: space-between; gap: 20px; padding: 13px 18px; border: 0; border-bottom: 1px solid var(--card-border); background: transparent; color: var(--text-primary); text-align: left; }
 .procurement-pending > div > button:hover { background: var(--bg); }.procurement-pending > div > button span { font-variant-numeric: tabular-nums; }
+.document-index-table-wrap .tee-index-row.aprovado > td { background: rgba(63, 98, 72, .15); }
+.document-index-table-wrap .tee-index-row.pendente > td { background: rgba(138, 100, 32, .15); }
+.document-index-table-wrap .tee-index-row.recusado > td { background: rgba(140, 74, 64, .15); }
+.document-index-table-wrap .tee-index-row.aprovado:hover > td { background: rgba(63, 98, 72, .2); }
+.document-index-table-wrap .tee-index-row.pendente:hover > td { background: rgba(138, 100, 32, .2); }
+.document-index-table-wrap .tee-index-row.recusado:hover > td { background: rgba(140, 74, 64, .2); }

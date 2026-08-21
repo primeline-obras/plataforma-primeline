@@ -6,6 +6,13 @@ const STATUS_COLORS = {
   info: { fill: [226, 235, 246], text: [61, 90, 158] },
 };
 
+// Cor base a 15% sobre fundo branco, para manter a linha legível em impressão.
+const TEE_APPROVAL_ROW_COLORS = {
+  aprovado: [226, 232, 227],
+  pendente: [237, 232, 222],
+  recusado: [238, 227, 226],
+};
+
 const plain = value => String(value ?? "—").replaceAll("_", " ");
 const safeFilename = value => plain(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
 
@@ -133,12 +140,14 @@ export function buildDocumentIndexPdf({ kind, work, rows, referenceDate = new Da
       return pdf.splitTextToSize(formatted, widths[definition.columns.indexOf(column)] - 4);
     });
     const rowHeight = Math.max(9, ...cells.map(lines => lines.length * 3.5 + 4));
+    const teeRowFill = kind === "tees" ? TEE_APPROVAL_ROW_COLORS[row.estado_aprovacao_cliente] || TEE_APPROVAL_ROW_COLORS.pendente : null;
     if (y + rowHeight > 196) addPage();
     let x = margin;
     definition.columns.forEach((column, index) => {
       const isState = column[0] === "estado" || column[0] === "aprovado";
       const tone = isState ? stateTone(row[column[0]]) : null;
-      if (tone) pdf.setFillColor(...tone.fill);
+      if (teeRowFill) pdf.setFillColor(...teeRowFill);
+      else if (tone) pdf.setFillColor(...tone.fill);
       else if (rowIndex % 2) pdf.setFillColor(247, 247, 245);
       else pdf.setFillColor(255, 255, 255);
       pdf.setDrawColor(218, 220, 217); pdf.rect(x, y, widths[index], rowHeight, "FD");
