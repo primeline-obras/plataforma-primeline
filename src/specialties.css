@@ -1,5 +1,113 @@
 .supplier-directory-toolbar {
-  grid-template-columns: minmax(250px, 1fr) 190px 230px 190px;
+  grid-template-columns: minmax(250px, 1fr) 190px 230px;
+}
+
+.supplier-directory-list {
+  padding: 12px;
+  gap: 18px;
+}
+
+.supplier-specialty-group {
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: 11px;
+  scroll-margin-top: 16px;
+}
+
+.supplier-specialty-group > header {
+  min-height: 66px;
+  padding: 13px 17px;
+  border-bottom: 1px solid var(--card-border);
+  background: color-mix(in srgb, var(--info-bg) 52%, var(--card));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.supplier-specialty-group > header h3 {
+  margin: 3px 0 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.supplier-specialty-group > header > span {
+  min-width: 29px;
+  height: 29px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--sidebar-bg);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font: 850 11px "Manrope";
+}
+
+.supplier-specialty-group > div {
+  padding: 9px;
+  display: grid;
+  gap: 8px;
+}
+
+.supplier-specialty-group .supplier-directory-row {
+  min-height: 112px;
+  grid-template-columns: minmax(280px, 1fr) 22px;
+}
+
+.supplier-specialty-group .supplier-identity > div {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+}
+
+.supplier-primary-specialty {
+  color: var(--info-text);
+  font: 850 10px "Manrope";
+  letter-spacing: .65px;
+  text-transform: uppercase;
+}
+
+.supplier-card-secondary {
+  width: 100%;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.supplier-card-secondary small {
+  min-width: 180px;
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-rating-stars {
+  position: relative;
+  grid-column: 1 / -1;
+  width: fit-content;
+  color: color-mix(in srgb, var(--card-border) 80%, var(--card));
+  font-size: 14px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.supplier-rating-stars::before {
+  content: "★★★★★";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--rating-percent);
+  overflow: hidden;
+  color: #d9a441;
+  white-space: nowrap;
 }
 
 .supplier-specialty-badges {
@@ -87,6 +195,7 @@
 
 @media (max-width: 1100px) {
   .supplier-directory-toolbar { grid-template-columns: 1fr 1fr; }
+  .supplier-specialty-group .supplier-directory-row { grid-template-columns: minmax(250px, 1fr) 18px; }
   .supplier-specialties-editor { grid-template-columns: 1fr; }
   .supplier-specialties-editor .form-error { grid-column: auto; }
 }
