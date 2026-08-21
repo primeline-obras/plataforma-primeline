@@ -227,3 +227,16 @@ input:focus, select:focus, textarea:focus, .search-box:focus-within {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+/* Planeamento: especialidade e executor são campos operacionais por tarefa. */
+.planning-editor-head,
+.planning-editor-row {
+  min-width: 1875px;
+  grid-template-columns: 160px 90px minmax(220px, 1fr) 150px 150px 125px 125px 125px 125px 125px 85px 85px 135px 175px;
+}
+
+.procurement-pending { margin-bottom: 20px; border: 1px solid var(--card-border); background: var(--card); }
+.procurement-pending > header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--card-border); }
+.procurement-pending > header h3 { margin: 2px 0 0; }.procurement-pending > header > b { font-size: 20px; }
+.procurement-pending > div { display: grid; }
+.procurement-pending > div > button { display: flex; justify-content: space-between; gap: 20px; padding: 13px 18px; border: 0; border-bottom: 1px solid var(--card-border); background: transparent; color: var(--text-primary); text-align: left; }
+.procurement-pending > div > button:hover { background: var(--bg); }.procurement-pending > div > button span { font-variant-numeric: tabular-nums; }
