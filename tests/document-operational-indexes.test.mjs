@@ -6,6 +6,7 @@ const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
 const pdf = await readFile(new URL("../src/document-index-pdf.js", import.meta.url), "utf8");
 const migration = await readFile(new URL("../supabase/indices_pdes_desenhos_pames_pdf.sql", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/workforce-calendar.css", import.meta.url), "utf8");
+const identity = await readFile(new URL("../src/visual-identity-final.css", import.meta.url), "utf8");
 
 test("a migração completa PDEs e Desenhos sem restringir estados livres", () => {
   assert.match(migration, /alter table public\.rfis[\s\S]*?revisao text[\s\S]*?data_emissao date[\s\S]*?notas text/);
@@ -67,4 +68,16 @@ test("o PDF é standalone, paginado e mantém cores de estado", () => {
   assert.match(pdf, /definition\.columns\.forEach[\s\S]*?pdf\.setFillColor\(52, 59, 63\)[\s\S]*?pdf\.rect/);
   assert.match(pdf, /pdf\.save/);
   assert.match(styles, /\.document-index-table-wrap/);
+});
+
+test("as linhas do índice de TEEs usam a aprovação do cliente e a paleta existente", () => {
+  assert.match(app, /tee-index-row \$\{indexStateClass\(item\.estado_aprovacao_cliente \|\| "pendente"\)\}/);
+  assert.match(identity, /tee-index-row\.aprovado > td \{ background: rgba\(63, 98, 72, \.15\)/);
+  assert.match(identity, /tee-index-row\.pendente > td \{ background: rgba\(138, 100, 32, \.15\)/);
+  assert.match(identity, /tee-index-row\.recusado > td \{ background: rgba\(140, 74, 64, \.15\)/);
+  assert.match(pdf, /TEE_APPROVAL_ROW_COLORS/);
+  assert.match(pdf, /aprovado: \[226, 232, 227\]/);
+  assert.match(pdf, /pendente: \[237, 232, 222\]/);
+  assert.match(pdf, /recusado: \[238, 227, 226\]/);
+  assert.match(pdf, /kind === "tees" \? TEE_APPROVAL_ROW_COLORS\[row\.estado_aprovacao_cliente\]/);
 });

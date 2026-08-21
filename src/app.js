@@ -20,7 +20,7 @@ import { createManagementMapModule } from "./management-map.js?v=1";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
 import { createProjectsModule } from "./projects.js?v=1";
-import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=3";
+import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=4";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -3102,7 +3102,7 @@ function renderOperationalIndex({ kind, eyebrow, title, rows, columns }) {
   return `<section class="document-index-card document-index-card-wide">
     <header><div><p class="eyebrow">${eyebrow}</p><h3>${title}</h3></div><div class="document-index-actions"><span>${rows.length}</span><button type="button" data-export-index-pdf="${kind}">EXPORTAR PDF</button></div></header>
     <div class="document-index-table-wrap"><table><thead><tr>${columns.map(column => `<th>${column.label}</th>`).join("")}</tr></thead>
-    <tbody>${rows.length ? rows.map(item => `<tr>${columns.map(column => column.key === "estado" || column.key === "aprovado"
+    <tbody>${rows.length ? rows.map(item => `<tr class="${kind === "tees" ? `tee-index-row ${indexStateClass(item.estado_aprovacao_cliente || "pendente")}` : ""}">${columns.map(column => column.key === "estado" || column.key === "aprovado"
       ? `<td><strong class="index-state ${indexStateClass(item[column.key])}">${safeText(item[column.key] || "—")}</strong></td>`
       : indexCell(item[column.key], column.type)).join("")}</tr>`).join("")
       : `<tr><td colspan="${columns.length}" class="document-index-empty">SEM REGISTOS NESTE ÍNDICE</td></tr>`}</tbody></table></div>
