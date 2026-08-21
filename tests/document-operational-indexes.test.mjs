@@ -47,6 +47,18 @@ test("os quatro índices expõem as colunas operacionais e Exportar PDF", () => 
   assert.match(pdf, /\["data_resposta_do", "Resposta DO\/Fisc\."/);
 });
 
+test("os cinco índices têm um separador próprio e deixam de estar escondidos em Documentos", () => {
+  assert.match(app, /data-work-tab="indexes"[^>]*>ÍNDICES<\/button>/);
+  assert.match(app, /selectedWorkTab === "indexes"\) return renderDocumentIndexes\(\)/);
+
+  const documentsTab = app.slice(
+    app.indexOf("function renderWorkDocumentsTab()"),
+    app.indexOf("function renderWorkTab(work)"),
+  );
+  assert.doesNotMatch(documentsTab, /renderDocumentIndexes\(\)/);
+  assert.equal((app.match(/kind: "(?:pdes|desenhos|pames|tees|prorrogacoes)"/g) || []).length, 5);
+});
+
 test("o PDF é standalone, paginado e mantém cores de estado", () => {
   assert.match(pdf, /orientation: "landscape"/);
   assert.match(pdf, /Data de referência/);

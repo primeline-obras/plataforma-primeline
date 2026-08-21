@@ -3177,7 +3177,6 @@ function renderWorkDocumentsTab() {
       <button class="primary-button" type="submit">ENVIAR <span>→</span></button>
       <p class="form-error"></p>
     </form>` : `<div class="work-document-readonly"><strong>CONSULTA DE DOCUMENTOS</strong><span>Tem acesso de leitura. O envio está reservado à equipa que pode editar esta obra.</span></div>`}
-    ${renderDocumentIndexes()}
     <div class="work-document-groups">
       ${WORK_DOCUMENT_TYPES.map(([type, label]) => {
         const documents = grouped.get(type);
@@ -3502,6 +3501,7 @@ function renderWorkTab(work) {
   if (selectedWorkTab === "tees") return renderTeesTab(work);
   if (selectedWorkTab === "measurements") return renderMeasurementsTab(work);
   if (selectedWorkTab === "phases") return renderPhasesTab(work);
+  if (selectedWorkTab === "indexes") return renderDocumentIndexes();
   if (selectedWorkTab === "documents") return renderWorkDocumentsTab();
   if (selectedWorkTab === "safety") return renderSafetyTab();
   return renderWorkSummary(work);
@@ -3525,6 +3525,7 @@ function renderWorkDetail(work) {
       ${work.modalidade === "investimento_proprio" ? "" : `<button data-work-tab="tees" class="${selectedWorkTab === "tees" ? "active" : ""}">TEEs</button>`}`}
       ${financialReadOnly ? "" : `<button data-work-tab="measurements" class="${selectedWorkTab === "measurements" ? "active" : ""}">AUTOS DE MEDIÇÃO</button>
       <button data-work-tab="phases" class="${selectedWorkTab === "phases" ? "active" : ""}">FASES</button>
+      <button data-work-tab="indexes" class="${selectedWorkTab === "indexes" ? "active" : ""}">ÍNDICES</button>
       <button data-work-tab="documents" class="${selectedWorkTab === "documents" ? "active" : ""}">DOCUMENTOS</button>
       <button data-work-tab="safety" class="${selectedWorkTab === "safety" ? "active" : ""}">SEGURANÇA</button>`}
     </nav>
