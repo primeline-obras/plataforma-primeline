@@ -61,7 +61,7 @@ function isPastDay(date, today = new Date()) {
 
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, toast }) {
   const state = {
-    workId: "", work: null, phases: [], items: [], dependencies: [],
+    workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
     expanded: new Set(), loaded: false, view: "effective",
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
   };
@@ -176,6 +176,12 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     return state.phases.map(phase => `<option value="${phase.id}" ${phase.id === selected ? "selected" : ""}>${escapeHtml(phase.codigo || "—")} · ${escapeHtml(phase.descricao || "Fase")}</option>`).join("");
   }
 
+  function specialtyOptions(selected) {
+    return `<option value="">Sem especialidade</option>${state.specialties.map(specialty =>
+      `<option value="${specialty.id}" ${specialty.id === selected ? "selected" : ""}>${escapeHtml(specialty.nome)}</option>`
+    ).join("")}`;
+  }
+
   function dependencyOptions(item) {
     const linked = new Set(state.dependencies.filter(row => row.item_id === item.id).map(row => row.depende_de_item_id));
     return state.items.filter(candidate => candidate.id !== item.id && !linked.has(candidate.id) && !String(candidate.id).startsWith("draft-"))
@@ -193,12 +199,14 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function renderEditor() {
     return `<div class="planning-editor-wrap"><div class="planning-editor-head">
-      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>INÍCIO PREV.</span><span>FIM PREV.</span><span>INÍCIO REAL</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO</span><span>AÇÕES</span>
+      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>ESPECIALIDADE</span><span>EXECUTADO POR</span><span>INÍCIO PREV.</span><span>FIM PREV.</span><span>INÍCIO REAL</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO</span><span>AÇÕES</span>
     </div>${state.items.map(item => `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
       <select name="fase_id">${phaseOptions(item.fase_id)}</select>
       <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1">
       <input name="descricao" value="${escapeHtml(item.descricao || "")}" placeholder="Descrição da tarefa">
       <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável">
+      <select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select>
+      <select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option></select>
       <input name="data_inicio_prevista" type="date" value="${isoDate(item.data_inicio_prevista)}">
       <input name="data_fim_prevista" type="date" value="${isoDate(item.data_fim_prevista)}">
       <input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}">
@@ -417,7 +425,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const value = name => row.querySelector(`[name="${name}"]`)?.value ?? "";
     const payload = {
       fase_id: value("fase_id"), codigo: value("codigo").trim() || null, descricao: value("descricao").trim(),
-      responsavel: value("responsavel").trim() || null, data_inicio_prevista: value("data_inicio_prevista") || null,
+      responsavel: value("responsavel").trim() || null, especialidade_id: value("especialidade_id") || null,
+      executado_por: value("executado_por") || null, data_inicio_prevista: value("data_inicio_prevista") || null,
       data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
       peso_percentual: parsedNumber(value("peso_percentual")), percentual_executado: parsedNumber(value("percentual_executado"), 0),
       estado: value("estado"),
@@ -526,7 +535,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function addNewTask() {
     const firstPhase = state.phases[0];
-    state.items.unshift({ id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", percentual_executado: 0, estado: "por_iniciar", _new: true });
+    state.items.unshift({ id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", especialidade_id: null, executado_por: "", percentual_executado: 0, estado: "por_iniciar", _new: true });
     render();
     content.querySelector("[data-edit-item] input[name='codigo']")?.focus();
   }
@@ -543,12 +552,16 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       state.phases = []; state.items = []; state.dependencies = []; state.loaded = true; render(); return;
     }
     const encoded = encodeURIComponent(state.workId);
-    const phaseResponse = await supabase(`fases?select=id,obra_id,codigo,descricao&obra_id=eq.${encoded}&order=codigo`);
+    const [phaseResponse, specialtiesResponse] = await Promise.all([
+      supabase(`fases?select=id,obra_id,codigo,descricao&obra_id=eq.${encoded}&order=codigo`),
+      supabase("especialidades?select=id,nome&order=nome"),
+    ]);
     if (!phaseResponse.ok) {
       state.loaded = true; state.phases = []; render();
       toast(`Não foi possível carregar o planeamento: ${await phaseResponse.text()}`, "error"); return;
     }
     state.phases = await phaseResponse.json();
+    state.specialties = specialtiesResponse.ok ? await specialtiesResponse.json() : [];
     const phaseIds = state.phases.map(phase => phase.id);
     if (!phaseIds.length) {
       state.items = []; state.dependencies = [];

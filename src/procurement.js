@@ -1,6 +1,7 @@
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 const isoToday = () => new Date().toISOString().slice(0, 10);
+const displayDate = value => value ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)) : "—";
 const normalizeSpecialty = value => String(value || "").trim().toLocaleLowerCase("pt-PT")
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
@@ -30,6 +31,8 @@ export function createProcurementModule({
     specialties: [],
     specialtyAliases: [],
     supplierSpecialties: [],
+    pendingPlanning: [],
+    prefillPlanningItemId: "",
     expandedId: "",
     newFormOpen: false,
   };
@@ -78,17 +81,13 @@ export function createProcurementModule({
 
   function renderNewConsultation() {
     if (!state.canEdit) return "";
-    const specialties = [...new Set([
-      ...state.specialties.map(item => item.nome),
-      ...state.consultations.map(item => item.trabalho),
-      ...getSubcontracts().filter(item => item.obra_id === state.work.id).map(item => item.especialidade),
-    ].filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt"));
-    const selectedPhase = phases()[0]?.id || "";
+    const prefilledTask = state.pendingPlanning.find(item => item.planeamento_item_id === state.prefillPlanningItemId);
+    const selectedPhase = prefilledTask?.fase_id || phases()[0]?.id || "";
     return `<div class="procurement-new-wrap">
       <button type="button" class="outline-action" data-toggle-new-consultation>${state.newFormOpen ? "FECHAR" : "＋ NOVA CONSULTA"}</button>
       ${state.newFormOpen ? `<form class="procurement-new-form" data-new-consultation>
         <div class="procurement-form-row">
-          <label>ESPECIALIDADE<input name="trabalho" list="procurement-specialties" maxlength="160" required placeholder="Ex.: Caixilharia"><datalist id="procurement-specialties">${specialties.map(value => `<option value="${escapeHtml(value)}">`).join("")}</datalist></label>
+          <label>ESPECIALIDADE<select name="trabalho" required><option value="">Selecionar especialidade</option>${state.specialties.map(specialty => `<option value="${escapeHtml(specialty.nome)}" ${specialty.id === prefilledTask?.especialidade_id ? "selected" : ""}>${escapeHtml(specialty.nome)}</option>`).join("")}</select></label>
           <label>FASE<select name="fase_id" required>${phases().map(phase => `<option value="${phase.id}" ${phase.id === selectedPhase ? "selected" : ""}>${escapeHtml(phase.codigo || "")} · ${escapeHtml(phase.descricao || "Fase")}</option>`).join("")}</select></label>
         </div>
         <div class="procurement-budget-head"><div><strong>ITENS DO ORÇAMENTO</strong><span>Selecione os artigos que vão ser pedidos aos fornecedores.</span></div><input data-budget-search placeholder="Pesquisar artigo…"></div>
@@ -96,6 +95,12 @@ export function createProcurementModule({
         <p class="form-error"></p><button class="primary-button" type="submit">CRIAR CONSULTA <span>→</span></button>
       </form>` : ""}
     </div>`;
+  }
+
+  function renderPendingPlanning() {
+    return `<section class="procurement-pending"><header><div><p class="eyebrow">PLANEAMENTO</p><h3>CONSULTAS PENDENTES</h3></div><b>${state.pendingPlanning.length}</b></header><div>${state.pendingPlanning.length
+      ? state.pendingPlanning.map(item => `<button type="button" data-pending-consultation="${item.planeamento_item_id}" data-specialty-id="${item.especialidade_id || ""}"><strong>${escapeHtml(item.especialidade || "Sem especialidade")}</strong><span>${displayDate(item.data_inicio_prevista)}</span></button>`).join("")
+      : `<div class="procurement-empty">NÃO EXISTEM TAREFAS DE SUBEMPREITADA POR CONSULTAR.</div>`}</div></section>`;
   }
 
   function renderBudgetItems(form) {
@@ -154,7 +159,7 @@ export function createProcurementModule({
     if (!container) return;
     if (state.loading) return void (container.innerHTML = `<div class="empty-state">A CARREGAR MAPAS COMPARATIVOS…</div>`);
     const open = state.consultations.filter(item => item.estado === "em_consulta" || !item.estado);
-    container.innerHTML = `<section class="procurement-entry"><header><div><p class="eyebrow">MAPA COMPARATIVO</p><h3>EM CONSULTA</h3><span>Crie consultas, recolha propostas e compare preços por artigo.</span></div><div class="procurement-header-actions">${state.canEdit ? '<button type="button" class="outline-action" data-import-subcontracts>IMPORTAR EXCEL</button>' : ""}<b>${open.length}</b></div></header>${renderNewConsultation()}<div class="procurement-consultations">${open.length ? open.map(renderConsultation).join("") : `<div class="procurement-empty">NÃO EXISTEM CONSULTAS ABERTAS NESTA OBRA.</div>`}</div></section>`;
+    container.innerHTML = `${renderPendingPlanning()}<section class="procurement-entry"><header><div><p class="eyebrow">MAPA COMPARATIVO</p><h3>EM CONSULTA</h3><span>Crie consultas, recolha propostas e compare preços por artigo.</span></div><div class="procurement-header-actions">${state.canEdit ? '<button type="button" class="outline-action" data-import-subcontracts>IMPORTAR EXCEL</button>' : ""}<b>${open.length}</b></div></header>${renderNewConsultation()}<div class="procurement-consultations">${open.length ? open.map(renderConsultation).join("") : `<div class="procurement-empty">NÃO EXISTEM CONSULTAS ABERTAS NESTA OBRA.</div>`}</div></section>`;
     renderBudgetItems(container.querySelector("[data-new-consultation]"));
   }
 
@@ -184,6 +189,7 @@ export function createProcurementModule({
         state.specialties = [];
         state.specialtyAliases = [];
         state.supplierSpecialties = [];
+        state.pendingPlanning = [];
       } else {
         const phaseIds = phases().map(item => item.id);
         const optionalClassification = async (path, fallback = []) => {
@@ -193,13 +199,14 @@ export function createProcurementModule({
             throw error;
           }
         };
-        const [consultations, budgetItems, permission, specialties, aliases, supplierSpecialties] = await Promise.all([
+        const [consultations, budgetItems, permission, specialties, aliases, supplierSpecialties, pendingPlanning] = await Promise.all([
           api(`consultas_subempreitada?select=*&obra_id=eq.${encodeURIComponent(work.id)}&order=criado_em.desc`),
           phaseIds.length ? api(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=numero_artigo`) : [],
           api("rpc/fn_pode_editar_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) }),
           optionalClassification("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
           optionalClassification("especialidades_aliases?select=*"),
           optionalClassification("fornecedores_especialidades?select=*"),
+          optionalClassification(`consultas_pendentes_planeamento?select=*&obra_id=eq.${encodeURIComponent(work.id)}&order=data_inicio_prevista.asc.nullslast`),
         ]);
         state.consultations = consultations;
         state.budgetItems = budgetItems;
@@ -207,6 +214,7 @@ export function createProcurementModule({
         state.specialties = specialties;
         state.specialtyAliases = aliases;
         state.supplierSpecialties = supplierSpecialties;
+        state.pendingPlanning = pendingPlanning;
         const consultationIds = consultations.map(item => item.id);
         if (consultationIds.length) {
           const encoded = consultationIds.map(encodeURIComponent).join(",");
@@ -280,7 +288,15 @@ export function createProcurementModule({
       return;
     }
     const newButton = event.target.closest("[data-toggle-new-consultation]");
-    if (newButton) { state.newFormOpen = !state.newFormOpen; return render(); }
+    if (newButton) { state.newFormOpen = !state.newFormOpen; if (!state.newFormOpen) state.prefillPlanningItemId = ""; return render(); }
+    const pendingButton = event.target.closest("[data-pending-consultation]");
+    if (pendingButton) {
+      state.prefillPlanningItemId = pendingButton.dataset.pendingConsultation;
+      state.newFormOpen = true;
+      render();
+      root()?.querySelector("[data-new-consultation]")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     const consultationButton = event.target.closest("[data-toggle-consultation]");
     if (consultationButton) { state.expandedId = state.expandedId === consultationButton.dataset.toggleConsultation ? "" : consultationButton.dataset.toggleConsultation; return render(); }
     const saveButton = event.target.closest("[data-save-candidate]");
@@ -313,8 +329,11 @@ export function createProcurementModule({
       const itemIds = [...form.querySelectorAll('[name="item_id"]:checked')].map(input => input.value);
       if (!itemIds.length) throw new Error("Selecione pelo menos um item do orçamento.");
       if (isConfigured) {
-        await api("rpc/fn_criar_consulta_subempreitada", { method: "POST", body: JSON.stringify({ p_obra_id: state.work.id, p_fase_id: form.elements.fase_id.value, p_trabalho: form.elements.trabalho.value.trim(), p_item_ids: itemIds }) }, "Não foi possível criar a consulta");
-        state.newFormOpen = false; await load(state.work, true);
+        const body = { p_obra_id: state.work.id, p_fase_id: form.elements.fase_id.value, p_trabalho: form.elements.trabalho.value, p_item_ids: itemIds };
+        const path = state.prefillPlanningItemId ? "rpc/fn_criar_consulta_planeamento" : "rpc/fn_criar_consulta_subempreitada";
+        if (state.prefillPlanningItemId) body.p_planeamento_item_id = state.prefillPlanningItemId;
+        await api(path, { method: "POST", body: JSON.stringify(body) }, "Não foi possível criar a consulta");
+        state.newFormOpen = false; state.prefillPlanningItemId = ""; await load(state.work, true);
       } else {
         const consultation = { id: crypto.randomUUID(), obra_id: state.work.id, fase_id: form.elements.fase_id.value, trabalho: form.elements.trabalho.value.trim(), estado: "em_consulta" };
         state.consultations.unshift(consultation);
