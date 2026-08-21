@@ -3088,6 +3088,62 @@ function sortedIndexRows(rows) {
   });
 }
 
+const INDEX_FILENAME_TYPES = {
+  pdes_rfis: { prefix: "PDE", drawing: false },
+  pames: { prefix: "PAME", drawing: false },
+  desenhos_preparacao: { prefix: "DES", drawing: true },
+};
+
+function filenameToken(value, fallback) {
+  const token = String(value || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
+  return token || fallback;
+}
+
+function indexFilenameSuggestion({ type, number, revision, description, filename }) {
+  const definition = INDEX_FILENAME_TYPES[type];
+  if (!definition) return null;
+  const extension = String(filename || "").match(/(\.[a-z0-9]+)$/i)?.[1]?.toLowerCase() || ".pdf";
+  const normalizedNumber = filenameToken(String(number || "").replace(new RegExp(`^${definition.prefix}[\\s_-]*`, "i"), ""), "XX");
+  const revisionDigits = String(revision || "").replace(/^REV[\s_-]*/i, "").match(/\d+/)?.[0];
+  const normalizedRevision = revisionDigits ? revisionDigits.padStart(2, "0") : "XX";
+  const shortDescription = filenameToken(description, "Descricao-curta");
+  return definition.drawing
+    ? `${definition.prefix}_${normalizedNumber}_${shortDescription}_REV${normalizedRevision}_FL01${extension}`
+    : `${definition.prefix}_${normalizedNumber}_REV${normalizedRevision}_${shortDescription}${extension}`;
+}
+
+function validIndexFilename(type, filename) {
+  if (!filename || !INDEX_FILENAME_TYPES[type]) return true;
+  const patterns = {
+    pdes_rfis: /^PDE_[^_\s]+_REV\d{2}_[^_\s]+\.[a-z0-9]+$/i,
+    pames: /^PAME_[^_\s]+_REV\d{2}_[^_\s]+\.[a-z0-9]+$/i,
+    desenhos_preparacao: /^DES_[^_\s]+_[^_\s]+_REV\d{2}_FL\d{2}\.[a-z0-9]+$/i,
+  };
+  return patterns[type].test(filename);
+}
+
+function updateIndexFilenameWarning(form) {
+  const warning = form?.querySelector("[data-index-filename-warning]");
+  if (!warning) return;
+  const file = form.elements.arquivo?.files?.[0];
+  const type = form.elements.tipo?.value;
+  if (!file || !INDEX_FILENAME_TYPES[type] || validIndexFilename(type, file.name)) {
+    warning.hidden = true;
+    warning.textContent = "";
+    return;
+  }
+  const suggestion = indexFilenameSuggestion({
+    type,
+    number: form.elements.numero_documento.value,
+    revision: form.elements.revisao.value,
+    description: form.elements.descricao.value,
+    filename: file.name,
+  });
+  warning.innerHTML = `<strong>NOME FORA DO PADRÃO</strong><span>Sugestão: <b>${safeText(suggestion)}</b>. Pode enviar o ficheiro sem o renomear.</span>`;
+  warning.hidden = false;
+}
+
 function indexStateClass(value) {
   return String(value || "sem_estado").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
@@ -3193,6 +3249,7 @@ function renderWorkDocumentsTab() {
       <label class="work-document-index-field">ESTADO<div class="select-wrap"><select name="estado_indice"><option value="">Sem estado</option><option>Não enviado</option><option>Enviado ao DO</option><option>Respondido</option><option>Discutido em Reunião</option><option>Em elaboração</option><option>Cancelado</option><option>Pedido de revisão</option><option>Emitido</option><option>Analisado em reunião</option><option>Apresentado em reunião</option></select><b>⌄</b></div></label>
       <label class="work-document-index-field work-document-notes">NOTAS<textarea name="notas" rows="2" maxlength="1000"></textarea></label>
       <label class="work-document-file">FICHEIRO<input name="arquivo" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.doc,.docx,.mpp,.dwg,.dxf,.zip,.txt"></label>
+      <p class="index-filename-warning" data-index-filename-warning hidden></p>
       <button class="primary-button" type="submit">ENVIAR <span>→</span></button>
       <p class="form-error"></p>
     </form>` : `<div class="work-document-readonly"><strong>CONSULTA DE DOCUMENTOS</strong><span>Tem acesso de leitura. O envio está reservado à equipa que pode editar esta obra.</span></div>`}
@@ -4316,9 +4373,17 @@ function openPaymentDialog(billingId) {
 $("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
 $("#workflow-dialog").addEventListener("click", event => { if (event.target === $("#workflow-dialog") || event.target.closest("[data-close-workflow]")) closeWorkflowDialog(); });
 $("#work-detail").addEventListener("change", event => {
-  if (event.target.name !== "tipo" || event.target.form?.id !== "work-document-upload") return;
-  event.target.form.elements.numero_documento.required = true;
-  event.target.form.elements.revisao.required = true;
+  if (event.target.form?.id !== "work-document-upload") return;
+  if (event.target.name === "tipo") {
+    event.target.form.elements.numero_documento.required = true;
+    event.target.form.elements.revisao.required = true;
+  }
+  if (["tipo", "arquivo"].includes(event.target.name)) updateIndexFilenameWarning(event.target.form);
+});
+$("#work-detail").addEventListener("input", event => {
+  if (event.target.form?.id === "work-document-upload" && ["numero_documento", "revisao", "descricao"].includes(event.target.name)) {
+    updateIndexFilenameWarning(event.target.form);
+  }
 });
 $("#work-detail").addEventListener("submit", async event => {
   if (event.target.id === "safety-incident-form" || event.target.id === "safety-inspection-form") {
@@ -4368,6 +4433,7 @@ $("#work-detail").addEventListener("submit", async event => {
   const sentAt = uploadForm.elements.enviado_em.value;
   const submitButton = uploadForm.querySelector('button[type="submit"]');
   const errorNode = uploadForm.querySelector(".form-error");
+  updateIndexFilenameWarning(uploadForm);
   if (!file) return;
   if (!documentNumber || !revision || !recipients || !sentAt) {
     errorNode.textContent = "Número, revisão, destinatários e data de envio são obrigatórios.";
