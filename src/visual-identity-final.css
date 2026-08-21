@@ -246,3 +246,5 @@ input:focus, select:focus, textarea:focus, .search-box:focus-within {
 .document-index-table-wrap .tee-index-row.aprovado:hover > td { background: rgba(63, 98, 72, .2); }
 .document-index-table-wrap .tee-index-row.pendente:hover > td { background: rgba(138, 100, 32, .2); }
 .document-index-table-wrap .tee-index-row.recusado:hover > td { background: rgba(140, 74, 64, .2); }
+.index-filename-warning { grid-column: 1 / -1; display: flex; gap: 10px; align-items: baseline; margin: 0; padding: 10px 12px; border: 1px solid var(--warn-border); background: var(--warn-bg); color: var(--warn-text); font-size: 12px; }
+.index-filename-warning[hidden] { display: none; }.index-filename-warning strong { flex: 0 0 auto; font-size: 10px; letter-spacing: .5px; }.index-filename-warning b { font-family: "IBM Plex Mono", monospace; }
