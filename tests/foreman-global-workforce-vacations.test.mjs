@@ -9,7 +9,7 @@ const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8
 
 test("encarregado mantém Quadro e Mapa de Férias no menu em leitura", () => {
   assert.match(access, /encarregado:[\s\S]*views:[\s\S]*"team"[\s\S]*"workforce"/i);
-  assert.match(app, /effectiveRole\(\) === "encarregado"[\s\S]*return \["absences", "medicine"\]/i);
+  assert.match(app, /effectiveRole\(\) === "encarregado"[\s\S]*return \["vacations", "medicine"\]/i);
   assert.match(app, /#edit-workforce"\)\.hidden = !canManageWorkforce\(\)/i);
   assert.match(app, /CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO/i);
 });

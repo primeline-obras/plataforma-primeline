@@ -19,7 +19,7 @@ for (const view of ["finance", "invoices", "works", "overview"]) {
 assert.match(app, /data-finance-tab="tracking"/);
 assert.match(app, /rpc\/fn_listar_rastreio_faturas/);
 assert.match(app, /invoiceJourneyState/);
-assert.match(app, /effectiveRole\(\) === "encarregado"\) return \["absences", "medicine"\]/);
+assert.match(app, /effectiveRole\(\) === "encarregado"\) return \["vacations", "medicine"\]/);
 assert.match(app, /allowedViews\(\)\.has\("team"\)/);
 assert.match(app, /rpc\/fn_quadro_ferias_encarregado_global/);
 assert.match(app, /teamData\.boardWorks = globalPayload\.obras/);
