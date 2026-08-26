@@ -96,6 +96,7 @@ let selectedTeamWeek = mondayIso(new Date());
 let selectedVacationMonth = new Date().toISOString().slice(0, 7);
 let teamData = { allocations: [], absences: [], vacations: [], holidays: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
+let selectedAbsenceEditId = "";
 let teamQuickFilter = "";
 let selectedTeamEntity = null;
 let selectedVehicleEditId = "";
@@ -313,13 +314,18 @@ document.querySelector("#root").innerHTML = `
         <section class="team-alert-summary" id="team-alert-summary"></section>
         <nav class="team-tabs">
           <button class="active" data-team-tab="collaborators">COLABORADORES</button>
-          <button data-team-tab="absences">MAPA DE FÉRIAS</button>
+          <button data-team-tab="vacations">MAPA DE FÉRIAS</button>
+          <button data-team-tab="absences">AUSÊNCIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
           <button data-team-tab="medicine">MEDICINA DO TRABALHO</button>
         </nav>
+        <section class="panel team-tab-panel" data-team-panel="vacations" hidden>
+          <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>MAPA DE FÉRIAS</h2></div></div>
+          <div id="team-vacations"></div>
+        </section>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
-          <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>MAPA DE FÉRIAS E AUSÊNCIAS</h2></div></div>
+          <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE</p><h2>AUSÊNCIAS</h2></div><span>PENDENTE → JUSTIFICADA</span></div>
           <div id="team-absences"></div>
         </section>
         <section class="panel team-directory-panel team-tab-panel" data-team-panel="collaborators">
@@ -778,6 +784,10 @@ function canManageTeam() {
   return hasFullAccess() || isAdministrative();
 }
 
+function canManageAbsences() {
+  return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
+}
+
 function canManageOvertime() {
   return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
 }
@@ -795,8 +805,8 @@ function canManageWorkforceWork(workId) {
 
 function canOpenTeamTab(tab) {
   if (canManageTeam()) return true;
-  if (canManageOvertime()) return ["absences", "overtime"].includes(tab);
-  if (effectiveRole() === "encarregado") return ["absences", "medicine"].includes(tab);
+  if (canManageOvertime()) return ["vacations", "absences", "overtime"].includes(tab);
+  if (effectiveRole() === "encarregado") return ["vacations", "medicine"].includes(tab);
   return tab === "absences";
 }
 
@@ -2026,26 +2036,30 @@ function renderTeam() {
     falta_justificada_com_remuneracao: "Falta justificada com remuneração",
   };
   const absenceStateLabels = { ausente_pendente: "Justificação pendente", justificada: "Justificada", confirmada: "Confirmada" };
-  const absences = [...currentAbsences].sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  const absences = currentAbsences.filter(item => !isVacation(item)).sort((a, b) => String(a.data).localeCompare(String(b.data)));
   const vacationMap = renderVacationMap(isForemanReadOnly ? boardPeople : collaborators, teamData.vacations);
-  const absenceForm = canManageTeam() ? `<form class="absence-entry-form" id="absence-entry-form">
+  const vacationEditor = canManageTeam() ? `<details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO</div>`;
+  const absenceForm = canManageAbsences() ? `<form class="absence-entry-form" id="absence-entry-form">
     <div><label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
-    <label>TIPO<select name="tipo" required><option value="ferias">Férias</option><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
+    <label>TIPO<select name="tipo" required><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
     <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
     <label>ANEXO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label></div>
     <button class="primary-button" type="submit">REGISTAR AUSÊNCIA <span>→</span></button><p class="form-error"></p>
-  </form><details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO</div>`;
+  </form>` : `<div class="readonly-note">CONSULTA DE AUSÊNCIAS · SEM PERMISSÃO DE EDIÇÃO</div>`;
   const absenceRows = absences.length ? absences.map(item => {
     const person = personById.get(item.colaborador_id);
     const attachments = teamData.absenceAttachments.filter(file => file.ausencia_id === item.id);
+    const editing = selectedAbsenceEditId === item.id;
     return `<article class="absence-card detailed">
       <time>${formatOptionalDate(item.data)}</time><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${absenceTypeLabels[item.tipo] || String(item.tipo || "Ausência").replace(/_/g, " ")}</span>${item.comentario ? `<small>${safeText(item.comentario)}</small>` : ""}</div>
       <em class="absence-state ${item.estado || "confirmada"}">${absenceStateLabels[item.estado] || item.estado || "Confirmada"}</em>
-      ${canManageTeam() ? `<div class="absence-attachments">${attachments.map(file => `<button type="button" data-absence-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${safeText(file.nome_arquivo)}">ANEXO · ${safeText(file.nome_arquivo)}</button>`).join("")}</div>` : ""}
-      ${canManageTeam() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
+      ${canManageAbsences() ? `<div class="absence-attachments">${attachments.map(file => `<button type="button" data-absence-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${safeText(file.nome_arquivo)}">ANEXO · ${safeText(file.nome_arquivo)}</button>`).join("")}<button type="button" data-edit-absence="${item.id}">${editing ? "FECHAR EDIÇÃO" : "EDITAR AUSÊNCIA"}</button></div>` : ""}
+      ${editing ? `<form class="absence-edit-form" data-update-absence="${item.id}"><label>COLABORADOR<select name="colaborador_id" required>${collaborators.map(candidate => `<option value="${candidate.id}" ${candidate.id === item.colaborador_id ? "selected" : ""}>${safeText(candidate.nome)}</option>`).join("")}</select></label><label>TIPO<select name="tipo" required><option value="falta_injustificada" ${item.tipo === "falta_injustificada" ? "selected" : ""}>Falta injustificada</option><option value="falta_justificada_sem_remuneracao" ${item.tipo === "falta_justificada_sem_remuneracao" ? "selected" : ""}>Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao" ${item.tipo === "falta_justificada_com_remuneracao" ? "selected" : ""}>Falta justificada com remuneração</option></select></label><label>DATA<input name="data" type="date" value="${item.data}" required></label><label>COMENTÁRIO<input name="comentario" value="${safeText(item.comentario || "")}" maxlength="1000"></label><button type="submit">GUARDAR ALTERAÇÕES</button><p class="form-error"></p></form>` : ""}
+      ${canManageAbsences() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
     </article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
-  $("#team-absences").innerHTML = `${vacationMap}${absenceForm}${absenceRows}`;
+  $("#team-vacations").innerHTML = `${vacationMap}${vacationEditor}`;
+  $("#team-absences").innerHTML = `${absenceForm}${absenceRows}`;
 
   const contractByPerson = new Map(activeContracts.map(item => [item.colaborador_id, item]));
   const missingContracts = collaborators.filter(person => !contractByPerson.has(person.id));
@@ -2437,7 +2451,7 @@ async function loadTeamData(force = false) {
   const results = await Promise.all([
     supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
-    canManageTeam() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageAbsences() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageOvertime() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,motivo,autorizado_por,estado_pagamento&estado_pagamento=eq.por_pagar&order=data.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
@@ -2971,6 +2985,36 @@ function documentFor(entityId, type) {
 function billingForMeasurement(measurementId) {
   const link = workDetails.billingLinks.find(item => item.auto_medicao_id === measurementId);
   return link ? workDetails.billings.find(item => item.id === link.faturacao_id) : null;
+}
+
+async function updateAbsence(formElement) {
+  const absence = teamData.absences.find(item => item.id === formElement.dataset.updateAbsence);
+  if (!absence) return;
+  const button = formElement.querySelector('button[type="submit"]');
+  const errorNode = formElement.querySelector(".form-error");
+  const type = formElement.elements.tipo.value;
+  const payload = {
+    colaborador_id: formElement.elements.colaborador_id.value,
+    tipo: type,
+    data: formElement.elements.data.value,
+    comentario: formElement.elements.comentario.value.trim() || null,
+    estado: type === "falta_justificada_com_remuneracao" ? "confirmada" : absence.estado === "justificada" ? "justificada" : "ausente_pendente",
+  };
+  button.disabled = true;
+  errorNode.textContent = "";
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase(`ausencias?id=eq.${encodeURIComponent(absence.id)}&select=id,colaborador_id,data,tipo,estado,comentario`, {
+        method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível atualizar a ausência."));
+      Object.assign(absence, (await response.json())[0]);
+    } else Object.assign(absence, payload);
+    selectedAbsenceEditId = "";
+    renderTeam();
+    toast("Ausência atualizada.");
+  } catch (error) { errorNode.textContent = error.message || "Não foi possível atualizar a ausência."; }
+  finally { button.disabled = false; }
 }
 
 function billingAutoTypeLabel(type) {
@@ -3888,6 +3932,13 @@ $("#team-view").addEventListener("click", async event => {
     renderTeam();
     return;
   }
+  const editAbsenceButton = event.target.closest("[data-edit-absence]");
+  if (editAbsenceButton) {
+    if (!canManageAbsences()) return toast("Não tem permissão para editar ausências.", "error");
+    selectedAbsenceEditId = selectedAbsenceEditId === editAbsenceButton.dataset.editAbsence ? "" : editAbsenceButton.dataset.editAbsence;
+    renderTeam();
+    return;
+  }
   if (event.target.closest("[data-cancel-vehicle-edit]")) {
     selectedVehicleEditId = "";
     renderTeam();
@@ -3968,14 +4019,21 @@ $("#team-view").addEventListener("submit", async event => {
   const absenceForm = event.target.closest("#absence-entry-form");
   if (absenceForm) {
     event.preventDefault();
-    if (!canManageTeam()) return toast("A gestão de ausências está reservada ao Administrativo e à Gerência.", "error");
+    if (!canManageAbsences()) return toast("Não tem permissão para lançar ausências.", "error");
     await createAbsence(absenceForm);
+    return;
+  }
+  const absenceEditForm = event.target.closest("[data-update-absence]");
+  if (absenceEditForm) {
+    event.preventDefault();
+    if (!canManageAbsences()) return toast("Não tem permissão para editar ausências.", "error");
+    await updateAbsence(absenceEditForm);
     return;
   }
   const justificationForm = event.target.closest("[data-justify-absence]");
   if (justificationForm) {
     event.preventDefault();
-    if (!canManageTeam()) return toast("A justificação de ausências está reservada ao Administrativo e à Gerência.", "error");
+    if (!canManageAbsences()) return toast("Não tem permissão para justificar ausências.", "error");
     await justifyAbsence(justificationForm);
     return;
   }
