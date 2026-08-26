@@ -1,4 +1,4 @@
-import { clearSession, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=5";
+import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=17";
 import { createPlanningModule } from "./planning.js?v=8";
@@ -8,16 +8,16 @@ import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDeb
 import { createSettingsModule } from "./settings.js?v=5";
 import { createProcurementModule } from "./procurement.js?v=4";
 import { createActionPlanModule } from "./action-plan.js?v=3";
-import { createDocumentsModule } from "./documents.js?v=1";
+import { createDocumentsModule } from "./documents.js?v=2";
 import { createRncModule } from "./rnc.js?v=2";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=1";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=2";
-import { createPropertiesModule } from "./properties.js?v=1";
-import { createBudgetRequestsModule } from "./budget-requests.js?v=1";
+import { createPropertiesModule } from "./properties.js?v=2";
+import { createBudgetRequestsModule } from "./budget-requests.js?v=2";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=1";
-import { createCompanyDocumentsModule } from "./company-documents.js?v=1";
+import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
 import { createProjectsModule } from "./projects.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=4";
@@ -695,6 +695,7 @@ const documentsModule = createDocumentsModule({
   getRole: effectiveRole,
   uploadWorkDocument,
   downloadWorkDocument,
+  deleteWorkDocument,
   prettyDate,
   toast,
   previewBlob: (blob, name) => {
@@ -1786,7 +1787,7 @@ function renderEntityDocuments(entityType, entity) {
         <div><strong>${safeText(documentItem.nome_arquivo || "Documento")}</strong><small>${safeText(String(documentItem.tipo_documento || "outro").replace(/_/g, " "))}</small></div>
         <div><span>EMISSÃO</span><strong>${formatOptionalDate(documentItem.data_emissao)}</strong></div>
         <em class="${validity.state}">${validity.label}</em>
-        <button type="button" data-entity-document-download="${encodeURIComponent(documentItem.url_arquivo || "")}" data-document-name="${safeText(documentItem.nome_arquivo || "documento")}">DESCARREGAR</button>
+        <div><button type="button" data-entity-document-download="${encodeURIComponent(documentItem.url_arquivo || "")}" data-document-name="${safeText(documentItem.nome_arquivo || "documento")}">DESCARREGAR</button>${canManageTeam() ? `<button type="button" class="danger-action" data-entity-document-delete="${documentItem.id}" data-object-path="${encodeURIComponent(documentItem.url_arquivo || "")}" data-document-name="${safeText(documentItem.nome_arquivo || "documento")}">APAGAR</button>` : ""}</div>
       </article>`;
     }).join("") : `<div class="work-document-empty">AINDA NÃO EXISTEM DOCUMENTOS ASSOCIADOS</div>`}</div>
     <form class="entity-document-upload" data-entity-document-upload data-entity-type="${entityType}" data-entity-id="${entity.id}">
@@ -3956,6 +3957,25 @@ $("#team-view").addEventListener("click", async event => {
     renderTeam();
     return;
   }
+  const deleteEntityDocumentButton = event.target.closest("[data-entity-document-delete]");
+  if (deleteEntityDocumentButton) {
+    if (!canManageTeam()) return toast("Não tem permissão para apagar este documento.", "error");
+    if (!window.confirm(`Apagar “${deleteEntityDocumentButton.dataset.documentName}”? Esta ação fica registada na auditoria.`)) return;
+    deleteEntityDocumentButton.disabled = true;
+    try {
+      const id = deleteEntityDocumentButton.dataset.entityDocumentDelete;
+      const path = decodeURIComponent(deleteEntityDocumentButton.dataset.objectPath || "");
+      if (isSupabaseConfigured) {
+        const response = await supabase("rpc/fn_apagar_documento_entidade", { method: "POST", body: JSON.stringify({ p_documento_id: id }) });
+        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível apagar o documento.");
+        if (path) await deleteWorkDocument(path);
+      }
+      teamData.entityDocuments = teamData.entityDocuments.filter(item => item.id !== id);
+      renderTeam();
+      toast("Documento apagado e registado na auditoria.");
+    } catch (error) { toast(error.message || "Não foi possível apagar o documento.", "error"); deleteEntityDocumentButton.disabled = false; }
+    return;
+  }
   const downloadButton = event.target.closest("[data-entity-document-download]");
   if (!downloadButton) return;
   const path = decodeURIComponent(downloadButton.dataset.entityDocumentDownload || "");
@@ -5757,6 +5777,7 @@ const companyDocumentsModule = createCompanyDocumentsModule({
   companyId: PRIMELINE_COMPANY_ID,
   uploadDocument: uploadEntityDocument,
   downloadDocument: downloadWorkDocument,
+  deleteDocument: deleteWorkDocument,
   toast,
 });
 procurementModule = createProcurementModule({

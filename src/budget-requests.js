@@ -75,8 +75,8 @@ export function createBudgetRequestsModule({ root, supabase, isConfigured, getPr
     return `<section class="panel budget-detail"><header><div><p class="eyebrow">PEDIDO DE ORÇAMENTO</p><h2>${esc(item.cliente_nome)}</h2><p>${esc(item.cliente_contacto || "Contacto não indicado")}${item.intermediario ? ` · Intermediário: ${esc(item.intermediario)}` : ""}</p></div><span>${versions.length} VERSÃO${versions.length === 1 ? "" : "ÕES"}</span></header>
       <p class="budget-description">${esc(item.descricao_trabalho)}</p>
       ${item.estado === "perdido" ? `<div class="work-warning"><strong>CLASSIFICAÇÃO PENDENTE</strong><span>Este pedido tinha o estado antigo “Perdido”. Confirme se foi recusado pelo cliente ou cancelado antes da decisão.</span></div>` : ""}
-      <form class="budget-status-form" data-budget-status-form data-request-id="${item.id}"><label>ESTADO<select name="estado">${Object.entries(STATES).filter(([value]) => value !== "perdido" || item.estado === "perdido").map(([value, label]) => `<option value="${value}" ${value === item.estado ? "selected" : ""} ${value === "perdido" ? "disabled" : ""}>${label}</option>`).join("")}</select></label><label>SITUAÇÃO ATUAL<textarea name="situacao_atual" rows="3" placeholder="Próximo passo, bloqueio ou informação relevante">${esc(item.situacao_atual || "")}</textarea></label><label class="budget-priority-field"><input name="prioritario" type="checkbox" ${item.prioritario ? "checked" : ""}> PRIORITÁRIO</label><button type="submit">GUARDAR SITUAÇÃO</button><p class="form-error"></p></form>
-      <div class="budget-versions"><div><p class="eyebrow">HISTÓRICO</p><h3>ENVIOS E RETIFICAÇÕES</h3></div>${versionForm(item)}<div>${versions.length ? versions.map((row, index) => `<article><span>V${String(versions.length - index).padStart(2, "0")}</span><time>${dateLabel(row.data_envio)}</time><strong>${row.valor == null ? "Valor não indicado" : euro.format(Number(row.valor))}</strong><p>${esc(row.notas || "Sem notas")}</p></article>`).join("") : `<p class="operations-empty">AINDA SEM VERSÕES ENVIADAS</p>`}</div></div>
+      <form class="budget-status-form" data-budget-status-form data-request-id="${item.id}"><label>ESTADO<select name="estado">${Object.entries(STATES).filter(([value]) => value !== "perdido" || item.estado === "perdido").map(([value, label]) => `<option value="${value}" ${value === item.estado ? "selected" : ""} ${value === "perdido" ? "disabled" : ""}>${label}</option>`).join("")}</select></label><label>SITUAÇÃO ATUAL<textarea name="situacao_atual" rows="3" placeholder="Próximo passo, bloqueio ou informação relevante">${esc(item.situacao_atual || "")}</textarea></label><label class="budget-priority-field"><input name="prioritario" type="checkbox" ${item.prioritario ? "checked" : ""}> PRIORITÁRIO</label><button type="submit">GUARDAR SITUAÇÃO</button>${item.estado !== "cancelado" ? `<button type="button" class="danger-action" data-cancel-budget-request="${item.id}">CANCELAR PEDIDO</button>` : ""}<p class="form-error"></p></form>
+      <div class="budget-versions"><div><p class="eyebrow">HISTÓRICO</p><h3>ENVIOS E RETIFICAÇÕES</h3></div>${versionForm(item)}<div>${versions.length ? versions.map((row, index) => `<article><span>V${String(versions.length - index).padStart(2, "0")}</span><time>${dateLabel(row.data_envio)}</time><strong>${row.valor == null ? "Valor não indicado" : euro.format(Number(row.valor))}</strong><p>${esc(row.notas || "Sem notas")}</p><button type="button" class="danger-action" data-delete-budget-version="${row.id}">APAGAR</button></article>`).join("") : `<p class="operations-empty">AINDA SEM VERSÕES ENVIADAS</p>`}</div></div>
     </section>`;
   }
 
@@ -89,6 +89,23 @@ export function createBudgetRequestsModule({ root, supabase, isConfigured, getPr
   root.addEventListener("click", event => {
     const button = event.target.closest("[data-budget-id]");
     if (button) { state.selectedId = button.dataset.budgetId; render(); }
+    const cancel = event.target.closest("[data-cancel-budget-request]");
+    if (cancel) {
+      if (!window.confirm("Cancelar este pedido de orçamento? O histórico será mantido.")) return;
+      cancel.disabled = true;
+      api("rpc/fn_cancelar_pedido_orcamento", { method: "POST", body: JSON.stringify({ p_pedido_id: cancel.dataset.cancelBudgetRequest }) })
+        .then(() => { const row = state.requests.find(item => item.id === cancel.dataset.cancelBudgetRequest); if (row) row.estado = "cancelado"; toast("Pedido cancelado, com histórico preservado."); render(); })
+        .catch(error => { toast(error.message, "error"); cancel.disabled = false; });
+      return;
+    }
+    const versionDelete = event.target.closest("[data-delete-budget-version]");
+    if (versionDelete) {
+      if (!window.confirm("Apagar esta versão do orçamento? A ação fica registada na auditoria.")) return;
+      versionDelete.disabled = true;
+      api("rpc/fn_apagar_versao_pedido_orcamento", { method: "POST", body: JSON.stringify({ p_versao_id: versionDelete.dataset.deleteBudgetVersion }) })
+        .then(() => { state.versions = state.versions.filter(row => row.id !== versionDelete.dataset.deleteBudgetVersion); toast("Versão apagada."); render(); })
+        .catch(error => { toast(error.message, "error"); versionDelete.disabled = false; });
+    }
   });
 
   root.addEventListener("submit", async event => {

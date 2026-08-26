@@ -333,6 +333,19 @@ export async function downloadWorkDocument(objectPath) {
   return response.blob();
 }
 
+export async function deleteWorkDocument(objectPath) {
+  const session = getSession();
+  if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
+  const response = await fetch(storageBucketUrl("documentos", objectPath), {
+    method: "DELETE",
+    headers: { apikey: anonKey, Authorization: `Bearer ${session.access_token}` },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.message || payload.error || "Não foi possível apagar o ficheiro.");
+  }
+}
+
 function enforceActiveCollaborators(path) {
   const [resource, query = ""] = String(path).split("?", 2);
   if (resource !== "colaboradores") return path;
