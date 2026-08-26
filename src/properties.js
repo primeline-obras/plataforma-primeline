@@ -59,7 +59,7 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
     return `<section class="panel operations-directory"><header><div><p class="eyebrow">PATRIMÓNIO</p><h2>IMÓVEIS DA EMPRESA</h2></div><span>${state.properties.length}</span></header>
       ${propertyForm()}<div class="property-cards">${state.properties.length ? state.properties.map(row => {
         const count = state.meetings.filter(meeting => meeting.imovel_id === row.id).length;
-        return `<button type="button" class="property-card ${row.id === state.selectedId ? "active" : ""}" data-property-id="${row.id}"><span>IMÓVEL</span><strong>${esc(row.nome)}</strong><p>${esc(row.morada || "Morada não indicada")}</p><small>${count} REUNIÃO${count === 1 ? "" : "ÕES"}</small></button>`;
+        return `<article class="property-card-wrap"><button type="button" class="property-card ${row.id === state.selectedId ? "active" : ""}" data-property-id="${row.id}"><span>IMÓVEL</span><strong>${esc(row.nome)}</strong><p>${esc(row.morada || "Morada não indicada")}</p><small>${count} REUNIÃO${count === 1 ? "" : "ÕES"}</small></button><button type="button" class="danger-action" data-delete-property="${row.id}" data-property-name="${esc(row.nome)}">APAGAR</button></article>`;
       }).join("") : `<div class="operations-empty">AINDA NÃO EXISTEM IMÓVEIS REGISTADOS</div>`}</div>
     </section>`;
   }
@@ -68,7 +68,7 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
     const rows = state.meetings.filter(row => !state.selectedId || row.imovel_id === state.selectedId);
     const upcoming = rows.filter(row => row.data >= today());
     return `<section class="panel operations-detail"><header><div><p class="eyebrow">CONDOMÍNIO</p><h2>REUNIÕES AGENDADAS</h2></div><span>${upcoming.length} FUTURAS</span></header>
-      ${meetingForm()}<div class="condo-meeting-list">${rows.length ? rows.map(row => `<article class="${row.data < today() ? "past" : ""}"><time><b>${dateLabel(row.data)}</b><span>${timeLabel(row.hora)}</span></time><div><strong>${esc(propertyName(row.imovel_id))}</strong><p>${esc(row.local || "Local não indicado")}</p><small>${esc(row.notas || "Sem notas")}</small></div></article>`).join("") : `<div class="operations-empty">SEM REUNIÕES PARA ESTE IMÓVEL</div>`}</div>
+      ${meetingForm()}<div class="condo-meeting-list">${rows.length ? rows.map(row => `<article class="${row.data < today() ? "past" : ""}"><time><b>${dateLabel(row.data)}</b><span>${timeLabel(row.hora)}</span></time><div><strong>${esc(propertyName(row.imovel_id))}</strong><p>${esc(row.local || "Local não indicado")}</p><small>${esc(row.notas || "Sem notas")}</small></div><button type="button" class="danger-action" data-delete-property-meeting="${row.id}">APAGAR</button></article>`).join("") : `<div class="operations-empty">SEM REUNIÕES PARA ESTE IMÓVEL</div>`}</div>
     </section>`;
   }
 
@@ -81,6 +81,23 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
   root.addEventListener("click", event => {
     const button = event.target.closest("[data-property-id]");
     if (button) { state.selectedId = button.dataset.propertyId; render(); }
+    const meetingDelete = event.target.closest("[data-delete-property-meeting]");
+    if (meetingDelete) {
+      if (!window.confirm("Apagar esta reunião de condomínio? A ação fica registada na auditoria.")) return;
+      meetingDelete.disabled = true;
+      api("rpc/fn_apagar_reuniao_condominio", { method: "POST", body: JSON.stringify({ p_reuniao_id: meetingDelete.dataset.deletePropertyMeeting }) })
+        .then(() => { state.meetings = state.meetings.filter(row => row.id !== meetingDelete.dataset.deletePropertyMeeting); toast("Reunião apagada."); render(); })
+        .catch(error => { toast(error.message, "error"); meetingDelete.disabled = false; });
+      return;
+    }
+    const propertyDelete = event.target.closest("[data-delete-property]");
+    if (propertyDelete) {
+      if (!window.confirm(`Apagar o imóvel “${propertyDelete.dataset.propertyName}” e as respetivas reuniões? A ação fica registada na auditoria.`)) return;
+      propertyDelete.disabled = true;
+      api("rpc/fn_apagar_imovel_empresa", { method: "POST", body: JSON.stringify({ p_imovel_id: propertyDelete.dataset.deleteProperty }) })
+        .then(() => { const id = propertyDelete.dataset.deleteProperty; state.properties = state.properties.filter(row => row.id !== id); state.meetings = state.meetings.filter(row => row.imovel_id !== id); state.selectedId = state.properties[0]?.id || ""; toast("Imóvel apagado."); render(); })
+        .catch(error => { toast(error.message, "error"); propertyDelete.disabled = false; });
+    }
   });
 
   root.addEventListener("submit", async event => {

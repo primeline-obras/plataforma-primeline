@@ -25,7 +25,7 @@ function validityInfo(value) {
   return { tone: "valid", label: `VÁLIDO ATÉ ${formatDate(value)}`, days };
 }
 
-export function createCompanyDocumentsModule({ root, supabase, isConfigured, companyId, uploadDocument, downloadDocument, toast }) {
+export function createCompanyDocumentsModule({ root, supabase, isConfigured, companyId, uploadDocument, downloadDocument, deleteDocument, toast }) {
   const state = { loaded: false, loading: false, documents: [], error: "" };
   const localFiles = new Map();
 
@@ -69,7 +69,7 @@ export function createCompanyDocumentsModule({ root, supabase, isConfigured, com
         <div class="company-document-icon">▤</div>
         <div class="company-document-identity"><span>${escapeHtml(typeLabel(item.tipo_documento))}</span><strong>${escapeHtml(item.nome_arquivo || "Documento")}</strong><small>Emitido em ${formatDate(item.data_emissao)} · carregado em ${formatDate(String(item.criado_em || "").slice(0, 10))}</small></div>
         <div class="company-document-validity"><span>VALIDADE</span><strong>${formatDate(item.data_validade)}</strong><b>${escapeHtml(validity.label)}</b></div>
-        <button type="button" class="outline-action" data-company-document-download="${encodeURIComponent(item.url_arquivo || "")}" data-file-name="${escapeHtml(item.nome_arquivo || "documento")}">DESCARREGAR</button>
+        <div><button type="button" class="outline-action" data-company-document-download="${encodeURIComponent(item.url_arquivo || "")}" data-file-name="${escapeHtml(item.nome_arquivo || "documento")}">DESCARREGAR</button><button type="button" class="danger-action" data-company-document-delete="${item.id}" data-object-path="${encodeURIComponent(item.url_arquivo || "")}" data-file-name="${escapeHtml(item.nome_arquivo || "documento")}">APAGAR</button></div>
       </article>`;
     }).join("");
   }
@@ -124,6 +124,23 @@ export function createCompanyDocumentsModule({ root, supabase, isConfigured, com
   function bindEvents() {
     root.querySelector("#company-document-form")?.addEventListener("submit", event => { event.preventDefault(); submit(event.currentTarget); });
     root.querySelector(".company-document-list")?.addEventListener("click", async event => {
+      const deleteButton = event.target.closest("[data-company-document-delete]");
+      if (deleteButton) {
+        if (!window.confirm(`Apagar “${deleteButton.dataset.fileName}”? Esta ação fica registada na auditoria.`)) return;
+        deleteButton.disabled = true;
+        try {
+          const id = deleteButton.dataset.companyDocumentDelete;
+          const path = decodeURIComponent(deleteButton.dataset.objectPath || "");
+          if (isConfigured) {
+            const response = await supabase("rpc/fn_apagar_documento_entidade", { method: "POST", body: JSON.stringify({ p_documento_id: id }) });
+            if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível apagar o documento.");
+            if (path) await deleteDocument(path);
+          } else { localFiles.delete(path); state.documents = state.documents.filter(item => item.id !== id); }
+          toast("Documento apagado e registado na auditoria.");
+          if (isConfigured) await load(true); else render();
+        } catch (error) { toast(error.message || "Não foi possível apagar o documento.", "error"); deleteButton.disabled = false; }
+        return;
+      }
       const button = event.target.closest("[data-company-document-download]");
       if (!button) return;
       const path = decodeURIComponent(button.dataset.companyDocumentDownload || "");

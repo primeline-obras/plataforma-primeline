@@ -58,6 +58,7 @@ export function createDocumentsModule({
   getRole,
   uploadWorkDocument,
   downloadWorkDocument,
+  deleteWorkDocument,
   prettyDate,
   toast,
   previewBlob,
@@ -154,7 +155,7 @@ export function createDocumentsModule({
       const rows = grouped.get(type) || [];
       if (!rows.length && section.types.length > 1) return "";
       return `<section class="work-document-group"><header><div><p class="eyebrow">${escapeHtml(typeLabel(type))}</p><h3>${escapeHtml(typeLabel(type).toUpperCase())}</h3></div><span>${rows.length}</span></header><div class="work-document-list">
-        ${rows.length ? rows.map(document => { const path = encodeURIComponent(document.arquivo_url || ""); return `<article class="work-document-row"><div class="work-document-icon">${escapeHtml(extension(document.nome_arquivo).slice(0, 4).toUpperCase() || "DOC")}</div><div class="work-document-name"><strong title="${escapeHtml(document.nome_arquivo)}">${escapeHtml(document.nome_arquivo)}</strong><span>${escapeHtml(typeLabel(document.tipo))}${document.numero_documento ? ` · ${escapeHtml(document.numero_documento)}` : ""}${document.revisao ? ` · REV. ${escapeHtml(document.revisao)}` : ""}</span></div><div class="work-document-meta"><span>ENVIADO POR</span><strong>${escapeHtml(data.users[document.enviado_por] || "Utilizador")}</strong></div><div class="work-document-meta"><span>DATA</span><strong>${formatDate(document.criado_em)}</strong></div><div class="work-document-actions">${canPreview(document) ? `<button type="button" data-document-preview="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">PRÉ-VISUALIZAR</button>` : ""}<button type="button" data-document-download="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">DESCARREGAR</button></div></article>`; }).join("") : '<div class="work-document-empty">SEM DOCUMENTOS NESTA CATEGORIA</div>'}
+        ${rows.length ? rows.map(document => { const path = encodeURIComponent(document.arquivo_url || ""); return `<article class="work-document-row"><div class="work-document-icon">${escapeHtml(extension(document.nome_arquivo).slice(0, 4).toUpperCase() || "DOC")}</div><div class="work-document-name"><strong title="${escapeHtml(document.nome_arquivo)}">${escapeHtml(document.nome_arquivo)}</strong><span>${escapeHtml(typeLabel(document.tipo))}${document.numero_documento ? ` · ${escapeHtml(document.numero_documento)}` : ""}${document.revisao ? ` · REV. ${escapeHtml(document.revisao)}` : ""}</span></div><div class="work-document-meta"><span>ENVIADO POR</span><strong>${escapeHtml(data.users[document.enviado_por] || "Utilizador")}</strong></div><div class="work-document-meta"><span>DATA</span><strong>${formatDate(document.criado_em)}</strong></div><div class="work-document-actions">${canPreview(document) ? `<button type="button" data-document-preview="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">PRÉ-VISUALIZAR</button>` : ""}<button type="button" data-document-download="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">DESCARREGAR</button>${data.canEdit ? `<button type="button" class="danger" data-document-delete="${document.id}" data-document-path="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">APAGAR</button>` : ""}</div></article>`; }).join("") : '<div class="work-document-empty">SEM DOCUMENTOS NESTA CATEGORIA</div>'}
       </div></section>`;
     }).join("")}</div>`;
   }
@@ -285,6 +286,30 @@ export function createDocumentsModule({
     }
   }
 
+  async function removeDocument(button) {
+    const documentId = button.dataset.documentDelete;
+    const path = decodeURIComponent(button.dataset.documentPath || "");
+    const name = button.dataset.documentName || "documento";
+    if (!data.canEdit) return toast("Não tem permissão para apagar este documento.", "error");
+    if (!window.confirm(`Apagar “${name}”? Esta ação fica registada na auditoria.`)) return;
+    button.disabled = true;
+    try {
+      if (isConfigured) {
+        const response = await supabase("rpc/fn_apagar_documento_obra", { method: "POST", body: JSON.stringify({ p_documento_id: documentId }) });
+        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível apagar o registo do documento.");
+        if (path) await deleteWorkDocument(path);
+      } else {
+        localFiles.delete(path);
+        data.documents = data.documents.filter(item => item.id !== documentId);
+      }
+      toast("Documento apagado e registado na auditoria.");
+      if (isConfigured) await load(selectedWorkId); else render();
+    } catch (error) {
+      toast(error.message || "Não foi possível apagar o documento.", "error");
+      button.disabled = false;
+    }
+  }
+
   root.addEventListener("change", event => {
     if (event.target.matches("[data-documents-work]")) return load(event.target.value);
     if (event.target.name === "tipo" && event.target.form?.id === "documents-center-upload") syncUploadFields(event.target.form);
@@ -305,6 +330,8 @@ export function createDocumentsModule({
     if (previewButton) return openDocument(previewButton, true);
     const downloadButton = event.target.closest("[data-document-download]");
     if (downloadButton) return openDocument(downloadButton, false);
+    const deleteButton = event.target.closest("[data-document-delete]");
+    if (deleteButton) return removeDocument(deleteButton);
   });
 
   return {
