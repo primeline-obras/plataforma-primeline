@@ -7,8 +7,8 @@ const access = readFileSync(new URL("../src/access-control.js", import.meta.url)
 const migration = readFileSync(new URL("../supabase/encarregado_quadro_ferias_global.sql", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
-test("encarregado mantém Quadro e Mapa de Férias no menu em leitura", () => {
-  assert.match(access, /encarregado:[\s\S]*views:[\s\S]*"team"[\s\S]*"workforce"/i);
+test("encarregado mantém Mapa de Férias, mas perde o Quadro de Pessoal", () => {
+  assert.match(access, /encarregado:[\s\S]*views:\s*\["action-plan", "planning", "documents", "rnc", "team", "settings"\]/i);
   assert.match(app, /effectiveRole\(\) === "encarregado"[\s\S]*return \["vacations", "medicine"\]/i);
   assert.match(app, /#edit-workforce"\)\.hidden = !canManageWorkforce\(\)/i);
   assert.match(app, /CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO/i);
@@ -25,9 +25,8 @@ test("leitura global expõe apenas os dados operacionais necessários", () => {
 });
 
 test("frontend usa todas as obras e apresenta férias num mapa mensal", () => {
-  assert.match(app, /rpc\/fn_quadro_ferias_encarregado_global/i);
-  assert.match(app, /teamData\.allocations = globalPayload\.alocacoes/i);
-  assert.match(app, /teamData\.boardWorks = globalPayload\.obras/i);
+  assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/i);
+  assert.match(app, /tipo=eq\.ferias/i);
   assert.match(app, /function renderVacationMap/i);
   assert.match(app, /data-vacation-month/i);
   assert.match(styles, /\.vacation-map-grid/i);

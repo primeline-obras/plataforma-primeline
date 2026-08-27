@@ -31,8 +31,8 @@ const matrix = {
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "team", "workforce", "settings"],
-    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "rooms"],
+    views: ["action-plan", "planning", "documents", "rnc", "team", "settings"],
+    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "rooms", "workforce"],
     actions: [],
     deniedActions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
