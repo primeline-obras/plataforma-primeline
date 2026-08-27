@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 const app = fs.readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
-const sql = fs.readFileSync(new URL("../supabase/quadro_pessoal_permissoes_corrigido.sql", import.meta.url), "utf8");
+const sql = fs.readFileSync(new URL("../supabase/quadro_pessoal_apenas_administrativo_gerencia.sql", import.meta.url), "utf8");
 assert(app.includes('id="workforce-movements"'));
 assert(app.includes("openWorkforceMovements"));
 assert(app.includes("canManageWorkforce()"));
 assert(app.includes("canManageWorkforceWork(workId)"));
-assert(sql.includes("r.papel in ('diretor_obra', 'adjunto', 'preparador')"));
-for (const action of ["select", "insert", "update", "delete"]) assert(sql.includes(`quadro_pessoal_alocacao_${action}`));
+for (const action of ["select", "insert", "update", "delete"]) assert(sql.includes(`create policy quadro_pessoal_rh_${action}`));
+assert(sql.includes("public.fn_e_administrativo()"));
 assert(sql.includes("criado_por = public.fn_utilizador_atual_id()"));
 console.log("workforce movement and permission tests passed");

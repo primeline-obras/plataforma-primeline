@@ -3,7 +3,7 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=17";
 import { createPlanningModule } from "./planning.js?v=8";
 import { createSubcontractorsModule } from "./subcontractors.js?v=4";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=13";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=5";
 import { createProcurementModule } from "./procurement.js?v=4";
@@ -786,11 +786,11 @@ function canManageTeam() {
 }
 
 function canManageAbsences() {
-  return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
+  return canManageTeam();
 }
 
 function canManageOvertime() {
-  return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
+  return canManageTeam();
 }
 
 function canManageWorkforce() {
@@ -803,9 +803,8 @@ function canManageWorkforceWork(workId) {
 
 function canOpenTeamTab(tab) {
   if (canManageTeam()) return true;
-  if (canManageOvertime()) return ["vacations", "absences", "overtime"].includes(tab);
   if (effectiveRole() === "encarregado") return ["vacations", "medicine"].includes(tab);
-  return tab === "absences";
+  return tab === "vacations";
 }
 
 function isFinancial() {
@@ -880,9 +879,9 @@ function applyAccessVisibility() {
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
-  if (!canOpenTeamTab(selectedTeamTab)) selectedTeamTab = "absences";
+  if (!canOpenTeamTab(selectedTeamTab)) selectedTeamTab = "vacations";
   if (!canManageTeam()) {
-    selectedTeamTab = "absences";
+    selectedTeamTab = "vacations";
     $("#team-directory-search").closest(".team-toolbar").hidden = true;
   } else {
     $("#team-directory-search").closest(".team-toolbar").hidden = false;
@@ -3686,7 +3685,7 @@ function switchView(view, context = {}) {
   if (view === "properties") propertiesModule.show();
   if (view === "budget-requests") budgetRequestsModule.show();
   if (view === "subcontractors") subcontractorsModule.show();
-  if (view === "team" && !canManageTeam()) activateTeamTab("absences");
+  if (view === "team" && !canManageTeam()) activateTeamTab("vacations");
   else if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);
   if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
@@ -3847,7 +3846,7 @@ $("#workforce-roster").addEventListener("change", event => {
   if (select) selectedWorkforcePeriod = select.value;
 });
 function activateTeamTab(tab, preserveFilter = false) {
-  if (!canOpenTeamTab(tab)) tab = "absences";
+  if (!canOpenTeamTab(tab)) tab = "vacations";
   selectedTeamTab = tab;
   if (!preserveFilter) teamQuickFilter = "";
   document.querySelectorAll("[data-team-tab]").forEach(item => item.classList.toggle("active", item.dataset.teamTab === selectedTeamTab));
