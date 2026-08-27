@@ -794,14 +794,11 @@ function canManageOvertime() {
 }
 
 function canManageWorkforce() {
-  return canManageTeam() || ["diretor_obra", "adjunto", "preparador"].includes(effectiveRole());
+  return canManageTeam();
 }
 
 function canManageWorkforceWork(workId) {
-  if (canManageTeam()) return true;
-  return Boolean(workId && teamData.responsibles.some(item => item.obra_id === workId
-    && item.utilizador_id === accessContext.profile?.id
-    && ["diretor_obra", "adjunto", "preparador"].includes(item.papel)));
+  return canManageTeam() && Boolean(workId);
 }
 
 function canOpenTeamTab(tab) {
@@ -879,7 +876,7 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   $("#edit-workforce").hidden = !canManageWorkforce();
-  $("#workforce-movements").hidden = effectiveRole() === "encarregado";
+  $("#workforce-movements").hidden = !canManageWorkforce();
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
@@ -1942,15 +1939,12 @@ function renderTeam() {
   const allocations = teamData.allocations.filter(item =>
     personById.has(item.colaborador_id)
     && workforceRoleClass(personById.get(item.colaborador_id)));
-  const currentAllocations = allocations.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
-  const currentAllocatedIds = new Set(currentAllocations.map(item => item.colaborador_id));
   const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = boardWorkList
     .filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")))
     .sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   const boardRows = workforceRows(activeWorks, allocations);
-  const unallocated = boardPeople.filter(person => !currentAllocatedIds.has(person.id));
   const pendingHours = activeOvertime.reduce((total, item) => total + Number(item.horas || 0), 0);
   const todayIso = new Date().toISOString().slice(0, 10);
   const currentMonth = Number(todayIso.slice(5, 7));
@@ -1966,8 +1960,6 @@ function renderTeam() {
   $("#team-week-label").textContent = `SEMANA ATUAL · ${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))}`;
   $("#team-kpis").innerHTML = [
     ["COLABORADORES ATIVOS", boardPeople.length],
-    ["ALOCADOS", currentAllocatedIds.size],
-    ["SEM ALOCAÇÃO", unallocated.length],
     ["AUSENTES NA SEMANA", absentIds.size],
   ].map(([label, value]) => `<article><span>${label}</span><strong>${String(value).padStart(2, "0")}</strong></article>`).join("");
 
@@ -2450,7 +2442,7 @@ async function loadTeamData(force = false) {
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
-    supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`),
+    canManageWorkforce() ? supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`) : Promise.resolve(new Response("[]", { status: 200 })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     canManageAbsences() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
@@ -2461,9 +2453,7 @@ async function loadTeamData(force = false) {
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
-    effectiveRole() === "encarregado"
-      ? supabase("rpc/fn_quadro_ferias_encarregado_global", { method: "POST", body: JSON.stringify({ p_data_inicio: boardStart < vacationBounds.start ? boardStart : vacationBounds.start, p_data_fim: boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end }) })
-      : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
+    supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
     supabase(`feriados_empresa?select=id,data,nome,ambito,municipio,folga&folga=eq.true&data=gte.${boardStart < vacationBounds.start ? boardStart : vacationBounds.start}&data=lte.${boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end}&order=data`),
   ]);
   const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias", "feriados"];
@@ -2472,15 +2462,7 @@ async function loadTeamData(force = false) {
   [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.slice(0, 11).map(payload => Array.isArray(payload) ? payload : []);
   const globalPayload = payloads[11];
   teamData.holidays = Array.isArray(payloads[12]) ? payloads[12] : [];
-  if (effectiveRole() === "encarregado" && globalPayload && !globalPayload.failed) {
-    teamData.allocations = globalPayload.alocacoes || [];
-    teamData.vacations = globalPayload.ferias || [];
-    teamData.absences = [...teamData.absences.filter(item => !isVacation(item)), ...teamData.vacations];
-    teamData.boardWorks = globalPayload.obras || [];
-    teamData.boardCollaborators = globalPayload.colaboradores || [];
-    teamData.responsibles = globalPayload.responsaveis || [];
-    teamData.users = globalPayload.utilizadores || [];
-  } else if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
+  if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
   const essentialFailures = failures.filter(item => ["alocações", "ausências", "mapa global de férias"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
   const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"].includes(item.failed));
