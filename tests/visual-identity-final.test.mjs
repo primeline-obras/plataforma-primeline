@@ -15,7 +15,7 @@ test("a identidade final é carregada depois dos estilos legados", () => {
 test("usa a paleta final exata", () => {
   ["#FAF8F3", "#20242B", "#3B3830", "#6B685F", "#8A8578", "#A8A398",
     "#F1EFE8", "#B4B2A9", "#FFFDF9", "#EFEBE1", "#DDD8CC", "#CFC9BB",
-    "#D9A441", "#8A6420", "#E6EDE4", "#3F6248", "#F2E3E0", "#8C4A40",
+    "#4A5568", "#E6EDE4", "#3F6248", "#F2E3E0", "#8C4A40",
     "#F7EDD6"].forEach(color => assert.ok(css.includes(color), `falta ${color}`));
 });
 
@@ -24,7 +24,7 @@ test("preserva o toggle com tokens próprios para claro e escuro", () => {
   assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--bg:\s*#1A1D23/);
   assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--card:\s*#23262D/);
   assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--card-border:\s*#3A3D45/);
-  assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--action:\s*#D4A854/);
+  assert.match(css, /:root\[data-theme="dark"\][\s\S]*?--action:\s*#F1EFE8/);
   assert.match(css, /--pos-bg:\s*#1F2E22[\s\S]*?--pos-text:\s*#A8C4AE/);
   assert.match(css, /--neg-bg:\s*#352321[\s\S]*?--neg-text:\s*#E0A49B/);
   assert.match(css, /--warn-bg:\s*#342B1D[\s\S]*?--warn-text:\s*#E0BD78/);
@@ -41,6 +41,12 @@ test("usa IBM Plex e geometria final", () => {
 test("botão primário é antracite e não dourado", () => {
   assert.match(css, /\.primary-button[^}]*\{[\s\S]*?background:\s*#20242B\s*!important/);
   assert.doesNotMatch(css, /\.primary-button[^}]*\{[^}]*background:\s*#D9A441/i);
+});
+
+test("remove o dourado decorativo e usa cinza-azulado com contraste", () => {
+  assert.doesNotMatch(css, /#D9A441|#8A6420|#D4A854/i);
+  assert.match(css, /--accent:\s*#4A5568/);
+  assert.match(css, /\.ui-state-decision[^}]*background:\s*#4A5568[^}]*color:\s*#F1EFE8/i);
 });
 
 test("tabelas recebem números monoespaçados e links sem azul", () => {

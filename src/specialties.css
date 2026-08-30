@@ -72,7 +72,7 @@
 .supplier-specialties-options input {
   width: 16px;
   height: 16px;
-  accent-color: var(--brand-amber);
+  accent-color: var(--accent);
 }
 
 .supplier-specialties-editor .form-error {
