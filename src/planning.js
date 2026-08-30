@@ -32,6 +32,19 @@ function displayDate(value) {
   return date ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeZone: "UTC" }).format(date) : "—";
 }
 
+const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+function costStateLabel(value) {
+  return {
+    orcamentado: "Orçamentado / Não Comprometido",
+    em_consulta: "Em Consulta",
+    adjudicado: "Adjudicado",
+    em_execucao: "Em Execução",
+    concluido: "Concluído",
+    cancelado: "Cancelado",
+  }[value] || "Orçamentado / Não Comprometido";
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
@@ -62,7 +75,7 @@ function isPastDay(date, today = new Date()) {
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, toast }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
-    expanded: new Set(), loaded: false, view: "effective",
+    expanded: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
   };
 
@@ -199,8 +212,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function renderEditor() {
     return `<div class="planning-editor-wrap"><div class="planning-editor-head">
-      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>ESPECIALIDADE</span><span>EXECUTADO POR</span><span>INÍCIO PREV.</span><span>FIM PREV.</span><span>INÍCIO REAL</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO</span><span>AÇÕES</span>
-    </div>${state.items.map(item => `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
+      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>ESPECIALIDADE</span><span>EXECUTADO POR</span><span>INÍCIO PREV.</span><span>FIM PREV.</span><span>INÍCIO REAL</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO TAREFA</span><span>ESTADO CUSTO</span><span>DETALHE ORÇAMENTO</span><span>ESTIMADO €</span><span>COMPROMISSO / REAL</span><span>AÇÕES</span>
+    </div>${state.items.map(item => { const cost = state.costs.get(String(item.id)) || item; return `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
       <select name="fase_id">${phaseOptions(item.fase_id)}</select>
       <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1">
       <input name="descricao" value="${escapeHtml(item.descricao || "")}" placeholder="Descrição da tarefa">
@@ -214,9 +227,20 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <input name="peso_percentual" type="number" min="0" step="0.01" value="${item.peso_percentual ?? ""}">
       <input name="percentual_executado" type="number" min="0" max="100" step="1" value="${item.percentual_executado ?? 0}">
       <select name="estado"><option value="por_iniciar" ${item.estado === "por_iniciar" ? "selected" : ""}>Por iniciar</option><option value="em_execucao" ${item.estado === "em_execucao" ? "selected" : ""}>Em execução</option><option value="concluido" ${item.estado === "concluido" ? "selected" : ""}>Concluído</option></select>
+      <select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select>
+      <select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select>
+      <input name="valor_estimado" type="number" min="0" step="0.01" value="${item.valor_estimado ?? ""}" placeholder="0,00">
+      <div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<button type="button" data-confirm-subcontract-cost="${item.id}">CONFIRMAR REMOÇÃO DA ESTIMATIVA</button>` : ""}</div>
       <div><button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button></div>
       <section>${renderDependencies(item)}</section>
-    </article>`).join("")}</div>`;
+    </article>`; }).join("")}</div>`;
+  }
+
+  function renderCostSummary() {
+    const material = state.costSummary.materiais || {};
+    const labor = state.costSummary.mao_obra || {};
+    const subcontract = state.costSummary.subempreitadas || {};
+    return `<div class="planning-cost-summary"><article><span>MATERIAIS · ESTIMADO REMANESCENTE</span><strong>${euro.format(Number(material.estimado_remanescente || 0))}</strong><small>${euro.format(Number(material.realizado || 0))} realizados de ${euro.format(Number(material.orcamento || 0))}</small></article><article><span>MÃO DE OBRA · ESTIMADO REMANESCENTE</span><strong>${euro.format(Number(labor.estimado_remanescente || 0))}</strong><small>${euro.format(Number(labor.realizado || 0))} realizados de ${euro.format(Number(labor.orcamento || 0))}</small></article><article><span>SUBEMPREITADAS · COMPROMISSO</span><strong>${euro.format(Number(subcontract.compromisso_remanescente || 0))}</strong><small>${euro.format(Number(subcontract.custo_real || 0))} já faturados</small></article><article><span>CUSTOS ESTIMADOS</span><strong>${euro.format(Number(state.costSummary.total_estimado_remanescente || 0))}</strong><small>Atualização automática ao nível da obra</small></article></div>`;
   }
 
   function renderImportPanel() {
@@ -239,7 +263,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       return result;
     }, {});
     return `<div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></div>
-    ${renderImportPanel()}${renderEditor()}
+    ${renderCostSummary()}${renderImportPanel()}${renderEditor()}
     <div class="planning-gantt-title"><div><strong>GANTT EFETIVO</strong><span>Atualizado a partir da grelha acima</span></div></div>
     <div class="planning-grid planning-grid-head">
       <div>FASE / TAREFA</div><div>RESPONSÁVEL</div>${monthHead(scale)}<div>ESTADO</div>
@@ -429,7 +453,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       executado_por: value("executado_por") || null, data_inicio_prevista: value("data_inicio_prevista") || null,
       data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
       peso_percentual: parsedNumber(value("peso_percentual")), percentual_executado: parsedNumber(value("percentual_executado"), 0),
-      estado: value("estado"),
+      estado: value("estado"), custo_estado: value("custo_estado") || "orcamentado", item_orcamento_id: value("item_orcamento_id") || null,
+      valor_estimado: parsedNumber(value("valor_estimado")),
     };
     if (!payload.descricao) return toast("A descrição da tarefa é obrigatória.", "error");
     if (payload.data_inicio_prevista && payload.data_fim_prevista && payload.data_fim_prevista < payload.data_inicio_prevista) return toast("O fim previsto não pode ser anterior ao início.", "error");
@@ -451,6 +476,14 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const response = await supabase(`planeamento_itens?id=eq.${encodeURIComponent(itemId)}`, { method: "DELETE" });
     if (!response.ok) return toast(`Não foi possível remover a tarefa: ${await response.text()}`, "error");
     toast("Tarefa removida."); await load(state.workId);
+  }
+
+  async function confirmSubcontractCost(itemId) {
+    if (!confirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer o valor adjudicado como compromisso?")) return;
+    const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
+    if (!response.ok) return toast(`Não foi possível confirmar o compromisso: ${await response.text()}`, "error");
+    toast("Compromisso da subempreitada confirmado.");
+    await load(state.workId);
   }
 
   async function addDependency(itemId, select) {
@@ -564,7 +597,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     state.specialties = specialtiesResponse.ok ? await specialtiesResponse.json() : [];
     const phaseIds = state.phases.map(phase => phase.id);
     if (!phaseIds.length) {
-      state.items = []; state.dependencies = [];
+      state.items = []; state.dependencies = []; state.costs = new Map(); state.costSummary = {}; state.budgetItems = [];
     } else {
       const ids = phaseIds.map(encodeURIComponent).join(",");
       const itemsResponse = await supabase(`planeamento_itens?select=*&fase_id=in.(${ids})&order=codigo,criado_em`);
@@ -573,6 +606,11 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
         state.items = []; state.dependencies = [];
       } else {
         state.items = await itemsResponse.json();
+        const budgetResponse = await supabase(`itens_orcamento?select=*&fase_id=in.(${ids})`);
+        state.budgetItems = budgetResponse.ok ? await budgetResponse.json() : [];
+        const costsResponse = await supabase("rpc/fn_resumo_custos_estimados_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) });
+        state.costSummary = costsResponse.ok ? await costsResponse.json() : {};
+        state.costs = new Map((state.costSummary.pacotes || []).map(row => [String(row.planeamento_item_id), row]));
         const itemIds = state.items.map(item => item.id);
         if (itemIds.length) {
           const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);
@@ -593,6 +631,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
+    const confirmCost = event.target.closest("[data-confirm-subcontract-cost]"); if (confirmCost) { confirmSubcontractCost(confirmCost.dataset.confirmSubcontractCost); return; }
     const addDep = event.target.closest("[data-add-dependency]"); if (addDep) { addDependency(addDep.dataset.addDependency, addDep.closest("label")?.querySelector("select")); return; }
     const removeDep = event.target.closest("[data-remove-dependency]"); if (removeDep) { removeDependency(removeDep.dataset.removeDependency); return; }
     const confirmButton = event.target.closest("[data-confirm-import]"); if (confirmButton) { confirmImport(confirmButton); return; }

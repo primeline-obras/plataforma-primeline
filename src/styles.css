@@ -1194,7 +1194,7 @@ button, input, select, textarea,
 .planning-effective-toolbar button.primary { border-color: var(--brand-amber); background: var(--brand-amber); color: #20242b; }
 .planning-effective-toolbar > span { color: var(--text-muted); font-size: 9px; font-weight: 900; }
 .planning-editor-wrap { max-height: 520px; overflow: auto; border-bottom: 1px solid var(--card-border); }
-.planning-editor-head, .planning-editor-row { min-width: 1615px; display: grid; grid-template-columns: 160px 90px minmax(220px,1fr) 150px 125px 125px 125px 125px 85px 85px 135px 175px; }
+.planning-editor-head, .planning-editor-row { min-width: 2530px; display: grid; grid-template-columns: 160px 90px minmax(220px,1fr) 150px 150px 120px 125px 125px 125px 125px 85px 85px 135px 190px 190px 110px 280px 175px; }
 .planning-editor-head { position: sticky; z-index: 4; top: 0; min-height: 34px; background: var(--sidebar-bg); color: #fff; }
 .planning-editor-head span { padding: 10px 8px; border-right: 1px solid rgba(255,255,255,.09); font-size: 9px; font-weight: 900; letter-spacing: .5px; }
 .planning-editor-row { border-bottom: 1px solid var(--card-border); background: var(--card); }
@@ -1205,6 +1205,15 @@ button, input, select, textarea,
 .planning-editor-row > div:nth-of-type(1) button { flex: 1; border: 1px solid var(--info-border); background: var(--info-bg); color: var(--info-text); font-size: 9px; font-weight: 900; }
 .planning-editor-row > div:nth-of-type(1) button.remove { border-color: var(--neg-border); background: transparent; color: var(--neg-text); }
 .planning-editor-row > section { grid-column: 1 / -1; padding: 7px 10px; border-top: 1px dashed var(--card-border); }
+.planning-cost-summary { padding: 13px 18px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; background: var(--bg-soft); }
+.planning-cost-summary article { padding: 12px 14px; border: 1px solid var(--card-border); border-left: 3px solid var(--brand-amber); border-radius: 7px; background: var(--card); display: grid; gap: 4px; }
+.planning-cost-summary span { color: var(--text-muted); font-size: 9px; font-weight: 900; letter-spacing: .55px; }
+.planning-cost-summary strong { font-size: 18px; }.planning-cost-summary small { color: var(--text-muted); font-size: 9px; }
+.planning-cost-reference { min-width: 0; padding: 5px 8px; border-right: 1px solid var(--card-border); display: grid !important; gap: 1px !important; align-content: center; }
+.planning-cost-reference b,.planning-cost-reference span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; }
+.planning-cost-reference b { color: var(--text-primary); }.planning-cost-reference span { color: var(--text-muted); }
+.planning-cost-reference button { margin-top: 3px; min-height: 24px; border: 1px solid var(--brand-amber); border-radius: 4px; background: color-mix(in srgb,var(--brand-amber) 12%,var(--card)); color: var(--brand-amber); font-size: 7px; font-weight: 900; }
+@media (max-width: 900px) { .planning-cost-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 .planning-dependency-editor { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .planning-dependency-editor > div { display: flex; flex-wrap: wrap; gap: 5px; }
 .planning-dependency-editor > div span { padding: 4px 5px 4px 8px; border-radius: 999px; background: var(--bg-soft); color: var(--text-secondary); font-size: 9px; font-weight: 800; }
@@ -2349,6 +2358,6 @@ button, input, select, textarea,
 .cost-adjustments form .form-error { grid-column: 1 / -1; }
 @media (max-width: 720px) { .cost-trace-grid { grid-template-columns: 1fr; } .cost-trace-grid section + section { border-left: 0; border-top: 1px solid var(--card-border); } .cost-adjustments form { grid-template-columns: 1fr; } }
 
-/* Dados iniciais de conformidade RH na admissão */
+/* Dados iniciais de conformidade RH na admissï¿½o */
 .collaborator-rh-initial { margin: 4px 0 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-soft); display: grid; gap: 12px; }
 .collaborator-rh-initial legend { padding: 0 8px; color: var(--text-muted); font-size: 10px; font-weight: 850; letter-spacing: .8px; }
