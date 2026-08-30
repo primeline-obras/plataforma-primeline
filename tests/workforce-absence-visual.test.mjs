@@ -14,10 +14,10 @@ test("o quadro associa ausências à pessoa e ao dia da célula", () => {
 });
 
 test("férias, faltas justificadas e injustificadas têm marcações distintas", () => {
-  assert.match(styles, /absence-vacation[\s\S]*rgba\(217, 164, 65, \.42\)/);
+  assert.match(styles, /absence-vacation[\s\S]*rgba\(74, 85, 104, \.42\)/);
   assert.match(styles, /absence-justified[\s\S]*rgba\(107, 104, 95, \.36\)/);
   assert.match(styles, /absence-unjustified[\s\S]*rgba\(140, 74, 64, \.42\)/);
-  assert.match(styles, /workforce-absence-badge\.vacation[\s\S]*#d9a441/);
+  assert.match(styles, /workforce-absence-badge\.vacation[\s\S]*#4a5568[\s\S]*#f1efe8/);
   assert.match(styles, /workforce-absence-badge\.justified[\s\S]*#6b685f/);
   assert.match(styles, /workforce-absence-badge\.unjustified[\s\S]*#8c4a40/);
 });

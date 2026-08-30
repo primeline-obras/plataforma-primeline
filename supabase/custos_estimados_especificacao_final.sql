@@ -27,11 +27,20 @@ create or replace function public.fn_confirmar_compromisso_subempreitada(p_plane
 returns public.planeamento_itens language plpgsql security definer set search_path=public,pg_temp as $function$
 declare v_item public.planeamento_itens; v_obra_id uuid; v_sub public.subempreitadas; v_utilizador_id uuid;
 begin
-  select pi, fase.obra_id, s into v_item, v_obra_id, v_sub
-  from public.planeamento_itens pi join public.fases fase on fase.id=pi.fase_id
-  join public.subempreitadas s on s.id=pi.subempreitada_id
-  where pi.id=p_planeamento_item_id for update of pi;
+  select pi into v_item
+  from public.planeamento_itens pi
+  where pi.id=p_planeamento_item_id
+  for update;
   if not found then raise exception 'Tarefa/pacote de subempreitada não encontrado.'; end if;
+
+  select fase.obra_id into v_obra_id
+  from public.fases fase
+  where fase.id=v_item.fase_id;
+
+  select s.* into v_sub
+  from public.subempreitadas s
+  where s.id=v_item.subempreitada_id;
+  if not found then raise exception 'A tarefa não está associada a uma subempreitada.'; end if;
   if not public.fn_pode_editar_obra(v_obra_id) then raise exception 'Só a equipa técnica responsável pode confirmar este compromisso.'; end if;
   if lower(coalesce(v_sub.estado,'')) not in ('adjudicada','adjudicado','em_execucao','concluida','concluido') then raise exception 'A subempreitada ainda não está adjudicada.'; end if;
   select id into v_utilizador_id from public.utilizadores where auth_user_id=auth.uid() limit 1;
