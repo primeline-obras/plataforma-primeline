@@ -256,7 +256,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <output>${dayDeviation(metrics.startDays)}</output><output>${dayDeviation(metrics.endDays)}</output>
       <output>${escapeHtml(metrics.comparison)}</output><output><em class="${metrics.classification.key}">${metrics.classification.label}</em></output>
       <div><button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button></div>
-      <section class="planning-editor-details"><label>FASE<select name="fase_id">${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}"></label><label>ESTADO CUSTO<select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>ESTIMADO €<input name="valor_estimado" type="number" min="0" step="0.01" value="${item.valor_estimado ?? ""}" placeholder="0,00"></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<button type="button" data-confirm-subcontract-cost="${item.id}">CONFIRMAR REMOÇÃO DA ESTIMATIVA</button>` : ""}</div>${renderDependencies(item)}</section>
+      <section class="planning-editor-details"><label>FASE<select name="fase_id">${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}"></label><label>ESTADO CUSTO<select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00"></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}</div>${renderDependencies(item)}</section>
     </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</section>`;
     }).join("")}</div>`;
   }
@@ -496,7 +496,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
       peso_percentual: parsedNumber(value("peso_percentual")), percentual_executado: parsedNumber(value("percentual_executado"), 0),
       estado: value("estado"), custo_estado: value("custo_estado") || "orcamentado", item_orcamento_id: value("item_orcamento_id") || null,
-      valor_estimado: parsedNumber(value("valor_estimado")), causa_atraso: value("causa_atraso").trim() || null,
+      valor_orca_pl: parsedNumber(value("valor_orca_pl")), valor_estimado: parsedNumber(value("valor_orca_pl")), causa_atraso: value("causa_atraso").trim() || null,
       impacto: value("impacto").trim() || null,
     };
     if (!payload.descricao) return toast("A descrição da tarefa é obrigatória.", "error");
@@ -519,14 +519,6 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const response = await supabase(`planeamento_itens?id=eq.${encodeURIComponent(itemId)}`, { method: "DELETE" });
     if (!response.ok) return toast(`Não foi possível remover a tarefa: ${await response.text()}`, "error");
     toast("Tarefa removida."); await load(state.workId);
-  }
-
-  async function confirmSubcontractCost(itemId) {
-    if (!confirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer o valor adjudicado como compromisso?")) return;
-    const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
-    if (!response.ok) return toast(`Não foi possível confirmar o compromisso: ${await response.text()}`, "error");
-    toast("Compromisso da subempreitada confirmado.");
-    await load(state.workId);
   }
 
   async function addDependency(itemId, select) {
@@ -656,7 +648,6 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
-    const confirmCost = event.target.closest("[data-confirm-subcontract-cost]"); if (confirmCost) { confirmSubcontractCost(confirmCost.dataset.confirmSubcontractCost); return; }
     const addDep = event.target.closest("[data-add-dependency]"); if (addDep) { addDependency(addDep.dataset.addDependency, addDep.closest("label")?.querySelector("select")); return; }
     const removeDep = event.target.closest("[data-remove-dependency]"); if (removeDep) { removeDependency(removeDep.dataset.removeDependency); return; }
     const confirmButton = event.target.closest("[data-confirm-import]"); if (confirmButton) { confirmImport(confirmButton); return; }

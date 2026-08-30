@@ -789,20 +789,25 @@ export function createProductionDashboard(options) {
   const canAdjustWorkCosts = () => ["gerencia", "diretor_obra", "adjunto", "preparador"]
     .includes(getAccessContext()?.role || "");
 
-  function renderCostTrace(model) {
+  function renderCostTrace(model, editable = true) {
     const summary = model.costSummary;
     const real = summary.real || {};
     const remaining = summary.por_concluir || {};
     const adjustments = summary.ajustes || [];
+    const components = summary.componentes || {};
+    const packages = components.pacotes || [];
+    const canEdit = editable && canAdjustWorkCosts();
     return `<details class="cost-trace" open><summary>COMPOSIÇÃO AUDITÁVEL DO CUSTO</summary>
+      ${components.formula ? `<div class="cost-trace-formula"><span>FÓRMULA APLICADA</span><strong>${escapeHtml(components.formula)}</strong><dl><div><dt>CUSTO REAL</dt><dd>${euro.format(number(components.custo_real_total))}</dd></div><div><dt>CUSTOS ESTIMADOS</dt><dd>${euro.format(number(components.custos_estimados_total))}</dd></div><div><dt>COMPROMISSO</dt><dd>${euro.format(number(components.compromisso_total))}</dd></div></dl></div>` : ""}
       <div class="cost-trace-grid">
-        <section><strong>REAL ACUMULADO</strong><span>Materiais <b>${euro.format(number(real.materiais))}</b></span><span>Mão de obra <b>${euro.format(number(real.mao_obra))}</b></span><span>Estaleiro <b>${euro.format(number(real.estaleiro))}</b></span><span>Subempreitadas pagas <b>${euro.format(number(real.subempreitadas))}</b></span><em>Total ${euro.format(number(real.total))}</em></section>
-        <section><strong>POR CONCLUIR</strong><span>Subempreitadas adjudicadas <b>${euro.format(number(remaining.subempreitadas))}</b></span><span>TEEs aprovados <b>${euro.format(number(remaining.tees))}</b></span><span>Orçamento não contratado <b>${euro.format(number(remaining.orcamento_nao_contratado))}</b></span><em>Total ${euro.format(number(remaining.total))}</em></section>
+        <section><strong>REAL ACUMULADO</strong><span>PL confirmado <b>${euro.format(number(components.pl_real))}</b></span><span>Subempreitadas pagas <b>${euro.format(number(components.sub_real))}</b></span><span>Estaleiro registado <b>${euro.format(number(real.estaleiro))}</b></span><em>Total reconhecido ${euro.format(number(components.custo_real_total || real.total))}</em></section>
+        <section><strong>POR CONCLUIR / COMPROMETIDO</strong><span>PL · valor Orca <b>${euro.format(number(components.pl_estimado))}</b></span><span>Adjudicações por confirmar <b>${euro.format(number(components.sub_estimado))}</b></span><span>Compromisso confirmado <b>${euro.format(number(components.compromisso_total))}</b></span><em>Estimado ${euro.format(number(components.custos_estimados_total || remaining.total))}</em></section>
       </div>
+      ${packages.length ? `<div class="cost-component-list"><header><strong>COMPONENTES POR PACOTE / ESPECIALIDADE</strong><span>PL e subempreitada tratados separadamente</span></header>${packages.map(row => `<article><div class="cost-component-title"><strong>${escapeHtml(row.codigo || "SEM CÓDIGO")} · ${escapeHtml(row.descricao || "Pacote")}</strong><span>${escapeHtml(String(row.executado_por || "por definir").toUpperCase())}</span></div><dl><div><dt>ORCA PL</dt><dd>${euro.format(number(row.valor_orca_pl))}</dd></div><div><dt>REAL PL</dt><dd>${euro.format(number(row.valor_real_pl))}</dd></div><div><dt>ADJUDICADO</dt><dd>${euro.format(number(row.valor_adjudicado))}</dd></div><div><dt>FATURADO / PAGO</dt><dd>${number(row.percentual_faturado).toFixed(1)}% / ${number(row.percentual_pago).toFixed(1)}%</dd></div></dl>${row.pl_confirmacao_pendente ? (canEdit ? `<form data-confirm-pl-cost data-item-id="${row.planeamento_item_id}"><label>VALOR REAL PL (€)<input name="valor_real" type="number" min="0" step="0.01" value="${number(row.valor_orca_pl).toFixed(2)}" required></label><button class="secondary-button" type="submit">CONFIRMAR PL CONCLUÍDO</button><p class="form-error"></p></form>` : '<p class="cost-decision-pending">PL concluído · confirmação pendente no ecrã da obra</p>') : ""}${row.sub_confirmacao_pendente ? (canEdit ? `<button class="secondary-button" type="button" data-confirm-sub-cost="${row.planeamento_item_id}">CONFIRMAR ADJUDICAÇÃO</button>` : '<p class="cost-decision-pending">Adjudicação pendente de confirmação no ecrã da obra</p>') : ""}</article>`).join("")}</div>` : ""}
       ${number(summary.lancamentos_sem_apropriacao) ? `<div class="cost-trace-warning"><strong>${number(summary.lancamentos_sem_apropriacao)} LANÇAMENTOS SEM APROPRIAÇÃO</strong><span>Contam no realizado, mas ainda não indicam TEE/artigo de origem. Não foram abatidos por inferência.</span></div>` : ""}
       <div class="cost-adjustments"><header><strong>AJUSTES MANUAIS JUSTIFICADOS</strong><span>${euro.format(number(summary.ajustes_total))}</span></header>
-        ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${canAdjustWorkCosts() ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
-        ${canAdjustWorkCosts() ? `<form data-cost-adjustment><label>VALOR (€)<input name="valor" type="number" step="0.01" required></label><label>MOTIVO OBRIGATÓRIO<input name="motivo" minlength="3" required placeholder="Explique a origem do ajuste"></label><button class="secondary-button" type="submit">REGISTAR AJUSTE</button><p class="form-error"></p></form>` : ""}
+        ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${canEdit ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
+        ${canEdit ? `<form data-cost-adjustment><label>VALOR (€)<input name="valor" type="number" step="0.01" required></label><label>MOTIVO OBRIGATÓRIO<input name="motivo" minlength="3" required placeholder="Explique a origem do ajuste"></label><button class="secondary-button" type="submit">REGISTAR AJUSTE</button><p class="form-error"></p></form>` : ""}
       </div>
     </details>`;
   }
@@ -1027,6 +1032,9 @@ export function createProductionDashboard(options) {
       const costResponse = await supabase("rpc/fn_resumo_custos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) });
       if (costResponse.ok) costSummary = await costResponse.json();
       else warnings.push("Custos automáticos: execute a migração custos_obra_automaticos.sql");
+      const componentsResponse = await supabase("rpc/fn_resumo_componentes_custo_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) });
+      if (componentsResponse.ok) costSummary = { ...(costSummary || {}), componentes: await componentsResponse.json() };
+      else warnings.push("Componentes de custo: execute a migração custos_estimados_consolidado.sql");
     }
     return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
   }
@@ -1061,6 +1069,35 @@ export function createProductionDashboard(options) {
     await openMeeting(meetingState.work.id, meetingReturnView);
   }
 
+  async function confirmPlCost(form) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const button = form.querySelector('[type="submit"]');
+    const error = form.querySelector(".form-error");
+    button.disabled = true;
+    error.textContent = "";
+    const response = await supabase("rpc/fn_confirmar_custo_real_pl", {
+      method: "POST",
+      body: JSON.stringify({ p_planeamento_item_id: form.dataset.itemId, p_valor_real: number(new FormData(form).get("valor_real")) }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      error.textContent = detail.message || "Não foi possível confirmar o custo real PL.";
+      button.disabled = false;
+      return;
+    }
+    toast("Custo real PL confirmado e auditado.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
+  }
+
+  async function confirmSubcontractCost(itemId, button) {
+    if (!meetingState || !canAdjustWorkCosts() || !confirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer a adjudicação como compromisso?")) return;
+    button.disabled = true;
+    const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
+    if (!response.ok) return toast(`Não foi possível confirmar a adjudicação: ${await response.text()}`, "error");
+    toast("Adjudicação confirmada como compromisso.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
+  }
+
   async function openMeeting(workId, returnView = "overview") {
     const work = getWorks().find(item => item.id === workId);
     if (!work) return;
@@ -1077,7 +1114,7 @@ export function createProductionDashboard(options) {
       work, data, warnings, investmentMode, approvedTees, pendingTees, impacts,
       totalSale, directCost, approvedTeeCost, expectedMargin, initialBudget, revisedBudget,
       actualCost, investmentDeviation, billed, billingPercent, execution, deadline,
-      paidBySubcontract, notConsulted,
+      paidBySubcontract, notConsulted, projection,
     } = model;
     const paidTotal = [...paidBySubcontract.values()].reduce((total, value) => total + number(value), 0);
     const openConsultations = data.consultations.filter(row => row.estado === "em_consulta").length;
@@ -1109,6 +1146,7 @@ export function createProductionDashboard(options) {
           <div><span>SUBEMPREITADAS</span><strong>${data.subcontracts.length}</strong><small>pago ${euro.format(paidTotal)}</small></div>
           <div><span>EM CONSULTA / NÃO CONSULTADAS</span><strong>${openConsultations} / ${notConsulted.length}</strong><small>situação atual</small></div>
         </div>
+        ${projection.costSummary ? renderCostTrace(projection, false) : ""}
         <details class="rsp-detail"><summary>CASH FLOW MENSAL</summary>${renderCashFlow(work, data)}</details>
         <details class="rsp-detail"><summary>PLANEAMENTO DE FASES</summary>${renderPhaseTimeline(work, data)}</details>
       </article>`;
@@ -1179,12 +1217,16 @@ export function createProductionDashboard(options) {
       if (meetingButton) openMeeting(meetingButton.dataset.rspOpenMeeting, "rsp");
     });
     document.querySelector("#meeting-view")?.addEventListener("submit", event => {
-      const form = event.target.closest("[data-cost-adjustment]");
-      if (form) { event.preventDefault(); saveCostAdjustment(form); }
+      const adjustment = event.target.closest("[data-cost-adjustment]");
+      if (adjustment) { event.preventDefault(); saveCostAdjustment(adjustment); return; }
+      const plCost = event.target.closest("[data-confirm-pl-cost]");
+      if (plCost) { event.preventDefault(); confirmPlCost(plCost); }
     });
     document.querySelector("#meeting-view")?.addEventListener("click", event => {
       const button = event.target.closest("[data-delete-cost-adjustment]");
-      if (button) deleteCostAdjustment(button.dataset.deleteCostAdjustment, button);
+      if (button) { deleteCostAdjustment(button.dataset.deleteCostAdjustment, button); return; }
+      const subcontract = event.target.closest("[data-confirm-sub-cost]");
+      if (subcontract) confirmSubcontractCost(subcontract.dataset.confirmSubCost, subcontract);
     });
   }
 

@@ -2348,6 +2348,13 @@ button, input, select, textarea,
 @media (max-width: 620px) { .project-summary { grid-template-columns: 1fr; } .project-summary > div + div { border-left: 0; border-top: 1px solid var(--card-border); } .project-detail > header { align-items: start; flex-direction: column; } .project-stage dl { grid-template-columns: 1fr; } }
 .cost-trace { margin-top: 14px; border: 1px solid var(--card-border); border-radius: 10px; overflow: hidden; background: var(--bg-soft); }
 .cost-trace > summary { padding: 13px 15px; color: var(--text-primary); font: 800 10px "Manrope"; letter-spacing: .7px; cursor: pointer; }
+.cost-trace-formula { padding: 14px 15px; border-top: 1px solid var(--card-border); background: #eef1f4; display: grid; gap: 8px; }
+.cost-trace-formula > span { color: #4a5568; font: 800 9px "Manrope"; letter-spacing: .7px; }
+.cost-trace-formula > strong { color: var(--text-primary); font-size: 11px; line-height: 1.45; }
+.cost-trace-formula dl, .cost-component-list dl { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cost-trace-formula dl div, .cost-component-list dl div { padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--card-bg); display: grid; gap: 3px; }
+.cost-trace-formula dt, .cost-component-list dt { color: var(--text-muted); font: 800 9px "Manrope"; letter-spacing: .45px; }
+.cost-trace-formula dd, .cost-component-list dd { margin: 0; color: var(--text-primary); font: 800 11px "Manrope"; }
 .cost-trace-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--card-border); }
 .cost-trace-grid section { padding: 14px 15px; display: grid; gap: 8px; }
 .cost-trace-grid section + section { border-left: 1px solid var(--card-border); }
@@ -2357,6 +2364,18 @@ button, input, select, textarea,
 .cost-trace-warning { margin: 0 14px 14px; padding: 10px 12px; border-left: 3px solid var(--attention-text); border-radius: 7px; background: var(--attention-bg); display: grid; gap: 4px; }
 .cost-trace-warning strong { color: var(--attention-text); font-size: 9px; letter-spacing: .6px; }
 .cost-trace-warning span { color: var(--text-secondary); font-size: 11px; line-height: 1.4; }
+.cost-component-list { margin: 0 14px 14px; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden; background: var(--card-bg); }
+.cost-component-list > header { padding: 10px 12px; background: #4a5568; color: #f1efe8; display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.cost-component-list > header strong { font: 800 9px "Manrope"; letter-spacing: .65px; }
+.cost-component-list > header span { font-size: 9px; }
+.cost-component-list article { padding: 11px 12px; display: grid; gap: 9px; border-top: 1px solid var(--card-border); }
+.cost-component-list article:first-of-type { border-top: 0; }
+.cost-component-title { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.cost-component-title strong { color: var(--text-primary); font-size: 11px; }
+.cost-component-title span, .cost-decision-pending { color: #4a5568; font: 800 9px "Manrope"; letter-spacing: .4px; }
+.cost-component-list article form { display: grid; grid-template-columns: minmax(150px, .55fr) auto; gap: 8px; align-items: end; }
+.cost-component-list article form label { display: grid; gap: 4px; color: var(--text-muted); font: 800 9px "Manrope"; }
+.cost-component-list article form input { min-height: 36px; border: 1px solid var(--card-border); border-radius: 7px; padding: 0 9px; }
 .cost-adjustments { border-top: 1px solid var(--card-border); padding: 14px; display: grid; gap: 8px; }
 .cost-adjustments > header { display: flex; justify-content: space-between; gap: 12px; font-size: 10px; }
 .cost-adjustments article { padding: 9px 11px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; }
@@ -2366,7 +2385,7 @@ button, input, select, textarea,
 .cost-adjustments form label { display: grid; gap: 5px; color: var(--text-muted); font: 800 9px "Manrope"; letter-spacing: .6px; }
 .cost-adjustments form input { min-height: 38px; padding: 0 10px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--text-primary); }
 .cost-adjustments form .form-error { grid-column: 1 / -1; }
-@media (max-width: 720px) { .cost-trace-grid { grid-template-columns: 1fr; } .cost-trace-grid section + section { border-left: 0; border-top: 1px solid var(--card-border); } .cost-adjustments form { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .cost-trace-grid, .cost-trace-formula dl, .cost-component-list dl { grid-template-columns: 1fr; } .cost-trace-grid section + section { border-left: 0; border-top: 1px solid var(--card-border); } .cost-adjustments form, .cost-component-list article form { grid-template-columns: 1fr; } }
 
 /* Dados iniciais de conformidade RH na admiss�o */
 .collaborator-rh-initial { margin: 4px 0 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-soft); display: grid; gap: 12px; }
