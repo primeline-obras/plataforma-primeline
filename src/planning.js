@@ -521,6 +521,14 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     toast("Tarefa removida."); await load(state.workId);
   }
 
+  async function confirmSubcontractCost(itemId) {
+    if (!confirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer o valor adjudicado como compromisso?")) return;
+    const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
+    if (!response.ok) return toast(`Não foi possível confirmar o compromisso: ${await response.text()}`, "error");
+    toast("Compromisso da subempreitada confirmado.");
+    await load(state.workId);
+  }
+
   async function addDependency(itemId, select) {
     if (!select?.value) return toast("Escolha a tarefa predecessora.", "error");
     const response = await supabase("planeamento_itens_dependencias", { method: "POST", body: JSON.stringify({ item_id: itemId, depende_de_item_id: select.value, tipo: "fim_inicio", atraso_dias: 0 }) });
@@ -648,6 +656,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
+    const confirmCost = event.target.closest("[data-confirm-subcontract-cost]"); if (confirmCost) { confirmSubcontractCost(confirmCost.dataset.confirmSubcontractCost); return; }
     const addDep = event.target.closest("[data-add-dependency]"); if (addDep) { addDependency(addDep.dataset.addDependency, addDep.closest("label")?.querySelector("select")); return; }
     const removeDep = event.target.closest("[data-remove-dependency]"); if (removeDep) { removeDependency(removeDep.dataset.removeDependency); return; }
     const confirmButton = event.target.closest("[data-confirm-import]"); if (confirmButton) { confirmImport(confirmButton); return; }
