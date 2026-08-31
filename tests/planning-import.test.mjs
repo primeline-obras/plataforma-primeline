@@ -29,13 +29,19 @@ test("datas calculadas das vistas de resumo e controlo são apresentáveis", () 
   assert.equal(isoDate("2026-08-05"), "2026-08-05");
 });
 
-test("planeamento inicial e resumo por fase têm grelhas visuais completas", () => {
+test("a aba única mantém o Gantt por fase e a grelha detalhada", () => {
+  assert.match(planning, /function renderUnifiedPlanning\(\)/);
+  assert.match(planning, /GANTT POR FASE/);
+  assert.match(planning, /GRELHA DETALHADA/);
+  assert.doesNotMatch(planning, /<aside class="planning-layer-nav"/);
   assert.match(planningStyles, /\.planning-baseline-head,\s*\.planning-baseline-row/);
   assert.match(planningStyles, /\.planning-baseline-track\s*>\s*i/);
   assert.match(planningStyles, /\.planning-summary-kpis/);
   assert.match(planningStyles, /\.planning-summary-head,\s*\.planning-summary-row/);
   assert.match(planningStyles, /\.planning-summary-track\s*>\s*i\.baseline/);
   assert.match(planningStyles, /\.planning-summary-track\s*>\s*i\.effective/);
+  assert.match(planningStyles, /\.planning-editor-phase\s*>\s*header/);
+  ["% PONDERADA", "CAUSA DO ATRASO", "IMPACTO", "DESVIO INÍCIO", "DESVIO FIM", "COMPARAÇÃO DE PRAZO", "CLASSIFICAÇÃO"].forEach(label => assert.ok(planning.includes(label), `falta ${label}`));
 });
 
 test("o planeamento oferece pré-visualização, criação, atualização e dependências", () => {
@@ -52,8 +58,7 @@ test("o planeamento oferece pré-visualização, criação, atualização e depe
   assert.match(planning, /baseline-real/);
   assert.match(planning, /planned-real/);
   assert.match(planning, /ATRASO CRÍTICO/);
-  assert.match(planning, /querySelectorAll\("\[data-planning-view\]"\)/);
-  assert.match(planning, /state\.view\s*=\s*button\.dataset\.planningView/);
+  assert.match(planning, /function taskDeviation\(item\)/);
   assert.match(planning, /value\s+instanceof\s+Date/);
   assert.match(planning, /value\.toISOString\(\)\.slice\(0,\s*10\)/);
   assert.match(planning, /data-confirm-import/);

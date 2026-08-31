@@ -32,6 +32,19 @@ function displayDate(value) {
   return date ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeZone: "UTC" }).format(date) : "—";
 }
 
+const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
+
+function costStateLabel(value) {
+  return {
+    orcamentado: "Orçamentado / Não Comprometido",
+    em_consulta: "Em Consulta",
+    adjudicado: "Adjudicado",
+    em_execucao: "Em Execução",
+    concluido: "Concluído",
+    cancelado: "Cancelado",
+  }[value] || "Orçamentado / Não Comprometido";
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
@@ -62,7 +75,7 @@ function isPastDay(date, today = new Date()) {
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, toast }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
-    expanded: new Set(), loaded: false, view: "effective",
+    expanded: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
   };
 
@@ -197,26 +210,62 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       ${item._new ? "" : `<label><select data-dependency-choice><option value="">Esta tarefa depende de…</option>${dependencyOptions(item)}</select><button type="button" data-add-dependency="${item.id}">LIGAR</button></label>`}</div>`;
   }
 
+  function taskDeviation(item) {
+    const baselineStart = dateValue(baselineDate(item, "start"));
+    const baselineEnd = dateValue(baselineDate(item, "end"));
+    const currentStart = dateValue(item.data_inicio_prevista);
+    const currentEnd = dateValue(item.data_fim_real || item.data_fim_prevista);
+    const startDays = baselineStart && currentStart ? daysBetween(baselineStart, currentStart) : null;
+    const endDays = baselineEnd && currentEnd ? daysBetween(baselineEnd, currentEnd) : null;
+    const worstDays = startDays === null && endDays === null ? null : Math.max(startDays ?? -Infinity, endDays ?? -Infinity);
+    const classification = controlClassification(worstDays);
+    const comparison = worstDays === null ? "Sem dados para comparação"
+      : worstDays < 0 ? `Adiantado — ${Math.abs(worstDays)} dias`
+      : worstDays === 0 ? "Sem alteração"
+      : `${classification.label.charAt(0)}${classification.label.slice(1).toLocaleLowerCase("pt-PT")} — ${worstDays} dias`;
+    return { startDays, endDays, worstDays, classification, comparison };
+  }
+
+  function dayDeviation(value) {
+    return value === null ? "—" : `${value > 0 ? "+" : ""}${value}`;
+  }
+
   function renderEditor() {
     return `<div class="planning-editor-wrap"><div class="planning-editor-head">
-      <span>FASE</span><span>CÓDIGO</span><span>DESCRIÇÃO</span><span>RESPONSÁVEL</span><span>ESPECIALIDADE</span><span>EXECUTADO POR</span><span>INÍCIO PREV.</span><span>FIM PREV.</span><span>INÍCIO REAL</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>ESTADO</span><span>AÇÕES</span>
-    </div>${state.items.map(item => `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
-      <select name="fase_id">${phaseOptions(item.fase_id)}</select>
+      <span>CÓDIGO</span><span>DESCRIÇÃO / TRABALHOS</span><span>RESPONSÁVEL</span><span>DATA INÍCIO</span><span>FIM PREV.</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>% PONDERADA</span><span>ESTADO</span><span>CAUSA DO ATRASO</span><span>IMPACTO</span><span>DESVIO INÍCIO</span><span>DESVIO FIM</span><span>COMPARAÇÃO DE PRAZO</span><span>CLASSIFICAÇÃO</span><span>AÇÕES</span>
+    </div>${state.phases.map(phase => {
+      const phaseItems = state.items.filter(item => item.fase_id === phase.id);
+      return `<section class="planning-editor-phase"><header><strong>${escapeHtml(phase.codigo || "—")}</strong><span>${escapeHtml(phase.descricao || "FASE")}</span><b>${phaseItems.length} ${phaseItems.length === 1 ? "TAREFA" : "TAREFAS"}</b></header>${phaseItems.map(item => {
+      const cost = state.costs.get(String(item.id)) || item;
+      const metrics = taskDeviation(item);
+      const weighted = Number(item.peso_percentual || 0) * Number(item.percentual_executado || 0) / 100;
+      const status = visualState(item);
+      return `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
       <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1">
       <input name="descricao" value="${escapeHtml(item.descricao || "")}" placeholder="Descrição da tarefa">
       <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável">
-      <select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select>
-      <select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option></select>
       <input name="data_inicio_prevista" type="date" value="${isoDate(item.data_inicio_prevista)}">
       <input name="data_fim_prevista" type="date" value="${isoDate(item.data_fim_prevista)}">
-      <input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}">
       <input name="data_fim_real" type="date" value="${isoDate(item.data_fim_real)}">
       <input name="peso_percentual" type="number" min="0" step="0.01" value="${item.peso_percentual ?? ""}">
       <input name="percentual_executado" type="number" min="0" max="100" step="1" value="${item.percentual_executado ?? 0}">
+      <output>${weighted.toFixed(2)}%</output>
       <select name="estado"><option value="por_iniciar" ${item.estado === "por_iniciar" ? "selected" : ""}>Por iniciar</option><option value="em_execucao" ${item.estado === "em_execucao" ? "selected" : ""}>Em execução</option><option value="concluido" ${item.estado === "concluido" ? "selected" : ""}>Concluído</option></select>
+      <input name="causa_atraso" value="${escapeHtml(item.causa_atraso || "")}" placeholder="Sem causa registada">
+      <input name="impacto" value="${escapeHtml(item.impacto || "")}" placeholder="Sem impacto registado">
+      <output>${dayDeviation(metrics.startDays)}</output><output>${dayDeviation(metrics.endDays)}</output>
+      <output>${escapeHtml(metrics.comparison)}</output><output><em class="${metrics.classification.key}">${metrics.classification.label}</em></output>
       <div><button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button></div>
-      <section>${renderDependencies(item)}</section>
-    </article>`).join("")}</div>`;
+      <section class="planning-editor-details"><label>FASE<select name="fase_id">${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}"></label><label>ESTADO CUSTO<select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>ESTIMADO €<input name="valor_estimado" type="number" min="0" step="0.01" value="${item.valor_estimado ?? ""}" placeholder="0,00"></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<button type="button" data-confirm-subcontract-cost="${item.id}">CONFIRMAR REMOÇÃO DA ESTIMATIVA</button>` : ""}</div>${renderDependencies(item)}</section>
+    </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</section>`;
+    }).join("")}</div>`;
+  }
+
+  function renderCostSummary() {
+    const material = state.costSummary.materiais || {};
+    const labor = state.costSummary.mao_obra || {};
+    const subcontract = state.costSummary.subempreitadas || {};
+    return `<div class="planning-cost-summary"><article><span>MATERIAIS · ESTIMADO REMANESCENTE</span><strong>${euro.format(Number(material.estimado_remanescente || 0))}</strong><small>${euro.format(Number(material.realizado || 0))} realizados de ${euro.format(Number(material.orcamento || 0))}</small></article><article><span>MÃO DE OBRA · ESTIMADO REMANESCENTE</span><strong>${euro.format(Number(labor.estimado_remanescente || 0))}</strong><small>${euro.format(Number(labor.realizado || 0))} realizados de ${euro.format(Number(labor.orcamento || 0))}</small></article><article><span>SUBEMPREITADAS · COMPROMISSO</span><strong>${euro.format(Number(subcontract.compromisso_remanescente || 0))}</strong><small>${euro.format(Number(subcontract.custo_real || 0))} já faturados</small></article><article><span>CUSTOS ESTIMADOS</span><strong>${euro.format(Number(state.costSummary.total_estimado_remanescente || 0))}</strong><small>Atualização automática ao nível da obra</small></article></div>`;
   }
 
   function renderImportPanel() {
@@ -239,7 +288,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       return result;
     }, {});
     return `<div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></div>
-    ${renderImportPanel()}${renderEditor()}
+    ${renderCostSummary()}${renderImportPanel()}${renderEditor()}
     <div class="planning-gantt-title"><div><strong>GANTT EFETIVO</strong><span>Atualizado a partir da grelha acima</span></div></div>
     <div class="planning-grid planning-grid-head">
       <div>FASE / TAREFA</div><div>RESPONSÁVEL</div>${monthHead(scale)}<div>ESTADO</div>
@@ -289,6 +338,12 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
           }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}
         </section>`;
       }).join("")}</div>`;
+  }
+
+  function renderBaselineNotice() {
+    return state.work?.planeamento_baseline_congelado
+      ? `<div class="planning-baseline-notice frozen"><strong>BASELINE CONGELADA</strong><span>Datas originais preservadas em ${displayDate(state.work?.planeamento_baseline_congelado_em)}.</span></div>`
+      : `<div class="planning-baseline-notice pending"><strong>BASELINE AINDA NÃO CONGELADA</strong><span>Até ao congelamento automático aos 30 dias, a comparação usa as datas previstas atuais.</span></div>`;
   }
 
   function deviation(windowBaseline, windowEffective) {
@@ -364,6 +419,15 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     </div>`;
   }
 
+  function renderUnifiedPlanning() {
+    return `${renderBaselineNotice()}
+      <section class="planning-unified-gantt"><header><div><p class="eyebrow">GANTT POR FASE</p><h3>Baseline original × execução atual</h3></div><div class="planning-legend"><span><i class="done"></i>DENTRO DO PRAZO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="late"></i>ATRASADO</span></div></header>${renderSummary()}</section>
+      <section class="planning-unified-detail"><header><div><p class="eyebrow">GRELHA DETALHADA</p><h3>Tarefas agrupadas por fase</h3></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></header>
+        <div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div></div>
+        ${renderCostSummary()}${renderImportPanel()}${renderEditor()}
+      </section>`;
+  }
+
   function viewMeta() {
     return {
       baseline: ["PLANEAMENTO INICIAL", "Baseline contratual apenas para consulta"],
@@ -388,6 +452,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       data_inicio_prevista: ["data inicio", "inicio", "data inicio prevista"], data_fim_prevista: ["data fim prevista", "fim previsto"],
       data_inicio_real: ["data inicio real", "inicio real"], data_fim_real: ["data fim real", "fim real"], peso_percentual: ["peso %", "peso", "peso percentual"],
       percentual_executado: ["% executado", "executado %", "percentual executado", "execucao %"], estado: ["estado"], fase: ["fase"],
+      causa_atraso: ["causa do atraso", "causa atraso"], impacto: ["impacto"],
     };
     const positions = Object.fromEntries(Object.entries(aliases).map(([field, names]) => [field, headers.findIndex(header => names.includes(header))]));
     if (positions.codigo < 0 || positions.descricao < 0) errors.push("Os cabeçalhos Código e Descrição são obrigatórios.");
@@ -402,7 +467,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
         fase_id: phase?.id, codigo, descricao, responsavel: String(get("responsavel") || "").trim() || null,
         data_inicio_prevista: parsedDate(get("data_inicio_prevista")), data_fim_prevista: parsedDate(get("data_fim_prevista")),
         data_inicio_real: parsedDate(get("data_inicio_real")), data_fim_real: parsedDate(get("data_fim_real")), peso_percentual: parsedNumber(get("peso_percentual")),
-        percentual_executado: progress, estado: parsedState(get("estado"), progress),
+        percentual_executado: progress, estado: parsedState(get("estado"), progress), causa_atraso: String(get("causa_atraso") || "").trim() || null,
+        impacto: String(get("impacto") || "").trim() || null,
       };
       const rowErrors = [];
       if (!codigo) rowErrors.push("Código em falta");
@@ -429,7 +495,9 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       executado_por: value("executado_por") || null, data_inicio_prevista: value("data_inicio_prevista") || null,
       data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
       peso_percentual: parsedNumber(value("peso_percentual")), percentual_executado: parsedNumber(value("percentual_executado"), 0),
-      estado: value("estado"),
+      estado: value("estado"), custo_estado: value("custo_estado") || "orcamentado", item_orcamento_id: value("item_orcamento_id") || null,
+      valor_estimado: parsedNumber(value("valor_estimado")), causa_atraso: value("causa_atraso").trim() || null,
+      impacto: value("impacto").trim() || null,
     };
     if (!payload.descricao) return toast("A descrição da tarefa é obrigatória.", "error");
     if (payload.data_inicio_prevista && payload.data_fim_prevista && payload.data_fim_prevista < payload.data_inicio_prevista) return toast("O fim previsto não pode ser anterior ao início.", "error");
@@ -451,6 +519,14 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const response = await supabase(`planeamento_itens?id=eq.${encodeURIComponent(itemId)}`, { method: "DELETE" });
     if (!response.ok) return toast(`Não foi possível remover a tarefa: ${await response.text()}`, "error");
     toast("Tarefa removida."); await load(state.workId);
+  }
+
+  async function confirmSubcontractCost(itemId) {
+    if (!confirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer o valor adjudicado como compromisso?")) return;
+    const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
+    if (!response.ok) return toast(`Não foi possível confirmar o compromisso: ${await response.text()}`, "error");
+    toast("Compromisso da subempreitada confirmado.");
+    await load(state.workId);
   }
 
   async function addDependency(itemId, select) {
@@ -493,18 +569,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       content.innerHTML = `<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não possui fases configuradas.</span></div>`;
       return;
     }
-    const [title, description] = viewMeta();
-    const body = state.view === "baseline" ? renderBaseline() : state.view === "summary" ? renderSummary() : state.view === "control" ? renderControl() : renderEffective();
-    content.innerHTML = `<div class="planning-module-shell">
-      <aside class="planning-layer-nav" aria-label="Camadas do planeamento">
-        <span>CAMADAS</span>
-        <button type="button" data-planning-view="baseline" class="${state.view === "baseline" ? "active" : ""}"><b>01</b><span>PLANEAMENTO INICIAL<small>Baseline original</small></span></button>
-        <button type="button" data-planning-view="effective" class="${state.view === "effective" ? "active" : ""}"><b>02</b><span>PLANEAMENTO EFETIVO<small>Execução atual</small></span></button>
-        <button type="button" data-planning-view="summary" class="${state.view === "summary" ? "active" : ""}"><b>03</b><span>RESUMO POR FASE<small>Desvios agregados</small></span></button>
-        <button type="button" data-planning-view="control" class="${state.view === "control" ? "active" : ""}"><b>04</b><span>CONTROLO<small>Classificação dos desvios</small></span></button>
-      </aside>
-      <section class="planning-layer-content"><header><div><p class="eyebrow">${title}</p><h2>${description}</h2></div>${state.view === "effective" ? `<div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span><span><i class="late"></i>EM ATRASO</span></div>` : ""}</header>${body}</section>
-    </div>`;
+    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Gantt e controlo detalhado da execução</h2></div><div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span><span><i class="late"></i>EM ATRASO</span></div></header>${renderUnifiedPlanning()}</section></div>`;
 
     // Bind the primary import action directly too. This keeps it reliable in
     // embedded browsers where a delegated toolbar click may be swallowed.
@@ -515,13 +580,6 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     content.querySelector("[data-new-task]")?.addEventListener("click", event => {
       event.stopPropagation();
       addNewTask();
-    });
-    content.querySelectorAll("[data-planning-view]").forEach(button => {
-      button.addEventListener("click", event => {
-        event.stopPropagation();
-        state.view = button.dataset.planningView;
-        render();
-      });
     });
   }
 
@@ -564,7 +622,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     state.specialties = specialtiesResponse.ok ? await specialtiesResponse.json() : [];
     const phaseIds = state.phases.map(phase => phase.id);
     if (!phaseIds.length) {
-      state.items = []; state.dependencies = [];
+      state.items = []; state.dependencies = []; state.costs = new Map(); state.costSummary = {}; state.budgetItems = [];
     } else {
       const ids = phaseIds.map(encodeURIComponent).join(",");
       const itemsResponse = await supabase(`planeamento_itens?select=*&fase_id=in.(${ids})&order=codigo,criado_em`);
@@ -573,6 +631,11 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
         state.items = []; state.dependencies = [];
       } else {
         state.items = await itemsResponse.json();
+        const budgetResponse = await supabase(`itens_orcamento?select=*&fase_id=in.(${ids})`);
+        state.budgetItems = budgetResponse.ok ? await budgetResponse.json() : [];
+        const costsResponse = await supabase("rpc/fn_resumo_custos_estimados_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) });
+        state.costSummary = costsResponse.ok ? await costsResponse.json() : {};
+        state.costs = new Map((state.costSummary.pacotes || []).map(row => [String(row.planeamento_item_id), row]));
         const itemIds = state.items.map(item => item.id);
         if (itemIds.length) {
           const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);
@@ -593,6 +656,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
+    const confirmCost = event.target.closest("[data-confirm-subcontract-cost]"); if (confirmCost) { confirmSubcontractCost(confirmCost.dataset.confirmSubcontractCost); return; }
     const addDep = event.target.closest("[data-add-dependency]"); if (addDep) { addDependency(addDep.dataset.addDependency, addDep.closest("label")?.querySelector("select")); return; }
     const removeDep = event.target.closest("[data-remove-dependency]"); if (removeDep) { removeDependency(removeDep.dataset.removeDependency); return; }
     const confirmButton = event.target.closest("[data-confirm-import]"); if (confirmButton) { confirmImport(confirmButton); return; }

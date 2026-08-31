@@ -33,7 +33,7 @@
   --neg-text: #8C4A40;
   --neg-border: #F2E3E0;
   --warn-bg: #F7EDD6;
-  --warn-text: #8A6420;
+  --warn-text: #7A581D;
   --warn-border: #F7EDD6;
   --info-bg: #F1EFE8;
   --info-text: #5F5E5A;
@@ -205,7 +205,7 @@ input::placeholder, textarea::placeholder { color: var(--text-hint); }
 input:focus, select:focus, textarea:focus, .search-box:focus-within {
   border-color: #4A5568 !important;
   outline: 0;
-  box-shadow: 0 0 0 2px rgba(217,164,65,.18) !important;
+  box-shadow: 0 0 0 2px rgba(74,85,104,.18) !important;
 }
 .primary-button, button[type="submit"], .card-actions .approve, .invoice-primary-actions > .approve {
   background: #20242B !important;
