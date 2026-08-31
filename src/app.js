@@ -12,7 +12,7 @@ import { createDocumentsModule } from "./documents.js?v=2";
 import { createRncModule } from "./rnc.js?v=2";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=1";
-import { createMeetingRoomsModule } from "./meeting-rooms.js?v=2";
+import { createMeetingRoomsModule } from "./meeting-rooms.js?v=3";
 import { createPropertiesModule } from "./properties.js?v=2";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=2";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
@@ -1647,6 +1647,7 @@ function activeHoliday(date) {
 
 function personFunctionClass(person) {
   const role = String(person?.funcao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (role.includes("adjunto")) return "function-adjunct";
   if (/direcao|gerencia|diretor|dir\. obra/.test(role)) return "function-direction";
   if (role.includes("encarregado")) return "function-foreman";
   if (/administrativo|recursos humanos|\brh\b/.test(role)) return "function-admin";
@@ -1662,6 +1663,7 @@ function personFunctionClass(person) {
 
 const functionRowTints = {
   "function-direction": "rgba(32, 36, 43, .18)",
+  "function-adjunct": "rgba(61, 90, 158, .18)",
   "function-foreman": "rgba(46, 125, 91, .18)",
   "function-admin": "rgba(166, 68, 122, .18)",
   "function-preparer": "rgba(61, 90, 158, .18)",

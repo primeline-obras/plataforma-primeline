@@ -34,6 +34,7 @@
 }
 
 .vacation-map-row.function-direction { background: rgba(32, 36, 43, .18); }
+.vacation-map-row.function-adjunct { background: rgba(61, 90, 158, .18); }
 .vacation-map-row.function-foreman { background: rgba(46, 125, 91, .18); }
 .vacation-map-row.function-admin { background: rgba(166, 68, 122, .18); }
 .vacation-map-row.function-preparer { background: rgba(61, 90, 158, .18); }
@@ -46,6 +47,7 @@
 .vacation-map-row.function-other { background: rgba(117, 117, 117, .18); }
 .vacation-map-row > strong { color: #3b3830; border-left: 4px solid transparent; }
 .vacation-map-row.function-direction > strong { border-left-color: #20242b; }
+.vacation-map-row.function-adjunct > strong { border-left-color: #3d5a9e; }
 .vacation-map-row.function-foreman > strong { border-left-color: #2e7d5b; }
 .vacation-map-row.function-admin > strong { border-left-color: #a6447a; }
 .vacation-map-row.function-preparer > strong { border-left-color: #3d5a9e; }
@@ -59,6 +61,7 @@
 
 /* No Quadro, o nome é representado pelo íman de iniciais. */
 .workforce-magnet.function-direction { border-left: 4px solid #20242b; background: rgba(32, 36, 43, .18); }
+.workforce-magnet.function-adjunct { border-left: 4px solid #3d5a9e; background: rgba(61, 90, 158, .18); }
 .workforce-magnet.function-foreman { border-left: 4px solid #2e7d5b; background: rgba(46, 125, 91, .18); }
 .workforce-magnet.function-admin { border-left: 4px solid #a6447a; background: rgba(166, 68, 122, .18); }
 .workforce-magnet.function-preparer { border-left: 4px solid #3d5a9e; background: rgba(61, 90, 158, .18); }
