@@ -771,6 +771,7 @@ export function createProductionDashboard(options) {
       monthlyStaffVehicle: automatic ? number(automatic.pessoal_viatura_estimado) : monthlyStaffVehicle,
       fixedCosts: number(automatic?.custos_fixos), adjustments: number(automatic?.ajustes_total),
       directFinalCost: number(automatic?.estimativa_terminus_direta), costSummary: automatic,
+      data: { planningItems: data.planningItems || [] },
       investmentMode,
       remainingMonths, estimatedFinalCost, contractualEnd, projectedFinish, progress, start, dailyProgress,
     };
@@ -786,20 +787,40 @@ export function createProductionDashboard(options) {
     return { label, description, finish, deviationDays, available: Boolean(model.dailyProgress && model.contractualEnd) };
   }
 
-  const canAdjustWorkCosts = () => ["gerencia", "diretor_obra", "adjunto", "preparador"]
-    .includes(getAccessContext()?.role || "");
+  const canAdjustWorkCosts = () => meetingReturnView !== "rsp"
+    && ["gerencia", "diretor_obra"].includes(getAccessContext()?.role || "");
 
-  function renderCostTrace(model) {
+  const costStateLabels = {
+    orcamentado_nao_comprometido: "Orçamentado/Não Comprometido",
+    em_consulta: "Em Consulta", adjudicado: "Adjudicado", em_execucao: "Em Execução",
+    concluido: "Concluído", cancelado: "Cancelado",
+  };
+
+  function renderCostTrace(model, readOnly = false) {
     const summary = model.costSummary;
     const real = summary.real || {};
     const remaining = summary.por_concluir || {};
+    const components = summary.componentes || [];
     const adjustments = summary.ajustes || [];
     return `<details class="cost-trace" open><summary>COMPOSIÇÃO AUDITÁVEL DO CUSTO</summary>
+      <div class="cost-formula"><span>CUSTO REAL</span><b>${euro.format(number(real.total))}</b><i>+</i><span>CUSTOS ESTIMADOS</span><b>${euro.format(number(remaining.total))}</b><i>=</i><span>ESTIMATIVA FINAL</span><strong>${euro.format(number(summary.estimativa_terminus_total))}</strong></div>
       <div class="cost-trace-grid">
-        <section><strong>REAL ACUMULADO</strong><span>Materiais <b>${euro.format(number(real.materiais))}</b></span><span>Mão de obra <b>${euro.format(number(real.mao_obra))}</b></span><span>Estaleiro <b>${euro.format(number(real.estaleiro))}</b></span><span>Subempreitadas pagas <b>${euro.format(number(real.subempreitadas))}</b></span><em>Total ${euro.format(number(real.total))}</em></section>
-        <section><strong>POR CONCLUIR</strong><span>Subempreitadas adjudicadas <b>${euro.format(number(remaining.subempreitadas))}</b></span><span>TEEs aprovados <b>${euro.format(number(remaining.tees))}</b></span><span>Orçamento não contratado <b>${euro.format(number(remaining.orcamento_nao_contratado))}</b></span><em>Total ${euro.format(number(remaining.total))}</em></section>
+        <section><strong>CUSTO REAL</strong><span>Trabalho Primeline concluído <b>${euro.format(number(real.pl))}</b></span><span>Subempreitadas pagas <b>${euro.format(number(real.subempreitadas))}</b></span><em>Total ${euro.format(number(real.total))}</em></section>
+        <section><strong>CUSTOS ESTIMADOS</strong><span>Pacotes PL por concluir <b>${euro.format(number(remaining.pl))}</b></span><span>Subempreitadas a confirmar <b>${euro.format(number(remaining.sub_orcamento_aguarda_confirmacao))}</b></span><span>Compromisso subempreitadas <b>${euro.format(number(remaining.sub_compromisso_remanescente))}</b></span><em>Total ${euro.format(number(remaining.total))}</em></section>
       </div>
-      ${number(summary.lancamentos_sem_apropriacao) ? `<div class="cost-trace-warning"><strong>${number(summary.lancamentos_sem_apropriacao)} LANÇAMENTOS SEM APROPRIAÇÃO</strong><span>Contam no realizado, mas ainda não indicam TEE/artigo de origem. Não foram abatidos por inferência.</span></div>` : ""}
+      <div class="cost-percentages"><span>% FATURADO <b>${number(summary.percentagem_faturado).toFixed(1)}%</b></span><span>% PAGO <b>${number(summary.percentagem_pago).toFixed(1)}%</b></span><small>Campos calculados automaticamente</small></div>
+      <div class="cost-components"><header><strong>PACOTES POR ESPECIALIDADE</strong><small>PL e subempreitada permanecem separados, inclusive em tarefas mistas.</small></header>
+        ${components.map(row => `<article>
+          <div><strong>${escapeHtml(row.especialidade)}</strong><small>${escapeHtml(row.descricao || "Tarefa")} · ${escapeHtml(row.tipo)}</small></div>
+          <span>${escapeHtml(costStateLabels[row.estado_custo] || row.estado_custo)}</span>
+          <span>ORÇA <b>${euro.format(number(row.valor_orcamentado))}</b></span>
+          <span>REAL <b>${euro.format(number(row.valor_real))}</b></span>
+          ${row.tipo === "subempreitada" ? `<span>REMANESCENTE <b>${euro.format(number(row.compromisso_remanescente))}</b></span>` : ""}
+          ${!readOnly && canAdjustWorkCosts() && row.tipo === "subempreitada" && row.subempreitada_id && !row.remocao_confirmada ? `<button type="button" data-confirm-sub-cost="${row.subempreitada_id}">CONFIRMAR REMOÇÃO DO ESTIMADO</button>` : ""}
+          ${!readOnly && canAdjustWorkCosts() && row.tipo === "PL" && row.estado_custo !== "concluido" ? `<button type="button" data-complete-pl-cost="${row.id}" data-default-value="${number(row.valor_orcamentado)}">CONCLUIR E CONFIRMAR REAL</button>` : ""}
+        </article>`).join("") || '<p class="overview-empty">SEM PACOTES DE CUSTO. O Diretor pode adicionar componentes PL a partir das tarefas.</p>'}
+        ${canAdjustWorkCosts() ? `<form data-cost-component><label>TAREFA<select name="planeamento_item_id" required><option value="">Selecionar…</option>${(model.data?.planningItems || []).map(row => `<option value="${row.id}">${escapeHtml(row.codigo || "")} · ${escapeHtml(row.descricao || "Tarefa")}</option>`).join("")}</select></label><label>COMPONENTE<select name="tipo"><option value="PL">PL</option><option value="subempreitada">Subempreitada</option></select></label><label>VALOR DO ORÇA (€)<input name="valor_orcamentado" type="number" min="0" step="0.01" required></label><label>ESTADO<select name="estado_custo">${Object.entries(costStateLabels).map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><button class="secondary-button" type="submit">GUARDAR PACOTE</button><p class="form-error"></p></form>` : ""}
+      </div>
       <div class="cost-adjustments"><header><strong>AJUSTES MANUAIS JUSTIFICADOS</strong><span>${euro.format(number(summary.ajustes_total))}</span></header>
         ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${canAdjustWorkCosts() ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
         ${canAdjustWorkCosts() ? `<form data-cost-adjustment><label>VALOR (€)<input name="valor" type="number" step="0.01" required></label><label>MOTIVO OBRIGATÓRIO<input name="motivo" minlength="3" required placeholder="Explique a origem do ajuste"></label><button class="secondary-button" type="submit">REGISTAR AJUSTE</button><p class="form-error"></p></form>` : ""}
@@ -824,7 +845,7 @@ export function createProductionDashboard(options) {
             <div><dt>Orçamento de custo</dt><dd>${euro.format(model.updatedBudgetCost)}</dd></div>
             <div><dt>Custo real incorrido</dt><dd>${euro.format(model.actualCost)}</dd></div>
             <div><dt>Custo estimado até à conclusão</dt><dd>${euro.format(model.remainingCommitments)}</dd></div>
-            ${model.costSummary ? `<div><dt>Estimativa no términus · custo direto</dt><dd>${euro.format(model.directFinalCost)}</dd></div><div><dt>Custos fixos · 8,5%</dt><dd>${euro.format(model.fixedCosts)}</dd></div><div><dt>Pessoal + viatura estimado</dt><dd>${euro.format(model.monthlyStaffVehicle)}</dd></div><div><dt>Ajustes justificados</dt><dd>${euro.format(model.adjustments)}</dd></div>` : ""}
+            ${model.costSummary ? `<div><dt>Estimativa no términus · custo direto</dt><dd>${euro.format(model.directFinalCost)}</dd></div><div><dt>Ajustes justificados</dt><dd>${euro.format(model.adjustments)}</dd></div>` : ""}
             <div><dt>Estimativa final</dt><dd data-estimated-final>${euro.format(model.estimatedFinalCost)}</dd></div>
             <div class="forecast-deviation"><dt>Desvio ao orçamento</dt><dd data-budget-deviation class="${initialDeviation > 0 ? "negative" : "positive"}">${euro.format(initialDeviation)}</dd></div>
           </dl>
@@ -999,7 +1020,7 @@ export function createProductionDashboard(options) {
     const phaseIds = phases.map(row => row.id);
     const directDebitIds = directDebits.map(row => row.id);
     const [
-      contracts, tees, investments, impacts, measurements, planning, budget, consultations,
+      contracts, tees, investments, impacts, measurements, planning, planningItems, budget, consultations,
       payments, labor, siteExpenses, directDebitEntries, billings, monthlyForecast, materialInvoices,
     ] = await Promise.all([
       investmentMode ? [] : meetingQuery(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encoded}`, "Contrato", warnings),
@@ -1008,6 +1029,7 @@ export function createProductionDashboard(options) {
       investmentMode ? meetingQuery(`impactos_obra?select=*&obra_id=eq.${encoded}&order=data.desc`, "Impactos de obra", warnings) : [],
       investmentMode ? [] : meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
+      phaseIds.length ? meetingQuery(`planeamento_itens?select=id,fase_id,codigo,descricao,especialidade_id,executado_por,subempreitada_id,estado&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=codigo`, "Tarefas de planeamento", warnings) : [],
       phaseIds.length ? meetingQuery(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Orçamento", warnings) : [],
       meetingQuery(`consultas_subempreitada?select=*&obra_id=eq.${encoded}`, "Consultas", warnings),
       subcontractIds.length ? meetingQuery(`pagamentos_subempreitada?select=*&subempreitada_id=in.(${subcontractIds.map(encodeURIComponent).join(",")})`, "Pagamentos", warnings) : [],
@@ -1028,7 +1050,7 @@ export function createProductionDashboard(options) {
       if (costResponse.ok) costSummary = await costResponse.json();
       else warnings.push("Custos automáticos: execute a migração custos_obra_automaticos.sql");
     }
-    return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
+    return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, planningItems, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
   }
 
   async function saveCostAdjustment(form) {
@@ -1061,6 +1083,55 @@ export function createProductionDashboard(options) {
     await openMeeting(meetingState.work.id, meetingReturnView);
   }
 
+  async function saveCostComponent(form) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const fields = Object.fromEntries(new FormData(form));
+    const button = form.querySelector('[type="submit"]');
+    const error = form.querySelector(".form-error");
+    error.textContent = ""; button.disabled = true;
+    const response = await supabase("rpc/fn_guardar_componente_custo", {
+      method: "POST", body: JSON.stringify({
+        p_planeamento_item_id: fields.planeamento_item_id,
+        p_tipo: fields.tipo, p_valor_orcamentado: number(fields.valor_orcamentado),
+        p_estado_custo: fields.estado_custo, p_valor_real_pl: null,
+      }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      error.textContent = detail.message || "Não foi possível guardar o pacote de custo.";
+      button.disabled = false; return;
+    }
+    toast("Pacote de custo guardado.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
+  }
+
+  async function confirmSubcontractEstimatedCost(subcontractId, button) {
+    if (!meetingState || !canAdjustWorkCosts()
+      || !confirm("Valor adjudicado — confirmar remoção dos Custos Estimados?")) return;
+    button.disabled = true;
+    const response = await supabase("rpc/fn_confirmar_remocao_custo_estimado_subempreitada", {
+      method: "POST", body: JSON.stringify({ p_subempreitada_id: subcontractId }),
+    });
+    if (!response.ok) return toast("Não foi possível confirmar a remoção do custo estimado.", "error");
+    toast("Custo orçamentado removido; compromisso adjudicado assumido.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
+  }
+
+  async function completePlCost(componentId, defaultValue, button) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const entered = prompt("Valor real do trabalho PL (€). Pode ajustar o valor do orça antes de concluir:", number(defaultValue).toFixed(2));
+    if (entered === null) return;
+    const value = Number(String(entered).replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) return toast("Introduza um valor real válido.", "error");
+    button.disabled = true;
+    const response = await supabase("rpc/fn_concluir_custo_pl", {
+      method: "POST", body: JSON.stringify({ p_componente_id: componentId, p_valor_real: value }),
+    });
+    if (!response.ok) return toast("Não foi possível concluir o custo PL.", "error");
+    toast("Pacote PL concluído e transferido para Custo Real.");
+    await openMeeting(meetingState.work.id, meetingReturnView);
+  }
+
   async function openMeeting(workId, returnView = "overview") {
     const work = getWorks().find(item => item.id === workId);
     if (!work) return;
@@ -1077,7 +1148,7 @@ export function createProductionDashboard(options) {
       work, data, warnings, investmentMode, approvedTees, pendingTees, impacts,
       totalSale, directCost, approvedTeeCost, expectedMargin, initialBudget, revisedBudget,
       actualCost, investmentDeviation, billed, billingPercent, execution, deadline,
-      paidBySubcontract, notConsulted,
+      paidBySubcontract, notConsulted, projection,
     } = model;
     const paidTotal = [...paidBySubcontract.values()].reduce((total, value) => total + number(value), 0);
     const openConsultations = data.consultations.filter(row => row.estado === "em_consulta").length;
@@ -1109,6 +1180,7 @@ export function createProductionDashboard(options) {
           <div><span>SUBEMPREITADAS</span><strong>${data.subcontracts.length}</strong><small>pago ${euro.format(paidTotal)}</small></div>
           <div><span>EM CONSULTA / NÃO CONSULTADAS</span><strong>${openConsultations} / ${notConsulted.length}</strong><small>situação atual</small></div>
         </div>
+        ${projection.costSummary ? `<details class="cost-trace" open><summary>COMPOSIÇÃO AUDITÁVEL DO CUSTO · SÓ LEITURA</summary><div class="cost-formula"><span>CUSTO REAL</span><b>${euro.format(number(projection.costSummary.real?.total))}</b><i>+</i><span>CUSTOS ESTIMADOS</span><b>${euro.format(number(projection.costSummary.por_concluir?.total))}</b><i>=</i><span>ESTIMATIVA FINAL</span><strong>${euro.format(number(projection.costSummary.estimativa_terminus_total))}</strong></div></details>` : ""}
         <details class="rsp-detail"><summary>CASH FLOW MENSAL</summary>${renderCashFlow(work, data)}</details>
         <details class="rsp-detail"><summary>PLANEAMENTO DE FASES</summary>${renderPhaseTimeline(work, data)}</details>
       </article>`;
@@ -1181,10 +1253,16 @@ export function createProductionDashboard(options) {
     document.querySelector("#meeting-view")?.addEventListener("submit", event => {
       const form = event.target.closest("[data-cost-adjustment]");
       if (form) { event.preventDefault(); saveCostAdjustment(form); }
+      const componentForm = event.target.closest("[data-cost-component]");
+      if (componentForm) { event.preventDefault(); saveCostComponent(componentForm); }
     });
     document.querySelector("#meeting-view")?.addEventListener("click", event => {
       const button = event.target.closest("[data-delete-cost-adjustment]");
       if (button) deleteCostAdjustment(button.dataset.deleteCostAdjustment, button);
+      const confirmButton = event.target.closest("[data-confirm-sub-cost]");
+      if (confirmButton) confirmSubcontractEstimatedCost(confirmButton.dataset.confirmSubCost, confirmButton);
+      const completeButton = event.target.closest("[data-complete-pl-cost]");
+      if (completeButton) completePlCost(completeButton.dataset.completePlCost, completeButton.dataset.defaultValue, completeButton);
     });
   }
 
