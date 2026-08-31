@@ -12,9 +12,9 @@ test("mapas distinguem fins de semana, feriados e férias", () => {
   assert.match(app, /activeHoliday/);
   assert.match(styles, /\.workforce-day-cell\.weekend/);
   assert.match(styles, /\.vacation-map \.holiday/);
-  assert.match(styles, /\.vacation-map-row > i\.vacation[\s\S]*#d9a441/);
+  assert.match(styles, /\.vacation-map-row > i\.vacation[\s\S]*#4a5568[\s\S]*#f1efe8/);
   assert.match(styles, /weekend[\s\S]*rgba\(107, 104, 95, \.09\)/);
-  assert.match(styles, /holiday[\s\S]*rgba\(217, 164, 65, \.17\)/);
+  assert.match(styles, /holiday[\s\S]*(?:rgba\(74, 85, 104, \.17\)|#4a5568)/);
 });
 
 test("linhas e alocações usam a paleta final de função sem dourado", () => {
