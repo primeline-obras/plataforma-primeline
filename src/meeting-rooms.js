@@ -127,5 +127,6 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     } catch (error) { const message = String(error.message || ""); errorNode.textContent = message.includes("Já existe uma reserva") ? "Já existe uma reserva para esta sala neste horário. Escolha outro período." : message || "Não foi possível guardar a reserva."; button.disabled = false; }
   });
 
-  return { show: () => load(), refresh: () => load(true) };
+  // Recarrega sempre os nomes reais dos utilizadores ao entrar no módulo.
+  return { show: () => load(true), refresh: () => load(true) };
 }
