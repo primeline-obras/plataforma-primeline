@@ -15,7 +15,7 @@ test("a identidade final é carregada depois dos estilos legados", () => {
 test("usa a paleta final exata", () => {
   ["#FAF8F3", "#20242B", "#3B3830", "#6B685F", "#8A8578", "#A8A398",
     "#F1EFE8", "#B4B2A9", "#FFFDF9", "#EFEBE1", "#DDD8CC", "#CFC9BB",
-    "#4A5568", "#E6EDE4", "#3F6248", "#F2E3E0", "#8C4A40",
+    "#4A5568", "#8A6420", "#E6EDE4", "#3F6248", "#F2E3E0", "#8C4A40",
     "#F7EDD6"].forEach(color => assert.ok(css.includes(color), `falta ${color}`));
 });
 

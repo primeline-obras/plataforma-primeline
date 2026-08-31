@@ -25,8 +25,7 @@
   --charcoal-2: #20242B;
   --brand-amber: #4A5568;
   --accent: #4A5568;
-  --action: #4A5568;
-  --state-progress: #B9791E;
+  --action: #8A6420;
   --pos-bg: #E6EDE4;
   --pos-text: #3F6248;
   --pos-border: #E6EDE4;
@@ -63,8 +62,7 @@
   --charcoal-2: #20242B;
   --brand-amber: #4A5568;
   --accent: #4A5568;
-  --action: #F1EFE8;
-  --state-progress: #E0BD78;
+  --action: #D4A854;
   --pos-bg: #1F2E22;
   --pos-text: #A8C4AE;
   --pos-border: #1F2E22;
@@ -87,9 +85,10 @@ p, small, .eyebrow, label, dt { color: var(--text-secondary); }
 
 /* A sidebar conserva a identidade escura em qualquer tema. */
 .sidebar { background: #20242B; color: #F1EFE8; }
-.sidebar .brand strong, .sidebar nav button.active, .sidebar nav button:hover { color: #F1EFE8; }
+.sidebar .brand strong { color: #F1EFE8; }
 .sidebar .brand small, .sidebar nav p, .sidebar-user small { color: #B4B2A9; }
-.sidebar nav button { color: #B4B2A9; border-radius: 4px; }
+.sidebar nav button { color: #4A5568; border-radius: 4px; }
+.sidebar nav button.active, .sidebar nav button:hover { color: #AAB3C0; }
 .sidebar nav button.active { background: rgba(255,255,255,.10); border-left-color: #4A5568; }
 
 /* Superfícies e cards partilhados. */
@@ -136,7 +135,7 @@ p, small, .eyebrow, label, dt { color: var(--text-secondary); }
   color: #F1EFE8 !important;
   border: 1px solid #4A5568 !important;
 }
-:is([data-kpi-principal="true"], .kpi-principal, .kpi-primary) > :is(span, strong) { color: #F1EFE8 !important; }
+:is([data-kpi-principal="true"], .kpi-principal, .kpi-primary) > :is(span, strong) { color: #4A5568 !important; }
 :is([data-kpi-principal="true"], .kpi-principal, .kpi-primary)::after {
   content: "PRINCIPAL";
   position: absolute;
@@ -145,7 +144,7 @@ p, small, .eyebrow, label, dt { color: var(--text-secondary); }
   padding: 3px 7px;
   border-radius: 999px;
   background: #4A5568;
-  color: #F1EFE8;
+  color: #20242B;
   font: 600 9px "IBM Plex Sans", Arial, sans-serif;
   letter-spacing: .6px;
 }

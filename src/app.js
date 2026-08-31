@@ -1,8 +1,8 @@
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=17";
-import { createPlanningModule } from "./planning.js?v=9";
-import { createSubcontractorsModule } from "./subcontractors.js?v=4";
+import { createProductionDashboard } from "./production-dashboard.js?v=18";
+import { createPlanningModule } from "./planning.js?v=8";
+import { createSubcontractorsModule } from "./subcontractors.js?v=5";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=5";
@@ -5777,6 +5777,13 @@ procurementModule = createProcurementModule({
     if (!row?.id) return;
     const existing = subcontracts.find(item => item.id === row.id);
     if (existing) Object.assign(existing, row); else subcontracts.push(row);
+    if (["gerencia", "diretor_obra"].includes(accessContext.role || "")
+      && confirm("Valor adjudicado — confirmar remoção dos Custos Estimados?")) {
+      const response = await supabase("rpc/fn_confirmar_remocao_custo_estimado_subempreitada", {
+        method: "POST", body: JSON.stringify({ p_subempreitada_id: row.id }),
+      });
+      if (!response.ok) toast("A adjudicação foi guardada, mas a remoção do custo estimado ficou pendente no card Composição Auditável do Custo.", "error");
+    }
   },
 });
 renderUser();

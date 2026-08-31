@@ -3,6 +3,7 @@ import fs from "node:fs";
 
 const dashboard = fs.readFileSync(new URL("../src/production-dashboard.js", import.meta.url), "utf8");
 const sql = fs.readFileSync(new URL("../supabase/custos_obra_automaticos.sql", import.meta.url), "utf8");
+const finalSql = fs.readFileSync(new URL("../supabase/custos_estimados_modelo_final.sql", import.meta.url), "utf8");
 
 assert.match(sql, /create table if not exists public\.ajustes_custo_obra/);
 assert.match(sql, /motivo text not null/);
@@ -23,6 +24,7 @@ assert.match(dashboard, /rpc\/fn_resumo_custos_obra/);
 assert.match(dashboard, /COMPOSIÇÃO AUDITÁVEL DO CUSTO/);
 assert.match(dashboard, /data-cost-adjustment/);
 assert.doesNotMatch(dashboard, /id="staff-vehicle-cost"/);
-assert.match(dashboard, /Custos fixos · 8,5%/);
+assert.doesNotMatch(dashboard, /Custos fixos · 8,5%/);
+assert.match(finalSql, /Custo Real \+ Custos Estimados = Estimativa Final/);
 
 console.log("Custos automáticos, apropriação e ajustes auditáveis validados.");
