@@ -813,6 +813,19 @@ button, input, select, textarea,
   border-radius: 12px;
   overflow: hidden;
 }
+/* A lista do portfólio é um contentor de dados, não apenas um cartão.
+   A geometria comum acima não pode anular a sua rolagem quando existem
+   mais obras do que as que cabem nos 660px disponíveis. */
+.works-list {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #8f9699 #e7e8e5;
+}
+.works-list::-webkit-scrollbar { width: 10px; }
+.works-list::-webkit-scrollbar-track { background: #e7e8e5; }
+.works-list::-webkit-scrollbar-thumb { border: 2px solid #e7e8e5; border-radius: 999px; background: #8f9699; }
 /* Os cartões dos modais longos têm de conservar uma rolagem visível. Esta
    regra fica depois da geometria comum para não ser anulada por overflow:hidden. */
 .dialog-backdrop > .work-dialog-card {
