@@ -226,7 +226,7 @@ export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date(
 export function createProductionDashboard(options) {
   const {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
-    getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView, getAccessContext,
+    getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView, getAccessContext, onImportPhaseBudget,
   } = options;
   const emptyOverviewState = () => ({
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
@@ -790,7 +790,7 @@ export function createProductionDashboard(options) {
   }
 
   const canAdjustWorkCosts = () => costEditMode
-    && ["gerencia", "diretor_obra"].includes(getAccessContext()?.role || "");
+    && ["gestao_plataforma", "gerencia", "diretor_obra"].includes(getAccessContext()?.role || "");
 
   const costStateLabels = {
     orcamentado_nao_comprometido: "Orçamentado/Não Comprometido",
@@ -812,7 +812,7 @@ export function createProductionDashboard(options) {
         <section><strong>CUSTOS ESTIMADOS</strong><span>Pacotes PL por concluir <b>${euro.format(number(remaining.pl))}</b></span><span>Subempreitadas a confirmar <b>${euro.format(number(remaining.sub_orcamento_aguarda_confirmacao))}</b></span><span>Compromisso subempreitadas <b>${euro.format(number(remaining.sub_compromisso_remanescente))}</b></span><em>Total ${euro.format(number(remaining.total))}</em></section>
       </div>
       <div class="cost-percentages"><span>% FATURADO <b>${number(summary.percentagem_faturado).toFixed(1)}%</b></span><span>% PAGO <b>${number(summary.percentagem_pago).toFixed(1)}%</b></span><small>Campos calculados automaticamente</small></div>
-      <div class="cost-components"><header><strong>PACOTES POR ESPECIALIDADE</strong><small>PL e subempreitada permanecem separados, inclusive em tarefas mistas.</small></header>
+      <div class="cost-components"><header><strong>PACOTES POR ESPECIALIDADE / FASE</strong><small>PL usa a fonte 0_Orçamento por fase; subempreitadas permanecem separadas.</small>${allowEdit ? '<button type="button" class="outline-action" data-import-phase-budget>IMPORTAR 0_ORÇAMENTO</button>' : ""}</header>
         ${components.map(row => `<article>
           <div><strong>${escapeHtml(row.especialidade)}</strong><small>${escapeHtml(row.descricao || "Tarefa")} · ${escapeHtml(row.tipo)}</small></div>
           <span>${escapeHtml(costStateLabels[row.estado_custo] || row.estado_custo)}</span>
@@ -820,7 +820,7 @@ export function createProductionDashboard(options) {
           <span>REAL <b>${euro.format(number(row.valor_real))}</b></span>
           ${row.tipo === "subempreitada" ? `<span>REMANESCENTE <b>${euro.format(number(row.compromisso_remanescente))}</b></span>` : ""}
           ${allowEdit && row.tipo === "subempreitada" && row.subempreitada_id && !row.remocao_confirmada ? `<button type="button" data-confirm-sub-cost="${row.subempreitada_id}">CONFIRMAR REMOÇÃO DO ESTIMADO</button>` : ""}
-          ${allowEdit && row.tipo === "PL" && row.estado_custo !== "concluido" ? `<button type="button" data-complete-pl-cost="${row.id}" data-default-value="${number(row.valor_orcamentado)}">CONCLUIR E CONFIRMAR REAL</button>` : ""}
+          ${allowEdit && row.tipo === "PL" && row.estado_custo !== "concluido" ? row.fonte === "0_Orçamento" ? `<button type="button" data-complete-pl-phase="${row.id}" data-default-value="${number(row.valor_orcamentado)}">CONCLUIR FASE E CONFIRMAR REAL</button>` : `<button type="button" data-complete-pl-cost="${row.id}" data-default-value="${number(row.valor_orcamentado)}">CONCLUIR E CONFIRMAR REAL</button>` : ""}
         </article>`).join("") || '<p class="overview-empty">SEM PACOTES DE CUSTO. O Diretor pode adicionar componentes PL a partir das tarefas.</p>'}
         ${allowEdit ? `<form data-cost-component><label>TAREFA<select name="planeamento_item_id" required><option value="">Selecionar…</option>${(model.data?.planningItems || []).map(row => `<option value="${row.id}">${escapeHtml(row.codigo || "")} · ${escapeHtml(row.descricao || "Tarefa")}</option>`).join("")}</select></label><label>LINHA DO ORÇAMENTO<select name="item_orcamento_id"><option value="">Pacote / especialidade</option>${(model.data?.budgetItems || []).map(row => `<option value="${row.id}">${escapeHtml(row.numero_artigo || row.codigo || row.designacao || row.descricao || "Linha")}</option>`).join("")}</select></label><label>COMPONENTE<select name="tipo"><option value="PL">PL</option><option value="subempreitada">Subempreitada</option></select></label><label>VALOR DO ORÇA (€)<input name="valor_orcamentado" type="number" min="0" step="0.01" required></label><label>ESTADO<select name="estado_custo">${Object.entries(costStateLabels).map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><button class="secondary-button" type="submit">GUARDAR PACOTE</button><p class="form-error"></p></form>` : ""}
       </div>
@@ -1136,6 +1136,19 @@ export function createProductionDashboard(options) {
     await showWorkCosts(meetingState.work.id);
   }
 
+  async function completePlPhase(budgetId, defaultValue, button) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const entered = await platformPrompt("O valor do 0_Orçamento é usado por defeito; ajuste apenas se o custo real da fase foi diferente.", number(defaultValue).toFixed(2), { title: "Concluir custo PL da fase", label: "VALOR REAL (€)" });
+    if (entered === null) return;
+    const value = Number(String(entered).replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) return toast("Introduza um valor real válido.", "error");
+    button.disabled = true;
+    const response = await supabase("rpc/fn_concluir_custo_pl_fase", { method: "POST", body: JSON.stringify({ p_orcamento_fase_id: budgetId, p_valor_real: value }) });
+    if (!response.ok) return toast("Não foi possível concluir o custo PL desta fase.", "error");
+    toast("Fase PL concluída e transferida para Custo Real.");
+    await showWorkCosts(meetingState.work.id);
+  }
+
   async function showWorkCosts(workId) {
     const host = document.querySelector(`[data-work-cost-card="${CSS.escape(String(workId))}"]`);
     const work = getWorks().find(item => String(item.id) === String(workId));
@@ -1280,7 +1293,10 @@ export function createProductionDashboard(options) {
       const confirmButton = event.target.closest("[data-confirm-sub-cost]");
       if (confirmButton) return confirmSubcontractEstimatedCost(confirmButton.dataset.confirmSubCost, confirmButton);
       const completeButton = event.target.closest("[data-complete-pl-cost]");
-      if (completeButton) completePlCost(completeButton.dataset.completePlCost, completeButton.dataset.defaultValue, completeButton);
+      if (completeButton) return completePlCost(completeButton.dataset.completePlCost, completeButton.dataset.defaultValue, completeButton);
+      const completePhaseButton = event.target.closest("[data-complete-pl-phase]");
+      if (completePhaseButton) return completePlPhase(completePhaseButton.dataset.completePlPhase, completePhaseButton.dataset.defaultValue, completePhaseButton);
+      if (event.target.closest("[data-import-phase-budget]") && meetingState) onImportPhaseBudget?.({ work: meetingState.work, phases: meetingState.data.phases, onComplete: () => showWorkCosts(meetingState.work.id) });
     });
   }
 
