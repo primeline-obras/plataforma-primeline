@@ -180,16 +180,31 @@ declare
   v_atual public.utilizadores; v_linha jsonb; v_obra public.obras; v_fornecedor public.fornecedores;
   v_colaborador public.colaboradores; v_sub public.subempreitadas; v_categoria text; v_documento text;
   v_entidade text; v_chave text; v_valor numeric; v_criar integer:=0; v_criados integer:=0;
-  v_duplicados integer:=0; v_erros jsonb:='[]'::jsonb; v_chaves text[]:=array[]::text[]; v_dados jsonb;
+  v_duplicados integer:=0; v_erros jsonb:='[]'::jsonb; v_chaves text[]:=array[]::text[];
+  v_chaves_existentes text[]:=array[]::text[]; v_dados jsonb;
 begin
   if not (public.fn_e_admin() or public.fn_e_financeiro()) then raise exception 'Sem permissão para importar o Mapa de Gestão.' using errcode='42501'; end if;
   select * into v_atual from public.utilizadores u where u.id=public.fn_utilizador_atual_id() and coalesce(u.ativo,true);
   if not found then raise exception 'Utilizador autenticado sem perfil ativo.'; end if;
   if jsonb_typeof(p_linhas)<>'array' then raise exception 'Formato de importação inválido.'; end if;
 
+  -- Calcula o universo de duplicados uma única vez. Em ficheiros grandes isto
+  -- evita executar o mapa completo novamente por cada linha importada.
+  select coalesce(array_agg(lower(concat_ws('|',m.categoria,m.obra_id,
+    coalesce(m.documento,m.data_lancamento::text,''),coalesce(m.entidade_nome,''),round(coalesce(m.valor,0),2)))),array[]::text[])
+  into v_chaves_existentes
+  from public.fn_mapa_gestao_obras() m;
+
   for v_linha in select value from jsonb_array_elements(p_linhas)
   loop
     v_categoria:=v_linha->>'categoria'; v_documento:=coalesce(v_linha->>'numero_documento',v_linha->>'numero_fatura');
+    if regexp_replace(btrim(coalesce(v_linha->>'obra_numero','')), '^0+', '') in ('79','85','127') then
+      v_erros:=v_erros||jsonb_build_array(format(
+        'Linha %s: Obra %s não aceita importação por este caminho — usar Saldo de Abertura.',
+        v_linha->>'linha',coalesce(v_linha->>'obra_numero','—')
+      ));
+      continue;
+    end if;
     select * into v_obra from public.obras o where o.empresa_id=v_atual.empresa_id and o.numero::text=btrim(v_linha->>'obra_numero') limit 1;
     if not found then v_erros:=v_erros||jsonb_build_array(format('Linha %s: obra %s não encontrada.',v_linha->>'linha',coalesce(v_linha->>'obra_numero','—'))); continue; end if;
 
@@ -210,7 +225,7 @@ begin
     end if;
 
     v_chave:=lower(concat_ws('|',v_categoria,v_obra.id,v_documento,v_entidade,round(v_valor,2)));
-    if v_chave=any(v_chaves) or exists(select 1 from public.fn_mapa_gestao_obras() m where m.obra_id=v_obra.id and m.categoria=v_categoria and lower(coalesce(m.documento,m.data_lancamento::text,''))=lower(coalesce(v_documento,'')) and lower(coalesce(m.entidade_nome,''))=lower(coalesce(v_entidade,'')) and round(coalesce(m.valor,0),2)=round(v_valor,2)) then
+    if v_chave=any(v_chaves) or v_chave=any(v_chaves_existentes) then
       v_duplicados:=v_duplicados+1; continue;
     end if;
     v_chaves:=array_append(v_chaves,v_chave); v_criar:=v_criar+1;

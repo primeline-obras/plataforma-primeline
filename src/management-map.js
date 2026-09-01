@@ -1,6 +1,7 @@
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const CATEGORY_LABELS = { materiais: "Materiais", estaleiro: "Despesas-Estaleiro", subempreitadas: "Subcontratos", mao_obra: "Funcionários-Obra · Mão de Obra", faturacao: "Faturação" };
 const SHEETS = { materiais: ["materiais"], estaleiro: ["despesas-estaleiro", "despesas estaleiro"], subempreitadas: ["subcontratos", "subempreitadas"], mao_obra: ["funcionarios-obra", "funcionários-obra", "funcionarios obra", "funcionários obra"], faturacao: ["faturacao", "faturação"] };
+const BLOCKED_IMPORT_WORKS = new Set(["79", "85", "127"]);
 const norm = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-PT").replace(/\s+/g, " ");
 const key = value => norm(value).replace(/[º°ª.()/%_-]/g, "").replace(/\s+/g, "");
 const money = value => { if (typeof value === "number") return value; const parsed = Number(String(value ?? "").replace(/\s|€/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; };
@@ -21,14 +22,23 @@ export function normalizeManagementRows(category, rows) {
   });
 }
 
+const normalizedWorkNumber = value => String(value ?? "").trim().replace(/^0+(?=\d)/, "");
+
+export function validateManagementImportRows(rows) {
+  return rows.flatMap(row => BLOCKED_IMPORT_WORKS.has(normalizedWorkNumber(row.obra_numero))
+    ? [`Linha ${row.linha}: Obra ${row.obra_numero} não aceita importação por este caminho — usar Saldo de Abertura.`]
+    : []);
+}
+
 export function parseManagementWorkbook(workbook) {
   const result = [], errors = [];
   for (const [category, aliases] of Object.entries(SHEETS)) {
     const sheetName = workbook.SheetNames.find(name => aliases.includes(norm(name)));
     if (!sheetName) { errors.push(`Folha em falta: ${CATEGORY_LABELS[category]}.`); continue; }
     const rows = normalizeManagementRows(category, globalThis.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null, raw: true }));
-    if (!rows.length) errors.push(`A folha ${sheetName} não contém linhas.`); result.push(...rows);
+    result.push(...rows);
   }
+  errors.push(...validateManagementImportRows(result));
   return { rows: result, errors };
 }
 
