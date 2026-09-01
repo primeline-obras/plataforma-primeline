@@ -1,3 +1,5 @@
+import { platformConfirm } from "./platform-dialogs.js?v=1";
+
 const DOCUMENT_TYPES = [
   ["articulado_original", "Articulado — Orçamento original"],
   ["articulado_tee", "Articulado — TEE aprovado"],
@@ -16,7 +18,7 @@ const DOCUMENT_TYPES = [
 
 const PRIMARY_SECTIONS = [
   { id: "articulado", label: "Articulado", description: "Orçamento original e TEEs aprovados", types: ["articulado_original", "articulado_tee", "orcamento"] },
-  { id: "drawings", label: "Desenhos", description: "Últimas revisões de preparação", types: ["desenho", "desenhos_preparacao", "plantas_projeto"] },
+  { id: "drawings", label: "Desenhos", description: "Histórico completo de revisões", types: ["desenho", "desenhos_preparacao", "plantas_projeto"] },
   { id: "technical", label: "PDEs / PAMEs", description: "Pedidos e aprovações técnicas", types: ["pdes_rfis", "pames"] },
   { id: "minutes", label: "Atas", description: "Registos de reunião", types: ["atas_reuniao"] },
 ];
@@ -36,18 +38,6 @@ const extension = name => String(name || "").split(".").pop()?.toLowerCase() || 
 const canPreview = document => ["pdf", "jpg", "jpeg", "png", "webp", "heic"].includes(extension(document.nome_arquivo));
 const typeLabel = type => DOCUMENT_TYPES.find(([value]) => value === type)?.[1] || "Outro";
 const indexNumber = item => item.numero_documento || item.numero || item.codigo || "Sem número";
-
-function latestByDocumentNumber(documents) {
-  const grouped = new Map();
-  documents.forEach(document => {
-    const key = document.numero_documento || document.nome_arquivo || document.id;
-    const current = grouped.get(key);
-    const rank = `${document.revisao || ""}|${document.criado_em || ""}`;
-    const currentRank = current ? `${current.revisao || ""}|${current.criado_em || ""}` : "";
-    if (!current || rank.localeCompare(currentRank, "pt-PT", { numeric: true }) > 0) grouped.set(key, document);
-  });
-  return [...grouped.values()];
-}
 
 export function createDocumentsModule({
   root,
@@ -81,10 +71,7 @@ export function createDocumentsModule({
     return sections().find(section => section.id === selectedSection) || sections()[0];
   }
 
-  function sectionCount(section) {
-    const rows = data.documents.filter(document => section.types.includes(document.tipo));
-    return section.id === "drawings" ? latestByDocumentNumber(rows).length : rows.length;
-  }
+  function sectionCount(section) { return data.documents.filter(document => section.types.includes(document.tipo)).length; }
 
   function renderHeading() {
     const works = getWorks();
@@ -113,6 +100,7 @@ export function createDocumentsModule({
         <label>TIPO<div class="select-wrap"><select name="tipo" required>${allowedTypes.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("")}</select><b>⌄</b></div></label>
         <label class="work-document-index-field" data-document-number hidden>NÚMERO / REFERÊNCIA<input name="numero_documento" maxlength="80" placeholder="Ex.: DES-042, PDE-018 ou TEE 20"></label>
         <label class="work-document-index-field" data-document-revision hidden>REVISÃO<input name="revisao" maxlength="30" placeholder="Ex.: A ou 02"></label>
+        <label>ENVIADO PARA<input name="destinatarios" maxlength="300" placeholder="Ex.: Fiscalização; projetista; cliente"></label>
         <label class="work-document-file">FICHEIRO<input name="arquivo" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.xls,.xlsx,.doc,.docx,.mpp,.dwg,.dxf,.zip,.txt"></label>
         <button class="primary-button" type="submit">ENVIAR <span>→</span></button><p class="form-error"></p>
       </form>
@@ -120,17 +108,9 @@ export function createDocumentsModule({
   }
 
   function drawingIndex() {
-    const rows = [...data.drawings].reduce((grouped, item) => {
-      const key = indexNumber(item);
-      const current = grouped.get(key);
-      const rank = `${item.revisao || ""}|${item.data_emissao || ""}`;
-      const currentRank = current ? `${current.revisao || ""}|${current.data_emissao || ""}` : "";
-      if (!current || rank.localeCompare(currentRank, "pt-PT", { numeric: true }) > 0) grouped.set(key, item);
-      return grouped;
-    }, new Map());
-    const drawings = [...rows.values()].sort((a, b) => indexNumber(a).localeCompare(indexNumber(b), "pt-PT", { numeric: true }));
-    return `<section class="document-index-card"><header><div><p class="eyebrow">CONTROLO DE REVISÕES</p><h3>ÚLTIMA VERSÃO DOS DESENHOS</h3></div><span>${drawings.length}</span></header>
-      <div class="document-index-list">${drawings.length ? drawings.map(item => `<article><div><span>NÚMERO</span><strong>${escapeHtml(indexNumber(item))}</strong></div><div><span>REVISÃO ATUAL</span><strong>${escapeHtml(item.revisao || "—")}</strong></div><div><span>DATA</span><strong>${formatDate(item.data_emissao)}</strong></div></article>`).join("") : '<div class="work-document-empty">SEM DESENHOS INDEXADOS</div>'}</div></section>`;
+    const drawings = [...data.drawings].sort((a, b) => indexNumber(a).localeCompare(indexNumber(b), "pt-PT", { numeric: true }) || String(b.revisao || "").localeCompare(String(a.revisao || ""), "pt-PT", { numeric: true }));
+    return `<section class="document-index-card"><header><div><p class="eyebrow">CONTROLO DE REVISÕES</p><h3>HISTÓRICO COMPLETO DOS DESENHOS</h3></div><span>${drawings.length}</span></header>
+      <div class="document-index-list">${drawings.length ? drawings.map(item => `<article><div><span>NÚMERO</span><strong>${escapeHtml(indexNumber(item))}</strong></div><div><span>REVISÃO</span><strong>${escapeHtml(item.revisao || "—")}</strong></div><div><span>DATA</span><strong>${formatDate(item.data_emissao)}</strong></div><div><span>ENVIADO PARA</span><strong>${escapeHtml(item.destinatarios || "Não registado")}</strong></div></article>`).join("") : '<div class="work-document-empty">SEM DESENHOS INDEXADOS</div>'}</div></section>`;
   }
 
   function pdeIndex() {
@@ -147,7 +127,6 @@ export function createDocumentsModule({
 
   function renderDocumentRows(section) {
     let documents = data.documents.filter(document => section.types.includes(document.tipo));
-    if (section.id === "drawings") documents = latestByDocumentNumber(documents);
     if (!documents.length) return '<div class="document-section-empty"><strong>AINDA SEM FICHEIROS</strong><span>Use “Carregar ficheiro” para adicionar o primeiro documento deste grupo.</span></div>';
     const grouped = new Map(section.types.map(type => [type, []]));
     documents.forEach(document => (grouped.get(document.tipo) || grouped.get(section.types[0]))?.push(document));
@@ -155,7 +134,7 @@ export function createDocumentsModule({
       const rows = grouped.get(type) || [];
       if (!rows.length && section.types.length > 1) return "";
       return `<section class="work-document-group"><header><div><p class="eyebrow">${escapeHtml(typeLabel(type))}</p><h3>${escapeHtml(typeLabel(type).toUpperCase())}</h3></div><span>${rows.length}</span></header><div class="work-document-list">
-        ${rows.length ? rows.map(document => { const path = encodeURIComponent(document.arquivo_url || ""); return `<article class="work-document-row"><div class="work-document-icon">${escapeHtml(extension(document.nome_arquivo).slice(0, 4).toUpperCase() || "DOC")}</div><div class="work-document-name"><strong title="${escapeHtml(document.nome_arquivo)}">${escapeHtml(document.nome_arquivo)}</strong><span>${escapeHtml(typeLabel(document.tipo))}${document.numero_documento ? ` · ${escapeHtml(document.numero_documento)}` : ""}${document.revisao ? ` · REV. ${escapeHtml(document.revisao)}` : ""}</span></div><div class="work-document-meta"><span>ENVIADO POR</span><strong>${escapeHtml(data.users[document.enviado_por] || "Utilizador")}</strong></div><div class="work-document-meta"><span>DATA</span><strong>${formatDate(document.criado_em)}</strong></div><div class="work-document-actions">${canPreview(document) ? `<button type="button" data-document-preview="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">PRÉ-VISUALIZAR</button>` : ""}<button type="button" data-document-download="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">DESCARREGAR</button>${data.canEdit ? `<button type="button" class="danger" data-document-delete="${document.id}" data-document-path="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">APAGAR</button>` : ""}</div></article>`; }).join("") : '<div class="work-document-empty">SEM DOCUMENTOS NESTA CATEGORIA</div>'}
+        ${rows.length ? rows.map(document => { const path = encodeURIComponent(document.arquivo_url || ""); return `<article class="work-document-row"><div class="work-document-icon">${escapeHtml(extension(document.nome_arquivo).slice(0, 4).toUpperCase() || "DOC")}</div><div class="work-document-name"><strong title="${escapeHtml(document.nome_arquivo)}">${escapeHtml(document.nome_arquivo)}</strong><span>${escapeHtml(typeLabel(document.tipo))}${document.numero_documento ? ` · ${escapeHtml(document.numero_documento)}` : ""}${document.revisao ? ` · REV. ${escapeHtml(document.revisao)}` : ""}</span></div><div class="work-document-meta"><span>ENVIADO POR</span><strong>${escapeHtml(data.users[document.enviado_por] || "Utilizador")}</strong></div><div class="work-document-meta"><span>ENVIADO PARA</span><strong>${escapeHtml(document.destinatarios || "Não registado")}</strong></div><div class="work-document-meta"><span>DATA</span><strong>${formatDate(document.criado_em)}</strong></div><div class="work-document-actions">${canPreview(document) ? `<button type="button" data-document-preview="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">PRÉ-VISUALIZAR</button>` : ""}<button type="button" data-document-download="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">DESCARREGAR</button>${data.canEdit ? `<button type="button" class="danger" data-document-delete="${document.id}" data-document-path="${path}" data-document-name="${escapeHtml(document.nome_arquivo)}">APAGAR</button>` : ""}</div></article>`; }).join("") : '<div class="work-document-empty">SEM DOCUMENTOS NESTA CATEGORIA</div>'}
       </div></section>`;
     }).join("")}</div>`;
   }
@@ -224,6 +203,7 @@ export function createDocumentsModule({
     const type = form.elements.tipo.value;
     const documentNumber = form.elements.numero_documento.value.trim();
     const revision = form.elements.revisao.value.trim();
+    const recipients = form.elements.destinatarios.value.trim();
     const indexed = ["desenho", "desenhos_preparacao", "pdes_rfis"].includes(type);
     const error = form.querySelector(".form-error");
     const button = form.querySelector('button[type="submit"]');
@@ -241,7 +221,7 @@ export function createDocumentsModule({
         const response = await supabase("documentos_obra?select=*", {
           method: "POST",
           headers: { Prefer: "return=representation" },
-          body: JSON.stringify({ obra_id: selectedWorkId, tipo: type, nome_arquivo: file.name, arquivo_url: objectPath, enviado_por: getProfile()?.id, numero_documento: documentNumber || null, revisao: ["desenho", "desenhos_preparacao"].includes(type) ? revision || null : null }),
+          body: JSON.stringify({ obra_id: selectedWorkId, tipo: type, nome_arquivo: file.name, arquivo_url: objectPath, enviado_por: getProfile()?.id, destinatarios: recipients || null, numero_documento: documentNumber || null, revisao: ["desenho", "desenhos_preparacao"].includes(type) ? revision || null : null }),
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));
@@ -291,7 +271,7 @@ export function createDocumentsModule({
     const path = decodeURIComponent(button.dataset.documentPath || "");
     const name = button.dataset.documentName || "documento";
     if (!data.canEdit) return toast("Não tem permissão para apagar este documento.", "error");
-    if (!window.confirm(`Apagar “${name}”? Esta ação fica registada na auditoria.`)) return;
+    if (!await platformConfirm(`Apagar “${name}”? Esta ação fica registada na auditoria.`, { title: "Apagar documento", danger: true, confirmLabel: "APAGAR" })) return;
     button.disabled = true;
     try {
       if (isConfigured) {

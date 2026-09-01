@@ -190,7 +190,7 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
       if (event.target.matches("[data-xlsx-select]")) { const row = state.rows[Number(event.target.dataset.xlsxSelect)]; if (row && !row.errors.length) row.selected = event.target.checked; render(); }
     });
     dialog.addEventListener("click", async event => {
-      if (event.target.closest("[data-xlsx-confirm]")) await confirm();
+      if (event.target.closest("[data-xlsx-confirm]")) await confirmImport();
       if (event.target.closest("[data-xlsx-reset]")) { state.file = null; state.rows = []; render(); }
     });
     return dialog;
@@ -218,7 +218,7 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
     const ready = state.rows.filter(row => row.selected && !row.errors.length).length; const problems = state.rows.filter(row => row.errors.length || row.warnings.length).length;
     dialog.querySelector("[data-xlsx-content]").innerHTML = `${!state.file ? `<div class="xlsx-import-drop"><input type="file" accept=".xlsx" data-xlsx-file><strong>SELECIONAR FICHEIRO .XLSX</strong><span>Nada será gravado antes da pré-visualização e confirmação.</span>${error ? `<p>${esc(error)}</p>` : ""}</div>` : `<div class="xlsx-import-summary"><div><span>FICHEIRO</span><strong>${esc(state.file.name)}</strong></div><div class="ready"><span>PRONTAS</span><strong>${ready}</strong></div><div class="warning"><span>COM AVISO/ERRO</span><strong>${problems}</strong></div><button type="button" data-xlsx-reset>SUBSTITUIR FICHEIRO</button></div><div class="xlsx-import-table-wrap"><table class="xlsx-import-table"><thead><tr><th>IMPORTAR</th><th>LINHA</th><th>REGISTO</th><th>ESTADO</th><th>OBSERVAÇÕES</th></tr></thead><tbody>${state.rows.map((row, index) => { const [kind, label] = status(row); return `<tr class="${kind}"><td><input type="checkbox" data-xlsx-select="${index}" ${row.selected ? "checked" : ""} ${row.errors.length ? "disabled" : ""}></td><td>${row.row}</td><td><strong>${esc(row.label)}</strong></td><td><span>${label}</span></td><td>${[...row.errors, ...row.warnings].map(message => `<p>${esc(message)}</p>`).join("") || "Sem problemas"}</td></tr>`; }).join("")}</tbody></table></div><footer><p><strong>${ready} linhas prontas</strong> · ${state.rows.length - ready} não selecionadas ou bloqueadas</p><button class="primary-button" type="button" data-xlsx-confirm ${!ready || state.busy ? "disabled" : ""}>${state.busy ? "A IMPORTAR…" : "CONFIRMAR IMPORTAÇÃO"} <span>→</span></button></footer>`}`;
   }
-  async function confirm() {
+  async function confirmImport() {
     const rows = state.rows.filter(row => row.selected && !row.errors.length).map(row => row.payload);
     if (!rows.length || state.busy) return;
     state.busy = true; render();

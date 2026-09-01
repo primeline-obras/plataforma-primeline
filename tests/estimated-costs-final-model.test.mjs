@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const sql = fs.readFileSync(new URL("../supabase/custos_estimados_modelo_final.sql", import.meta.url), "utf8");
+const consolidatedSql = fs.readFileSync(new URL("../supabase/correcoes_pos_auditoria_custos_faturas.sql", import.meta.url), "utf8");
 const dashboard = fs.readFileSync(new URL("../src/production-dashboard.js", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 
@@ -23,9 +24,14 @@ assert.match(dashboard, /CUSTOS ESTIMADOS/);
 assert.match(dashboard, /ESTIMATIVA FINAL/);
 assert.match(dashboard, /data-confirm-sub-cost/);
 assert.match(dashboard, /data-complete-pl-cost/);
-assert.match(dashboard, /meetingReturnView !== "rsp"/);
+assert.match(dashboard, /renderCostTrace\(model, true\)/);
+assert.match(dashboard, /costEditMode = false/);
 assert.match(dashboard, /COMPOSIÇÃO AUDITÁVEL DO CUSTO · SÓ LEITURA/);
 assert.doesNotMatch(dashboard, /Custos fixos · 8,5%/);
-assert.match(app, /Valor adjudicado — confirmar remoção dos Custos Estimados\?/);
+assert.match(consolidatedSql, /fn_concluir_custos_pl_tarefa/);
+assert.match(consolidatedSql, /fn_resumo_custos_obra/);
+assert.match(consolidatedSql, /public\.faturacao/);
+assert.match(consolidatedSql, /estado_pagamento.*estado_aprovacao/);
+assert.doesNotMatch(app, /fn_confirmar_compromisso_subempreitada/);
 
 console.log("Modelo final de custos estimados validado.");

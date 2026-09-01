@@ -1,3 +1,5 @@
+import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
+
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -24,7 +26,7 @@ function deadlineState(value, threshold = 30) {
 
 export function createVehiclesModule({
   root, supabase, isConfigured, getCollaborators, getSuppliers,
-  uploadEntityDocument, downloadWorkDocument, euro, prettyDate, toast,
+  uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, euro, prettyDate, toast,
 }) {
   const state = {
     loaded: false, loading: false, query: "", selectedVehicleId: "",
@@ -143,13 +145,13 @@ export function createVehiclesModule({
     const rows = state.events.filter(row => row.viatura_id === item.id);
     return `<section class="fleet-section"><header><div><p class="eyebrow">HISTÓRICO ÚNICO</p><h3>EVENTOS DA VIATURA</h3></div><span>${rows.length}</span></header>
       <div class="fleet-timeline">${rows.length ? rows.map(row => `<article>
-        <time>${formatDate(row.data)}</time><i class="${row.tipo}"></i><div><strong>${esc(EVENT_LABELS[row.tipo] || row.tipo)}</strong><p>${esc(row.descricao || "Sem descrição")}</p><small>${esc(supplierName(row.fornecedor_id))}</small></div><b>${row.custo == null ? "—" : euro.format(Number(row.custo))}</b>
+        <time>${formatDate(row.data)}</time><i class="${row.tipo}"></i><div><strong>${esc(EVENT_LABELS[row.tipo] || row.tipo)}</strong><p>${esc(row.descricao || "Sem descrição")}</p><small>${esc(supplierName(row.fornecedor_id))}</small></div><b>${row.custo == null ? "—" : euro.format(Number(row.custo))}</b><div><button type="button" data-fleet-edit-event="${row.id}">EDITAR</button><button type="button" class="danger-action" data-fleet-delete-event="${row.id}">APAGAR</button></div>
       </article>`).join("") : `<div class="fleet-empty">AINDA SEM EVENTOS</div>`}</div>
     </section>`;
   }
 
-  function attachmentButtons(rows) {
-    return rows.map(file => `<button type="button" data-fleet-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${esc(file.nome_arquivo)}">${esc(file.nome_arquivo)}</button>`).join("");
+  function attachmentButtons(rows, kind) {
+    return rows.map(file => `<span><button type="button" data-fleet-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${esc(file.nome_arquivo)}">${esc(file.nome_arquivo)}</button><button type="button" class="danger-action" data-fleet-delete-file="${file.id}" data-file-kind="${kind}" data-file-path="${encodeURIComponent(file.arquivo_url)}">APAGAR</button></span>`).join("");
   }
 
   function renderClaims(item) {
@@ -157,7 +159,7 @@ export function createVehiclesModule({
     return `<section class="fleet-section"><header><div><p class="eyebrow">OCORRÊNCIAS</p><h3>SINISTROS</h3></div><span>${rows.length}</span></header>
       <div class="fleet-record-list">${rows.length ? rows.map(row => {
         const files = state.claimFiles.filter(file => file.sinistro_id === row.id);
-        return `<article><div><time>${formatDate(row.data)}</time><strong>${esc(personName(row.colaborador_id))}</strong><p>${esc(row.descricao)}</p>${files.length ? `<div class="fleet-attachments">${attachmentButtons(files)}</div>` : ""}</div><em class="${row.estado}">${esc(CLAIM_LABELS[row.estado] || row.estado)}</em></article>`;
+        return `<article><div><time>${formatDate(row.data)}</time><strong>${esc(personName(row.colaborador_id))}</strong><p>${esc(row.descricao)}</p>${files.length ? `<div class="fleet-attachments">${attachmentButtons(files, "sinistro")}</div>` : ""}</div><label>ESTADO<select data-fleet-claim-status="${row.id}">${Object.entries(CLAIM_LABELS).map(([value,label]) => `<option value="${value}" ${value === row.estado ? "selected" : ""}>${label}</option>`).join("")}</select></label><div><button type="button" data-fleet-edit-claim="${row.id}">EDITAR</button><button type="button" class="danger-action" data-fleet-delete-claim="${row.id}">APAGAR</button></div></article>`;
       }).join("") : `<div class="fleet-empty">SEM SINISTROS REGISTADOS</div>`}</div>
     </section>`;
   }
@@ -199,7 +201,7 @@ export function createVehiclesModule({
       <div class="fleet-record-list">${state.fines.length ? state.fines.map(row => {
         const files = state.fineFiles.filter(file => file.multa_id === row.id);
         const linkedVehicle = state.vehicles.find(item => item.id === row.viatura_id);
-        return `<article><div><time>${formatDate(row.data)}</time><strong>${esc(personName(row.colaborador_id))} <i>${totals.get(row.colaborador_id)} no histórico</i></strong><p>${esc(row.descricao || "Sem descrição")}</p><small>${esc(linkedVehicle ? vehicleName(linkedVehicle) : "Sem viatura associada")}</small>${files.length ? `<div class="fleet-attachments">${attachmentButtons(files)}</div>` : ""}</div><b>${row.valor == null ? "—" : euro.format(Number(row.valor))}</b></article>`;
+        return `<article><div><time>${formatDate(row.data)}</time><strong>${esc(personName(row.colaborador_id))} <i>${totals.get(row.colaborador_id)} no histórico</i></strong><p>${esc(row.descricao || "Sem descrição")}</p><small>${esc(linkedVehicle ? vehicleName(linkedVehicle) : "Sem viatura associada")}</small>${files.length ? `<div class="fleet-attachments">${attachmentButtons(files, "multa")}</div>` : ""}</div><b>${row.valor == null ? "—" : euro.format(Number(row.valor))}</b><div><button type="button" data-fleet-edit-fine="${row.id}">EDITAR</button><button type="button" class="danger-action" data-fleet-delete-fine="${row.id}">APAGAR</button></div></article>`;
       }).join("") : `<div class="fleet-empty">SEM MULTAS REGISTADAS</div>`}</div>
     </section>`;
   }
@@ -234,6 +236,19 @@ export function createVehiclesModule({
   root.addEventListener("click", async event => {
     const selectButton = event.target.closest("[data-fleet-vehicle]");
     if (selectButton) { state.selectedVehicleId = selectButton.dataset.fleetVehicle; render(); return; }
+    const mutationButton = event.target.closest("[data-fleet-edit-event],[data-fleet-delete-event],[data-fleet-edit-claim],[data-fleet-delete-claim],[data-fleet-edit-fine],[data-fleet-delete-fine]");
+    if (mutationButton) {
+      const entries = [["fleetEditEvent","viaturas_eventos","editar"],["fleetDeleteEvent","viaturas_eventos","apagar"],["fleetEditClaim","viaturas_sinistros","editar"],["fleetDeleteClaim","viaturas_sinistros","apagar"],["fleetEditFine","multas","editar"],["fleetDeleteFine","multas","apagar"]];
+      const match = entries.find(([key]) => mutationButton.dataset[key]);
+      const [key, table, action] = match; const id = mutationButton.dataset[key];
+      let dados = {};
+      if (action === "apagar" && !await platformConfirm("Apagar este registo e os anexos associados? A ação fica registada na auditoria.", { title: "Apagar registo", danger: true, confirmLabel: "APAGAR" })) return;
+      if (action === "editar") { const collection = table === "viaturas_eventos" ? state.events : table === "viaturas_sinistros" ? state.claims : state.fines; const row = collection.find(item => item.id === id); const description = await platformPrompt("Edite a descrição do registo.", row?.descricao || "", { title: "Editar registo", label: "DESCRIÇÃO" }); if (description === null) return; dados = { descricao: description.trim() || null }; }
+      try { await api("rpc/fn_gerir_registo_frota", { method: "POST", body: JSON.stringify({ p_tabela: table, p_registo_id: id, p_acao: action, p_dados: dados }) }); await load(true); toast(action === "apagar" ? "Registo apagado." : "Registo atualizado."); } catch (error) { toast(error.message, "error"); }
+      return;
+    }
+    const deleteFile = event.target.closest("[data-fleet-delete-file]");
+    if (deleteFile) { if (!await platformConfirm("Apagar este anexo?", { title: "Apagar anexo", danger: true, confirmLabel: "APAGAR" })) return; try { const table = deleteFile.dataset.fileKind === "sinistro" ? "viaturas_sinistros_anexos" : "multas_anexos"; await api("rpc/fn_gerir_registo_frota", { method: "POST", body: JSON.stringify({ p_tabela: table, p_registo_id: deleteFile.dataset.fleetDeleteFile, p_acao: "apagar", p_dados: {} }) }); await deleteWorkDocument(decodeURIComponent(deleteFile.dataset.filePath)).catch(() => {}); await load(true); toast("Anexo apagado."); } catch (error) { toast(error.message, "error"); } return; }
     const download = event.target.closest("[data-fleet-download]");
     if (!download) return;
     download.disabled = true;
@@ -247,6 +262,8 @@ export function createVehiclesModule({
   });
 
   root.addEventListener("change", event => {
+    const status = event.target.closest("[data-fleet-claim-status]");
+    if (status) { status.disabled = true; api("rpc/fn_gerir_registo_frota", { method: "POST", body: JSON.stringify({ p_tabela: "viaturas_sinistros", p_registo_id: status.dataset.fleetClaimStatus, p_acao: "editar", p_dados: { estado: status.value } }) }).then(() => { const row = state.claims.find(item => item.id === status.dataset.fleetClaimStatus); if (row) row.estado = status.value; toast("Estado do sinistro atualizado."); render(); }).catch(error => { toast(error.message, "error"); status.disabled = false; }); return; }
     const form = event.target.closest("[data-fleet-event-form]");
     if (!form) return;
     const eligible = ["revisao", "inspecao"].includes(form.elements.tipo.value);

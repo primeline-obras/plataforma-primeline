@@ -1,3 +1,5 @@
+import { platformConfirm } from "./platform-dialogs.js?v=1";
+
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -90,7 +92,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     root.innerHTML = `<div class="page-heading"><div><p class="eyebrow">ORGANIZAÇÃO INTERNA</p><h1>SALAS DE REUNIÃO</h1><p>Consulte a disponibilidade e reserve diretamente, sem aprovação prévia.</p></div><div class="heading-stat"><span>SALA</span><strong>${esc(room?.nome || "—")}</strong></div></div>${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)}</span></div>` : ""}${state.loading ? `<div class="fleet-loading">A CARREGAR RESERVAS…</div>` : `<div class="meeting-room-layout"><div>${renderCalendar()}${renderDayAgenda()}</div><div>${renderForm()}${renderUpcoming()}</div></div>`}`;
   }
 
-  root.addEventListener("click", event => {
+  root.addEventListener("click", async event => {
     const edit = event.target.closest("[data-edit-reservation]");
     if (edit) { const row = state.reservations.find(item => item.id === edit.dataset.editReservation); if (!canManage(row)) return toast("Não tem permissão para editar esta reserva.", "error"); state.editingId = row.id; state.selectedDate = row.data; state.month = monthKey(row.data); render(); return; }
     if (event.target.closest("[data-cancel-reservation-edit]")) { state.editingId = ""; render(); return; }
@@ -98,7 +100,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     if (remove) {
       const row = state.reservations.find(item => item.id === remove.dataset.deleteReservation);
       if (!canManage(row)) return toast("Não tem permissão para apagar esta reserva.", "error");
-      if (!window.confirm(`Apagar a reserva “${row.titulo}” de ${dayLabel(row.data)}? Os participantes serão notificados.`)) return;
+      if (!await platformConfirm(`Apagar a reserva “${row.titulo}” de ${dayLabel(row.data)}? Os participantes serão notificados.`, { title: "Apagar reserva", danger: true, confirmLabel: "APAGAR RESERVA" })) return;
       remove.disabled = true;
       (async () => { if (isConfigured) await api("rpc/fn_apagar_reserva_sala", { method:"POST", body:JSON.stringify({ p_reserva_id:row.id }) }); state.reservations = state.reservations.filter(item => item.id !== row.id); state.participants = state.participants.filter(item => item.reserva_id !== row.id); if (state.editingId === row.id) state.editingId = ""; toast("Reserva apagada e participantes notificados."); render(); })().catch(error => { toast(error.message || "Não foi possível apagar a reserva.", "error"); remove.disabled = false; }); return;
     }

@@ -1,4 +1,5 @@
 import { directDebitOccurrences } from "./direct-debits.js?v=1";
+import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
 
 const number = value => Number(value || 0);
 const sum = (rows, field) => rows.reduce((total, row) => total + number(row[field]), 0);
@@ -237,6 +238,7 @@ export function createProductionDashboard(options) {
   let overviewState = emptyOverviewState();
   let meetingState = null;
   let meetingReturnView = "overview";
+  let costEditMode = false;
   let rspLoadVersion = 0;
 
   function alertSeverity(alert) {
@@ -771,7 +773,7 @@ export function createProductionDashboard(options) {
       monthlyStaffVehicle: automatic ? number(automatic.pessoal_viatura_estimado) : monthlyStaffVehicle,
       fixedCosts: number(automatic?.custos_fixos), adjustments: number(automatic?.ajustes_total),
       directFinalCost: number(automatic?.estimativa_terminus_direta), costSummary: automatic,
-      data: { planningItems: data.planningItems || [] },
+      data: { planningItems: data.planningItems || [], budgetItems: data.budget || [] },
       investmentMode,
       remainingMonths, estimatedFinalCost, contractualEnd, projectedFinish, progress, start, dailyProgress,
     };
@@ -787,7 +789,7 @@ export function createProductionDashboard(options) {
     return { label, description, finish, deviationDays, available: Boolean(model.dailyProgress && model.contractualEnd) };
   }
 
-  const canAdjustWorkCosts = () => meetingReturnView !== "rsp"
+  const canAdjustWorkCosts = () => costEditMode
     && ["gerencia", "diretor_obra"].includes(getAccessContext()?.role || "");
 
   const costStateLabels = {
@@ -797,6 +799,7 @@ export function createProductionDashboard(options) {
   };
 
   function renderCostTrace(model, readOnly = false) {
+    const allowEdit = !readOnly && canAdjustWorkCosts();
     const summary = model.costSummary;
     const real = summary.real || {};
     const remaining = summary.por_concluir || {};
@@ -816,14 +819,14 @@ export function createProductionDashboard(options) {
           <span>ORÇA <b>${euro.format(number(row.valor_orcamentado))}</b></span>
           <span>REAL <b>${euro.format(number(row.valor_real))}</b></span>
           ${row.tipo === "subempreitada" ? `<span>REMANESCENTE <b>${euro.format(number(row.compromisso_remanescente))}</b></span>` : ""}
-          ${!readOnly && canAdjustWorkCosts() && row.tipo === "subempreitada" && row.subempreitada_id && !row.remocao_confirmada ? `<button type="button" data-confirm-sub-cost="${row.subempreitada_id}">CONFIRMAR REMOÇÃO DO ESTIMADO</button>` : ""}
-          ${!readOnly && canAdjustWorkCosts() && row.tipo === "PL" && row.estado_custo !== "concluido" ? `<button type="button" data-complete-pl-cost="${row.id}" data-default-value="${number(row.valor_orcamentado)}">CONCLUIR E CONFIRMAR REAL</button>` : ""}
+          ${allowEdit && row.tipo === "subempreitada" && row.subempreitada_id && !row.remocao_confirmada ? `<button type="button" data-confirm-sub-cost="${row.subempreitada_id}">CONFIRMAR REMOÇÃO DO ESTIMADO</button>` : ""}
+          ${allowEdit && row.tipo === "PL" && row.estado_custo !== "concluido" ? `<button type="button" data-complete-pl-cost="${row.id}" data-default-value="${number(row.valor_orcamentado)}">CONCLUIR E CONFIRMAR REAL</button>` : ""}
         </article>`).join("") || '<p class="overview-empty">SEM PACOTES DE CUSTO. O Diretor pode adicionar componentes PL a partir das tarefas.</p>'}
-        ${canAdjustWorkCosts() ? `<form data-cost-component><label>TAREFA<select name="planeamento_item_id" required><option value="">Selecionar…</option>${(model.data?.planningItems || []).map(row => `<option value="${row.id}">${escapeHtml(row.codigo || "")} · ${escapeHtml(row.descricao || "Tarefa")}</option>`).join("")}</select></label><label>COMPONENTE<select name="tipo"><option value="PL">PL</option><option value="subempreitada">Subempreitada</option></select></label><label>VALOR DO ORÇA (€)<input name="valor_orcamentado" type="number" min="0" step="0.01" required></label><label>ESTADO<select name="estado_custo">${Object.entries(costStateLabels).map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><button class="secondary-button" type="submit">GUARDAR PACOTE</button><p class="form-error"></p></form>` : ""}
+        ${allowEdit ? `<form data-cost-component><label>TAREFA<select name="planeamento_item_id" required><option value="">Selecionar…</option>${(model.data?.planningItems || []).map(row => `<option value="${row.id}">${escapeHtml(row.codigo || "")} · ${escapeHtml(row.descricao || "Tarefa")}</option>`).join("")}</select></label><label>LINHA DO ORÇAMENTO<select name="item_orcamento_id"><option value="">Pacote / especialidade</option>${(model.data?.budgetItems || []).map(row => `<option value="${row.id}">${escapeHtml(row.numero_artigo || row.codigo || row.designacao || row.descricao || "Linha")}</option>`).join("")}</select></label><label>COMPONENTE<select name="tipo"><option value="PL">PL</option><option value="subempreitada">Subempreitada</option></select></label><label>VALOR DO ORÇA (€)<input name="valor_orcamentado" type="number" min="0" step="0.01" required></label><label>ESTADO<select name="estado_custo">${Object.entries(costStateLabels).map(([value,label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><button class="secondary-button" type="submit">GUARDAR PACOTE</button><p class="form-error"></p></form>` : ""}
       </div>
       <div class="cost-adjustments"><header><strong>AJUSTES MANUAIS JUSTIFICADOS</strong><span>${euro.format(number(summary.ajustes_total))}</span></header>
-        ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${canAdjustWorkCosts() ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
-        ${canAdjustWorkCosts() ? `<form data-cost-adjustment><label>VALOR (€)<input name="valor" type="number" step="0.01" required></label><label>MOTIVO OBRIGATÓRIO<input name="motivo" minlength="3" required placeholder="Explique a origem do ajuste"></label><button class="secondary-button" type="submit">REGISTAR AJUSTE</button><p class="form-error"></p></form>` : ""}
+        ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${allowEdit ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
+        ${allowEdit ? `<form data-cost-adjustment><label>VALOR (€)<input name="valor" type="number" step="0.01" required></label><label>MOTIVO OBRIGATÓRIO<input name="motivo" minlength="3" required placeholder="Explique a origem do ajuste"></label><button class="secondary-button" type="submit">REGISTAR AJUSTE</button><p class="form-error"></p></form>` : ""}
       </div>
     </details>`;
   }
@@ -849,7 +852,7 @@ export function createProductionDashboard(options) {
             <div><dt>Estimativa final</dt><dd data-estimated-final>${euro.format(model.estimatedFinalCost)}</dd></div>
             <div class="forecast-deviation"><dt>Desvio ao orçamento</dt><dd data-budget-deviation class="${initialDeviation > 0 ? "negative" : "positive"}">${euro.format(initialDeviation)}</dd></div>
           </dl>
-          ${model.costSummary ? renderCostTrace(model) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
+          ${model.costSummary ? renderCostTrace(model, true) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
         </article>
         <article class="panel financial-forecast-card">
           <header><span>CENÁRIOS DE PRAZO</span><strong>${Math.round(model.progress)}% EXECUTADO</strong></header>
@@ -1029,7 +1032,7 @@ export function createProductionDashboard(options) {
       investmentMode ? meetingQuery(`impactos_obra?select=*&obra_id=eq.${encoded}&order=data.desc`, "Impactos de obra", warnings) : [],
       investmentMode ? [] : meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
-      phaseIds.length ? meetingQuery(`planeamento_itens?select=id,fase_id,codigo,descricao,especialidade_id,executado_por,subempreitada_id,estado&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=codigo`, "Tarefas de planeamento", warnings) : [],
+      phaseIds.length ? meetingQuery(`planeamento_itens?select=id,fase_id,codigo,descricao,especialidade_id,executado_por,subempreitada_id,item_orcamento_id,estado&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=codigo`, "Tarefas de planeamento", warnings) : [],
       phaseIds.length ? meetingQuery(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Orçamento", warnings) : [],
       meetingQuery(`consultas_subempreitada?select=*&obra_id=eq.${encoded}`, "Consultas", warnings),
       subcontractIds.length ? meetingQuery(`pagamentos_subempreitada?select=*&subempreitada_id=in.(${subcontractIds.map(encodeURIComponent).join(",")})`, "Pagamentos", warnings) : [],
@@ -1071,16 +1074,16 @@ export function createProductionDashboard(options) {
       return;
     }
     toast("Ajuste de custo registado e auditado.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
   }
 
   async function deleteCostAdjustment(id, button) {
-    if (!meetingState || !canAdjustWorkCosts() || !confirm("Remover este ajuste de custo? O evento continuará registado na auditoria.")) return;
+    if (!meetingState || !canAdjustWorkCosts() || !await platformConfirm("Remover este ajuste de custo? O evento continuará registado na auditoria.", { title: "Remover ajuste", danger: true, confirmLabel: "REMOVER" })) return;
     button.disabled = true;
     const response = await supabase(`ajustes_custo_obra?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!response.ok) return toast("Não foi possível remover o ajuste.", "error");
     toast("Ajuste removido.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
   }
 
   async function saveCostComponent(form) {
@@ -1094,6 +1097,7 @@ export function createProductionDashboard(options) {
         p_planeamento_item_id: fields.planeamento_item_id,
         p_tipo: fields.tipo, p_valor_orcamentado: number(fields.valor_orcamentado),
         p_estado_custo: fields.estado_custo, p_valor_real_pl: null,
+        p_item_orcamento_id: fields.item_orcamento_id || null,
       }),
     });
     if (!response.ok) {
@@ -1102,24 +1106,24 @@ export function createProductionDashboard(options) {
       button.disabled = false; return;
     }
     toast("Pacote de custo guardado.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
   }
 
   async function confirmSubcontractEstimatedCost(subcontractId, button) {
     if (!meetingState || !canAdjustWorkCosts()
-      || !confirm("Valor adjudicado — confirmar remoção dos Custos Estimados?")) return;
+      || !await platformConfirm("Valor adjudicado — confirmar remoção dos Custos Estimados?", { title: "Confirmar custo adjudicado" })) return;
     button.disabled = true;
     const response = await supabase("rpc/fn_confirmar_remocao_custo_estimado_subempreitada", {
       method: "POST", body: JSON.stringify({ p_subempreitada_id: subcontractId }),
     });
     if (!response.ok) return toast("Não foi possível confirmar a remoção do custo estimado.", "error");
     toast("Custo orçamentado removido; compromisso adjudicado assumido.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
   }
 
   async function completePlCost(componentId, defaultValue, button) {
     if (!meetingState || !canAdjustWorkCosts()) return;
-    const entered = prompt("Valor real do trabalho PL (€). Pode ajustar o valor do orça antes de concluir:", number(defaultValue).toFixed(2));
+    const entered = await platformPrompt("Pode ajustar o valor do orça antes de concluir.", number(defaultValue).toFixed(2), { title: "Valor real do trabalho PL", label: "VALOR REAL (€)" });
     if (entered === null) return;
     const value = Number(String(entered).replace(",", "."));
     if (!Number.isFinite(value) || value < 0) return toast("Introduza um valor real válido.", "error");
@@ -1129,13 +1133,27 @@ export function createProductionDashboard(options) {
     });
     if (!response.ok) return toast("Não foi possível concluir o custo PL.", "error");
     toast("Pacote PL concluído e transferido para Custo Real.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
+  }
+
+  async function showWorkCosts(workId) {
+    const host = document.querySelector(`[data-work-cost-card="${CSS.escape(String(workId))}"]`);
+    const work = getWorks().find(item => String(item.id) === String(workId));
+    if (!host || !work) return;
+    costEditMode = true;
+    host.innerHTML = '<div class="overview-loading">A CARREGAR COMPOSIÇÃO DE CUSTO…</div>';
+    meetingState = await loadMeetingState(work);
+    const projection = meetingModel(meetingState).projection;
+    host.innerHTML = projection.costSummary
+      ? renderCostTrace(projection, false)
+      : '<div class="overview-warning">Resumo automático indisponível. Confirme se a migração consolidada de custos foi aplicada.</div>';
   }
 
   async function openMeeting(workId, returnView = "overview") {
     const work = getWorks().find(item => item.id === workId);
     if (!work) return;
     meetingReturnView = returnView;
+    costEditMode = false;
     showView("meeting");
     document.querySelector("#meeting-view").innerHTML = '<div class="overview-loading">A CARREGAR REUNIÃO SEMANAL…</div>';
     meetingState = await loadMeetingState(work);
@@ -1250,21 +1268,21 @@ export function createProductionDashboard(options) {
       const meetingButton = event.target.closest("[data-rsp-open-meeting]");
       if (meetingButton) openMeeting(meetingButton.dataset.rspOpenMeeting, "rsp");
     });
-    document.querySelector("#meeting-view")?.addEventListener("submit", event => {
+    document.querySelector("#work-detail")?.addEventListener("submit", event => {
       const form = event.target.closest("[data-cost-adjustment]");
-      if (form) { event.preventDefault(); saveCostAdjustment(form); }
+      if (form) { event.preventDefault(); saveCostAdjustment(form); return; }
       const componentForm = event.target.closest("[data-cost-component]");
       if (componentForm) { event.preventDefault(); saveCostComponent(componentForm); }
     });
-    document.querySelector("#meeting-view")?.addEventListener("click", event => {
-      const button = event.target.closest("[data-delete-cost-adjustment]");
-      if (button) deleteCostAdjustment(button.dataset.deleteCostAdjustment, button);
+    document.querySelector("#work-detail")?.addEventListener("click", event => {
+      const deleteButton = event.target.closest("[data-delete-cost-adjustment]");
+      if (deleteButton) return deleteCostAdjustment(deleteButton.dataset.deleteCostAdjustment, deleteButton);
       const confirmButton = event.target.closest("[data-confirm-sub-cost]");
-      if (confirmButton) confirmSubcontractEstimatedCost(confirmButton.dataset.confirmSubCost, confirmButton);
+      if (confirmButton) return confirmSubcontractEstimatedCost(confirmButton.dataset.confirmSubCost, confirmButton);
       const completeButton = event.target.closest("[data-complete-pl-cost]");
       if (completeButton) completePlCost(completeButton.dataset.completePlCost, completeButton.dataset.defaultValue, completeButton);
     });
   }
 
-  return { bind, refreshOverview, openMeeting, showRsp };
+  return { bind, refreshOverview, openMeeting, showRsp, showWorkCosts };
 }
