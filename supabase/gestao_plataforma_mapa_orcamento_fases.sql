@@ -65,13 +65,11 @@ do $$
 declare original text; adjusted text;
 begin
   select pg_get_functiondef('public.fn_mapa_gestao_obras()'::regprocedure) into original;
-  adjusted:=replace(original,
-    'if not (public.fn_e_admin() or public.fn_e_financeiro()) then
-    raise exception ''O Mapa de Gestão de Obras está reservado à Gerência e ao Financeiro.'';
-  end if;',
+  adjusted:=regexp_replace(original,
+    'if\s+not\s+\(\s*public\.fn_e_admin\(\)\s+or\s+public\.fn_e_financeiro\(\)\s*\)\s+then\s+raise\s+exception\s+''O Mapa de Gestão de Obras está reservado à Gerência e ao Financeiro\.'';\s+end\s+if;',
     'if not public.fn_pode_ver_mapa_gestao_obras() then
     raise exception ''Sem acesso ao Mapa de Gestão de Obras.'' using errcode = ''42501'';
-  end if;');
+  end if;', 'i');
   if adjusted=original then raise exception 'Não foi possível atualizar a guarda da função fn_mapa_gestao_obras.'; end if;
   execute adjusted;
 end $$;
