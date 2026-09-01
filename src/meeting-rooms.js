@@ -1,3 +1,5 @@
+import { platformConfirm } from "./platform-dialogs.js?v=1";
+
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -7,6 +9,10 @@ const monthKey = value => String(value || isoToday()).slice(0, 7);
 const normalizeTime = value => String(value || "").slice(0, 5);
 const monthLabel = value => new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(new Date(`${value}-01T12:00:00`));
 const dayLabel = value => new Intl.DateTimeFormat("pt-PT", { weekday: "short", day: "2-digit", month: "short" }).format(new Date(`${value}T12:00:00`));
+const shortPersonName = value => {
+  const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : (parts[0] || "Utilizador");
+};
 
 function changeMonth(value, offset) {
   const date = new Date(`${value}-01T12:00:00`); date.setMonth(date.getMonth() + offset); return date.toISOString().slice(0, 7);
@@ -73,7 +79,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
       <label>TÍTULO / PARA QUEM<input name="titulo" required maxlength="160" value="${esc(editing?.titulo || "")}" placeholder="Ex. Reunião de produção — Eng. Henrique"></label>
       <label>DATA<input name="data" type="date" required value="${editing?.data || state.selectedDate}"></label>
       <div><label>HORA INÍCIO<input name="hora_inicio" type="time" required value="${normalizeTime(editing?.hora_inicio)}"></label><label>HORA FIM<input name="hora_fim" type="time" required value="${normalizeTime(editing?.hora_fim)}"></label></div>
-      <fieldset class="meeting-participants"><legend>PARTICIPANTES</legend><p>Selecione os utilizadores que devem receber esta reunião na Visão Geral.</p><div>${state.users.map(user => `<label><input type="checkbox" name="participantes" value="${user.id}" ${checked.has(user.id) ? "checked" : ""}><span>${esc(user.nome)}</span><small>${esc(String(user.funcao || "Utilizador").replaceAll("_", " "))}</small></label>`).join("") || '<span class="meeting-empty">Não existem utilizadores disponíveis.</span>'}</div></fieldset>
+      <fieldset class="meeting-participants"><legend>PARTICIPANTES</legend><p>Selecione os utilizadores que devem receber esta reunião na Visão Geral.</p><div>${state.users.map(user => `<label><input type="checkbox" name="participantes" value="${user.id}" ${checked.has(user.id) ? "checked" : ""}><span title="${esc(user.nome)}">${esc(shortPersonName(user.nome))}</span><small>${esc(String(user.funcao || "Utilizador").replaceAll("_", " "))}</small></label>`).join("") || '<span class="meeting-empty">Não existem utilizadores disponíveis.</span>'}</div></fieldset>
       <div class="meeting-form-occupied">${reservationsFor(editing?.data || state.selectedDate).filter(row => row.id !== editing?.id).map(row => `<span>${normalizeTime(row.hora_inicio)}–${normalizeTime(row.hora_fim)}</span>`).join("") || "<span>LIVRE</span>"}</div>
       <div class="meeting-form-actions"><button class="primary-button" type="submit">${editing ? "GUARDAR ALTERAÇÕES" : "RESERVAR SALA"} <span>→</span></button>${editing ? `<button type="button" class="outline-action" data-cancel-reservation-edit>CANCELAR</button>` : ""}</div><p class="form-error"></p>
     </form></section>`;
@@ -90,7 +96,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     root.innerHTML = `<div class="page-heading"><div><p class="eyebrow">ORGANIZAÇÃO INTERNA</p><h1>SALAS DE REUNIÃO</h1><p>Consulte a disponibilidade e reserve diretamente, sem aprovação prévia.</p></div><div class="heading-stat"><span>SALA</span><strong>${esc(room?.nome || "—")}</strong></div></div>${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)}</span></div>` : ""}${state.loading ? `<div class="fleet-loading">A CARREGAR RESERVAS…</div>` : `<div class="meeting-room-layout"><div>${renderCalendar()}${renderDayAgenda()}</div><div>${renderForm()}${renderUpcoming()}</div></div>`}`;
   }
 
-  root.addEventListener("click", event => {
+  root.addEventListener("click", async event => {
     const edit = event.target.closest("[data-edit-reservation]");
     if (edit) { const row = state.reservations.find(item => item.id === edit.dataset.editReservation); if (!canManage(row)) return toast("Não tem permissão para editar esta reserva.", "error"); state.editingId = row.id; state.selectedDate = row.data; state.month = monthKey(row.data); render(); return; }
     if (event.target.closest("[data-cancel-reservation-edit]")) { state.editingId = ""; render(); return; }
@@ -98,7 +104,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     if (remove) {
       const row = state.reservations.find(item => item.id === remove.dataset.deleteReservation);
       if (!canManage(row)) return toast("Não tem permissão para apagar esta reserva.", "error");
-      if (!window.confirm(`Apagar a reserva “${row.titulo}” de ${dayLabel(row.data)}? Os participantes serão notificados.`)) return;
+      if (!await platformConfirm(`Apagar a reserva “${row.titulo}” de ${dayLabel(row.data)}? Os participantes serão notificados.`, { title: "Apagar reserva", danger: true, confirmLabel: "APAGAR RESERVA" })) return;
       remove.disabled = true;
       (async () => { if (isConfigured) await api("rpc/fn_apagar_reserva_sala", { method:"POST", body:JSON.stringify({ p_reserva_id:row.id }) }); state.reservations = state.reservations.filter(item => item.id !== row.id); state.participants = state.participants.filter(item => item.reserva_id !== row.id); if (state.editingId === row.id) state.editingId = ""; toast("Reserva apagada e participantes notificados."); render(); })().catch(error => { toast(error.message || "Não foi possível apagar a reserva.", "error"); remove.disabled = false; }); return;
     }
@@ -127,5 +133,6 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
     } catch (error) { const message = String(error.message || ""); errorNode.textContent = message.includes("Já existe uma reserva") ? "Já existe uma reserva para esta sala neste horário. Escolha outro período." : message || "Não foi possível guardar a reserva."; button.disabled = false; }
   });
 
-  return { show: () => load(), refresh: () => load(true) };
+  // Recarrega sempre os nomes reais dos utilizadores ao entrar no módulo.
+  return { show: () => load(true), refresh: () => load(true) };
 }

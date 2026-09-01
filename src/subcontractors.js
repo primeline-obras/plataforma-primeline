@@ -128,21 +128,30 @@ export function createSubcontractorsModule({
         .join(" ").toLocaleLowerCase("pt-PT");
       return matchesState && matchesSpecialty && (!needle || searchable.includes(needle));
     }).sort((left, right) => {
-      if (state.sort === "rating") {
-        const ratingDifference = (right.metrics.rating ?? -1) - (left.metrics.rating ?? -1);
-        if (ratingDifference) return ratingDifference;
-      }
-      if (state.sort === "works") {
-        const workDifference = right.metrics.workCount - left.metrics.workCount;
-        if (workDifference) return workDifference;
-      }
-      if (state.sort === "value") {
-        const valueDifference = right.metrics.total - left.metrics.total;
-        if (valueDifference) return valueDifference;
-      }
+      const ratingDifference = (right.metrics.rating ?? -1) - (left.metrics.rating ?? -1);
+      if (ratingDifference) return ratingDifference;
       return String(left.supplier.nome || "").localeCompare(
         String(right.supplier.nome || ""), "pt-PT", { sensitivity: "base" });
     });
+  }
+
+  function directoryGroups(rows) {
+    const groups = new Map();
+    rows.forEach(row => {
+      const specialties = specialtiesFor(row.supplier.id);
+      const memberships = specialties.length ? specialties : [{ especialidade_id: "unclassified", nome: "Sem especialidade definida" }];
+      memberships.forEach(specialty => {
+        if (!groups.has(specialty.especialidade_id)) groups.set(specialty.especialidade_id, { id: specialty.especialidade_id, nome: specialty.nome, rows: [] });
+        groups.get(specialty.especialidade_id).rows.push(row);
+      });
+    });
+    return [...groups.values()].sort((left, right) => {
+      if (left.id === "unclassified") return 1;
+      if (right.id === "unclassified") return -1;
+      return left.nome.localeCompare(right.nome, "pt-PT", { sensitivity: "base" });
+    }).map(group => ({ ...group, rows: group.rows.sort((left, right) =>
+      (right.metrics.rating ?? -1) - (left.metrics.rating ?? -1)
+      || String(left.supplier.nome || "").localeCompare(String(right.supplier.nome || ""), "pt-PT", { sensitivity: "base" })) }));
   }
 
   function trustBadge(value) {
@@ -181,9 +190,8 @@ export function createSubcontractorsModule({
             ? row.contacts.map(escapeHtml).join(" · ")
             : "CONTACTO NÃO INDICADO"}</small></div>
       </div>
-      <div class="supplier-stat"><span>OBRAS</span><strong>${row.metrics.workCount}</strong></div>
-      <div class="supplier-stat"><span>ADJUDICADO HISTÓRICO</span><strong>${euro.format(row.metrics.total)}</strong></div>
       ${renderRating(row.metrics)}
+      <div class="supplier-stat"><span>OBRAS</span><strong>${row.metrics.workCount}</strong></div>
       <span class="supplier-open-arrow">${selected ? "↑" : "→"}</span>
     </button>`;
   }
@@ -234,7 +242,6 @@ export function createSubcontractorsModule({
       <div class="supplier-detail-kpis">
         <div><span>OBRAS</span><strong>${metrics.workCount}</strong></div>
         <div><span>SUBEMPREITADAS</span><strong>${metrics.history.length}</strong></div>
-        <div><span>ADJUDICADO HISTÓRICO</span><strong>${euro.format(metrics.total)}</strong></div>
         <div>${renderRating(metrics, true)}</div>
       </div>
       ${canManageSpecialties() ? `<form class="supplier-specialties-editor" data-specialties-editor="${supplier.id}">
@@ -333,14 +340,11 @@ export function createSubcontractorsModule({
       return;
     }
     const rows = directoryRows();
+    const groups = directoryGroups(rows);
     const allMetrics = state.suppliers.map(supplier => supplierMetrics(supplier));
     const evaluated = allMetrics.filter(item => item.evaluations.length).length;
     const recommended = state.suppliers.filter(item =>
       ["ativo", "recomendado"].includes(normalizeState(item.estado_confianca))).length;
-    const supplierIds = new Set(state.suppliers.map(item => item.id));
-    const totalAdjudicated = state.subcontracts.filter(
-      item => supplierIds.has(item.fornecedor_id)).reduce(
-      (sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
     const trustOptions = [...new Set(state.suppliers.map(item =>
       normalizeState(item.estado_confianca)))].sort();
 
@@ -349,7 +353,6 @@ export function createSubcontractorsModule({
         <article><span>SUBEMPREITEIROS</span><strong>${state.suppliers.length}</strong></article>
         <article><span>ATIVOS / RECOMENDADOS</span><strong>${recommended}</strong></article>
         <article><span>COM AVALIAÇÃO</span><strong>${evaluated}</strong></article>
-        <article><span>ADJUDICADO HISTÓRICO</span><strong>${euro.format(totalAdjudicated)}</strong></article>
       </section>
       <section class="supplier-directory-panel">
         <div class="supplier-directory-toolbar">
@@ -367,19 +370,13 @@ export function createSubcontractorsModule({
             <option value="all">Todas as especialidades</option>
             ${state.specialties.map(item => `<option value="${item.id}" ${state.specialtyFilter === item.id ? "selected" : ""}>${escapeHtml(item.nome)}</option>`).join("")}
           </select><b>⌄</b></div></label>
-          <label><span>ORDENAR</span><div class="select-wrap"><select data-supplier-sort>
-            <option value="rating" ${state.sort === "rating" ? "selected" : ""}>Melhor avaliação</option>
-            <option value="name" ${state.sort === "name" ? "selected" : ""}>Nome A–Z</option>
-            <option value="works" ${state.sort === "works" ? "selected" : ""}>Mais obras</option>
-            <option value="value" ${state.sort === "value" ? "selected" : ""}>Maior valor adjudicado</option>
-          </select><b>⌄</b></div></label>
         </div>
         <div class="supplier-directory-heading">
           <div><p class="eyebrow">BASE DE FORNECEDORES</p><h2>DIRETÓRIO GERAL</h2></div>
           <span>${rows.length} DE ${state.suppliers.length}</span>
         </div>
-        <div class="supplier-directory-list">${rows.length
-          ? rows.map(renderDirectoryCard).join("")
+        <div class="supplier-directory-list grouped">${rows.length
+          ? groups.map(group => `<section class="supplier-specialty-group"><header><div><span>ESPECIALIDADE</span><h3>${escapeHtml(group.nome)}</h3></div><b>${group.rows.length}</b></header><div>${group.rows.map(renderDirectoryCard).join("")}</div></section>`).join("")
           : `<div class="subcontract-empty">NENHUM SUBEMPREITEIRO CORRESPONDE AOS FILTROS</div>`}</div>
       </section>
       ${renderDetail()}`;
@@ -550,10 +547,6 @@ export function createSubcontractorsModule({
     if (event.target.matches("[data-supplier-specialty]")) {
       state.specialtyFilter = event.target.value;
       state.selectedSupplierId = null;
-      render();
-    }
-    if (event.target.matches("[data-supplier-sort]")) {
-      state.sort = event.target.value;
       render();
     }
   });

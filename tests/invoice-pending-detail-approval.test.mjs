@@ -10,7 +10,8 @@ assert.ok(cardSummary.indexOf("invoice-primary-actions") < cardSummary.indexOf("
 assert.match(app, /async function openInvoiceDetail/, "invoice detail loader must exist");
 assert.match(app, /faturas_itens\?select=/, "detail must load extracted invoice items");
 assert.match(app, /SOMA DOS ITENS/, "detail must reconcile item and document totals");
-assert.match(app, /data-detail-decision="aprovado"/, "detail must expose approval");
+assert.match(app, /data-detail-advance=/, "detail must expose the next five-state transition");
+for (const state of ["recebida", "em_validacao", "aprovada_tecnicamente", "enviada_financeiro", "paga"]) assert.match(app, new RegExp(state));
 assert.match(app, /data-detail-decision="recusado"/, "detail must expose rejection");
 assert.match(app, /Confirma que verificou o PDF/, "a discrepant total must require explicit confirmation");
 assert.match(app, /Math\.round\(Math\.max\(0, gross - effectiveDiscount\) \* 100\) \/ 100/, "stored item totals must be rounded in cents");

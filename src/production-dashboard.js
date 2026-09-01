@@ -1,4 +1,5 @@
 import { directDebitOccurrences } from "./direct-debits.js?v=1";
+import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
 
 const number = value => Number(value || 0);
 const sum = (rows, field) => rows.reduce((total, row) => total + number(row[field]), 0);
@@ -225,7 +226,7 @@ export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date(
 export function createProductionDashboard(options) {
   const {
     supabase, isSupabaseConfigured, getSession, getWorks, getPendingInvoices,
-    getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView, getAccessContext,
+    getFinanceInvoices, getSuppliers, euro, prettyDate, toast, showView, getAccessContext, onImportPhaseBudget,
   } = options;
   const emptyOverviewState = () => ({
     alerts: [], profile: null, responsibilities: [], phases: [], planning: [], budget: [],
@@ -237,6 +238,7 @@ export function createProductionDashboard(options) {
   let overviewState = emptyOverviewState();
   let meetingState = null;
   let meetingReturnView = "overview";
+  let costEditMode = false;
   let rspLoadVersion = 0;
 
   function alertSeverity(alert) {
@@ -771,6 +773,7 @@ export function createProductionDashboard(options) {
       monthlyStaffVehicle: automatic ? number(automatic.pessoal_viatura_estimado) : monthlyStaffVehicle,
       fixedCosts: number(automatic?.custos_fixos), adjustments: number(automatic?.ajustes_total),
       directFinalCost: number(automatic?.estimativa_terminus_direta), costSummary: automatic,
+      data: { planningItems: data.planningItems || [], budgetItems: data.budget || [] },
       investmentMode,
       remainingMonths, estimatedFinalCost, contractualEnd, projectedFinish, progress, start, dailyProgress,
     };
@@ -786,13 +789,14 @@ export function createProductionDashboard(options) {
     return { label, description, finish, deviationDays, available: Boolean(model.dailyProgress && model.contractualEnd) };
   }
 
-  const canAdjustWorkCosts = () => ["gerencia", "diretor_obra", "adjunto", "preparador"]
-    .includes(getAccessContext()?.role || "");
+  const canAdjustWorkCosts = () => costEditMode
+    && ["gestao_plataforma", "gerencia", "diretor_obra"].includes(getAccessContext()?.role || "");
 
   function renderCostTrace(model, editable = true) {
     const summary = model.costSummary;
     const real = summary.real || {};
     const remaining = summary.por_concluir || {};
+    const components = summary.componentes || [];
     const adjustments = summary.ajustes || [];
     const components = summary.componentes || {};
     const packages = components.pacotes || [];
@@ -829,11 +833,11 @@ export function createProductionDashboard(options) {
             <div><dt>Orçamento de custo</dt><dd>${euro.format(model.updatedBudgetCost)}</dd></div>
             <div><dt>Custo real incorrido</dt><dd>${euro.format(model.actualCost)}</dd></div>
             <div><dt>Custo estimado até à conclusão</dt><dd>${euro.format(model.remainingCommitments)}</dd></div>
-            ${model.costSummary ? `<div><dt>Estimativa no términus · custo direto</dt><dd>${euro.format(model.directFinalCost)}</dd></div><div><dt>Custos fixos · 8,5%</dt><dd>${euro.format(model.fixedCosts)}</dd></div><div><dt>Pessoal + viatura estimado</dt><dd>${euro.format(model.monthlyStaffVehicle)}</dd></div><div><dt>Ajustes justificados</dt><dd>${euro.format(model.adjustments)}</dd></div>` : ""}
+            ${model.costSummary ? `<div><dt>Estimativa no términus · custo direto</dt><dd>${euro.format(model.directFinalCost)}</dd></div><div><dt>Ajustes justificados</dt><dd>${euro.format(model.adjustments)}</dd></div>` : ""}
             <div><dt>Estimativa final</dt><dd data-estimated-final>${euro.format(model.estimatedFinalCost)}</dd></div>
             <div class="forecast-deviation"><dt>Desvio ao orçamento</dt><dd data-budget-deviation class="${initialDeviation > 0 ? "negative" : "positive"}">${euro.format(initialDeviation)}</dd></div>
           </dl>
-          ${model.costSummary ? renderCostTrace(model) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
+          ${model.costSummary ? renderCostTrace(model, true) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
         </article>
         <article class="panel financial-forecast-card">
           <header><span>CENÁRIOS DE PRAZO</span><strong>${Math.round(model.progress)}% EXECUTADO</strong></header>
@@ -1004,7 +1008,7 @@ export function createProductionDashboard(options) {
     const phaseIds = phases.map(row => row.id);
     const directDebitIds = directDebits.map(row => row.id);
     const [
-      contracts, tees, investments, impacts, measurements, planning, budget, consultations,
+      contracts, tees, investments, impacts, measurements, planning, planningItems, budget, consultations,
       payments, labor, siteExpenses, directDebitEntries, billings, monthlyForecast, materialInvoices,
     ] = await Promise.all([
       investmentMode ? [] : meetingQuery(`contratos?select=id,obra_id,venda_contratual_inicial,custo_direto_inicial,venda_contratual_efetiva,custo_direto_efetivo,valor_adiantamento,percentual_retencao_garantia,data_assinatura,atualizado_em&obra_id=eq.${encoded}`, "Contrato", warnings),
@@ -1013,6 +1017,7 @@ export function createProductionDashboard(options) {
       investmentMode ? meetingQuery(`impactos_obra?select=*&obra_id=eq.${encoded}&order=data.desc`, "Impactos de obra", warnings) : [],
       investmentMode ? [] : meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
+      phaseIds.length ? meetingQuery(`planeamento_itens?select=id,fase_id,codigo,descricao,especialidade_id,executado_por,subempreitada_id,item_orcamento_id,estado&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=codigo`, "Tarefas de planeamento", warnings) : [],
       phaseIds.length ? meetingQuery(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Orçamento", warnings) : [],
       meetingQuery(`consultas_subempreitada?select=*&obra_id=eq.${encoded}`, "Consultas", warnings),
       subcontractIds.length ? meetingQuery(`pagamentos_subempreitada?select=*&subempreitada_id=in.(${subcontractIds.map(encodeURIComponent).join(",")})`, "Pagamentos", warnings) : [],
@@ -1036,7 +1041,7 @@ export function createProductionDashboard(options) {
       if (componentsResponse.ok) costSummary = { ...(costSummary || {}), componentes: await componentsResponse.json() };
       else warnings.push("Componentes de custo: execute a migração custos_estimados_consolidado.sql");
     }
-    return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
+    return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, planningItems, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
   }
 
   async function saveCostAdjustment(form) {
@@ -1057,16 +1062,92 @@ export function createProductionDashboard(options) {
       return;
     }
     toast("Ajuste de custo registado e auditado.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
   }
 
   async function deleteCostAdjustment(id, button) {
-    if (!meetingState || !canAdjustWorkCosts() || !confirm("Remover este ajuste de custo? O evento continuará registado na auditoria.")) return;
+    if (!meetingState || !canAdjustWorkCosts() || !await platformConfirm("Remover este ajuste de custo? O evento continuará registado na auditoria.", { title: "Remover ajuste", danger: true, confirmLabel: "REMOVER" })) return;
     button.disabled = true;
     const response = await supabase(`ajustes_custo_obra?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!response.ok) return toast("Não foi possível remover o ajuste.", "error");
     toast("Ajuste removido.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    await showWorkCosts(meetingState.work.id);
+  }
+
+  async function saveCostComponent(form) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const fields = Object.fromEntries(new FormData(form));
+    const button = form.querySelector('[type="submit"]');
+    const error = form.querySelector(".form-error");
+    error.textContent = ""; button.disabled = true;
+    const response = await supabase("rpc/fn_guardar_componente_custo", {
+      method: "POST", body: JSON.stringify({
+        p_planeamento_item_id: fields.planeamento_item_id,
+        p_tipo: fields.tipo, p_valor_orcamentado: number(fields.valor_orcamentado),
+        p_estado_custo: fields.estado_custo, p_valor_real_pl: null,
+        p_item_orcamento_id: fields.item_orcamento_id || null,
+      }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      error.textContent = detail.message || "Não foi possível guardar o pacote de custo.";
+      button.disabled = false; return;
+    }
+    toast("Pacote de custo guardado.");
+    await showWorkCosts(meetingState.work.id);
+  }
+
+  async function confirmSubcontractEstimatedCost(subcontractId, button) {
+    if (!meetingState || !canAdjustWorkCosts()
+      || !await platformConfirm("Valor adjudicado — confirmar remoção dos Custos Estimados?", { title: "Confirmar custo adjudicado" })) return;
+    button.disabled = true;
+    const response = await supabase("rpc/fn_confirmar_remocao_custo_estimado_subempreitada", {
+      method: "POST", body: JSON.stringify({ p_subempreitada_id: subcontractId }),
+    });
+    if (!response.ok) return toast("Não foi possível confirmar a remoção do custo estimado.", "error");
+    toast("Custo orçamentado removido; compromisso adjudicado assumido.");
+    await showWorkCosts(meetingState.work.id);
+  }
+
+  async function completePlCost(componentId, defaultValue, button) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const entered = await platformPrompt("Pode ajustar o valor do orça antes de concluir.", number(defaultValue).toFixed(2), { title: "Valor real do trabalho PL", label: "VALOR REAL (€)" });
+    if (entered === null) return;
+    const value = Number(String(entered).replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) return toast("Introduza um valor real válido.", "error");
+    button.disabled = true;
+    const response = await supabase("rpc/fn_concluir_custo_pl", {
+      method: "POST", body: JSON.stringify({ p_componente_id: componentId, p_valor_real: value }),
+    });
+    if (!response.ok) return toast("Não foi possível concluir o custo PL.", "error");
+    toast("Pacote PL concluído e transferido para Custo Real.");
+    await showWorkCosts(meetingState.work.id);
+  }
+
+  async function completePlPhase(budgetId, defaultValue, button) {
+    if (!meetingState || !canAdjustWorkCosts()) return;
+    const entered = await platformPrompt("O valor do 0_Orçamento é usado por defeito; ajuste apenas se o custo real da fase foi diferente.", number(defaultValue).toFixed(2), { title: "Concluir custo PL da fase", label: "VALOR REAL (€)" });
+    if (entered === null) return;
+    const value = Number(String(entered).replace(",", "."));
+    if (!Number.isFinite(value) || value < 0) return toast("Introduza um valor real válido.", "error");
+    button.disabled = true;
+    const response = await supabase("rpc/fn_concluir_custo_pl_fase", { method: "POST", body: JSON.stringify({ p_orcamento_fase_id: budgetId, p_valor_real: value }) });
+    if (!response.ok) return toast("Não foi possível concluir o custo PL desta fase.", "error");
+    toast("Fase PL concluída e transferida para Custo Real.");
+    await showWorkCosts(meetingState.work.id);
+  }
+
+  async function showWorkCosts(workId) {
+    const host = document.querySelector(`[data-work-cost-card="${CSS.escape(String(workId))}"]`);
+    const work = getWorks().find(item => String(item.id) === String(workId));
+    if (!host || !work) return;
+    costEditMode = true;
+    host.innerHTML = '<div class="overview-loading">A CARREGAR COMPOSIÇÃO DE CUSTO…</div>';
+    meetingState = await loadMeetingState(work);
+    const projection = meetingModel(meetingState).projection;
+    host.innerHTML = projection.costSummary
+      ? renderCostTrace(projection, false)
+      : '<div class="overview-warning">Resumo automático indisponível. Confirme se a migração consolidada de custos foi aplicada.</div>';
   }
 
   async function confirmPlCost(form) {
@@ -1102,6 +1183,7 @@ export function createProductionDashboard(options) {
     const work = getWorks().find(item => item.id === workId);
     if (!work) return;
     meetingReturnView = returnView;
+    costEditMode = false;
     showView("meeting");
     document.querySelector("#meeting-view").innerHTML = '<div class="overview-loading">A CARREGAR REUNIÃO SEMANAL…</div>';
     meetingState = await loadMeetingState(work);
@@ -1230,5 +1312,5 @@ export function createProductionDashboard(options) {
     });
   }
 
-  return { bind, refreshOverview, openMeeting, showRsp };
+  return { bind, refreshOverview, openMeeting, showRsp, showWorkCosts };
 }

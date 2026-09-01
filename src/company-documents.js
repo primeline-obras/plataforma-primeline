@@ -1,3 +1,5 @@
+import { platformConfirm } from "./platform-dialogs.js?v=1";
+
 const DOCUMENT_TYPES = [
   ["certidao_permanente_comercial", "Certidão permanente / comercial"],
   ["rcbe", "RCBE"],
@@ -126,7 +128,7 @@ export function createCompanyDocumentsModule({ root, supabase, isConfigured, com
     root.querySelector(".company-document-list")?.addEventListener("click", async event => {
       const deleteButton = event.target.closest("[data-company-document-delete]");
       if (deleteButton) {
-        if (!window.confirm(`Apagar “${deleteButton.dataset.fileName}”? Esta ação fica registada na auditoria.`)) return;
+        if (!await platformConfirm(`Apagar “${deleteButton.dataset.fileName}”? Esta ação fica registada na auditoria.`, { title: "Apagar documento da empresa", danger: true, confirmLabel: "APAGAR" })) return;
         deleteButton.disabled = true;
         try {
           const id = deleteButton.dataset.companyDocumentDelete;

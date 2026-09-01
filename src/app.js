@@ -5,16 +5,16 @@ import { createPlanningModule } from "./planning.js?v=10";
 import { createSubcontractorsModule } from "./subcontractors.js?v=4";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
-import { createSettingsModule } from "./settings.js?v=5";
+import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
-import { createActionPlanModule } from "./action-plan.js?v=3";
-import { createDocumentsModule } from "./documents.js?v=2";
-import { createRncModule } from "./rnc.js?v=2";
+import { createActionPlanModule } from "./action-plan.js?v=5";
+import { createDocumentsModule } from "./documents.js?v=3";
+import { createRncModule } from "./rnc.js?v=3";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
-import { createVehiclesModule } from "./vehicles.js?v=1";
-import { createMeetingRoomsModule } from "./meeting-rooms.js?v=2";
-import { createPropertiesModule } from "./properties.js?v=2";
-import { createBudgetRequestsModule } from "./budget-requests.js?v=2";
+import { createVehiclesModule } from "./vehicles.js?v=2";
+import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
+import { createPropertiesModule } from "./properties.js?v=3";
+import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=2";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
@@ -66,7 +66,7 @@ let works = [], suppliers = [], subcontracts = [], invoices = [], financeInvoice
 let directDebits = [], directDebitEntries = [], invoiceTrace = [];
 let invoiceTraceError = "";
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
-let accessContext = { role: isSupabaseConfigured ? "" : "gerencia", isAdmin: !isSupabaseConfigured, profile: null };
+let accessContext = { role: "", isAdmin: false, profile: null };
 let currentFilter = "all";
 let session = initialSession;
 let selectedPdf = null;
@@ -119,7 +119,7 @@ function brand() {
 
 document.querySelector("#root").innerHTML = `
   <div class="app-shell">
-    <section class="auth-screen" id="auth-screen" ${session || !isSupabaseConfigured ? "hidden" : ""}>
+    <section class="auth-screen" id="auth-screen" ${session && isSupabaseConfigured ? "hidden" : ""}>
       <div class="auth-brand">${brand()}</div>
       <div class="auth-card">
         <p class="eyebrow">ACESSO RESERVADO</p>
@@ -268,8 +268,8 @@ document.querySelector("#root").innerHTML = `
           <section class="panel invoice-trace-panel">
             <div class="paid-history-head"><div><p class="eyebrow">PERCURSO COMPLETO</p><h2>RASTREIO DE FATURAS</h2></div><span id="invoice-trace-count">0 FATURAS</span></div>
             <div class="invoice-trace-toolbar">
-              <div class="search-box">${icon("search")}<input id="invoice-trace-search" placeholder="Pesquisar fornecedor, documento ou obraâ€¦"></div>
-              <select id="invoice-trace-state" aria-label="Filtrar estado da fatura"><option value="all">Todos os estados</option><option value="pendente">Pendente</option><option value="aprovado">Aprovada</option><option value="recusado">Recusada</option><option value="pago">Paga</option></select>
+              <div class="search-box">${icon("search")}<input id="invoice-trace-search" placeholder="Pesquisar fornecedor, documento ou obra…"></div>
+              <select id="invoice-trace-state" aria-label="Filtrar estado da fatura"><option value="all">Todos os estados</option><option value="recebida">Recebida</option><option value="em_validacao">Em validação</option><option value="aprovada_tecnicamente">Aprovada tecnicamente</option><option value="enviada_financeiro">Enviada ao Financeiro</option><option value="paga">Paga</option></select>
               <button type="button" class="invoice-trace-delete" id="delete-selected-invoice" disabled hidden>${icon("x")} APAGAR SELECIONADA</button>
             </div>
             <div id="invoice-trace-list" class="invoice-trace-list"></div>
@@ -656,6 +656,12 @@ function materialItemDatabasePayload(item) {
 }
 
 resetMaterialItems();
+const operationalXlsxImportModule = createOperationalXlsxImport({
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getProfile: () => accessContext.profile,
+  toast,
+});
 const productionDashboard = createProductionDashboard({
   supabase,
   isSupabaseConfigured,
@@ -668,6 +674,7 @@ const productionDashboard = createProductionDashboard({
   prettyDate,
   toast,
   getAccessContext: () => accessContext,
+  onImportPhaseBudget: context => operationalXlsxImportModule?.openPhaseBudget(context),
   showView: (view, context) => switchView(view, context),
 });
 productionDashboard.bind();
@@ -675,6 +682,7 @@ const planningModule = createPlanningModule({
   supabase,
   isSupabaseConfigured,
   getWorks: () => works,
+  getRole: effectiveRole,
   toast,
 });
 const actionPlanModule = createActionPlanModule({
@@ -706,12 +714,12 @@ const documentsModule = createDocumentsModule({
 });
 const rncModule = createRncModule({
   root: $("#rnc-view"), supabase, isConfigured: isSupabaseConfigured,
-  getWorks: () => works, getRole: effectiveRole, uploadWorkDocument, downloadWorkDocument, toast,
+  getWorks: () => works, getRole: effectiveRole, uploadWorkDocument, downloadWorkDocument, deleteWorkDocument, toast,
 });
 const vehiclesModule = createVehiclesModule({
   root: $("#vehicles-view"), supabase, isConfigured: isSupabaseConfigured,
   getCollaborators: () => collaborators, getSuppliers: () => suppliers,
-  uploadEntityDocument, downloadWorkDocument, euro, prettyDate, toast,
+  uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, euro, prettyDate, toast,
 });
 const meetingRoomsModule = createMeetingRoomsModule({
   root: $("#rooms-view"), supabase, isConfigured: isSupabaseConfigured,
@@ -719,17 +727,11 @@ const meetingRoomsModule = createMeetingRoomsModule({
 });
 const propertiesModule = createPropertiesModule({
   root: $("#properties-view"), supabase, isConfigured: isSupabaseConfigured,
-  getProfile: () => accessContext.profile, prettyDate, toast,
+  getProfile: () => accessContext.profile, uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, prettyDate, toast,
 });
 const budgetRequestsModule = createBudgetRequestsModule({
   root: $("#budget-requests-view"), supabase, isConfigured: isSupabaseConfigured,
-  getProfile: () => accessContext.profile, euro, prettyDate, toast,
-});
-const operationalXlsxImportModule = createOperationalXlsxImport({
-  supabase,
-  isConfigured: isSupabaseConfigured,
-  getProfile: () => accessContext.profile,
-  toast,
+  getProfile: () => accessContext.profile, uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, euro, prettyDate, toast,
 });
 const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
@@ -738,7 +740,7 @@ const financialMapModule = createFinancialMapModule({
 });
 const managementMapModule = createManagementMapModule({
   root: $("#management-map-content"), supabase, isConfigured: isSupabaseConfigured,
-  getWorks: () => works, euro, toast,
+  getWorks: () => works, getAccessContext: () => accessContext, euro, toast, confirmAction: platformConfirm,
 });
 const projectsModule = createProjectsModule({
   root: $("#projects-view"), api: supabase, isConfigured: isSupabaseConfigured, euro, escapeHtml,
@@ -764,8 +766,10 @@ const subcontractorsModule = createSubcontractorsModule({
 function renderUser() {
   const email = session?.user?.email || "utilizador";
   const label = accessContext.profile?.nome || session?.user?.user_metadata?.full_name || email.split("@")[0];
-  $("#user-name").textContent = label.toUpperCase();
-  $("#user-initials").textContent = label.split(/[ ._-]+/).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  const displayName = shortPersonName(label);
+  $("#user-name").textContent = displayName.toUpperCase();
+  $("#user-name").title = label;
+  $("#user-initials").textContent = displayName.split(/[ ._-]+/).map(part => part[0]).join("").toUpperCase();
   $("#user-role").textContent = effectiveRole().replaceAll("_", " ").toUpperCase() || "SESSÃO AUTENTICADA";
 }
 
@@ -774,7 +778,7 @@ function effectiveRole() {
 }
 
 function hasFullAccess() {
-  return effectiveRole() === "gerencia";
+  return ["gestao_plataforma", "gerencia"].includes(effectiveRole());
 }
 
 function isAdministrative() {
@@ -829,6 +833,27 @@ function canInsertInvoices() {
 
 function canPayInvoices() {
   return accessFor(accessContext).payInvoices;
+}
+
+function canDeleteInvoiceFiles() {
+  return canApproveInvoices() || canPayInvoices() || isAdministrative() || hasFullAccess();
+}
+
+const INVOICE_FLOW = ["recebida", "em_validacao", "aprovada_tecnicamente", "enviada_financeiro", "paga"];
+const INVOICE_FLOW_LABELS = {
+  recebida: "Recebida", em_validacao: "Em validação", aprovada_tecnicamente: "Aprovada tecnicamente",
+  enviada_financeiro: "Enviada ao Financeiro", paga: "Paga",
+};
+
+function invoiceFlowState(invoice) {
+  return invoice.estado_fluxo || invoice.fluxo_estado || (invoice.estado_pagamento === "pago" ? "paga" : invoice.estado_aprovacao === "aprovado" ? "enviada_financeiro" : "recebida");
+}
+
+function invoiceFileButton(item, index, kind, label) {
+  const path = encodeURIComponent(item.arquivo_url);
+  const deleteAttribute = kind === "guide" ? `data-delete-invoice-guide="${item.id}"` : `data-delete-invoice-attachment="${item.id}"`;
+  const openAttribute = kind === "guide" ? `data-guide="${path}"` : `data-invoice-attachment="${path}"`;
+  return `<span class="invoice-file-action"><button type="button" ${openAttribute}>${label} ${index + 1}</button>${canDeleteInvoiceFiles() ? `<button type="button" class="invoice-file-delete" ${deleteAttribute} data-file-path="${path}" aria-label="Apagar ${label.toLowerCase()} ${index + 1}">×</button>` : ""}</span>`;
 }
 
 function canEditWork() {
@@ -893,7 +918,7 @@ function applyAccessVisibility() {
 
 async function loadAccessContext() {
   if (!isSupabaseConfigured) {
-    accessContext = { role: "gerencia", isAdmin: true, profile: { nome: "Utilizador de demonstração", funcao: "gerencia" } };
+    accessContext = { role: "", isAdmin: false, profile: null };
     applyAccessVisibility();
     return;
   }
@@ -907,7 +932,7 @@ async function loadAccessContext() {
   const profile = profiles[0] || null;
   accessContext = {
     role: profile?.ativo === false ? "" : profile?.funcao || "",
-    isAdmin: profile?.ativo === false ? false : adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia",
+    isAdmin: profile?.ativo === false ? false : profile?.funcao === "gestao_plataforma" || (adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia"),
     profile,
   };
   applyAccessVisibility();
@@ -972,13 +997,19 @@ function renderInvoices() {
     const hasGuide = guides.length > 0;
     const actionable = canApproveInvoices();
     const editable = canEditPendingInvoice(invoice);
+    const flowState = invoiceFlowState(invoice);
+    const flowIndex = Math.max(0, INVOICE_FLOW.indexOf(flowState));
+    const nextFlow = flowState === "recebida" ? "em_validacao" : flowState === "em_validacao" ? "aprovada_tecnicamente" : flowState === "aprovada_tecnicamente" ? "enviada_financeiro" : "";
+    const nextLabel = flowState === "recebida" ? "INICIAR VALIDAÇÃO" : flowState === "em_validacao" ? "APROVAR TECNICAMENTE" : flowState === "aprovada_tecnicamente" ? "ENVIAR AO FINANCEIRO" : "";
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
+        <ol class="invoice-flow-steps" aria-label="Fluxo da fatura">${INVOICE_FLOW.map((state, index) => `<li class="${index < flowIndex ? "complete" : index === flowIndex ? "current" : ""}">${INVOICE_FLOW_LABELS[state]}</li>`).join("")}</ol>
         <div class="invoice-primary-actions">
           <button type="button" class="invoice-detail-action" data-invoice-detail="${invoice.id}">${icon("invoice")} VER DETALHE</button>
-          ${actionable ? `<button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button><button class="approve" data-action="aprovado" data-id="${invoice.id}" title="${hasGuide ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa"}">${icon("check")} APROVAR</button>` : ""}
+          ${actionable && flowState === "em_validacao" ? `<button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button>` : ""}
+          ${actionable && nextFlow ? `<button class="approve" data-advance-invoice="${invoice.id}" data-next-flow="${nextFlow}" title="${hasGuide || nextFlow !== "aprovada_tecnicamente" ? nextLabel : "Aprovar tecnicamente sem guia de remessa"}">${icon("check")} ${nextLabel}</button>` : ""}
         </div>
         ${!actionable ? `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>` : ""}
         <div class="approval-fields ${actionable ? "" : "readonly"}">
@@ -986,14 +1017,14 @@ function renderInvoices() {
             ${icon("upload")}<span>${hasGuide ? `${guides.length} GUIA(S) ANEXADA(S)` : "ANEXAR GUIAS"}</span>
             ${actionable ? `<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" multiple data-guide-input="${invoice.id}">` : ""}
           </label>
-          <div class="attached-guides">${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">GUIA ${index + 1}</button>`).join("")}</div>
+          <div class="attached-guides">${guides.map((guide, index) => invoiceFileButton(guide, index, "guide", "GUIA")).join("")}</div>
         </div>
         ${!hasGuide ? `<div class="invoice-guide-warning" data-guide-warning="${invoice.id}"><strong>SEM GUIA DE REMESSA</strong><span>Esta fatura não tem guia de remessa anexada. A aprovação é permitida temporariamente.</span></div>` : ""}
         ${actionable ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="3" maxlength="1000" data-approval-observation="${invoice.id}" placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
         ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p><small>É necessária uma nova verificação e aprovação antes do pagamento.</small></div>` : ""}
         <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substituem a guia de remessa</small></div>
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
-          <div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div>
+          <div>${attachments.map((item, index) => invoiceFileButton(item, index, "attachment", "ANEXO")).join("") || "<small>Sem anexos adicionais</small>"}</div>
         </div>
         ${editable ? `<button type="button" class="invoice-edit-action" data-edit-invoice="${invoice.id}">EDITAR FATURA PENDENTE</button>` : ""}
       </div></article>`;
@@ -1026,6 +1057,9 @@ async function openInvoiceDetail(invoiceId) {
     const itemsCents = items.reduce((sum, item) => sum + invoiceMoneyCents(item.valor_total), 0);
     const differenceCents = items.length ? documentCents - itemsCents : 0;
     const reconciled = !items.length || differenceCents === 0;
+    const flowState = invoiceFlowState(invoice);
+    const nextFlow = flowState === "recebida" ? "em_validacao" : flowState === "em_validacao" ? "aprovada_tecnicamente" : flowState === "aprovada_tecnicamente" ? "enviada_financeiro" : "";
+    const nextLabel = flowState === "recebida" ? "INICIAR VALIDAÇÃO" : flowState === "em_validacao" ? "APROVAR TECNICAMENTE" : flowState === "aprovada_tecnicamente" ? "ENVIAR AO FINANCEIRO" : "";
     const typeLabels = { subempreitada: "Subempreitada", material: "Material", estaleiro: "Estaleiro" };
     $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail" data-open-invoice="${invoice.id}" data-difference-cents="${differenceCents}">
       <section class="invoice-detail-summary">
@@ -1042,7 +1076,7 @@ async function openInvoiceDetail(invoiceId) {
         ${items.length ? `<div class="invoice-detail-table"><table><thead><tr><th>DESIGNAÇÃO</th><th>UN.</th><th>QTD.</th><th>PREÇO UNIT.</th><th>DESCONTO</th><th>TOTAL</th></tr></thead><tbody>${items.map(item => `<tr><td>${safeText(item.designacao || "—")}</td><td>${safeText(item.unidade || "—")}</td><td>${safeText(item.quantidade ?? "—")}</td><td>${euro.format(Number(item.valor_unitario || 0))}</td><td>${euro.format(Number(item.valor_desconto || 0))}</td><td>${euro.format(Number(item.valor_total || 0))}</td></tr>`).join("")}</tbody></table></div>` : `<div class="invoice-detail-empty">Esta fatura não tem itens extraídos registados.</div>`}
         ${items.length ? `<div class="invoice-reconciliation ${reconciled ? "ok" : "warning"}"><span>SOMA DOS ITENS</span><strong>${euro.format(itemsCents / 100)}</strong><span>DIFERENÇA</span><strong>${euro.format(differenceCents / 100)}</strong><p>${reconciled ? "Os itens coincidem com o valor do documento." : "Os valores não coincidem. Confirme o PDF e peça a correção da fatura antes de aprovar."}</p></div>` : ""}
       </section>
-      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button><button class="primary-button" type="button" data-detail-decision="aprovado" ${reconciled ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>APROVAR →</button>` : ""}</div>
+      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() && flowState === "em_validacao" ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button>` : ""}${canApproveInvoices() && nextFlow ? `<button class="primary-button" type="button" data-detail-advance="${nextFlow}" ${reconciled || nextFlow !== "aprovada_tecnicamente" ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>${nextLabel} →</button>` : ""}</div>
     </div>`;
   } catch (error) {
     $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-error"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><p>${safeText(error.message)}</p><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div>`;
@@ -1068,8 +1102,8 @@ function financeCard(invoice) {
     <div class="finance-approval"><span>APROVADA POR</span><strong>${escapeHtml(approverName)}</strong><small>${traceMoment(approvalDate)}</small></div>
     ${invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
     ${invoice.condicao_pagamento === "outra_data" && invoice.data_vencimento ? `<div class="finance-date"><span>VENCIMENTO DEFINIDO</span><strong>${prettyDate.format(new Date(`${invoice.data_vencimento}T12:00:00`))}</strong></div>` : ""}
-    <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => `<button type="button" data-guide="${encodeURIComponent(guide.arquivo_url)}">${icon("invoice")} GUIA ${index + 1}</button>`).join("") || "<small>Sem guia disponível</small>"}</div></div>
-    <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">${icon("invoice")} ANEXO ${index + 1}</button>`).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
+    <div class="finance-guides"><span>GUIAS</span><div>${guides.map((guide, index) => invoiceFileButton(guide, index, "guide", "GUIA")).join("") || "<small>Sem guia disponível</small>"}</div></div>
+    <div class="finance-guides"><span>ANEXOS OPCIONAIS</span><div>${attachments.map((item, index) => invoiceFileButton(item, index, "attachment", "ANEXO")).join("") || "<small>Sem anexos adicionais</small>"}</div></div>
     ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p></div>` : ""}
     ${canPayInvoices() ? `<label class="payment-date">DATA DE PAGAMENTO<input type="date" value="${today}" data-payment-date="${invoice.id}"></label>
     <button class="mark-paid" data-mark-paid="${invoice.id}">${icon("check")} MARCAR COMO PAGA</button>
@@ -1087,15 +1121,14 @@ function paidFinanceRow(invoice) {
     <strong>${euro.format(Number(invoice.valor))}</strong>
     <time>PAGA EM ${prettyDate.format(new Date(`${String(invoice.data_pagamento).slice(0, 10)}T12:00:00`))}</time>
     <div class="paid-invoice-actions">
-      ${attachments.map((item, index) => `<button type="button" data-invoice-attachment="${encodeURIComponent(item.arquivo_url)}">ANEXO ${index + 1}</button>`).join("")}
+      ${attachments.map((item, index) => invoiceFileButton(item, index, "attachment", "ANEXO")).join("")}
       ${canPayInvoices() ? `<label>${icon("upload")} ANEXAR COMPROVATIVO<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-finance-attachment-input="${invoice.id}"></label><button type="button" data-unmark-paid="${invoice.id}">DESMARCAR COMO PAGA</button>` : ""}
     </div>
   </article>`;
 }
 
 function invoiceJourneyState(invoice = {}) {
-  if (invoice.estado_pagamento === "pago") return "pago";
-  return invoice.estado_aprovacao || "pendente";
+  return invoiceFlowState(invoice);
 }
 
 function traceMoment(value) {
@@ -1136,15 +1169,11 @@ function renderInvoiceTrace() {
   }
   list.innerHTML = rows.length ? rows.map(invoice => {
     const state = invoiceJourneyState(invoice);
-    const decisionDone = state !== "pendente";
-    const paid = state === "pago";
-    const decisionLabel = state === "recusado" ? "RECUSADA" : decisionDone ? "APROVADA" : "A AGUARDAR APROVAÇÃO";
+    const stateIndex = INVOICE_FLOW.indexOf(state);
     return `<article class="invoice-trace-card state-${state} ${selectedInvoiceTraceId === String(invoice.id) ? "selected-for-delete" : ""}">
       <header><div><span>OBRA ${escapeHtml(invoice.obra_numero || "—")}</span><h3>${escapeHtml(invoice.fornecedor_nome || "Fornecedor")}</h3><p>${escapeHtml(invoice.numero_doc || "Sem número")} · ${escapeHtml(invoice.obra_nome || "Obra não identificada")}</p></div><div class="invoice-trace-head-actions"><strong>${euro.format(Number(invoice.valor || 0))}</strong>${isAdministrative() ? `<label><input type="radio" name="invoice-trace-delete-selection" value="${invoice.id}" data-select-invoice-delete ${selectedInvoiceTraceId === String(invoice.id) ? "checked" : ""}> SELECIONAR</label>` : ""}</div></header>
       <div class="invoice-trace-journey">
-        ${invoiceTraceStage("LANÇADA", invoice.criado_em, invoice.criado_por_nome, "done")}
-        ${invoiceTraceStage(decisionLabel, invoice.data_aprovacao, invoice.aprovado_por_nome, decisionDone ? state === "recusado" ? "rejected" : "done" : "waiting")}
-        ${invoiceTraceStage(paid ? "PAGA" : "A AGUARDAR PAGAMENTO", invoice.data_pagamento, invoice.pago_por_nome, paid ? "done" : state === "aprovado" ? "waiting" : "disabled")}
+        ${INVOICE_FLOW.map((flowState,index) => invoiceTraceStage(INVOICE_FLOW_LABELS[flowState].toUpperCase(), flowState === "recebida" ? invoice.criado_em : flowState === "aprovada_tecnicamente" ? invoice.data_aprovacao : flowState === "paga" ? invoice.data_pagamento : null, flowState === "recebida" ? invoice.criado_por_nome : flowState === "aprovada_tecnicamente" ? invoice.aprovado_por_nome : flowState === "paga" ? invoice.pago_por_nome : null, index < stateIndex ? "done" : index === stateIndex ? (flowState === "paga" ? "done" : "waiting") : "disabled")).join("")}
       </div>
       ${invoiceTraceEvents(invoice)}
     </article>`;
@@ -1154,14 +1183,8 @@ function renderInvoiceTrace() {
 async function loadInvoiceTrace() {
   invoiceTraceError = "";
   if (!isSupabaseConfigured) {
-    invoiceTrace = demoInvoices.map(invoice => ({
-      ...invoice,
-      fornecedor_nome: demoSuppliers.find(item => item.id === invoice.fornecedor_id)?.nome,
-      obra_numero: demoWorks.find(item => item.id === invoice.obra_id)?.numero,
-      obra_nome: demoWorks.find(item => item.id === invoice.obra_id)?.nome,
-      criado_em: invoice.criado_em || invoice.data_fatura,
-      criado_por_nome: "Utilizador de demonstração",
-    }));
+    invoiceTrace = [];
+    invoiceTraceError = "Configuração segura indisponível.";
     renderInvoiceTrace();
     return;
   }
@@ -1294,26 +1317,26 @@ function renderDirectDebits() {
 }
 
 async function loadData() {
+  if (!isSupabaseConfigured) {
+    const formNode = $("#login-form");
+    if (formNode) {
+      formNode.querySelectorAll("input,button").forEach(control => { control.disabled = true; });
+      $("#auth-error").textContent = "Configuração segura indisponível. O acesso foi bloqueado; contacte a equipa técnica.";
+    }
+    $("#auth-screen").hidden = false;
+    return;
+  }
   if (isSupabaseConfigured && !getSession()) return;
   await loadAccessContext();
-  if (!isSupabaseConfigured) {
-    works = demoWorks; suppliers = demoSuppliers; subcontracts = demoSubcontracts;
-    invoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "pendente");
-    financeInvoices = demoInvoices.filter(invoice => invoice.estado_aprovacao === "aprovado")
-      .map(invoice => ({ ...invoice, condicao_pagamento: invoice.condicao_pagamento || "imediato", estado_pagamento: invoice.estado_pagamento || (invoice.data_pagamento ? "pago" : "por_pagar") }));
-    invoiceGuides = [];
-    invoiceAttachments = [];
-    directDebits = [];
-    directDebitEntries = [];
-  } else {
+  {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,projeto_id,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
       supabase("fornecedores?select=id,nome&order=nome"),
       isFinancial()
         ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
         : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
-      supabase("faturas?select=*&estado_aprovacao=eq.pendente&order=criado_em.desc"),
-      supabase("faturas?select=*&estado_aprovacao=eq.aprovado&order=data_aprovacao.desc"),
+      supabase("faturas?select=*&estado_fluxo=in.(recebida,em_validacao,aprovada_tecnicamente)&order=criado_em.desc"),
+      supabase("faturas?select=*&estado_fluxo=in.(enviada_financeiro,paga)&order=data_aprovacao.desc"),
       supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
       supabase("faturas_anexos?select=*&order=criado_em.asc"),
     ]);
@@ -1647,6 +1670,7 @@ function activeHoliday(date) {
 
 function personFunctionClass(person) {
   const role = String(person?.funcao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (role.includes("adjunto")) return "function-adjunct";
   if (/direcao|gerencia|diretor|dir\. obra/.test(role)) return "function-direction";
   if (role.includes("encarregado")) return "function-foreman";
   if (/administrativo|recursos humanos|\brh\b/.test(role)) return "function-admin";
@@ -1662,6 +1686,7 @@ function personFunctionClass(person) {
 
 const functionRowTints = {
   "function-direction": "rgba(32, 36, 43, .18)",
+  "function-adjunct": "rgba(61, 90, 158, .18)",
   "function-foreman": "rgba(46, 125, 91, .18)",
   "function-admin": "rgba(166, 68, 122, .18)",
   "function-preparer": "rgba(61, 90, 158, .18)",
@@ -1904,7 +1929,7 @@ async function submitCollaboratorLifecycle(event) {
 async function reactivateCollaborator(personId) {
   const person = teamData.inactiveCollaborators.find(item => item.id === personId);
   if (!person || !canManageTeam()) return;
-  if (!window.confirm(`Reativar ${person.nome}? Todo o histórico anterior continuará associado.`)) return;
+  if (!await platformConfirm(`Reativar ${person.nome}? Todo o histórico anterior continuará associado.`, { title: "Reativar colaborador", confirmLabel: "REATIVAR" })) return;
   try {
     if (isSupabaseConfigured) {
       const response = await supabase("rpc/fn_atualizar_colaborador_ciclo_vida", { method: "POST", body: JSON.stringify({ p_colaborador_id: person.id, p_nome: person.nome, p_funcao: person.funcao, p_data_admissao: person.data_admissao, p_data_nascimento: person.data_nascimento || null, p_data_saida: null, p_nivel: person.nivel || null, p_valor_hora: person.valor_hora ?? null, p_nif: person.nif || null, p_email: person.email || null, p_contacto: person.contacto || null, p_morada: person.morada || null }) });
@@ -1938,6 +1963,9 @@ function renderTeam() {
   const allocations = teamData.allocations.filter(item =>
     personById.has(item.colaborador_id)
     && workforceRoleClass(personById.get(item.colaborador_id)));
+  const currentAllocations = allocations
+    .filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6))
+    .sort((left, right) => String(right.data || "").localeCompare(String(left.data || "")));
   const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = boardWorkList
@@ -2447,7 +2475,7 @@ async function loadTeamData(force = false) {
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageOvertime() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,motivo,autorizado_por,estado_pagamento&estado_pagamento=eq.por_pagar&order=data.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
-    supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
+    supabase("utilizadores?select=id,nome,funcao,auth_user_id,ativo&ativo=eq.true"),
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
@@ -3632,8 +3660,45 @@ function renderWorkDetail(work) {
       <button data-work-tab="safety" class="${selectedWorkTab === "safety" ? "active" : ""}">SEGURANÇA</button>`}
     </nav>
     ${financialReadOnly ? `<div class="readonly-note">CONSULTA FINANCEIRA · SEM PERMISSÃO PARA ALTERAR A OBRA</div>` : ""}
-    <div class="work-tab-content">${renderWorkTab(work)}</div>`;
+    <div class="work-tab-content">${renderWorkTab(work)}${selectedWorkTab === "summary" && !financialReadOnly ? `<section class="work-cost-summary" data-work-cost-card="${safeText(work.id)}"></section>` : ""}</div>`;
   if (selectedWorkTab === "subcontracts") procurementModule?.show(work);
+  if (selectedWorkTab === "summary" && !financialReadOnly) productionDashboard.showWorkCosts(work.id);
+}
+
+async function advanceInvoiceFlow(invoice, nextState) {
+  if (!invoice || !INVOICE_FLOW.includes(nextState)) throw new Error("Transição de fatura inválida.");
+  const response = await supabase("rpc/fn_avancar_estado_fluxo_fatura", {
+    method: "POST",
+    body: JSON.stringify({ p_fatura_id: invoice.id, p_novo_estado: nextState }),
+  });
+  if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível avançar o fluxo da fatura."));
+  const payload = await response.json();
+  const updated = Array.isArray(payload) ? payload[0] : payload;
+  Object.assign(invoice, updated || {}, { estado_fluxo: nextState });
+  if (nextState === "enviada_financeiro") {
+    invoices = invoices.filter(item => String(item.id) !== String(invoice.id));
+    financeInvoices.unshift(invoice);
+  }
+  renderInvoices();
+  renderFinance();
+  if (allowedViews().has("finance")) await loadInvoiceTrace();
+  toast(`Fatura: ${INVOICE_FLOW_LABELS[nextState]}.`);
+}
+
+async function removeInvoiceRelatedFile(button) {
+  if (!canDeleteInvoiceFiles()) throw new Error("Não tem permissão para apagar este ficheiro.");
+  const isGuide = Boolean(button.dataset.deleteInvoiceGuide);
+  const id = isGuide ? button.dataset.deleteInvoiceGuide : button.dataset.deleteInvoiceAttachment;
+  if (!await platformConfirm(`Apagar ${isGuide ? "esta guia de remessa" : "este anexo"}? A ação fica registada na auditoria.`, { title: "Apagar ficheiro da fatura", danger: true, confirmLabel: "APAGAR" })) return;
+  button.disabled = true;
+  const endpoint = isGuide ? "rpc/fn_apagar_guia_fatura" : "rpc/fn_apagar_anexo_fatura";
+  const response = await supabase(endpoint, { method: "POST", body: JSON.stringify({ [isGuide ? "p_guia_id" : "p_anexo_id"]: id }) });
+  if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível apagar o ficheiro."));
+  await deleteInvoiceFile(decodeURIComponent(button.dataset.filePath)).catch(() => {});
+  if (isGuide) invoiceGuides = invoiceGuides.filter(item => String(item.id) !== String(id));
+  else invoiceAttachments = invoiceAttachments.filter(item => String(item.id) !== String(id));
+  renderInvoices(); renderFinance();
+  toast(`${isGuide ? "Guia" : "Anexo"} apagado.`);
 }
 
 function switchView(view, context = {}) {
@@ -3941,7 +4006,7 @@ $("#team-view").addEventListener("click", async event => {
   const deleteEntityDocumentButton = event.target.closest("[data-entity-document-delete]");
   if (deleteEntityDocumentButton) {
     if (!canManageTeam()) return toast("Não tem permissão para apagar este documento.", "error");
-    if (!window.confirm(`Apagar “${deleteEntityDocumentButton.dataset.documentName}”? Esta ação fica registada na auditoria.`)) return;
+    if (!await platformConfirm(`Apagar “${deleteEntityDocumentButton.dataset.documentName}”? Esta ação fica registada na auditoria.`, { title: "Apagar documento", danger: true, confirmLabel: "APAGAR" })) return;
     deleteEntityDocumentButton.disabled = true;
     try {
       const id = deleteEntityDocumentButton.dataset.entityDocumentDelete;
@@ -5146,9 +5211,10 @@ async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: doc
   return duplicate || null;
 }
 
-function confirmSimilarInvoice(match, actionLabel = "continuar") {
-  return window.confirm(
+async function confirmSimilarInvoice(match, actionLabel = "continuar") {
+  return platformConfirm(
     `AVISO DE POSSÍVEL DUPLICAÇÃO ENTRE OBRAS\n\nJá existe a fatura ${match.numero_doc || "sem número"} na Obra ${match.obra_numero || "—"}, do mesmo fornecedor, com o valor ${euro.format(Number(match.valor || 0))}.\n\nConfirma que são documentos diferentes e pretende ${actionLabel}?`,
+    { title: "Possível duplicação", confirmLabel: "CONTINUAR" },
   );
 }
 
@@ -5201,14 +5267,15 @@ form.addEventListener("submit", async event => {
     submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
-  if (exactDuplicate && !window.confirm(
-    "Isto vai criar uma fatura duplicada — só continues se tiveres a certeza absoluta.\n\nPretendes mesmo continuar?",
+  if (exactDuplicate && !await platformConfirm(
+    "Isto vai criar uma fatura duplicada — só continue se tiver a certeza absoluta.",
+    { title: "Fatura duplicada", danger: true, confirmLabel: "CRIAR MESMO ASSIM" },
   )) {
     submit.disabled = false;
     submit.firstChild.textContent = idleSubmitLabel;
     return;
   }
-  if (duplicateInvoice?.tipo_correspondencia === "semelhante" && !confirmSimilarInvoice(duplicateInvoice, "registar esta fatura")) {
+  if (duplicateInvoice?.tipo_correspondencia === "semelhante" && !await confirmSimilarInvoice(duplicateInvoice, "registar esta fatura")) {
     submit.disabled = false;
     submit.firstChild.textContent = idleSubmitLabel;
     return;
@@ -5310,6 +5377,23 @@ form.addEventListener("submit", async event => {
 });
 
 $("#invoice-list").addEventListener("click", async event => {
+  const deleteFileButton = event.target.closest("[data-delete-invoice-guide], [data-delete-invoice-attachment]");
+  if (deleteFileButton) {
+    try { await removeInvoiceRelatedFile(deleteFileButton); } catch (error) { toast(error.message, "error"); deleteFileButton.disabled = false; }
+    return;
+  }
+  const advanceButton = event.target.closest("[data-advance-invoice]");
+  if (advanceButton) {
+    if (!canApproveInvoices()) return toast("Não tem permissão para avançar esta fatura.", "error");
+    const invoice = invoices.find(item => String(item.id) === String(advanceButton.dataset.advanceInvoice));
+    if (!invoice) return;
+    const nextState = advanceButton.dataset.nextFlow;
+    if (nextState === "aprovada_tecnicamente" && !invoiceGuides.some(item => String(item.fatura_id) === String(invoice.id))
+      && !await platformConfirm("Esta fatura não tem guia de remessa. Confirma a aprovação técnica sem guia?", { title: "Aprovar sem guia", danger: true, confirmLabel: "APROVAR" })) return;
+    advanceButton.disabled = true;
+    try { await advanceInvoiceFlow(invoice, nextState); } catch (error) { toast(error.message, "error"); advanceButton.disabled = false; }
+    return;
+  }
   const detailButton = event.target.closest("[data-invoice-detail]");
   if (detailButton) {
     await openInvoiceDetail(detailButton.dataset.invoiceDetail);
@@ -5344,7 +5428,7 @@ $("#invoice-list").addEventListener("click", async event => {
   if (decision === "aprovado") {
     try {
       const match = await findDuplicateInvoice(invoice, invoice.id);
-      if (match && !confirmSimilarInvoice(match, "aprovar esta fatura")) return;
+      if (match && !await confirmSimilarInvoice(match, "aprovar esta fatura")) return;
     } catch (error) {
       return toast(error.message, "error");
     }
@@ -5398,19 +5482,33 @@ $("#invoice-list").addEventListener("click", async event => {
     ? `Fatura aprovada sem guia de remessa${isSupabaseConfigured ? "" : " em modo de demonstração"}.`
     : `Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`, approvingWithoutGuide ? "warning" : "success");
 });
-$("#workflow-dialog").addEventListener("click", event => {
+$("#workflow-dialog").addEventListener("click", async event => {
   const pdfButton = event.target.closest("[data-open-invoice] [data-pdf]");
   if (pdfButton) {
     const cardPdfButton = document.querySelector(`[data-invoice-card="${event.target.closest("[data-open-invoice]").dataset.openInvoice}"] [data-pdf]`);
     cardPdfButton?.click();
     return;
   }
+  const advanceDetail = event.target.closest("[data-detail-advance]");
+  if (advanceDetail) {
+    const detail = advanceDetail.closest("[data-open-invoice]");
+    const differenceCents = Number(detail.dataset.differenceCents || 0);
+    if (advanceDetail.dataset.detailAdvance === "aprovada_tecnicamente" && differenceCents !== 0 && !await platformConfirm(
+      `O valor do documento e a soma dos itens diferem ${euro.format(Math.abs(differenceCents) / 100)}. Confirma que verificou o PDF e pretende aprovar mesmo assim?`,
+      { title: "Diferença no valor da fatura", danger: true, confirmLabel: "APROVAR" },
+    )) return;
+    const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-next-flow="${advanceDetail.dataset.detailAdvance}"]`);
+    closeWorkflowDialog();
+    cardButton?.click();
+    return;
+  }
   const decisionButton = event.target.closest("[data-detail-decision]");
   if (!decisionButton) return;
   const detail = decisionButton.closest("[data-open-invoice]");
   const differenceCents = Number(detail.dataset.differenceCents || 0);
-  if (decisionButton.dataset.detailDecision === "aprovado" && differenceCents !== 0 && !window.confirm(
+  if (decisionButton.dataset.detailDecision === "aprovado" && differenceCents !== 0 && !await platformConfirm(
     `O valor do documento e a soma dos itens diferem ${euro.format(Math.abs(differenceCents) / 100)}. Confirma que verificou o PDF e pretende aprovar mesmo assim?`,
+    { title: "Diferença no valor da fatura", danger: true, confirmLabel: "APROVAR" },
   )) return;
   const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-action="${decisionButton.dataset.detailDecision}"]`);
   if (!cardButton) return toast("A fatura já não está pendente.", "error");
@@ -5445,13 +5543,13 @@ $("#invoice-list").addEventListener("change", event => {
   const files = [...(input.files || [])];
   const picker = input.closest(".guide-picker");
   const card = input.closest("[data-invoice-card]");
-  const approve = card?.querySelector('[data-action="aprovado"]');
+  const approve = card?.querySelector('[data-next-flow="aprovada_tecnicamente"]');
   const warning = card?.querySelector("[data-guide-warning]");
   if (!files.length) {
     picker.classList.remove("ready");
     picker.querySelector("span").textContent = "ANEXAR GUIAS";
-    approve.disabled = false;
-    approve.title = invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput) ? "Aprovar fatura" : "Aprovar fatura sem guia de remessa";
+    if (approve) approve.disabled = false;
+    if (approve) approve.title = invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput) ? "Aprovar tecnicamente" : "Aprovar tecnicamente sem guia de remessa";
     if (warning) warning.hidden = invoiceGuides.some(guide => guide.fatura_id === input.dataset.guideInput);
     return;
   }
@@ -5465,8 +5563,8 @@ $("#invoice-list").addEventListener("change", event => {
   picker.classList.add("ready");
   picker.querySelector("span").textContent = `${files.length} GUIA(S) SELECIONADA(S)`;
   if (warning) warning.hidden = true;
-  approve.disabled = false;
-  approve.title = "Aprovar fatura";
+  if (approve) approve.disabled = false;
+  if (approve) approve.title = "Aprovar tecnicamente";
 });
 
 async function addFinanceAttachments(input) {
@@ -5494,15 +5592,15 @@ async function addFinanceAttachments(input) {
 }
 
 async function returnInvoiceToReview(invoice) {
-  const observation = window.prompt("Indique obrigatoriamente o motivo da devolução:", "")?.trim();
+  const observation = await platformPrompt("Indique obrigatoriamente o motivo da devolução.", "", { title: "Devolver fatura", label: "MOTIVO DA DEVOLUÇÃO" });
   if (!observation) return toast("A observação é obrigatória para devolver a fatura.", "error");
-  if (!window.confirm("Devolver esta fatura para nova verificação e aprovação?")) return;
+  if (!await platformConfirm("Devolver esta fatura para nova verificação e aprovação?", { title: "Confirmar devolução", danger: true, confirmLabel: "DEVOLVER" })) return;
   if (isSupabaseConfigured) {
     const response = await supabase("rpc/fn_devolver_fatura_financeiro", { method: "POST", body: JSON.stringify({ p_fatura_id: invoice.id, p_observacao: observation }) });
     if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível devolver a fatura."));
   }
   financeInvoices = financeInvoices.filter(item => String(item.id) !== String(invoice.id));
-  invoices.unshift({ ...invoice, estado_aprovacao: "pendente", estado_pagamento: "por_pagar", observacao_devolucao: observation });
+  invoices.unshift({ ...invoice, estado_aprovacao: "pendente", estado_pagamento: "por_pagar", estado_fluxo: "recebida", observacao_devolucao: observation });
   await loadInvoiceTrace();
   renderInvoices();
   renderFinance();
@@ -5510,12 +5608,13 @@ async function returnInvoiceToReview(invoice) {
 }
 
 async function unmarkInvoicePaid(invoice) {
-  if (!window.confirm("Desmarcar esta fatura como paga e devolvê-la à lista por pagar?")) return;
+  if (!await platformConfirm("Desmarcar esta fatura como paga e devolvê-la à lista por pagar?", { title: "Reverter pagamento", danger: true, confirmLabel: "DESMARCAR" })) return;
   if (isSupabaseConfigured) {
     const response = await supabase("rpc/fn_desmarcar_fatura_paga", { method: "POST", body: JSON.stringify({ p_fatura_id: invoice.id }) });
     if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível reverter o pagamento."));
   }
   invoice.estado_pagamento = "por_pagar";
+  invoice.estado_fluxo = "enviada_financeiro";
   invoice.data_pagamento = null;
   invoice.pago_por = null;
   await loadInvoiceTrace();
@@ -5524,6 +5623,11 @@ async function unmarkInvoicePaid(invoice) {
 }
 
 $("#finance-board").addEventListener("click", async event => {
+  const deleteFileButton = event.target.closest("[data-delete-invoice-guide], [data-delete-invoice-attachment]");
+  if (deleteFileButton) {
+    try { await removeInvoiceRelatedFile(deleteFileButton); } catch (error) { toast(error.message, "error"); deleteFileButton.disabled = false; }
+    return;
+  }
   const guideButton = event.target.closest("[data-guide], [data-invoice-attachment]");
   if (guideButton) {
     try {
@@ -5551,7 +5655,7 @@ $("#finance-board").addEventListener("click", async event => {
   if (!invoice) return;
   try {
     const match = await findDuplicateInvoice(invoice, invoice.id);
-    if (match && !confirmSimilarInvoice(match, "marcar esta fatura como paga")) return;
+    if (match && !await confirmSimilarInvoice(match, "marcar esta fatura como paga")) return;
   } catch (error) {
     return toast(error.message, "error");
   }
@@ -5559,9 +5663,9 @@ $("#finance-board").addEventListener("click", async event => {
   const paymentDate = button.closest(".finance-card")?.querySelector("[data-payment-date]")?.value || new Date().toISOString().slice(0, 10);
   const paidAt = `${paymentDate}T12:00:00`;
   if (isSupabaseConfigured) {
-    const result = await supabase("rpc/fn_marcar_fatura_paga", {
+    const result = await supabase("rpc/fn_avancar_estado_fluxo_fatura", {
       method: "POST",
-      body: JSON.stringify({ p_fatura_id: invoice.id, p_data_pagamento: paymentDate }),
+      body: JSON.stringify({ p_fatura_id: invoice.id, p_novo_estado: "paga", p_data_pagamento: paymentDate }),
     });
     if (!result.ok) {
       toast(`Não foi possível marcar a fatura como paga: ${await result.text()}`, "error");
@@ -5571,6 +5675,7 @@ $("#finance-board").addEventListener("click", async event => {
   }
   invoice.data_pagamento = paidAt;
   invoice.estado_pagamento = "pago";
+  invoice.estado_fluxo = "paga";
   invoice.pago_por = accessContext.profile?.id || null;
   if (allowedViews().has("finance")) await loadInvoiceTrace();
   renderFinance();
@@ -5583,6 +5688,11 @@ $("#finance-board").addEventListener("change", event => {
 });
 
 $("#paid-list").addEventListener("click", async event => {
+  const deleteFileButton = event.target.closest("[data-delete-invoice-guide], [data-delete-invoice-attachment]");
+  if (deleteFileButton) {
+    try { await removeInvoiceRelatedFile(deleteFileButton); } catch (error) { toast(error.message, "error"); deleteFileButton.disabled = false; }
+    return;
+  }
   const attachment = event.target.closest("[data-invoice-attachment]");
   if (attachment) {
     try {
@@ -5743,7 +5853,7 @@ settingsModule = createSettingsModule({
   getProfile: () => accessContext.profile,
   getSession,
   getWorks: () => works,
-  isAdmin: hasFullAccess,
+  isAdmin: () => hasFullAccess() || isAdministrative(),
   canManageHolidays: () => hasFullAccess() || isAdministrative(),
   toast,
   requestPasswordReset,
@@ -5777,6 +5887,7 @@ procurementModule = createProcurementModule({
     if (!row?.id) return;
     const existing = subcontracts.find(item => item.id === row.id);
     if (existing) Object.assign(existing, row); else subcontracts.push(row);
+    if (selectedWorkId === row.obra_id) productionDashboard.showWorkCosts(row.obra_id);
   },
 });
 renderUser();

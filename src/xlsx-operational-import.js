@@ -169,6 +169,44 @@ function parseFinancial(workbook, context) {
   return results;
 }
 
+function parsePhaseBudget(workbook, context) {
+  const wantedSheet = workbook.SheetNames.find(name => normalize(name) === "0_orcamento" || normalize(name) === "0 orcamento");
+  if (!wantedSheet) throw new Error("A folha “0_Orçamento” não foi encontrada.");
+  const rows = rowsOf(workbook, wantedSheet);
+  const aliases = {
+    fase: ["fase", "codigo fase", "cod fase"], descricao: ["descricao", "designacao"],
+    venda_prevista: ["venda prevista", "preco venda", "venda"], custo_total_estimado: ["custo total estimado", "custo total", "custo estimado"],
+    margem_prevista: ["margem prevista", "margem"], deslocacoes: ["deslocacoes"], mao_obra: ["mao de obra", "m.o."],
+    maquinas: ["maquinas"], materiais: ["materiais"], mao_obra_sub: ["m.o.sub", "mo sub", "mao de obra sub"], subempreitada: ["subempreitada", "subempreitadas"],
+  };
+  let headerIndex = -1; let columns = {};
+  for (let index = 0; index < Math.min(rows.length, 25); index += 1) {
+    const normalized = rows[index].map(normalize);
+    const found = {};
+    Object.entries(aliases).forEach(([key, names]) => { found[key] = normalized.findIndex(value => names.includes(value)); });
+    if (found.fase >= 0 && (found.custo_total_estimado >= 0 || found.materiais >= 0)) { headerIndex = index; columns = found; break; }
+  }
+  if (headerIndex < 0) throw new Error("Não foi possível identificar o cabeçalho por fase na folha “0_Orçamento”.");
+  const phases = context.phases || [];
+  return rows.slice(headerIndex + 1).map((row, offset) => {
+    const phaseText = String(row[columns.fase] ?? "").trim();
+    if (!phaseText && row.every(value => String(value ?? "").trim() === "")) return null;
+    const phase = phases.find(item => normalize(item.codigo) === normalize(phaseText) || normalize(item.descricao) === normalize(phaseText));
+    const amount = key => columns[key] >= 0 ? number(row[columns[key]]) : 0;
+    const components = ["deslocacoes", "mao_obra", "maquinas", "materiais", "mao_obra_sub", "subempreitada"].reduce((sum, key) => sum + (amount(key) || 0), 0);
+    const total = amount("custo_total_estimado") ?? components;
+    const errors = [];
+    if (!phase) errors.push(`A fase “${phaseText || "(vazia)"}” não existe nesta obra.`);
+    if (total == null || total < 0) errors.push("Custo total estimado inválido.");
+    return { row: headerIndex + offset + 2, label: `${phaseText || "Fase"} · ${row[columns.descricao] || phase?.descricao || "Orçamento"}`, errors, warnings: [], selected: !errors.length, payload: {
+      fase_id: phase?.id || null, descricao: String(row[columns.descricao] || phase?.descricao || "").trim() || null,
+      venda_prevista: amount("venda_prevista") || 0, custo_total_estimado: total || 0, margem_prevista: amount("margem_prevista") || 0,
+      deslocacoes: amount("deslocacoes") || 0, mao_obra: amount("mao_obra") || 0, maquinas: amount("maquinas") || 0,
+      materiais: amount("materiais") || 0, mao_obra_sub: amount("mao_obra_sub") || 0, subempreitada: amount("subempreitada") || 0,
+    } };
+  }).filter(Boolean);
+}
+
 function status(row) {
   if (row.errors.length) return ["error", "COM ERRO"];
   if (row.duplicate) return ["warning", "POSSÍVEL DUPLICADO"];
@@ -190,7 +228,7 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
       if (event.target.matches("[data-xlsx-select]")) { const row = state.rows[Number(event.target.dataset.xlsxSelect)]; if (row && !row.errors.length) row.selected = event.target.checked; render(); }
     });
     dialog.addEventListener("click", async event => {
-      if (event.target.closest("[data-xlsx-confirm]")) await confirm();
+      if (event.target.closest("[data-xlsx-confirm]")) await confirmImport();
       if (event.target.closest("[data-xlsx-reset]")) { state.file = null; state.rows = []; render(); }
     });
     return dialog;
@@ -208,7 +246,7 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
     if (!globalThis.XLSX) return toast("O leitor de Excel ainda não foi carregado. Atualize a página e tente novamente.", "error");
     try {
       const workbook = globalThis.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
-      const parsers = { subempreitadas: parseSubcontracts, tees: parseTees, mapa_financeiro: parseFinancial };
+      const parsers = { subempreitadas: parseSubcontracts, tees: parseTees, mapa_financeiro: parseFinancial, orcamento_fases: parsePhaseBudget };
       state.rows = parsers[state.module](workbook, state.context); state.file = file; render();
     } catch (error) { state.file = null; state.rows = []; toast(error.message, "error"); render(error.message); }
   }
@@ -218,15 +256,17 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
     const ready = state.rows.filter(row => row.selected && !row.errors.length).length; const problems = state.rows.filter(row => row.errors.length || row.warnings.length).length;
     dialog.querySelector("[data-xlsx-content]").innerHTML = `${!state.file ? `<div class="xlsx-import-drop"><input type="file" accept=".xlsx" data-xlsx-file><strong>SELECIONAR FICHEIRO .XLSX</strong><span>Nada será gravado antes da pré-visualização e confirmação.</span>${error ? `<p>${esc(error)}</p>` : ""}</div>` : `<div class="xlsx-import-summary"><div><span>FICHEIRO</span><strong>${esc(state.file.name)}</strong></div><div class="ready"><span>PRONTAS</span><strong>${ready}</strong></div><div class="warning"><span>COM AVISO/ERRO</span><strong>${problems}</strong></div><button type="button" data-xlsx-reset>SUBSTITUIR FICHEIRO</button></div><div class="xlsx-import-table-wrap"><table class="xlsx-import-table"><thead><tr><th>IMPORTAR</th><th>LINHA</th><th>REGISTO</th><th>ESTADO</th><th>OBSERVAÇÕES</th></tr></thead><tbody>${state.rows.map((row, index) => { const [kind, label] = status(row); return `<tr class="${kind}"><td><input type="checkbox" data-xlsx-select="${index}" ${row.selected ? "checked" : ""} ${row.errors.length ? "disabled" : ""}></td><td>${row.row}</td><td><strong>${esc(row.label)}</strong></td><td><span>${label}</span></td><td>${[...row.errors, ...row.warnings].map(message => `<p>${esc(message)}</p>`).join("") || "Sem problemas"}</td></tr>`; }).join("")}</tbody></table></div><footer><p><strong>${ready} linhas prontas</strong> · ${state.rows.length - ready} não selecionadas ou bloqueadas</p><button class="primary-button" type="button" data-xlsx-confirm ${!ready || state.busy ? "disabled" : ""}>${state.busy ? "A IMPORTAR…" : "CONFIRMAR IMPORTAÇÃO"} <span>→</span></button></footer>`}`;
   }
-  async function confirm() {
+  async function confirmImport() {
     const rows = state.rows.filter(row => row.selected && !row.errors.length).map(row => row.payload);
     if (!rows.length || state.busy) return;
     state.busy = true; render();
     try {
-      const paths = { subempreitadas: "rpc/fn_importar_subempreitadas_xlsx", tees: "rpc/fn_importar_tees_xlsx", mapa_financeiro: "rpc/fn_importar_mapa_financeiro_xlsx" };
+      const paths = { subempreitadas: "rpc/fn_importar_subempreitadas_xlsx", tees: "rpc/fn_importar_tees_xlsx", mapa_financeiro: "rpc/fn_importar_mapa_financeiro_xlsx", orcamento_fases: "rpc/fn_importar_orcamento_fases" };
       const body = state.module === "mapa_financeiro"
         ? { p_ano: state.context.year, p_linhas: rows, p_nome_ficheiro: state.file.name }
-        : { p_linhas: rows, p_nome_ficheiro: state.file.name };
+        : state.module === "orcamento_fases"
+          ? { p_obra_id: state.context.work.id, p_linhas: rows, p_nome_ficheiro: state.file.name }
+          : { p_linhas: rows, p_nome_ficheiro: state.file.name };
       const result = isConfigured ? await api(paths[state.module], { method: "POST", body: JSON.stringify(body) }) : { importadas: rows.length };
       toast(`${result?.importadas ?? rows.length} linha(s) importada(s) com auditoria registada.`); const callback = state.context.onComplete; close(); await callback?.();
     } catch (error) { toast(error.message, "error"); }
@@ -236,7 +276,8 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
     openSubcontracts: context => open("subempreitadas", "IMPORTAR SUBEMPREITADAS", context),
     openTees: context => open("tees", "IMPORTAR TEEs", context),
     openFinancial: context => open("mapa_financeiro", "IMPORTAR MAPA FINANCEIRO", context),
+    openPhaseBudget: context => open("orcamento_fases", "IMPORTAR 0_ORÇAMENTO POR FASE", context),
   };
 }
 
-export const __test = { normalize, number, excelDate, parseSubcontracts, parseTees, parseFinancial };
+export const __test = { normalize, number, excelDate, parseSubcontracts, parseTees, parseFinancial, parsePhaseBudget };

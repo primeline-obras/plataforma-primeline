@@ -1,0 +1,21 @@
+.cost-formula { border-top: 1px solid var(--card-border); padding: 13px 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px 10px; background: color-mix(in srgb, var(--accent) 6%, transparent); font-size: 10px; }
+.cost-formula span { color: var(--text-muted); font-weight: 800; letter-spacing: .5px; }
+.cost-formula i { color: var(--text-muted); font-style: normal; }
+.cost-formula strong { font-size: 14px; }
+.cost-percentages { padding: 10px 14px; border-top: 1px solid var(--card-border); display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 9px; }
+.cost-percentages span,.cost-percentages small { color: var(--text-muted); }
+.cost-percentages b { color: var(--text-primary); margin-left: 5px; }
+.cost-percentages small { margin-left: auto; }
+.cost-components { border-top: 1px solid var(--card-border); padding: 14px; display: grid; gap: 8px; }
+.cost-components > header { display: flex; justify-content: space-between; gap: 12px; }
+.cost-components > header strong { font-size: 10px; }
+.cost-components > header small { color: var(--text-muted); font-size: 9px; }
+.cost-components article { padding: 10px; border: 1px solid var(--card-border); border-radius: 8px; display: flex; flex-wrap: wrap; gap: 9px 14px; align-items: center; background: var(--card); font-size: 9px; }
+.cost-components article > div { margin-right: auto; display: grid; gap: 3px; min-width: 170px; }
+.cost-components article small,.cost-components article > span { color: var(--text-muted); }
+.cost-components article button { border: 1px solid var(--card-border); border-radius: 6px; padding: 7px 9px; background: var(--bg-soft); color: var(--text-primary); font: 800 8px "Manrope"; }
+.cost-components form { display: grid; grid-template-columns: 1.2fr .7fr .7fr 1fr auto; gap: 8px; align-items: end; padding-top: 6px; }
+.cost-components form label { display: grid; gap: 4px; color: var(--text-muted); font: 800 8px "Manrope"; }
+.cost-components form input,.cost-components form select { min-height: 36px; max-width: 100%; border: 1px solid var(--card-border); border-radius: 7px; padding: 0 8px; background: var(--card); color: var(--text-primary); }
+.cost-components form .form-error { grid-column: 1 / -1; }
+@media (max-width:720px) { .cost-components form { grid-template-columns:1fr; } }

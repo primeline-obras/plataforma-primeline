@@ -17,7 +17,8 @@ assert.match(app, /Isto vai criar uma fatura duplicada/);
 assert.match(app, /AVISO DE POSSÍVEL DUPLICAÇÃO ENTRE OBRAS/);
 assert.match(app, /confirmSimilarInvoice\(match, "aprovar esta fatura"\)/);
 assert.match(app, /confirmSimilarInvoice\(match, "marcar esta fatura como paga"\)/);
-assert.match(app, /window\.confirm/);
+assert.match(app, /platformConfirm/);
+assert.doesNotMatch(app, /window\.confirm/);
 
 const checkPosition = app.indexOf("await findDuplicateInvoice(payload)");
 const uploadPosition = app.indexOf("await uploadInvoicePdf(selectedPdf, payload.obra_id)");

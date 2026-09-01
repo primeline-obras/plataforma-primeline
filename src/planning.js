@@ -1,4 +1,5 @@
 import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from "./planning-import.js?v=1";
+import { platformConfirm } from "./platform-dialogs.js?v=1";
 
 const DAY_MS = 86400000;
 
@@ -72,7 +73,7 @@ function isPastDay(date, today = new Date()) {
   return Boolean(date && date < currentDay);
 }
 
-export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, toast }) {
+export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
     expanded: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
@@ -81,6 +82,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   const workSelect = document.querySelector("#planning-work");
   const content = document.querySelector("#planning-content");
+  const readOnly = () => getRole() === "encarregado";
 
   function renderWorkOptions() {
     const works = getWorks().slice().sort((a, b) =>
@@ -507,6 +509,11 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     });
     state.saving.delete(itemId);
     if (!response.ok) { render(); return toast(`Não foi possível guardar a tarefa: ${await response.text()}`, "error"); }
+    const [savedTask] = await response.json();
+    if (payload.estado === "concluido" && item.estado !== "concluido") {
+      const completion = await supabase("rpc/fn_concluir_custos_pl_tarefa", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: savedTask?.id || item.id }) });
+      if (!completion.ok) toast("A tarefa foi concluída, mas não foi possível transferir automaticamente o custo PL para Custo Real.", "error");
+    }
     toast(item._new ? "Tarefa criada." : "Tarefa atualizada.");
     await load(state.workId);
   }
@@ -515,7 +522,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const item = state.items.find(candidate => candidate.id === itemId);
     if (!item) return;
     if (item._new) { state.items = state.items.filter(candidate => candidate.id !== itemId); render(); return; }
-    if (!confirm(`Remover a tarefa ${item.codigo || item.descricao}? As dependências associadas também serão removidas.`)) return;
+    if (!await platformConfirm(`Remover a tarefa ${item.codigo || item.descricao}? As dependências associadas também serão removidas.`, { title: "Remover tarefa", danger: true, confirmLabel: "REMOVER" })) return;
     const response = await supabase(`planeamento_itens?id=eq.${encodeURIComponent(itemId)}`, { method: "DELETE" });
     if (!response.ok) return toast(`Não foi possível remover a tarefa: ${await response.text()}`, "error");
     toast("Tarefa removida."); await load(state.workId);
@@ -529,7 +536,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   async function removeDependency(dependencyId) {
-    if (!confirm("Remover esta dependência?")) return;
+    if (!await platformConfirm("Remover esta dependência?", { title: "Remover dependência", danger: true, confirmLabel: "REMOVER" })) return;
     const response = await supabase(`planeamento_itens_dependencias?id=eq.${encodeURIComponent(dependencyId)}`, { method: "DELETE" });
     if (!response.ok) return toast(`Não foi possível remover a dependência: ${await response.text()}`, "error");
     toast("Dependência removida."); await load(state.workId);
@@ -641,6 +648,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   workSelect.addEventListener("change", () => { state.expanded.clear(); load(workSelect.value); });
   content.addEventListener("click", event => {
+    if (readOnly() && event.target.closest("[data-open-import],[data-new-task],[data-save-task],[data-remove-task],[data-add-dependency],[data-remove-dependency],[data-confirm-import]")) return;
     if (event.target.closest("[data-open-import]")) { openImportPanel(); return; }
     if (event.target.closest("[data-close-import]")) { state.importOpen = false; state.importRows = []; state.importErrors = []; render(); return; }
     if (event.target.closest("[data-new-task]")) {
