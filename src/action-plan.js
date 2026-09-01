@@ -1,3 +1,5 @@
+import { platformPrompt } from "./platform-dialogs.js?v=1";
+
 const DAY_MS = 86400000;
 
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -158,7 +160,7 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
         await update(item, { p_concluida: false, p_impedido: false, p_observacao_impedimento: null });
         toast("Impedimento retirado.");
       } else {
-        const observation = window.prompt("Explique por que motivo a tarefa não pode ser executada:", "")?.trim();
+        const observation = await platformPrompt("Explique por que motivo a tarefa não pode ser executada:", "", { title: "Registar impedimento", label: "MOTIVO DO IMPEDIMENTO" });
         if (!observation) return;
         await update(item, { p_concluida: false, p_impedido: true, p_observacao_impedimento: observation });
         toast("Impedimento registado e responsáveis alertados.");

@@ -1,12 +1,13 @@
 import { generateRncPdf } from "./rnc-pdf.js?v=2";
+import { platformConfirm } from "./platform-dialogs.js?v=1";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[c]);
 const today = () => new Date().toISOString().slice(0, 10);
-const labels = { aberto: "Aberto", em_correcao: "Em correção", verificado: "Verificado", fechado: "Fechado", critica: "Crítica", maior: "Maior", menor: "Menor", execucao_propria: "Execução própria", subempreiteiro: "Subempreiteiro", material: "Material", projeto_especificacao: "Projeto / Especificação", outro: "Outro" };
+const labels = { aberto: "Aberto", em_correcao: "Em correção", verificado: "Verificado", fechado: "Fechado", cancelado: "Cancelado", critica: "Crítica", maior: "Maior", menor: "Menor", execucao_propria: "Execução própria", subempreiteiro: "Subempreiteiro", material: "Material", projeto_especificacao: "Projeto / Especificação", outro: "Outro" };
 export const rncCode = (work, numero) => `RNC-${String(work?.numero || "OBRA").trim()}-${String(numero).padStart(3, "0")}`;
 
-export function createRncModule({ root, supabase, isConfigured, getWorks, getRole, uploadWorkDocument, downloadWorkDocument, toast }) {
-  const state = { workId: "", rows: [], annexes: [], phases: [], subcontracts: [], users: [], canEdit: false, loading: false, openForm: false };
+export function createRncModule({ root, supabase, isConfigured, getWorks, getRole, uploadWorkDocument, downloadWorkDocument, deleteWorkDocument, toast }) {
+  const state = { workId: "", rows: [], annexes: [], phases: [], subcontracts: [], users: [], canEdit: false, loading: false, openForm: false, editingId: "" };
   const api = async (path, options = {}) => {
     const response = await supabase(path, options);
     if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || payload.details || "Não foi possível concluir a operação."); }
@@ -45,17 +46,18 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
   function card(row) {
     const evidence = annexesFor(row.id);
     const sub = subcontract(row.subempreitada_id);
+    const editForm = state.editingId === row.id ? `<form class="rnc-inline-form" data-rnc-edit="${row.id}"><label>DATA<input type="date" name="data_deteccao" value="${esc(row.data_deteccao)}" required></label><label>LOCAL<input name="local_ocorrencia" value="${esc(row.local_ocorrencia || "")}" maxlength="240"></label><label>GRAVIDADE<select name="gravidade">${["critica","maior","menor"].map(value => `<option value="${value}" ${value === row.gravidade ? "selected" : ""}>${labels[value]}</option>`).join("")}</select></label><label class="wide">DESCRIÇÃO<textarea name="descricao" required>${esc(row.descricao)}</textarea></label><button type="submit">GUARDAR DADOS</button><button type="button" data-rnc-edit-cancel>FECHAR</button></form>` : "";
     return `<article class="rnc-card severity-${row.gravidade}"><header><div><span>${esc(rncCode(work(), row.numero))}</span><h3>${esc(row.local_ocorrencia || "Não conformidade")}</h3></div><span class="rnc-severity ${row.gravidade}">${labels[row.gravidade]}</span></header>
       <p>${esc(row.descricao)}</p><dl><div><dt>Deteção</dt><dd>${esc(row.data_deteccao)}</dd></div><div><dt>Fase</dt><dd>${esc(phase(row.fase_id)?.descricao || "—")}</dd></div><div><dt>Origem</dt><dd>${labels[row.origem] || esc(row.origem)}</dd></div>${sub ? `<div><dt>Subempreitada</dt><dd>${esc(sub.especialidade)}</dd></div>` : ""}</dl>
       ${row.acao_corretiva ? `<div class="rnc-correction"><strong>AÇÃO CORRETIVA</strong><p>${esc(row.acao_corretiva)}</p><small>${esc(row.responsavel_correcao)} · prazo ${esc(row.prazo_correcao)}</small></div>` : ""}
       ${row.observacao_verificacao ? `<div class="rnc-verification-note"><strong>VERIFICAÇÃO</strong><p>${esc(row.observacao_verificacao)}</p></div>` : ""}
-      <div class="rnc-annexes">${evidence.map(item => `<button data-rnc-annex="${encodeURIComponent(item.arquivo_url)}">${esc(item.nome_arquivo)}</button>`).join("") || "<small>Sem anexos</small>"}</div>
-      <footer><button data-rnc-pdf="${row.id}">GERAR RNC PDF</button>${actions(row)}</footer></article>`;
+      <div class="rnc-annexes">${evidence.map(item => `<span><button data-rnc-annex="${encodeURIComponent(item.arquivo_url)}">${esc(item.nome_arquivo)}</button>${state.canEdit ? `<button class="danger-action" data-rnc-annex-delete="${item.id}" data-file-path="${encodeURIComponent(item.arquivo_url)}">APAGAR</button>` : ""}</span>`).join("") || "<small>Sem anexos</small>"}</div>
+      ${editForm}<footer><button data-rnc-pdf="${row.id}">GERAR RNC PDF</button>${state.canEdit && row.estado !== "cancelado" ? `<button data-rnc-edit-open="${row.id}">EDITAR DADOS</button><button class="danger-action" data-rnc-cancel="${row.id}">CANCELAR RNC</button>` : ""}${actions(row)}</footer></article>`;
   }
 
   function render() {
     if (!root) return;
-    const groups = ["aberto", "em_correcao", "verificado", "fechado"];
+    const groups = ["aberto", "em_correcao", "verificado", "fechado", "cancelado"];
     root.innerHTML = `<div class="page-heading"><div><p class="eyebrow">QUALIDADE EM OBRA</p><h1>RNC</h1><p>Relatórios de não conformidade, evidências e ações corretivas.</p></div><label>OBRA<select data-rnc-work>${getWorks().map(item => `<option value="${item.id}" ${item.id === state.workId ? "selected" : ""}>Obra ${esc(item.numero)} · ${esc(item.nome)}</option>`).join("")}</select></label></div>
       <section class="panel rnc-panel"><div class="rnc-toolbar"><div><strong>${esc(work()?.nome || "Selecione uma obra")}</strong><span>${state.rows.length} relatório(s)</span></div>${canCreate() ? `<button data-rnc-toggle>${state.openForm ? "FECHAR" : "+ NOVA RNC"}</button>` : ""}</div>${newForm()}
       ${state.loading ? `<div class="empty-state">A CARREGAR RNCs…</div>` : `<div class="rnc-board">${groups.map(status => { const rows = state.rows.filter(item => item.estado === status); return `<section class="rnc-column"><header><h2>${labels[status]}</h2><b>${rows.length}</b></header><div>${rows.length ? rows.map(card).join("") : `<div class="rnc-empty">SEM REGISTOS</div>`}</div></section>`; }).join("")}</div>`}</section>`;
@@ -116,12 +118,17 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
   });
   root.addEventListener("submit", event => { event.preventDefault(); const form = event.target; const button = form.querySelector('[type="submit"]'); button.disabled = true;
     (async () => { if (form.matches("[data-rnc-create]")) return create(form);
+      if (form.matches("[data-rnc-edit]")) { await api("rpc/fn_editar_rnc_base", { method: "POST", body: JSON.stringify({ p_rnc_id: form.dataset.rncEdit, p_data_deteccao: form.elements.data_deteccao.value, p_local_ocorrencia: form.elements.local_ocorrencia.value.trim() || null, p_descricao: form.elements.descricao.value.trim(), p_gravidade: form.elements.gravidade.value }) }); state.editingId = ""; }
       if (form.matches("[data-rnc-correction]")) await api("rpc/fn_definir_acao_rnc", { method: "POST", body: JSON.stringify({ p_rnc_id: form.dataset.rncCorrection, p_acao_corretiva: form.elements.acao.value, p_responsavel_correcao: form.elements.responsavel.value, p_prazo_correcao: form.elements.prazo.value }) });
       if (form.matches("[data-rnc-verify]")) { const files = [...form.elements.prova.files], observation = form.elements.observacao_verificacao.value.trim(); if (!observation && !files.length) throw new Error("Escreva uma observação de verificação ou anexe uma prova antes de verificar."); if (files.length) await uploadAnnexes(form.dataset.rncVerify, files); await api("rpc/fn_verificar_rnc", { method: "POST", body: JSON.stringify({ p_rnc_id: form.dataset.rncVerify, p_observacao_verificacao: observation || null }) }); }
       toast("RNC atualizada."); await load(true);
     })().catch(error => toast(error.message, "error")).finally(() => { button.disabled = false; });
   });
   root.addEventListener("click", event => { const toggle = event.target.closest("[data-rnc-toggle]"); if (toggle) { state.openForm = !state.openForm; return render(); }
+    const editOpen = event.target.closest("[data-rnc-edit-open]"); if (editOpen) { state.editingId = editOpen.dataset.rncEditOpen; return render(); }
+    if (event.target.closest("[data-rnc-edit-cancel]")) { state.editingId = ""; return render(); }
+    const cancelRnc = event.target.closest("[data-rnc-cancel]"); if (cancelRnc) return platformConfirm("Cancelar esta RNC? O registo permanece no histórico e sai das listas ativas.", { title: "Cancelar RNC", danger: true, confirmLabel: "CANCELAR RNC" }).then(ok => ok && api("rpc/fn_cancelar_rnc", { method: "POST", body: JSON.stringify({ p_rnc_id: cancelRnc.dataset.rncCancel }) }).then(() => load(true))).catch(error => toast(error.message, "error"));
+    const deleteAnnex = event.target.closest("[data-rnc-annex-delete]"); if (deleteAnnex) return platformConfirm("Apagar definitivamente este anexo da RNC?", { title: "Apagar anexo", danger: true, confirmLabel: "APAGAR" }).then(async ok => { if (!ok) return; await api("rpc/fn_apagar_anexo_rnc", { method: "POST", body: JSON.stringify({ p_anexo_id: deleteAnnex.dataset.rncAnnexDelete }) }); await deleteWorkDocument(decodeURIComponent(deleteAnnex.dataset.filePath)).catch(() => {}); state.annexes = state.annexes.filter(item => item.id !== deleteAnnex.dataset.rncAnnexDelete); render(); toast("Anexo apagado."); }).catch(error => toast(error.message, "error"));
     const close = event.target.closest("[data-rnc-close]"); if (close) return api("rpc/fn_fechar_rnc", { method: "POST", body: JSON.stringify({ p_rnc_id: close.dataset.rncClose }) }).then(() => load(true)).catch(error => toast(error.message, "error"));
     const annex = event.target.closest("[data-rnc-annex]"); if (annex) return downloadWorkDocument(decodeURIComponent(annex.dataset.rncAnnex)).then(blob => window.open(URL.createObjectURL(blob), "_blank")).catch(error => toast(error.message, "error"));
     const pdf = event.target.closest("[data-rnc-pdf]"); if (pdf) { const row = state.rows.find(item => item.id === pdf.dataset.rncPdf); return generateRncPdf({ rnc: row, work: work(), phase: phase(row.fase_id), subcontract: subcontract(row.subempreitada_id), reporter: user(row.reportado_por), verifier: user(row.verificado_por), annexes: annexesFor(row.id), download: downloadWorkDocument }).catch(error => toast(error.message, "error")); }

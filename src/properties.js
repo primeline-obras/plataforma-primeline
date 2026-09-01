@@ -1,10 +1,12 @@
+import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
+
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function createPropertiesModule({ root, supabase, isConfigured, getProfile, prettyDate, toast }) {
-  const state = { loaded: false, loading: false, properties: [], meetings: [], selectedId: "", error: "" };
+export function createPropertiesModule({ root, supabase, isConfigured, getProfile, uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, prettyDate, toast }) {
+  const state = { loaded: false, loading: false, properties: [], meetings: [], attachments: [], selectedId: "", error: "" };
 
   async function api(path, options) {
     const response = await supabase(path, options);
@@ -22,9 +24,10 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
       if (!isConfigured) {
         state.properties = []; state.meetings = [];
       } else {
-        [state.properties, state.meetings] = await Promise.all([
+        [state.properties, state.meetings, state.attachments] = await Promise.all([
           api("imoveis_empresa?select=*&order=nome.asc"),
           api("imoveis_reunioes_condominio?select=*&order=data.asc,hora.asc.nullslast"),
+          api("imoveis_anexos?select=*&order=criado_em.desc"),
         ]);
       }
       state.loaded = true;
@@ -59,7 +62,7 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
     return `<section class="panel operations-directory"><header><div><p class="eyebrow">PATRIMÓNIO</p><h2>IMÓVEIS DA EMPRESA</h2></div><span>${state.properties.length}</span></header>
       ${propertyForm()}<div class="property-cards">${state.properties.length ? state.properties.map(row => {
         const count = state.meetings.filter(meeting => meeting.imovel_id === row.id).length;
-        return `<article class="property-card-wrap"><button type="button" class="property-card ${row.id === state.selectedId ? "active" : ""}" data-property-id="${row.id}"><span>IMÓVEL</span><strong>${esc(row.nome)}</strong><p>${esc(row.morada || "Morada não indicada")}</p><small>${count} REUNIÃO${count === 1 ? "" : "ÕES"}</small></button><button type="button" class="danger-action" data-delete-property="${row.id}" data-property-name="${esc(row.nome)}">APAGAR</button></article>`;
+        return `<article class="property-card-wrap"><button type="button" class="property-card ${row.id === state.selectedId ? "active" : ""}" data-property-id="${row.id}"><span>IMÓVEL</span><strong>${esc(row.nome)}</strong><p>${esc(row.morada || "Morada não indicada")}</p><small>${count} REUNIÃO${count === 1 ? "" : "ÕES"}</small></button><button type="button" data-edit-property="${row.id}">EDITAR</button><button type="button" class="danger-action" data-delete-property="${row.id}" data-property-name="${esc(row.nome)}">APAGAR</button></article>`;
       }).join("") : `<div class="operations-empty">AINDA NÃO EXISTEM IMÓVEIS REGISTADOS</div>`}</div>
     </section>`;
   }
@@ -68,7 +71,8 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
     const rows = state.meetings.filter(row => !state.selectedId || row.imovel_id === state.selectedId);
     const upcoming = rows.filter(row => row.data >= today());
     return `<section class="panel operations-detail"><header><div><p class="eyebrow">CONDOMÍNIO</p><h2>REUNIÕES AGENDADAS</h2></div><span>${upcoming.length} FUTURAS</span></header>
-      ${meetingForm()}<div class="condo-meeting-list">${rows.length ? rows.map(row => `<article class="${row.data < today() ? "past" : ""}"><time><b>${dateLabel(row.data)}</b><span>${timeLabel(row.hora)}</span></time><div><strong>${esc(propertyName(row.imovel_id))}</strong><p>${esc(row.local || "Local não indicado")}</p><small>${esc(row.notas || "Sem notas")}</small></div><button type="button" class="danger-action" data-delete-property-meeting="${row.id}">APAGAR</button></article>`).join("") : `<div class="operations-empty">SEM REUNIÕES PARA ESTE IMÓVEL</div>`}</div>
+      ${meetingForm()}<div class="condo-meeting-list">${rows.length ? rows.map(row => `<article class="${row.data < today() ? "past" : ""}"><time><b>${dateLabel(row.data)}</b><span>${timeLabel(row.hora)}</span></time><div><strong>${esc(propertyName(row.imovel_id))}</strong><p>${esc(row.local || "Local não indicado")}</p><small>${esc(row.notas || "Sem notas")}</small></div><button type="button" data-edit-property-meeting="${row.id}">EDITAR</button><button type="button" class="danger-action" data-delete-property-meeting="${row.id}">APAGAR</button></article>`).join("") : `<div class="operations-empty">SEM REUNIÕES PARA ESTE IMÓVEL</div>`}</div>
+      ${state.selectedId ? `<section class="property-attachments"><h3>ANEXOS DO IMÓVEL</h3><form data-property-attachment><input type="file" name="arquivo" required><button type="submit">ANEXAR</button><p class="form-error"></p></form><div>${state.attachments.filter(item => item.imovel_id === state.selectedId).map(item => `<span><button type="button" data-property-file="${encodeURIComponent(item.arquivo_url)}">${esc(item.nome_arquivo)}</button><button type="button" class="danger-action" data-delete-property-file="${item.id}" data-file-path="${encodeURIComponent(item.arquivo_url)}">APAGAR</button></span>`).join("") || "<small>Sem anexos.</small>"}</div></section>` : ""}
     </section>`;
   }
 
@@ -78,12 +82,18 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
       ${state.loading ? `<div class="fleet-loading">A CARREGAR IMÓVEIS…</div>` : `<div class="operations-layout">${renderProperties()}${renderMeetings()}</div>`}`;
   }
 
-  root.addEventListener("click", event => {
+  root.addEventListener("click", async event => {
     const button = event.target.closest("[data-property-id]");
     if (button) { state.selectedId = button.dataset.propertyId; render(); }
+    const editProperty = event.target.closest("[data-edit-property]");
+    if (editProperty) { const row = state.properties.find(item => item.id === editProperty.dataset.editProperty); const name = await platformPrompt("Nome do imóvel", row.nome, { title: "Editar imóvel", label: "NOME" }); if (name === null || !name.trim()) return; const address = await platformPrompt("Morada do imóvel", row.morada || "", { title: "Editar imóvel", label: "MORADA" }); if (address === null) return; try { const [saved] = await api(`imoveis_empresa?id=eq.${encodeURIComponent(row.id)}&select=*`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ nome: name.trim(), morada: address.trim() || null }) }); Object.assign(row,saved); render(); toast("Imóvel atualizado."); } catch (error) { toast(error.message,"error"); } return; }
+    const editMeeting = event.target.closest("[data-edit-property-meeting]");
+    if (editMeeting) { const row = state.meetings.find(item => item.id === editMeeting.dataset.editPropertyMeeting); const notes = await platformPrompt("Notas da reunião", row.notas || "", { title: "Editar reunião", label: "NOTAS" }); if (notes === null) return; try { const [saved] = await api(`imoveis_reunioes_condominio?id=eq.${encodeURIComponent(row.id)}&select=*`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ notas: notes.trim() || null }) }); Object.assign(row,saved); render(); toast("Reunião atualizada."); } catch (error) { toast(error.message,"error"); } return; }
+    const openFile = event.target.closest("[data-property-file]"); if (openFile) { try { const blob = await downloadWorkDocument(decodeURIComponent(openFile.dataset.propertyFile)); window.open(URL.createObjectURL(blob),"_blank"); } catch(error) { toast(error.message,"error"); } return; }
+    const deleteFile = event.target.closest("[data-delete-property-file]"); if (deleteFile) { if (!await platformConfirm("Apagar este anexo do imóvel?", { title: "Apagar anexo", danger: true, confirmLabel: "APAGAR" })) return; try { await api("rpc/fn_apagar_anexo_imovel", { method: "POST", body: JSON.stringify({ p_anexo_id: deleteFile.dataset.deletePropertyFile }) }); await deleteWorkDocument(decodeURIComponent(deleteFile.dataset.filePath)).catch(()=>{}); state.attachments=state.attachments.filter(item=>item.id!==deleteFile.dataset.deletePropertyFile); render(); toast("Anexo apagado."); } catch(error) { toast(error.message,"error"); } return; }
     const meetingDelete = event.target.closest("[data-delete-property-meeting]");
     if (meetingDelete) {
-      if (!window.confirm("Apagar esta reunião de condomínio? A ação fica registada na auditoria.")) return;
+      if (!await platformConfirm("Apagar esta reunião de condomínio? A ação fica registada na auditoria.", { title: "Apagar reunião", danger: true, confirmLabel: "APAGAR" })) return;
       meetingDelete.disabled = true;
       api("rpc/fn_apagar_reuniao_condominio", { method: "POST", body: JSON.stringify({ p_reuniao_id: meetingDelete.dataset.deletePropertyMeeting }) })
         .then(() => { state.meetings = state.meetings.filter(row => row.id !== meetingDelete.dataset.deletePropertyMeeting); toast("Reunião apagada."); render(); })
@@ -92,7 +102,8 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
     }
     const propertyDelete = event.target.closest("[data-delete-property]");
     if (propertyDelete) {
-      if (!window.confirm(`Apagar o imóvel “${propertyDelete.dataset.propertyName}” e as respetivas reuniões? A ação fica registada na auditoria.`)) return;
+      const meetingCount = state.meetings.filter(row => row.imovel_id === propertyDelete.dataset.deleteProperty).length;
+      if (!await platformConfirm(`O imóvel “${propertyDelete.dataset.propertyName}” e ${meetingCount} reunião(ões) associada(s) serão apagados. Esta ação fica registada na auditoria.`, { title: "Apagar imóvel e histórico associado", danger: true, confirmLabel: "APAGAR TUDO" })) return;
       propertyDelete.disabled = true;
       api("rpc/fn_apagar_imovel_empresa", { method: "POST", body: JSON.stringify({ p_imovel_id: propertyDelete.dataset.deleteProperty }) })
         .then(() => { const id = propertyDelete.dataset.deleteProperty; state.properties = state.properties.filter(row => row.id !== id); state.meetings = state.meetings.filter(row => row.imovel_id !== id); state.selectedId = state.properties[0]?.id || ""; toast("Imóvel apagado."); render(); })
@@ -103,14 +114,18 @@ export function createPropertiesModule({ root, supabase, isConfigured, getProfil
   root.addEventListener("submit", async event => {
     const propertyFormNode = event.target.closest("[data-property-form]");
     const meetingFormNode = event.target.closest("[data-property-meeting-form]");
-    if (!propertyFormNode && !meetingFormNode) return;
+    const attachmentForm = event.target.closest("[data-property-attachment]");
+    if (!propertyFormNode && !meetingFormNode && !attachmentForm) return;
     event.preventDefault();
-    const form = propertyFormNode || meetingFormNode;
+    const form = propertyFormNode || meetingFormNode || attachmentForm;
     const errorNode = form.querySelector(".form-error"); const button = form.querySelector('button[type="submit"]');
     button.disabled = true; errorNode.textContent = "";
     try {
       const fields = Object.fromEntries(new FormData(form));
-      if (propertyFormNode) {
+      if (attachmentForm) {
+        const file = form.elements.arquivo.files[0]; const path = await uploadEntityDocument(file, "imovel", state.selectedId, "anexo");
+        const [saved] = await api("imoveis_anexos?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ imovel_id: state.selectedId, arquivo_url: path, nome_arquivo: file.name }) }); state.attachments.unshift(saved); toast("Anexo adicionado ao imóvel.");
+      } else if (propertyFormNode) {
         const payload = { empresa_id: getProfile()?.empresa_id, nome: fields.nome.trim(), morada: fields.morada.trim() || null };
         let saved = { id: crypto.randomUUID(), criado_em: new Date().toISOString(), ...payload };
         if (isConfigured) [saved] = await api("imoveis_empresa?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
