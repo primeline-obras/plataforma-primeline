@@ -9,6 +9,10 @@ const monthKey = value => String(value || isoToday()).slice(0, 7);
 const normalizeTime = value => String(value || "").slice(0, 5);
 const monthLabel = value => new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(new Date(`${value}-01T12:00:00`));
 const dayLabel = value => new Intl.DateTimeFormat("pt-PT", { weekday: "short", day: "2-digit", month: "short" }).format(new Date(`${value}T12:00:00`));
+const shortPersonName = value => {
+  const parts = String(value || "").trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : (parts[0] || "Utilizador");
+};
 
 function changeMonth(value, offset) {
   const date = new Date(`${value}-01T12:00:00`); date.setMonth(date.getMonth() + offset); return date.toISOString().slice(0, 7);
@@ -75,7 +79,7 @@ export function createMeetingRoomsModule({ root, supabase, isConfigured, getProf
       <label>TÍTULO / PARA QUEM<input name="titulo" required maxlength="160" value="${esc(editing?.titulo || "")}" placeholder="Ex. Reunião de produção — Eng. Henrique"></label>
       <label>DATA<input name="data" type="date" required value="${editing?.data || state.selectedDate}"></label>
       <div><label>HORA INÍCIO<input name="hora_inicio" type="time" required value="${normalizeTime(editing?.hora_inicio)}"></label><label>HORA FIM<input name="hora_fim" type="time" required value="${normalizeTime(editing?.hora_fim)}"></label></div>
-      <fieldset class="meeting-participants"><legend>PARTICIPANTES</legend><p>Selecione os utilizadores que devem receber esta reunião na Visão Geral.</p><div>${state.users.map(user => `<label><input type="checkbox" name="participantes" value="${user.id}" ${checked.has(user.id) ? "checked" : ""}><span>${esc(user.nome)}</span><small>${esc(String(user.funcao || "Utilizador").replaceAll("_", " "))}</small></label>`).join("") || '<span class="meeting-empty">Não existem utilizadores disponíveis.</span>'}</div></fieldset>
+      <fieldset class="meeting-participants"><legend>PARTICIPANTES</legend><p>Selecione os utilizadores que devem receber esta reunião na Visão Geral.</p><div>${state.users.map(user => `<label><input type="checkbox" name="participantes" value="${user.id}" ${checked.has(user.id) ? "checked" : ""}><span title="${esc(user.nome)}">${esc(shortPersonName(user.nome))}</span><small>${esc(String(user.funcao || "Utilizador").replaceAll("_", " "))}</small></label>`).join("") || '<span class="meeting-empty">Não existem utilizadores disponíveis.</span>'}</div></fieldset>
       <div class="meeting-form-occupied">${reservationsFor(editing?.data || state.selectedDate).filter(row => row.id !== editing?.id).map(row => `<span>${normalizeTime(row.hora_inicio)}–${normalizeTime(row.hora_fim)}</span>`).join("") || "<span>LIVRE</span>"}</div>
       <div class="meeting-form-actions"><button class="primary-button" type="submit">${editing ? "GUARDAR ALTERAÇÕES" : "RESERVAR SALA"} <span>→</span></button>${editing ? `<button type="button" class="outline-action" data-cancel-reservation-edit>CANCELAR</button>` : ""}</div><p class="form-error"></p>
     </form></section>`;

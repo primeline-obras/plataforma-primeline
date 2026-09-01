@@ -1,6 +1,14 @@
--- Lista segura dos utilizadores ativos com login da mesma empresa para reservas.
+-- PRIMELINE | Correções pós-validação: Encarregado e utilizadores ativos
+-- Idempotente: pode ser executada novamente sem duplicar dados.
 begin;
 
+-- O Plano de Ação do Encarregado passa a ser estritamente de leitura.
+-- A função histórica é preservada para auditoria da migração anterior,
+-- mas deixa de poder ser executada por sessões autenticadas.
+revoke all on function public.fn_atualizar_tarefa_encarregado(uuid, boolean, boolean, text)
+  from authenticated;
+
+-- A lista operacional das Salas de Reunião aceita apenas perfis ativos.
 create or replace function public.fn_listar_participantes_reuniao()
 returns table (
   id uuid,
@@ -44,5 +52,12 @@ grant execute on function public.fn_listar_participantes_reuniao() to authentica
 commit;
 
 select
-  to_regprocedure('public.fn_listar_participantes_reuniao()') is not null
-    as rpc_lista_participantes;
+  not has_function_privilege(
+    'authenticated',
+    'public.fn_atualizar_tarefa_encarregado(uuid, boolean, boolean, text)',
+    'EXECUTE'
+  ) as encarregado_planeamento_so_leitura,
+  position(
+    'u.ativo is true' in
+    pg_get_functiondef('public.fn_listar_participantes_reuniao()'::regprocedure)
+  ) > 0 as participantes_apenas_ativos;

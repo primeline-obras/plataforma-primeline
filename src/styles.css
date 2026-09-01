@@ -1827,15 +1827,14 @@ button, input, select, textarea,
 .action-day > span { color: var(--text-secondary); font-size: 10px; font-weight: 800; }
 .action-day > i { overflow: hidden; padding: 3px 4px; border-radius: 4px; background: var(--info-bg); color: var(--info-text); font-size: 9px; font-style: normal; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .action-day > i.completed { background: var(--pos-bg); color: var(--pos-text); text-decoration: line-through; }
-.action-calendar-task { width: 100%; min-width: 0; padding: 4px 5px; border: 1px solid var(--pos-text); border-radius: 6px; background: var(--pos-bg); color: var(--pos-text); display: grid; gap: 2px; text-align: left; cursor: pointer; }
+.action-calendar-task { width: 100%; min-width: 0; padding: 4px 5px; border: 1px solid var(--pos-text); border-radius: 6px; background: var(--pos-bg); color: var(--pos-text); display: grid; gap: 2px; text-align: left; cursor: default; }
 .action-calendar-task > span { overflow: hidden; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; text-decoration: line-through; }
 .action-calendar-task > em { font-size: 9px; font-style: normal; font-weight: 900; letter-spacing: .35px; }
-.action-calendar-task:hover, .action-calendar-task:focus-visible { box-shadow: 0 0 0 2px color-mix(in srgb, var(--pos-text) 25%, transparent); transform: translateY(-1px); }
 .action-day > small { color: var(--text-muted); font-size: 9px; }
 .action-day.outside { opacity: .35; background: var(--bg); }
 .action-day.blocked { box-shadow: inset 0 3px 0 var(--neg-text); }
 .action-day.blocked > i { background: var(--neg-bg); color: var(--neg-text); }
-.action-task { min-height: 78px; padding: 12px 16px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto; align-items: center; gap: 11px; }
+.action-task { min-height: 78px; padding: 12px 16px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 11px; }
 .action-task:last-child { border-bottom: 0; }
 .action-task.blocked { background: var(--neg-bg); }
 .action-task.completed { opacity: .68; }
@@ -1844,7 +1843,7 @@ button, input, select, textarea,
 .action-task strong { font-size: 12px; }
 .action-task span { color: var(--text-secondary); font-size: 10px; }
 .action-task em { margin-top: 3px; color: var(--neg-text); font-size: 10px; font-style: normal; font-weight: 700; }
-.action-check { width: 27px; height: 27px; border: 2px solid var(--pos-text); border-radius: 50%; background: var(--card); color: var(--pos-text); font-weight: 900; }
+.action-check { width: 27px; height: 27px; border: 2px solid var(--pos-text); border-radius: 50%; background: var(--card); color: var(--pos-text); display: grid; place-items: center; font-weight: 900; }
 .action-task.completed .action-check { background: var(--pos-text); color: #fff; }
 .action-state { padding: 5px 7px; border-radius: 999px; background: var(--info-bg); color: var(--info-text); font-size: 9px; white-space: nowrap; }
 .action-task.blocked .action-state { background: var(--card); color: var(--neg-text); }

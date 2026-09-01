@@ -45,7 +45,7 @@ function calendarTaskLabel(item) {
   return words.slice(0, 4).join(" ") || "Tarefa";
 }
 
-export function createActionPlanModule({ root, supabase, isConfigured, getWorks, getRole, toast, onPlanningChanged }) {
+export function createActionPlanModule({ root, supabase, isConfigured, getWorks, getRole }) {
   const state = { items: [], phases: [], month: new Date(), loading: false, error: "" };
 
   function workFor(item) {
@@ -53,18 +53,17 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
     return getWorks().find(work => work.id === phase?.obra_id);
   }
 
-  function taskCard(item, compact = false) {
+  function taskCard(item) {
     const work = workFor(item);
     const completed = item.estado === "concluido";
     return `<article class="action-task ${item.impedido ? "blocked" : ""} ${completed ? "completed" : ""}">
-      <button type="button" class="action-check" data-action-complete="${item.id}" aria-label="${completed ? "Reabrir" : "Concluir"} tarefa">${completed ? "✓" : ""}</button>
+      <span class="action-check" aria-hidden="true">${completed ? "✓" : ""}</span>
       <div><small>OBRA ${escapeHtml(work?.numero || "—")} · ${escapeHtml(item.codigo || "TAREFA")}</small>
         <strong>${escapeHtml(item.descricao || "Tarefa sem descrição")}</strong>
         <span>${isoDate(item.data_inicio_prevista) || "—"} → ${isoDate(item.data_fim_prevista) || "—"}</span>
         ${item.impedido ? `<em>${escapeHtml(item.observacao_impedimento)}</em>` : ""}
       </div>
       <b class="action-state">${stateLabel(item)}</b>
-      ${compact ? "" : `<button type="button" class="outline-action action-block" data-action-block="${item.id}">${item.impedido ? "RETIRAR IMPEDIMENTO" : "NÃO PODE SER EXECUTADA"}</button>`}
     </article>`;
   }
 
@@ -84,11 +83,7 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
           ${dayItems.slice(0, 3).map(item => {
             const work = workFor(item);
             const context = `Obra ${work?.numero || "—"} · ${item.codigo || "Tarefa"} · ${item.descricao || ""}`;
-            if (item.estado === "concluido") {
-              return `<button type="button" class="action-calendar-task completed" data-action-complete="${item.id}" title="${escapeHtml(`${context} · Desmarcar tarefa concluída`)}">
-                <span>${escapeHtml(calendarTaskLabel(item))}</span><em>✓ DESMARCAR</em>
-              </button>`;
-            }
+            if (item.estado === "concluido") return `<i class="action-calendar-task completed" title="${escapeHtml(`${context} · Tarefa concluída`)}"><span>${escapeHtml(calendarTaskLabel(item))}</span><em>✓ CONCLUÍDA</em></i>`;
             return `<i title="${escapeHtml(context)}">${escapeHtml(calendarTaskLabel(item))}</i>`;
           }).join("")}
           ${dayItems.length > 3 ? `<small>+${dayItems.length - 3}</small>` : ""}</div>`;
@@ -135,38 +130,9 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
     state.items = await response.json(); render();
   }
 
-  async function update(item, payload) {
-    const response = await supabase("rpc/fn_atualizar_tarefa_encarregado", { method: "POST", body: JSON.stringify({ p_item_id: item.id, ...payload }) });
-    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || await response.text() || "Não foi possível atualizar a tarefa.");
-    const updated = await response.json();
-    Object.assign(item, Array.isArray(updated) ? updated[0] : updated);
-    onPlanningChanged?.(); render();
-  }
-
-  root.addEventListener("click", async event => {
+  root.addEventListener("click", event => {
     const monthButton = event.target.closest("[data-action-month]");
     if (monthButton) { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + Number(monthButton.dataset.actionMonth), 1); render(); return; }
-    const completeButton = event.target.closest("[data-action-complete]");
-    const blockButton = event.target.closest("[data-action-block]");
-    const item = state.items.find(row => row.id === (completeButton?.dataset.actionComplete || blockButton?.dataset.actionBlock));
-    if (!item) return;
-    const button = completeButton || blockButton; button.disabled = true;
-    try {
-      if (completeButton) {
-        const wasCompleted = item.estado === "concluido";
-        await update(item, { p_concluida: !wasCompleted, p_impedido: false, p_observacao_impedimento: null });
-        toast(wasCompleted ? `Tarefa reaberta como ${stateLabel(item).toLowerCase()}.` : "Tarefa concluída.");
-      } else if (item.impedido) {
-        await update(item, { p_concluida: false, p_impedido: false, p_observacao_impedimento: null });
-        toast("Impedimento retirado.");
-      } else {
-        const observation = await platformPrompt("Explique por que motivo a tarefa não pode ser executada:", "", { title: "Registar impedimento", label: "MOTIVO DO IMPEDIMENTO" });
-        if (!observation) return;
-        await update(item, { p_concluida: false, p_impedido: true, p_observacao_impedimento: observation });
-        toast("Impedimento registado e responsáveis alertados.");
-      }
-    } catch (error) { toast(error.message, "error"); }
-    finally { button.disabled = false; }
   });
 
   return { show: load, refresh: load, isForeman: () => getRole() === "encarregado" };

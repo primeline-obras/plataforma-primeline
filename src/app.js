@@ -7,12 +7,12 @@ import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=5";
 import { createProcurementModule } from "./procurement.js?v=4";
-import { createActionPlanModule } from "./action-plan.js?v=4";
+import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=3";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=2";
-import { createMeetingRoomsModule } from "./meeting-rooms.js?v=4";
+import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
@@ -268,7 +268,7 @@ document.querySelector("#root").innerHTML = `
           <section class="panel invoice-trace-panel">
             <div class="paid-history-head"><div><p class="eyebrow">PERCURSO COMPLETO</p><h2>RASTREIO DE FATURAS</h2></div><span id="invoice-trace-count">0 FATURAS</span></div>
             <div class="invoice-trace-toolbar">
-              <div class="search-box">${icon("search")}<input id="invoice-trace-search" placeholder="Pesquisar fornecedor, documento ou obraâ€¦"></div>
+              <div class="search-box">${icon("search")}<input id="invoice-trace-search" placeholder="Pesquisar fornecedor, documento ou obra…"></div>
               <select id="invoice-trace-state" aria-label="Filtrar estado da fatura"><option value="all">Todos os estados</option><option value="recebida">Recebida</option><option value="em_validacao">Em validação</option><option value="aprovada_tecnicamente">Aprovada tecnicamente</option><option value="enviada_financeiro">Enviada ao Financeiro</option><option value="paga">Paga</option></select>
               <button type="button" class="invoice-trace-delete" id="delete-selected-invoice" disabled hidden>${icon("x")} APAGAR SELECIONADA</button>
             </div>
@@ -765,8 +765,10 @@ const subcontractorsModule = createSubcontractorsModule({
 function renderUser() {
   const email = session?.user?.email || "utilizador";
   const label = accessContext.profile?.nome || session?.user?.user_metadata?.full_name || email.split("@")[0];
-  $("#user-name").textContent = label.toUpperCase();
-  $("#user-initials").textContent = label.split(/[ ._-]+/).slice(0, 2).map(part => part[0]).join("").toUpperCase();
+  const displayName = shortPersonName(label);
+  $("#user-name").textContent = displayName.toUpperCase();
+  $("#user-name").title = label;
+  $("#user-initials").textContent = displayName.split(/[ ._-]+/).map(part => part[0]).join("").toUpperCase();
   $("#user-role").textContent = effectiveRole().replaceAll("_", " ").toUpperCase() || "SESSÃO AUTENTICADA";
 }
 
@@ -2472,7 +2474,7 @@ async function loadTeamData(force = false) {
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageOvertime() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,motivo,autorizado_por,estado_pagamento&estado_pagamento=eq.por_pagar&order=data.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
-    supabase("utilizadores?select=id,nome,funcao,auth_user_id"),
+    supabase("utilizadores?select=id,nome,funcao,auth_user_id,ativo&ativo=eq.true"),
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
