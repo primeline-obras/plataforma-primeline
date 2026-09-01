@@ -26,6 +26,10 @@ for (const source of ["lancamentos_materiais", "despesas_estaleiro", "lancamento
 assert.match(sql, /f\.estado_pagamento = 'pago'/i);
 assert.match(sql, /o\.empresa_id = v_atual\.empresa_id/i);
 assert.match(sql, /fn_importar_mapa_gestao\(p_linhas jsonb,p_confirmar boolean/i);
+assert.match(sql, /regexp_replace[\s\S]*?'79','85','127'/i);
+assert.match(sql, /não aceita importação por este caminho — usar Saldo de Abertura/i);
+assert.match(sql, /v_chaves_existentes[\s\S]*?array_agg[\s\S]*?from public\.fn_mapa_gestao_obras\(\)/i);
+assert.match(sql, /v_chave=any\(v_chaves\) or v_chave=any\(v_chaves_existentes\)/i);
 assert.match(sql, /valor_recebido/i);
 assert.match(sql, /horas.*valor_hora/is);
 
