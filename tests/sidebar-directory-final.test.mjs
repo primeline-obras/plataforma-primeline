@@ -7,7 +7,9 @@ const grouping = fs.readFileSync(new URL("../src/supplier-directory-grouping.css
 
 assert.match(identity, /--accent:\s*#4A5568/i);
 assert.match(identity, /--brand-amber:\s*#4A5568/i);
-assert.match(identity, /\.sidebar nav button\s*\{[^}]*color:\s*#4A5568/i);
+assert.match(identity, /\.sidebar nav button\s*\{[^}]*color:\s*#B4B2A9/i);
+assert.match(identity, /\.sidebar nav button\.active,\s*\.sidebar nav button:hover\s*\{[^}]*color:\s*#F1EFE8/i);
+assert.doesNotMatch(identity, /\.sidebar nav button\s*\{[^}]*color:\s*#4A5568/i);
 assert.doesNotMatch(identity, /#D9A441/i);
 
 assert.match(directory, /function directoryGroups\(rows\)/);

@@ -46,6 +46,9 @@ test("botão primário é antracite e não dourado", () => {
 test("remove o dourado decorativo e usa cinza-azulado com contraste", () => {
   assert.doesNotMatch(css, /#D9A441|#8A6420|#D4A854/i);
   assert.match(css, /--accent:\s*#4A5568/);
+  assert.match(css, /\.sidebar nav button\s*\{[^}]*color:\s*#B4B2A9/i);
+  assert.match(css, /\.sidebar nav button\.active,\s*\.sidebar nav button:hover\s*\{[^}]*color:\s*#F1EFE8/i);
+  assert.doesNotMatch(css, /\.sidebar nav button\s*\{[^}]*color:\s*#4A5568/i);
   assert.match(css, /\.ui-state-decision[^}]*background:\s*#4A5568[^}]*color:\s*#F1EFE8/i);
 });
 

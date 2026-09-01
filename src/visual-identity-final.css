@@ -87,8 +87,8 @@ p, small, .eyebrow, label, dt { color: var(--text-secondary); }
 .sidebar { background: #20242B; color: #F1EFE8; }
 .sidebar .brand strong { color: #F1EFE8; }
 .sidebar .brand small, .sidebar nav p, .sidebar-user small { color: #B4B2A9; }
-.sidebar nav button { color: #4A5568; border-radius: 4px; }
-.sidebar nav button.active, .sidebar nav button:hover { color: #AAB3C0; }
+.sidebar nav button { color: #B4B2A9; border-radius: 4px; }
+.sidebar nav button.active, .sidebar nav button:hover { color: #F1EFE8; }
 .sidebar nav button.active { background: rgba(255,255,255,.10); border-left-color: #4A5568; }
 
 /* Superfícies e cards partilhados. */
