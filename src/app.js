@@ -1,11 +1,11 @@
 import { clearSession, deleteInvoiceFile, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=7";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
-import { createProductionDashboard } from "./production-dashboard.js?v=19";
+import { createProductionDashboard } from "./production-dashboard.js?v=20";
 import { createPlanningModule } from "./planning.js?v=9";
 import { createSubcontractorsModule } from "./subcontractors.js?v=5";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=15";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
-import { createSettingsModule } from "./settings.js?v=5";
+import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
 import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
@@ -16,9 +16,9 @@ import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
-import { createManagementMapModule } from "./management-map.js?v=1";
+import { createManagementMapModule } from "./management-map.js?v=2";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=3";
-import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
+import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=4";
 import { createProjectsModule } from "./projects.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=4";
 
@@ -656,6 +656,12 @@ function materialItemDatabasePayload(item) {
 }
 
 resetMaterialItems();
+const operationalXlsxImportModule = createOperationalXlsxImport({
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getProfile: () => accessContext.profile,
+  toast,
+});
 const productionDashboard = createProductionDashboard({
   supabase,
   isSupabaseConfigured,
@@ -668,6 +674,7 @@ const productionDashboard = createProductionDashboard({
   prettyDate,
   toast,
   getAccessContext: () => accessContext,
+  onImportPhaseBudget: context => operationalXlsxImportModule?.openPhaseBudget(context),
   showView: (view, context) => switchView(view, context),
 });
 productionDashboard.bind();
@@ -726,12 +733,6 @@ const budgetRequestsModule = createBudgetRequestsModule({
   root: $("#budget-requests-view"), supabase, isConfigured: isSupabaseConfigured,
   getProfile: () => accessContext.profile, uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, euro, prettyDate, toast,
 });
-const operationalXlsxImportModule = createOperationalXlsxImport({
-  supabase,
-  isConfigured: isSupabaseConfigured,
-  getProfile: () => accessContext.profile,
-  toast,
-});
 const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
   getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
@@ -739,7 +740,7 @@ const financialMapModule = createFinancialMapModule({
 });
 const managementMapModule = createManagementMapModule({
   root: $("#management-map-content"), supabase, isConfigured: isSupabaseConfigured,
-  getWorks: () => works, euro, toast,
+  getWorks: () => works, getAccessContext: () => accessContext, euro, toast, confirmAction: platformConfirm,
 });
 const projectsModule = createProjectsModule({
   root: $("#projects-view"), api: supabase, isConfigured: isSupabaseConfigured, euro, escapeHtml,
@@ -777,7 +778,7 @@ function effectiveRole() {
 }
 
 function hasFullAccess() {
-  return effectiveRole() === "gerencia";
+  return ["gestao_plataforma", "gerencia"].includes(effectiveRole());
 }
 
 function isAdministrative() {
@@ -931,7 +932,7 @@ async function loadAccessContext() {
   const profile = profiles[0] || null;
   accessContext = {
     role: profile?.ativo === false ? "" : profile?.funcao || "",
-    isAdmin: profile?.ativo === false ? false : adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia",
+    isAdmin: profile?.ativo === false ? false : profile?.funcao === "gestao_plataforma" || (adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia"),
     profile,
   };
   applyAccessVisibility();

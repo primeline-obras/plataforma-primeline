@@ -5,7 +5,7 @@
 ];
 
 const ACCESS_BY_ROLE = {
-  gerencia: {
+  gestao_plataforma: {
     views: [...FULL_VIEWS, "consolidated", "management-map"],
     insertInvoices: true,
     approveInvoices: true,
@@ -13,8 +13,16 @@ const ACCESS_BY_ROLE = {
     editWork: true,
     createWorks: true,
   },
+  gerencia: {
+    views: [...FULL_VIEWS, "consolidated"],
+    insertInvoices: true,
+    approveInvoices: true,
+    payInvoices: true,
+    editWork: true,
+    createWorks: true,
+  },
   administrativo: {
-    views: FULL_VIEWS,
+    views: [...FULL_VIEWS, "management-map"],
     insertInvoices: true,
     approveInvoices: false,
     payInvoices: false,
@@ -22,7 +30,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   financeiro: {
-    views: ["overview", "rsp", "management-map", "meeting", "works", "projects", "finance", "rooms", "settings"],
+    views: ["overview", "rsp", "meeting", "works", "projects", "finance", "rooms", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: true,
@@ -30,7 +38,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   diretor_obra: {
-    views: ["overview", "rsp", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -38,7 +46,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   adjunto: {
-    views: ["overview", "rsp", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -46,7 +54,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   preparador: {
-    views: ["overview", "rsp", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -74,6 +82,7 @@ const NO_ACCESS = {
 
 export function effectiveAccessRole(context = {}) {
   if (context.role === "encarregado") return "encarregado";
+  if (context.role === "gestao_plataforma") return "gestao_plataforma";
   return context.isAdmin || context.role === "gerencia" ? "gerencia" : context.role || "";
 }
 

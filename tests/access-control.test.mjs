@@ -2,30 +2,34 @@ import assert from "node:assert/strict";
 import { accessFor } from "../src/access-control.js";
 
 const matrix = {
+  gestao_plataforma: {
+    views: ["consolidated", "management-map", "finance", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "planning", "rnc", "settings"],
+    actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
+  },
   gerencia: {
     views: ["consolidated", "finance", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "planning", "rnc", "settings"],
     actions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   administrativo: {
-    views: ["finance", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "planning", "documents", "rnc", "settings"],
+    views: ["management-map", "finance", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "planning", "documents", "rnc", "settings"],
     actions: ["insertInvoices"],
     deniedViews: ["consolidated"],
     deniedActions: ["approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
   financeiro: {
     views: ["overview", "meeting", "works", "finance", "rooms", "settings"],
-    deniedViews: ["consolidated", "invoices", "subcontractors", "planning", "documents", "vehicles", "team", "workforce"],
+    deniedViews: ["consolidated", "management-map", "invoices", "subcontractors", "planning", "documents", "vehicles", "team", "workforce"],
     actions: ["payInvoices"],
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },
   diretor_obra: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "management-map", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
     deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   preparador: {
-    views: ["overview", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
+    views: ["overview", "management-map", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
     deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
@@ -50,6 +54,10 @@ const platformAdmin = accessFor({ role: "preparador", isAdmin: true });
 assert.equal(platformAdmin.role, "gerencia");
 assert.equal(platformAdmin.createWorks, true);
 assert(platformAdmin.views.includes("team"));
+
+const platformManager = accessFor({ role: "gestao_plataforma", isAdmin: true });
+assert.equal(platformManager.role, "gestao_plataforma");
+assert(platformManager.views.includes("management-map"));
 
 const noProfile = accessFor({ role: "", isAdmin: false });
 assert.deepEqual(noProfile.views, ["settings"]);
