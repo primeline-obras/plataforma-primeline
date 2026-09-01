@@ -82,6 +82,10 @@ create table if not exists public.gestao_obras_lancamentos(
   entidade_nome text not null check(length(btrim(entidade_nome))>0),
   descricao text not null check(length(btrim(descricao))>0),
   documento text,
+  unidade_medida text,
+  quantidade numeric check(quantidade is null or quantidade>=0),
+  valor_unitario numeric check(valor_unitario is null or valor_unitario>=0),
+  data_pagamento date,
   valor numeric not null check(valor>=0),
   criado_por uuid not null default public.fn_utilizador_atual_id() references public.utilizadores(id),
   criado_em timestamptz not null default now(),
@@ -97,7 +101,8 @@ create policy gestao_obras_lancamentos_select on public.gestao_obras_lancamentos
 using(public.fn_pode_ver_mapa_gestao_obras());
 
 create or replace function public.fn_guardar_lancamento_gestao_obras(
-  p_id uuid,p_obra_id uuid,p_categoria text,p_data_lancamento date,p_entidade_nome text,p_descricao text,p_documento text,p_valor numeric
+  p_id uuid,p_obra_id uuid,p_categoria text,p_data_lancamento date,p_entidade_nome text,p_descricao text,p_documento text,
+  p_unidade_medida text,p_quantidade numeric,p_valor_unitario numeric,p_data_pagamento date,p_valor numeric
 ) returns public.gestao_obras_lancamentos language plpgsql security definer set search_path=public,pg_temp as $$
 declare row_out public.gestao_obras_lancamentos;
 begin
@@ -105,11 +110,14 @@ begin
   if p_categoria not in ('materiais','mao_obra','estaleiro') then raise exception 'Categoria não editável neste ecrã.'; end if;
   if not exists(select 1 from public.obras where id=p_obra_id) then raise exception 'Obra não encontrada.'; end if;
   if p_id is null then
-    insert into public.gestao_obras_lancamentos(obra_id,categoria,data_lancamento,entidade_nome,descricao,documento,valor)
-    values(p_obra_id,p_categoria,p_data_lancamento,btrim(p_entidade_nome),btrim(p_descricao),nullif(btrim(p_documento),''),greatest(coalesce(p_valor,0),0)) returning * into row_out;
+    insert into public.gestao_obras_lancamentos(obra_id,categoria,data_lancamento,entidade_nome,descricao,documento,unidade_medida,quantidade,valor_unitario,data_pagamento,valor)
+    values(p_obra_id,p_categoria,p_data_lancamento,btrim(p_entidade_nome),btrim(p_descricao),nullif(btrim(p_documento),''),
+      nullif(btrim(p_unidade_medida),''),p_quantidade,p_valor_unitario,p_data_pagamento,greatest(coalesce(p_valor,0),0)) returning * into row_out;
   else
     update public.gestao_obras_lancamentos set obra_id=p_obra_id,categoria=p_categoria,data_lancamento=p_data_lancamento,
-      entidade_nome=btrim(p_entidade_nome),descricao=btrim(p_descricao),documento=nullif(btrim(p_documento),''),valor=greatest(coalesce(p_valor,0),0),
+      entidade_nome=btrim(p_entidade_nome),descricao=btrim(p_descricao),documento=nullif(btrim(p_documento),''),
+      unidade_medida=nullif(btrim(p_unidade_medida),''),quantidade=p_quantidade,valor_unitario=p_valor_unitario,data_pagamento=p_data_pagamento,
+      valor=greatest(coalesce(p_valor,0),0),
       atualizado_por=public.fn_utilizador_atual_id(),atualizado_em=now() where id=p_id returning * into row_out;
     if not found then raise exception 'Lançamento não encontrado.'; end if;
   end if;
@@ -125,9 +133,9 @@ begin
   if deleted_id is null then raise exception 'Lançamento não encontrado.'; end if;
   return deleted_id;
 end $$;
-revoke all on function public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,numeric) from public,anon;
+revoke all on function public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric) from public,anon;
 revoke all on function public.fn_apagar_lancamento_gestao_obras(uuid) from public,anon;
-grant execute on function public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,numeric) to authenticated;
+grant execute on function public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric) to authenticated;
 grant execute on function public.fn_apagar_lancamento_gestao_obras(uuid) to authenticated;
 
 -- 3. Fonte PL ao nível da fase, espelhando a estrutura da folha 0_Orçamento.

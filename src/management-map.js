@@ -27,7 +27,7 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
       else {
         const calls = [
           request("rpc/fn_mapa_gestao_obras", { method: "POST", body: "{}" }, "Não foi possível consultar o Mapa de Gestão de Obras."),
-          request("gestao_obras_lancamentos?select=id,obra_id,categoria,data_lancamento,entidade_nome,descricao,documento,valor&order=data_lancamento.desc", {}, "Não foi possível carregar os lançamentos manuais."),
+          request("gestao_obras_lancamentos?select=id,obra_id,categoria,data_lancamento,entidade_nome,descricao,documento,unidade_medida,quantidade,valor_unitario,data_pagamento,valor&order=data_lancamento.desc", {}, "Não foi possível carregar os lançamentos manuais."),
         ];
         if (canEdit()) calls.push(
           request("fornecedores?select=id,nome&order=nome", {}, "Não foi possível carregar fornecedores."),
@@ -61,8 +61,8 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
     const rows = filteredRows();
     const total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
     return `<div class="management-map-result"><div class="management-map-summary"><span><small>LANÇAMENTOS VISÍVEIS</small><strong>${rows.length}</strong></span><span><small>VALOR TOTAL</small><strong>${euro.format(total)}</strong></span></div>
-      <div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>CATEGORIA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>DOCUMENTO</th><th>VALOR</th>${canEdit() ? "<th>AÇÕES</th>" : ""}</tr></thead><tbody>
-        ${rows.length ? rows.map(row => `<tr><td>${esc(row.data_lancamento || "—")}</td><td><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td>${esc(row.entidade_nome || "—")}</td><td>${esc(row.descricao || "—")}</td><td>${esc(row.documento || "—")}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td>${canEdit() ? `<td class="management-actions">${row.editavel ? `<button type="button" data-edit-management-entry="${row.origem_id}">EDITAR</button><button type="button" class="danger" data-delete-management-entry="${row.origem_id}">APAGAR</button>` : `<small>HISTÓRICO</small>`}</td>` : ""}</tr>`).join("") : `<tr><td colspan="${canEdit() ? 8 : 7}" class="management-map-empty">SEM LANÇAMENTOS NESTE FILTRO</td></tr>`}
+      <div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>CATEGORIA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>DOCUMENTO</th><th>UN. MEDIDA</th><th>QUANTIDADE</th><th>VALOR UNITÁRIO</th><th>DATA DE PAGAMENTO</th><th>VALOR (TOTAL)</th>${canEdit() ? "<th>AÇÕES</th>" : ""}</tr></thead><tbody>
+        ${rows.length ? rows.map(row => `<tr><td>${esc(row.data_lancamento || "—")}</td><td class="management-work"><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td class="management-wrap management-entity">${esc(row.entidade_nome || "—")}</td><td class="management-wrap management-description">${esc(row.descricao || "—")}</td><td>${esc(row.documento || "—")}</td><td>${esc(row.unidade_medida || "—")}</td><td class="management-number">${row.quantidade == null ? "—" : esc(row.quantidade)}</td><td class="management-value">${row.valor_unitario == null ? "—" : euro.format(Number(row.valor_unitario))}</td><td>${esc(row.data_pagamento || "—")}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td>${canEdit() ? `<td class="management-actions">${row.editavel ? `<button type="button" data-edit-management-entry="${row.origem_id}">EDITAR</button><button type="button" class="danger" data-delete-management-entry="${row.origem_id}">APAGAR</button>` : `<small>HISTÓRICO</small>`}</td>` : ""}</tr>`).join("") : `<tr><td colspan="${canEdit() ? 12 : 11}" class="management-map-empty">SEM LANÇAMENTOS NESTE FILTRO</td></tr>`}
       </tbody></table></div></div>`;
   }
 
@@ -79,7 +79,11 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
         <label>FORNECEDOR / COLABORADOR<input name="entidade_nome" list="management-entities" required maxlength="180" value="${esc(entry.entidade_nome || "")}"><datalist id="management-entities">${entityNames.map(name => `<option value="${esc(name)}"></option>`).join("")}</datalist></label>
         <label>DESCRIÇÃO<input name="descricao" required maxlength="240" value="${esc(entry.descricao || "")}"></label>
         <label>DOCUMENTO<input name="documento" maxlength="120" value="${esc(entry.documento || "")}"></label>
-        <label>VALOR (€)<input name="valor" type="number" min="0" step="0.01" required value="${entry.valor ?? ""}"></label>
+        <label>UN. MEDIDA<input name="unidade_medida" maxlength="30" placeholder="Ex.: un., kg, m²" value="${esc(entry.unidade_medida || "")}"></label>
+        <label>QUANTIDADE<input name="quantidade" type="number" min="0" step="any" value="${entry.quantidade ?? ""}"></label>
+        <label>VALOR UNITÁRIO (€)<input name="valor_unitario" type="number" min="0" step="0.01" value="${entry.valor_unitario ?? ""}"></label>
+        <label>DATA DE PAGAMENTO<input type="date" name="data_pagamento" value="${esc(entry.data_pagamento || "")}"></label>
+        <label>VALOR TOTAL (€)<input name="valor" type="number" min="0" step="0.01" required value="${entry.valor ?? ""}"></label>
         <div><button class="primary-button" type="submit">${state.editing ? "GUARDAR ALTERAÇÕES" : "CRIAR LANÇAMENTO"}</button>${state.editing ? '<button class="outline-action" type="button" data-cancel-management-edit>CANCELAR</button>' : ""}</div><p class="form-error"></p>
       </form></details>`;
   }
@@ -109,7 +113,11 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
       await request("rpc/fn_guardar_lancamento_gestao_obras", { method: "POST", body: JSON.stringify({
         p_id: fields.id || null, p_obra_id: fields.obra_id, p_categoria: fields.categoria,
         p_data_lancamento: fields.data_lancamento, p_entidade_nome: fields.entidade_nome.trim(),
-        p_descricao: fields.descricao.trim(), p_documento: fields.documento.trim() || null, p_valor: Number(fields.valor),
+        p_descricao: fields.descricao.trim(), p_documento: fields.documento.trim() || null,
+        p_unidade_medida: fields.unidade_medida.trim() || null,
+        p_quantidade: fields.quantidade === "" ? null : Number(fields.quantidade),
+        p_valor_unitario: fields.valor_unitario === "" ? null : Number(fields.valor_unitario),
+        p_data_pagamento: fields.data_pagamento || null, p_valor: Number(fields.valor),
       }) }, "Não foi possível guardar o lançamento.");
       state.editing = null; state.loaded = false; toast(fields.id ? "Lançamento atualizado." : "Lançamento criado."); await load(true);
     } catch (failure) { error.textContent = failure.message; button.disabled = false; }

@@ -5,6 +5,8 @@ const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const access = readFileSync(new URL("../src/access-control.js", import.meta.url), "utf8");
 const moduleSource = readFileSync(new URL("../src/management-map.js", import.meta.url), "utf8");
 const sql = readFileSync(new URL("../supabase/mapa_gestao_obras.sql", import.meta.url), "utf8");
+const excelMigration = readFileSync(new URL("../supabase/mapa_gestao_obras_colunas_excel.sql", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 assert.match(app, /data-view="management-map"/);
 assert.match(app, /id="management-map-view"/);
@@ -21,6 +23,17 @@ assert.match(moduleSource, /gestao_obras_lancamentos/);
 assert.match(moduleSource, /fn_guardar_lancamento_gestao_obras/);
 assert.match(moduleSource, /fn_apagar_lancamento_gestao_obras/);
 assert.match(moduleSource, /VALOR TOTAL/);
+for (const field of ["unidade_medida", "quantidade", "valor_unitario", "data_pagamento"]) {
+  assert.match(moduleSource, new RegExp(field));
+  assert.match(excelMigration, new RegExp(field));
+}
+for (const heading of ["UN. MEDIDA", "QUANTIDADE", "VALOR UNITÁRIO", "DATA DE PAGAMENTO"]) assert.match(moduleSource, new RegExp(heading));
+assert.match(moduleSource, /VALOR \(TOTAL\)/);
+assert.match(styles, /\.management-map-scroll thead \{ position:sticky; top:0; z-index:4; \}/);
+assert.match(styles, /\.management-wrap \{[^}]*white-space:normal;[^}]*overflow-wrap:anywhere;/);
+assert.match(moduleSource, /management-wrap management-entity/);
+assert.match(moduleSource, /management-wrap management-description/);
+assert.match(excelMigration, /drop function if exists public\.fn_guardar_lancamento_gestao_obras\(uuid,uuid,text,date,text,text,text,numeric\)/i);
 
 assert.match(sql, /create or replace function public\.fn_mapa_gestao_obras/i);
 assert.match(sql, /public\.fn_e_admin\(\) or public\.fn_e_financeiro\(\)/i);
