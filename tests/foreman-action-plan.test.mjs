@@ -8,6 +8,7 @@ const planning = readFileSync(new URL("../src/planning.js", import.meta.url), "u
 const access = readFileSync(new URL("../src/access-control.js", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const readOnlyMigration = readFileSync(new URL("../supabase/correcoes_pos_validacao_encarregado_utilizadores.sql", import.meta.url), "utf8");
 
 test("encarregado atualiza tarefas apenas pela RPC restrita", () => {
   assert.match(migration, /security definer/i);
@@ -35,13 +36,15 @@ test("impedimento exige observação e gera alerta urgente", () => {
   assert.match(migration, /'URGENTE · Tarefa impedida'/i);
 });
 
-test("Plano de Ação oferece calendário, atrasadas, conclusão e impedimentos", () => {
+test("Plano de Ação do encarregado é integralmente de leitura", () => {
   assert.match(access, /encarregado:[\s\S]*"action-plan"/i);
   assert.match(actionPlan, /action-calendar-grid/i);
   assert.match(actionPlan, /ATRASADAS/i);
-  assert.match(actionPlan, /data-action-complete/i);
-  assert.match(actionPlan, /data-action-block/i);
-  assert.match(actionPlan, /rpc\/fn_atualizar_tarefa_encarregado/i);
+  assert.doesNotMatch(actionPlan, /data-action-complete/i);
+  assert.doesNotMatch(actionPlan, /data-action-block/i);
+  assert.doesNotMatch(actionPlan, /rpc\/fn_atualizar_tarefa_encarregado/i);
+  assert.doesNotMatch(actionPlan, /NOVA RNC|data-rnc-toggle/i);
+  assert.match(readOnlyMigration, /revoke all on function public\.fn_atualizar_tarefa_encarregado[\s\S]*from authenticated/i);
   assert.match(planning, /planning-task-blocked/i);
 });
 
@@ -61,11 +64,9 @@ test("prioridades e semana ficam lado a lado e o calendário usa descrição leg
   assert.match(styles, /\.action-priority-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2/i);
 });
 
-test("tarefas concluídas podem ser desmarcadas diretamente no calendário", () => {
-  assert.match(actionPlan, /action-calendar-task completed[\s\S]*data-action-complete/i);
-  assert.match(actionPlan, /✓ DESMARCAR/i);
-  assert.match(actionPlan, /const wasCompleted = item\.estado === "concluido"/i);
-  assert.match(actionPlan, /p_concluida:\s*!wasCompleted/i);
-  assert.match(migration, /when coalesce\(p_concluida, false\) then 'concluido'[\s\S]*data_inicio_prevista[\s\S]*then 'em_execucao'[\s\S]*else 'por_iniciar'/i);
+test("tarefas concluídas permanecem apenas informativas no calendário", () => {
+  assert.match(actionPlan, /action-calendar-task completed/i);
+  assert.match(actionPlan, /✓ CONCLUÍDA/i);
+  assert.doesNotMatch(actionPlan, /✓ DESMARCAR|p_concluida|data-action-complete/i);
   assert.match(styles, /\.action-calendar-task\s*\{/i);
 });

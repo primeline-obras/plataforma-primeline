@@ -8,7 +8,7 @@ const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 assert.match(source, /rpc\/fn_listar_participantes_reuniao/);
 assert.doesNotMatch(source, /utilizadores\?select=id,nome,funcao,auth_user_id,ativo/);
 assert.match(sql, /u\.empresa_id = v_atual\.empresa_id/);
-assert.match(sql, /coalesce\(u\.ativo, true\)/);
+assert.match(sql, /u\.ativo is true/);
 assert.match(sql, /u\.auth_user_id is not null/);
 assert.doesNotMatch(sql, /obra_responsaveis/);
 assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
