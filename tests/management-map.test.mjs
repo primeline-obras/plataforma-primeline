@@ -13,15 +13,20 @@ assert.match(app, /createManagementMapModule/);
 assert.match(access, /gerencia:[\s\S]*"management-map"/);
 assert.match(access, /financeiro:[\s\S]*"management-map"/);
 for (const filter of ["obra_id", "categoria", "data_inicio", "data_fim", "entidade"]) assert.match(moduleSource, new RegExp(filter));
-for (const category of ["materiais", "estaleiro", "mao_obra", "subempreitadas"]) assert.match(moduleSource, new RegExp(category));
+for (const category of ["materiais", "estaleiro", "mao_obra", "subempreitadas", "faturacao"]) assert.match(moduleSource, new RegExp(category));
 assert.match(moduleSource, /rpc\/fn_mapa_gestao_obras/);
-assert.match(moduleSource, /TOTAL PAGO/);
+assert.match(moduleSource, /POR OBRA · TODAS AS CATEGORIAS/);
+assert.match(moduleSource, /IMPORTAR EXCEL/);
+assert.match(moduleSource, /rpc\/fn_importar_mapa_gestao/);
 
 assert.match(sql, /create or replace function public\.fn_mapa_gestao_obras/i);
 assert.match(sql, /public\.fn_e_admin\(\) or public\.fn_e_financeiro\(\)/i);
 assert.match(sql, /to_regclass\('public\.lancamentos_materiais'\)/i);
-for (const source of ["lancamentos_materiais", "despesas_estaleiro", "lancamentos_mao_obra", "pagamentos_subempreitada"]) assert.match(sql, new RegExp(source));
+for (const source of ["lancamentos_materiais", "despesas_estaleiro", "lancamentos_mao_obra", "pagamentos_subempreitada", "faturacao"]) assert.match(sql, new RegExp(source));
 assert.match(sql, /f\.estado_pagamento = 'pago'/i);
 assert.match(sql, /o\.empresa_id = v_atual\.empresa_id/i);
+assert.match(sql, /fn_importar_mapa_gestao\(p_linhas jsonb,p_confirmar boolean/i);
+assert.match(sql, /valor_recebido/i);
+assert.match(sql, /horas.*valor_hora/is);
 
 console.log("Mapa de Gestão de Obras detalhado e respetivos filtros validados.");

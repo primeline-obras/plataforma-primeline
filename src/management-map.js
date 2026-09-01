@@ -1,70 +1,69 @@
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-const CATEGORY_LABELS = { materiais: "Materiais", estaleiro: "Despesas de Estaleiro", mao_obra: "Pessoal em Obra / Mão de Obra", subempreitadas: "Subempreitadas" };
+const CATEGORY_LABELS = { materiais: "Materiais", estaleiro: "Despesas-Estaleiro", subempreitadas: "Subcontratos", mao_obra: "Funcionários-Obra · Mão de Obra", faturacao: "Faturação" };
+const SHEETS = { materiais: ["materiais"], estaleiro: ["despesas-estaleiro", "despesas estaleiro"], subempreitadas: ["subcontratos", "subempreitadas"], mao_obra: ["funcionarios-obra", "funcionários-obra", "funcionarios obra", "funcionários obra"], faturacao: ["faturacao", "faturação"] };
+const norm = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-PT").replace(/\s+/g, " ");
+const key = value => norm(value).replace(/[º°ª.()/%_-]/g, "").replace(/\s+/g, "");
+const money = value => { if (typeof value === "number") return value; const parsed = Number(String(value ?? "").replace(/\s|€/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; };
+const date = value => {
+  if (!value) return null;
+  if (typeof value === "number" && globalThis.XLSX?.SSF?.parse_date_code) { const parsed = globalThis.XLSX.SSF.parse_date_code(value); return parsed ? `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}` : null; }
+  const text = String(value).trim(); if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const match = text.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/); return match ? `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}` : null;
+};
+
+export function normalizeManagementRows(category, rows) {
+  return rows.filter(row => Object.values(row).some(value => String(value ?? "").trim())).map((row, index) => {
+    const values = Object.fromEntries(Object.entries(row).map(([header, value]) => [key(header), value]));
+    const common = { categoria: category, linha: index + 2, obra_numero: String(values.obra ?? "").trim() };
+    if (category === "mao_obra") return { ...common, colaborador: String(values.colaborador ?? "").trim(), data: date(values.data), horas: money(values.horas), valor_hora: money(values.valorhora) };
+    if (category === "faturacao") return { ...common, numero_fatura: String(values.nfatura ?? values.numerofatura ?? "").trim(), data_emissao: date(values.dataemissao), valor: money(values.valor), data_recebimento: date(values.datarecebimento), valor_recebido: money(values.valorrecebido), estado: String(values.estado ?? "").trim() };
+    return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), designacao: String(values.designacao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade: money(values.quant), valor_unitario: money(values.valorunit), valor_total: money(values.valortotal), data_pagamento: date(values.datapagamento) };
+  });
+}
+
+export function parseManagementWorkbook(workbook) {
+  const result = [], errors = [];
+  for (const [category, aliases] of Object.entries(SHEETS)) {
+    const sheetName = workbook.SheetNames.find(name => aliases.includes(norm(name)));
+    if (!sheetName) { errors.push(`Folha em falta: ${CATEGORY_LABELS[category]}.`); continue; }
+    const rows = normalizeManagementRows(category, globalThis.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null, raw: true }));
+    if (!rows.length) errors.push(`A folha ${sheetName} não contém linhas.`); result.push(...rows);
+  }
+  return { rows: result, errors };
+}
 
 export function createManagementMapModule({ root, supabase, isConfigured, getWorks, euro, toast }) {
-  const state = { loaded: false, loading: false, error: "", rows: [] };
-
+  const state = { loaded: false, loading: false, error: "", rows: [], mode: "categoria", importOpen: false, importRows: [], importErrors: [], preview: null, importing: false };
   async function load(force = false) {
-    if (state.loading || (state.loaded && !force)) return render();
-    state.loading = true; state.error = ""; render();
-    try {
-      if (!isConfigured) state.rows = [];
-      else {
-        const response = await supabase("rpc/fn_mapa_gestao_obras", { method: "POST", body: "{}" });
-        if (!response.ok) {
-          const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.message || payload.details || "Não foi possível consultar os lançamentos pagos.");
-        }
-        state.rows = await response.json();
-      }
-      state.loaded = true;
-    } catch (error) { state.error = error.message; }
-    finally { state.loading = false; render(); }
+    if (state.loading || (state.loaded && !force)) return render(); state.loading = true; state.error = ""; render();
+    try { if (!isConfigured) state.rows = []; else { const response = await supabase("rpc/fn_mapa_gestao_obras", { method: "POST", body: "{}" }); if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || payload.details || "Não foi possível consultar o Mapa de Gestão."); } state.rows = await response.json(); } state.loaded = true; }
+    catch (error) { state.error = error.message; } finally { state.loading = false; render(); }
   }
-
-  function filteredRows() {
-    const form = root.querySelector("[data-management-map-filters]");
-    if (!form) return state.rows;
-    const filters = Object.fromEntries(new FormData(form));
-    const needle = String(filters.entidade || "").trim().toLocaleLowerCase("pt-PT");
-    return state.rows.filter(row =>
-      (!filters.obra_id || row.obra_id === filters.obra_id)
-      && (!filters.categoria || row.categoria === filters.categoria)
-      && (!filters.data_inicio || row.data_lancamento >= filters.data_inicio)
-      && (!filters.data_fim || row.data_lancamento <= filters.data_fim)
-      && (!needle || `${row.entidade_nome || ""} ${row.descricao || ""} ${row.documento || ""}`.toLocaleLowerCase("pt-PT").includes(needle))
-    );
+  function filters() { const form = root.querySelector("[data-management-map-filters]"); return form ? Object.fromEntries(new FormData(form)) : {}; }
+  function filteredRows(category = "") { const value = filters(), needle = norm(value.entidade); return state.rows.filter(row => (!value.obra_id || row.obra_id === value.obra_id) && (!category || row.categoria === category) && (state.mode !== "categoria" || !value.categoria || row.categoria === value.categoria) && (!value.data_inicio || row.data_lancamento >= value.data_inicio) && (!value.data_fim || row.data_lancamento <= value.data_fim) && (!needle || norm(`${row.entidade_nome || ""} ${row.descricao || ""} ${row.documento || ""}`).includes(needle))); }
+  const rowHtml = row => `<tr><td>${esc(row.data_lancamento || "—")}</td><td><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td>${esc(row.entidade_nome || "—")}</td><td>${esc(row.descricao || "—")}</td><td>${esc(row.documento || "—")}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td></tr>`;
+  const table = (rows, empty = "SEM LANÇAMENTOS NESTE FILTRO") => `<div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>CATEGORIA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>DOCUMENTO</th><th>VALOR</th></tr></thead><tbody>${rows.length ? rows.map(rowHtml).join("") : `<tr><td colspan="7" class="management-map-empty">${empty}</td></tr>`}</tbody></table></div>`;
+  function renderResults() {
+    const rows = filteredRows(), total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+    const summary = `<div class="management-map-summary"><span><small>LANÇAMENTOS VISÍVEIS</small><strong>${rows.length}</strong></span><span><small>VALOR VISÍVEL</small><strong>${euro.format(total)}</strong></span></div>`;
+    if (state.mode === "obra") { const selected = filters().obra_id; return `<div class="management-map-result">${summary}${selected ? `<div class="management-work-blocks">${Object.entries(CATEGORY_LABELS).map(([category, label]) => { const categoryRows = filteredRows(category); return `<section><header><strong>${esc(label)}</strong><span>${categoryRows.length} registos · ${euro.format(categoryRows.reduce((sum, row) => sum + Number(row.valor || 0), 0))}</span></header>${table(categoryRows, `SEM REGISTOS DE ${label.toLocaleUpperCase("pt-PT")}`)}</section>`; }).join("")}</div>` : '<div class="management-map-empty management-select-work">ESCOLHA UMA OBRA PARA VER AS CINCO CATEGORIAS</div>'}</div>`; }
+    return `<div class="management-map-result">${summary}${table(rows)}</div>`;
   }
-
-  function renderTable() {
-    const rows = filteredRows();
-    const total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
-    return `<div class="management-map-result"><div class="management-map-summary"><span><small>LANÇAMENTOS VISÍVEIS</small><strong>${rows.length}</strong></span><span><small>TOTAL PAGO</small><strong>${euro.format(total)}</strong></span></div>
-      <div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>CATEGORIA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>DOCUMENTO</th><th>VALOR PAGO</th></tr></thead><tbody>
-        ${rows.length ? rows.map(row => `<tr><td>${esc(row.data_lancamento || "—")}</td><td><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td>${esc(row.entidade_nome || "—")}</td><td>${esc(row.descricao || "—")}</td><td>${esc(row.documento || "—")}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td></tr>`).join("") : `<tr><td colspan="7" class="management-map-empty">SEM LANÇAMENTOS PAGOS NESTE FILTRO</td></tr>`}
-      </tbody></table></div></div>`;
+  function renderImport() {
+    if (!state.importOpen) return ""; const preview = state.preview || {};
+    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Excel com 5 folhas: Materiais, Despesas-Estaleiro, Subcontratos, Funcionários-Obra e Faturação.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${preview.erros.map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
   }
-
   function render() {
     const works = [...getWorks()].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
-    root.innerHTML = `<section class="panel management-map"><header><div><p class="eyebrow">CONSOLIDADO DA EMPRESA</p><h2>MAPA DE GESTÃO DE OBRAS</h2><p>Todos os lançamentos pagos, apresentados individualmente por obra e categoria.</p></div><button type="button" class="outline-action" data-refresh-management-map>ATUALIZAR</button></header>
-      ${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)} Confirme se executou o SQL deste módulo.</span></div>` : ""}
-      <form class="management-map-filters" data-management-map-filters>
-        <label>OBRA<select name="obra_id"><option value="">Todas as obras</option>${works.map(work => `<option value="${work.id}">Obra ${esc(work.numero)} — ${esc(work.nome)}</option>`).join("")}</select></label>
-        <label>CATEGORIA<select name="categoria"><option value="">Todas as categorias</option>${Object.entries(CATEGORY_LABELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label>
-        <label>DE<input type="date" name="data_inicio"></label><label>ATÉ<input type="date" name="data_fim"></label>
-        <label class="management-map-search">FORNECEDOR / COLABORADOR<input name="entidade" placeholder="Pesquisar nome, descrição ou documento"></label>
-        <button type="reset" class="outline-action">LIMPAR FILTROS</button>
-      </form>
-      ${state.loading ? `<div class="fleet-loading">A CARREGAR LANÇAMENTOS…</div>` : renderTable()}
-    </section>`;
+    root.innerHTML = `<section class="panel management-map"><header><div><p class="eyebrow">CONSOLIDADO DA EMPRESA</p><h2>MAPA DE GESTÃO DE OBRAS</h2><p>Cinco categorias de custos e faturação, consultáveis por categoria ou por obra.</p></div><div class="management-head-actions"><button type="button" class="outline-action" data-open-management-import>IMPORTAR EXCEL</button><button type="button" class="outline-action" data-refresh-management-map>ATUALIZAR</button></div></header>${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)} Confirme se executou o SQL deste módulo.</span></div>` : ""}<div class="management-mode"><button type="button" data-management-mode="categoria" class="${state.mode === "categoria" ? "active" : ""}">POR CATEGORIA · TODAS AS OBRAS</button><button type="button" data-management-mode="obra" class="${state.mode === "obra" ? "active" : ""}">POR OBRA · TODAS AS CATEGORIAS</button></div><form class="management-map-filters" data-management-map-filters><label>OBRA<select name="obra_id"><option value="">${state.mode === "obra" ? "Escolher uma obra" : "Todas as obras"}</option>${works.map(work => `<option value="${work.id}">Obra ${esc(work.numero)} — ${esc(work.nome)}</option>`).join("")}</select></label><label class="${state.mode === "obra" ? "management-filter-disabled" : ""}">CATEGORIA<select name="categoria" ${state.mode === "obra" ? "disabled" : ""}><option value="">Todas as categorias</option>${Object.entries(CATEGORY_LABELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>DE<input type="date" name="data_inicio"></label><label>ATÉ<input type="date" name="data_fim"></label><label class="management-map-search">FORNECEDOR / COLABORADOR<input name="entidade" placeholder="Pesquisar nome, descrição ou documento"></label><button type="reset" class="outline-action">LIMPAR FILTROS</button></form>${renderImport()}${state.loading ? '<div class="fleet-loading">A CARREGAR LANÇAMENTOS…</div>' : renderResults()}</section>`;
   }
-
-  root.addEventListener("input", event => { if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderTable())); });
-  root.addEventListener("change", event => { if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderTable())); });
-  root.addEventListener("reset", () => setTimeout(() => root.querySelector(".management-map-result")?.replaceWith(fragment(renderTable())), 0));
-  root.addEventListener("click", event => { if (event.target.closest("[data-refresh-management-map]")) load(true).catch(error => toast(error.message, "error")); });
-
+  async function previewImport(rows) { const response = await supabase("rpc/fn_importar_mapa_gestao", { method: "POST", body: JSON.stringify({ p_linhas: rows, p_confirmar: false }) }); if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || "Não foi possível pré-visualizar a importação."); } state.preview = await response.json(); render(); }
+  async function readImportFile(file) { state.importRows = []; state.importErrors = []; state.preview = null; if (!globalThis.XLSX) { state.importErrors = ["O leitor Excel não está disponível."]; return render(); } const workbook = globalThis.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false }); const parsed = parseManagementWorkbook(workbook); state.importRows = parsed.rows; state.importErrors = parsed.errors; render(); if (!parsed.errors.length) try { await previewImport(parsed.rows); } catch (error) { state.importErrors = [error.message]; render(); } }
+  async function confirmImport() { if (!state.preview || state.importing) return; if (!confirm(`Importar ${state.preview.criar || 0} linhas? Os ${state.preview.duplicados || 0} duplicados serão ignorados.`)) return; state.importing = true; render(); const response = await supabase("rpc/fn_importar_mapa_gestao", { method: "POST", body: JSON.stringify({ p_linhas: state.importRows, p_confirmar: true }) }); state.importing = false; if (!response.ok) { const payload = await response.json().catch(() => ({})); state.importErrors = [payload.message || "A importação falhou."]; return render(); } const result = await response.json(); toast(`${result.criados || 0} lançamentos importados. ${result.duplicados || 0} duplicados ignorados.`); state.importOpen = false; state.importRows = []; state.preview = null; await load(true); }
+  root.addEventListener("input", event => { if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
+  root.addEventListener("change", event => { if (event.target.matches("[data-management-import-file]")) { const [file] = event.target.files; if (file) readImportFile(file); return; } if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
+  root.addEventListener("reset", () => setTimeout(() => root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())), 0));
+  root.addEventListener("click", event => { const mode = event.target.closest("[data-management-mode]"); if (mode) { state.mode = mode.dataset.managementMode; render(); return; } if (event.target.closest("[data-open-management-import]")) { state.importOpen = true; render(); return; } if (event.target.closest("[data-close-management-import]")) { state.importOpen = false; render(); return; } if (event.target.closest("[data-confirm-management-import]")) { confirmImport(); return; } if (event.target.closest("[data-refresh-management-map]")) load(true).catch(error => toast(error.message, "error")); });
   function fragment(html) { const template = document.createElement("template"); template.innerHTML = html.trim(); return template.content.firstElementChild; }
   return { show: () => load(), refresh: () => load(true) };
 }
