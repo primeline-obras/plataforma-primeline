@@ -34,6 +34,10 @@ test("Equipa não apresenta números de alocação", () => {
   assert.match(kpis, /AUSENTES NA SEMANA/);
 });
 
+test("diretório da Equipa calcula as alocações da semana antes de as consultar", () => {
+  assert.match(app, /const currentAllocations = allocations[\s\S]*?selectedTeamWeek[\s\S]*?currentAllocations\.find/);
+});
+
 test("frontend não consulta alocações nem RPC global sem acesso ao Quadro", () => {
   assert.match(app, /canManageWorkforce\(\) \? supabase\(`quadro_pessoal_alocacao/);
   assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/);

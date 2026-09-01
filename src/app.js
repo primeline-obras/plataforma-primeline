@@ -1960,6 +1960,9 @@ function renderTeam() {
   const allocations = teamData.allocations.filter(item =>
     personById.has(item.colaborador_id)
     && workforceRoleClass(personById.get(item.colaborador_id)));
+  const currentAllocations = allocations
+    .filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6))
+    .sort((left, right) => String(right.data || "").localeCompare(String(left.data || "")));
   const currentAbsences = activeAbsences.filter(item => item.data >= selectedTeamWeek && item.data <= addDaysIso(selectedTeamWeek, 6));
   const absentIds = new Set(currentAbsences.map(item => item.colaborador_id));
   const activeWorks = boardWorkList
