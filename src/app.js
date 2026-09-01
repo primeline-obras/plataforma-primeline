@@ -950,6 +950,13 @@ function toast(message, kind = "success") {
   setTimeout(() => { $("#toast").innerHTML = ""; }, 4200);
 }
 
+// Confirmação partilhada pelos módulos carregados no arranque. É uma função
+// declarada (hoisted) para estar disponível mesmo quando um módulo é criado
+// antes deste ponto do ficheiro.
+function platformConfirm(message) {
+  return Promise.resolve(window.confirm(message));
+}
+
 async function friendlyApiError(response, fallback) {
   const payload = await response.json().catch(async () => ({ message: await response.text().catch(() => "") }));
   const detail = payload.message || payload.details || payload.hint || fallback;
