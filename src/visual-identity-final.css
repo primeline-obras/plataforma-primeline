@@ -88,6 +88,8 @@ p, small, .eyebrow, label, dt { color: var(--text-secondary); }
 /* A sidebar conserva a identidade escura em qualquer tema. */
 .sidebar { background: #20242B; color: #F1EFE8; }
 .sidebar .brand strong { color: #F1EFE8; }
+.sidebar .brand-go, .auth-brand .brand-go, .reset-brand .brand-go { color: #F1EFE8; }
+.mobile-brand .brand-go { color: #20242B; }
 .sidebar .brand small, .sidebar nav p, .sidebar-user small { color: #B4B2A9; }
 .sidebar nav button { color: #B4B2A9; border-radius: 4px; }
 .sidebar nav button.active { background: rgba(255,255,255,.10); border-left-color: #4A5568; }

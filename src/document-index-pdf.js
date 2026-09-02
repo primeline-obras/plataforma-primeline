@@ -16,6 +16,18 @@ const TEE_APPROVAL_ROW_COLORS = {
 const plain = value => String(value ?? "—").replaceAll("_", " ");
 const safeFilename = value => plain(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "");
 
+async function loadBrandLogo() {
+  const response = await fetch("/assets/brand/logo_branco.png");
+  if (!response.ok) throw new Error("Não foi possível carregar o logótipo para o PDF.");
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function stateTone(value) {
   const state = plain(value).toLocaleLowerCase("pt-PT");
   if (/aprovado|respondido|emitido|apresentado|^sim$/.test(state)) return STATUS_COLORS.positive;
@@ -84,7 +96,7 @@ export const INDEX_PDF_DEFINITIONS = {
   },
 };
 
-export function buildDocumentIndexPdf({ kind, work, rows, referenceDate = new Date() }) {
+export function buildDocumentIndexPdf({ kind, work, rows, referenceDate = new Date(), brandLogo }) {
   const JsPdf = window.jspdf?.jsPDF;
   if (!JsPdf) throw new Error("O gerador de PDF ainda não terminou de carregar. Tente novamente.");
   const definition = INDEX_PDF_DEFINITIONS[kind];
@@ -101,8 +113,9 @@ export function buildDocumentIndexPdf({ kind, work, rows, referenceDate = new Da
 
   const pageHeader = () => {
     pdf.setFillColor(32, 36, 43); pdf.rect(0, 0, pageWidth, 27, "F");
-    pdf.setTextColor(255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(17); pdf.text("/// PRIMELINE", margin, 11);
-    pdf.setFontSize(8); pdf.text("ENGENHARIA E CONSTRUÇÃO", margin, 18);
+    pdf.addImage(brandLogo, "PNG", margin, 5, 51, 8.34, undefined, "FAST");
+    pdf.setDrawColor(255); pdf.setLineWidth(.35); pdf.line(margin + 54, 4.7, margin + 54, 13.7);
+    pdf.setTextColor(255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(15); pdf.text("GO", margin + 57, 11.8);
     pdf.setFontSize(13); pdf.text(definition.title, pageWidth - margin, 11, { align: "right" });
     pdf.setFont("helvetica", "normal"); pdf.setFontSize(8);
     pdf.text(`${plain(work?.numero)} · ${plain(work?.nome)}`, pageWidth - margin, 18, { align: "right" });
@@ -162,13 +175,14 @@ export function buildDocumentIndexPdf({ kind, work, rows, referenceDate = new Da
   const pages = pdf.getNumberOfPages();
   for (let number = 1; number <= pages; number += 1) {
     pdf.setPage(number); pdf.setTextColor(110); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5);
-    pdf.text(`PRIMELINE · ${definition.title} · ${plain(work?.numero)} · ${number}/${pages}`, pageWidth - margin, 205, { align: "right" });
+    pdf.text(`PRIMELINE GO · ${definition.title} · ${plain(work?.numero)} · ${number}/${pages}`, pageWidth - margin, 205, { align: "right" });
   }
   return { pdf, filename: `${definition.filename}-${safeFilename(work?.numero || work?.nome || "Obra")}.pdf` };
 }
 
-export function generateDocumentIndexPdf(options) {
-  const result = buildDocumentIndexPdf(options);
+export async function generateDocumentIndexPdf(options) {
+  const brandLogo = await loadBrandLogo();
+  const result = buildDocumentIndexPdf({ ...options, brandLogo });
   result.pdf.save(result.filename);
   return result;
 }

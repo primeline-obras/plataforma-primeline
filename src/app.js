@@ -9,7 +9,7 @@ import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
 import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
-import { createRncModule } from "./rnc.js?v=3";
+import { createRncModule } from "./rnc.js?v=4";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=2";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
@@ -20,7 +20,7 @@ import { createManagementMapModule } from "./management-map.js?v=4";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
 import { createProjectsModule } from "./projects.js?v=1";
-import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=4";
+import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -114,7 +114,14 @@ let settingsModule = null;
 let procurementModule = null;
 
 function brand() {
-  return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
+  return `<div class="brand" aria-label="PRIMELINE GO">
+    <span class="brand-logo-wrap" aria-hidden="true">
+      <img class="brand-logo brand-logo-dark" src="/assets/brand/logo.png" alt="">
+      <img class="brand-logo brand-logo-light" src="/assets/brand/logo_branco.png" alt="">
+    </span>
+    <span class="brand-separator" aria-hidden="true"></span>
+    <strong class="brand-go" aria-hidden="true">GO</strong>
+  </div>`;
 }
 
 document.querySelector("#root").innerHTML = `
@@ -140,7 +147,7 @@ document.querySelector("#root").innerHTML = `
           <p class="auth-success" id="recovery-success"></p>
           <button class="primary-button login-button" type="submit">ENVIAR LIGAÇÃO <span>→</span></button>
         </form>
-        <small>PRIMELINE · ENGENHARIA E CONSTRUÇÃO</small>
+        <small>PRIMELINE GO · ENGENHARIA E CONSTRUÇÃO</small>
       </div>
     </section>
     <button class="scrim" id="scrim" aria-label="Fechar menu"></button>
@@ -4669,7 +4676,7 @@ $("#work-detail").addEventListener("click", async event => {
             : extensionRequestIndexRows();
     const work = works.find(item => item.id === selectedWorkId);
     try {
-      generateDocumentIndexPdf({ kind, work, rows });
+      await generateDocumentIndexPdf({ kind, work, rows });
     } catch (error) {
       toast(error.message || "Não foi possível exportar o índice.", "error");
     }

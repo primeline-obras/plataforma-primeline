@@ -18,5 +18,5 @@ test("a lista do portfólio conserva rolagem depois da geometria global", () => 
 });
 
 test("a publicação invalida o cache do CSS corrigido", () => {
-  assert.match(html, /styles\.css\?v=84/);
+  assert.match(html, /styles\.css\?v=85/);
 });

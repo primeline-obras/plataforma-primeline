@@ -1,4 +1,4 @@
-import { generateRncPdf } from "./rnc-pdf.js?v=2";
+import { generateRncPdf } from "./rnc-pdf.js?v=3";
 import { platformConfirm } from "./platform-dialogs.js?v=1";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[c]);
