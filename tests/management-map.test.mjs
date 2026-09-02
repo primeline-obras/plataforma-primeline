@@ -16,12 +16,16 @@ assert.match(access, /gestao_plataforma:[\s\S]*"management-map"/);
 assert.match(access, /administrativo:[\s\S]*"management-map"/);
 assert.match(access, /diretor_obra:[\s\S]*"management-map"/);
 assert.doesNotMatch(access.match(/financeiro:\s*\{[\s\S]*?\n\s*\},/)[0], /management-map/);
-for (const filter of ["obra_id", "categoria", "data_inicio", "data_fim", "entidade"]) assert.match(moduleSource, new RegExp(filter));
+for (const filter of ["obra_id", "categoria", "data_inicio", "data_fim", "entidade", "descricao", "documento", "valor"]) assert.match(moduleSource, new RegExp(filter));
 for (const category of ["materiais", "estaleiro", "mao_obra", "subempreitadas", "faturacao"]) assert.match(moduleSource, new RegExp(category));
 assert.match(moduleSource, /rpc\/fn_mapa_gestao_obras/);
 assert.match(moduleSource, /POR OBRA · TODAS AS CATEGORIAS/);
 assert.match(moduleSource, /IMPORTAR EXCEL/);
 assert.match(moduleSource, /rpc\/fn_importar_mapa_gestao/);
+assert.match(moduleSource, /formatManagementDate/);
+assert.match(moduleSource, /VALOR EXATO/);
+assert.match(styles, /table-layout:fixed/);
+assert.match(styles, /management-date[^}]*white-space:nowrap/);
 
 assert.match(sql, /create or replace function public\.fn_mapa_gestao_obras/i);
 assert.match(sql, /public\.fn_e_admin\(\) or public\.fn_e_financeiro\(\)/i);
