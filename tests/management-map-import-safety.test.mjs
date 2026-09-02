@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateManagementImportRows } from "../src/management-map.js";
+import { parseManagementWorkbook, validateManagementImportRows } from "../src/management-map.js";
 
 test("a pré-visualização bloqueia as obras reservadas ao Saldo de Abertura", () => {
   const errors = validateManagementImportRows([
@@ -24,4 +24,39 @@ test("as restantes obras continuam permitidas na validação local", () => {
     { linha: 4, obra_numero: "120" },
     { linha: 5, obra_numero: "128" },
   ]), []);
+});
+
+test("reconhece folhas sem distinguir caixa, espaços ou hífen e aceita Faturação em falta", () => {
+  const previousXlsx = globalThis.XLSX;
+  globalThis.XLSX = { utils: { sheet_to_json: sheet => sheet.rows } };
+  try {
+    const workbook = {
+      SheetNames: [" MATERIAIS ", "DESPESAS - ESTALEIRO", "SUBCONTRATOS", "FUNCIONÁRIOS - OBRA"],
+      Sheets: {
+        " MATERIAIS ": { rows: [] },
+        "DESPESAS - ESTALEIRO": { rows: [] },
+        SUBCONTRATOS: { rows: [] },
+        "FUNCIONÁRIOS - OBRA": { rows: [] },
+      },
+    };
+    assert.deepEqual(parseManagementWorkbook(workbook), { rows: [], errors: [] });
+  } finally {
+    globalThis.XLSX = previousXlsx;
+  }
+});
+
+test("continua a exigir as quatro folhas operacionais", () => {
+  const previousXlsx = globalThis.XLSX;
+  globalThis.XLSX = { utils: { sheet_to_json: sheet => sheet.rows } };
+  try {
+    const workbook = { SheetNames: ["MATERIAIS"], Sheets: { MATERIAIS: { rows: [] } } };
+    const result = parseManagementWorkbook(workbook);
+    assert.equal(result.errors.length, 3);
+    assert.ok(result.errors.some(error => error.includes("Despesas-Estaleiro")));
+    assert.ok(result.errors.some(error => error.includes("Subcontratos")));
+    assert.ok(result.errors.some(error => error.includes("Funcionários-Obra")));
+    assert.ok(result.errors.every(error => !error.includes("Faturação")));
+  } finally {
+    globalThis.XLSX = previousXlsx;
+  }
 });

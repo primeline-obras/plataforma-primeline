@@ -1,8 +1,10 @@
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const CATEGORY_LABELS = { materiais: "Materiais", estaleiro: "Despesas-Estaleiro", subempreitadas: "Subcontratos", mao_obra: "Funcionários-Obra · Mão de Obra", faturacao: "Faturação" };
-const SHEETS = { materiais: ["materiais"], estaleiro: ["despesas-estaleiro", "despesas estaleiro"], subempreitadas: ["subcontratos", "subempreitadas"], mao_obra: ["funcionarios-obra", "funcionários-obra", "funcionarios obra", "funcionários obra"], faturacao: ["faturacao", "faturação"] };
+const SHEETS = { materiais: ["materiais"], estaleiro: ["despesas estaleiro"], subempreitadas: ["subcontratos", "subempreitadas"], mao_obra: ["funcionarios obra"], faturacao: ["faturacao"] };
+const OPTIONAL_SHEETS = new Set(["faturacao"]);
 const BLOCKED_IMPORT_WORKS = new Set(["79", "85", "127"]);
 const norm = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-PT").replace(/\s+/g, " ");
+const sheetKey = value => norm(value).replace(/[\s_-]*-[\s_-]*/g, " ").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 const key = value => norm(value).replace(/[º°ª.()/%_-]/g, "").replace(/\s+/g, "");
 const money = value => { if (typeof value === "number") return value; const parsed = Number(String(value ?? "").replace(/\s|€/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; };
 const date = value => {
@@ -51,8 +53,11 @@ export function validateManagementImportRows(rows) {
 export function parseManagementWorkbook(workbook) {
   const result = [], errors = [];
   for (const [category, aliases] of Object.entries(SHEETS)) {
-    const sheetName = workbook.SheetNames.find(name => aliases.includes(norm(name)));
-    if (!sheetName) { errors.push(`Folha em falta: ${CATEGORY_LABELS[category]}.`); continue; }
+    const sheetName = workbook.SheetNames.find(name => aliases.includes(sheetKey(name)));
+    if (!sheetName) {
+      if (!OPTIONAL_SHEETS.has(category)) errors.push(`Folha em falta: ${CATEGORY_LABELS[category]}.`);
+      continue;
+    }
     const rows = normalizeManagementRows(category, globalThis.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null, raw: true }));
     result.push(...rows);
   }
@@ -79,7 +84,7 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   }
   function renderImport() {
     if (!state.importOpen) return ""; const preview = state.preview || {};
-    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Excel com 5 folhas: Materiais, Despesas-Estaleiro, Subcontratos, Funcionários-Obra e Faturação.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${preview.erros.map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
+    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${preview.erros.map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
   }
   function render() {
     const works = [...getWorks()].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
