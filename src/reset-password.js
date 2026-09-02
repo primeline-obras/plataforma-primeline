@@ -3,7 +3,14 @@ import { isSupabaseConfigured, readRecoverySession, updateRecoveryPassword } fro
 const root = document.querySelector("#reset-root");
 
 function brand() {
-  return `<div class="brand"><div class="brand-mark"><span></span><span></span><span></span></div><div><strong>PRIMELINE</strong><small>ENGENHARIA E CONSTRUÇÃO</small></div></div>`;
+  return `<div class="brand" aria-label="PRIMELINE GO">
+    <span class="brand-logo-wrap" aria-hidden="true">
+      <img class="brand-logo brand-logo-dark" src="/assets/brand/logo.png" alt="">
+      <img class="brand-logo brand-logo-light" src="/assets/brand/logo_branco.png" alt="">
+    </span>
+    <span class="brand-separator" aria-hidden="true"></span>
+    <strong class="brand-go" aria-hidden="true">GO</strong>
+  </div>`;
 }
 
 function friendlyRecoveryError(error) {

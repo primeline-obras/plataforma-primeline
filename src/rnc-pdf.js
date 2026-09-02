@@ -14,6 +14,9 @@ export async function generateRncPdf({ rnc, work, phase, subcontract, reporter, 
   const JsPdf = window.jspdf?.jsPDF;
   if (!JsPdf) throw new Error("O gerador de PDF ainda não terminou de carregar. Tente novamente.");
   const pdf = new JsPdf({ unit: "mm", format: "a4" });
+  const logoResponse = await fetch("/assets/brand/logo_branco.png");
+  if (!logoResponse.ok) throw new Error("Não foi possível carregar o logótipo para o PDF.");
+  const brandLogo = await imageData(await logoResponse.blob());
   const width = 210, margin = 16;
   let y = 16;
   const ensure = height => { if (y + height > 280) { pdf.addPage(); y = 18; } };
@@ -29,7 +32,9 @@ export async function generateRncPdf({ rnc, work, phase, subcontract, reporter, 
   };
 
   pdf.setFillColor(23, 26, 31); pdf.rect(0, 0, width, 30, "F");
-  pdf.setTextColor(255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.text("/// PRIMELINE", margin, 13);
+  pdf.addImage(brandLogo, "PNG", margin, 6, 52, 8.5, undefined, "FAST");
+  pdf.setDrawColor(255); pdf.setLineWidth(.35); pdf.line(margin + 55, 5.5, margin + 55, 15);
+  pdf.setTextColor(255); pdf.setFont("helvetica", "bold"); pdf.setFontSize(16); pdf.text("GO", margin + 58, 13);
   pdf.setFontSize(8); pdf.text("RELATÓRIO DE NÃO CONFORMIDADE", margin, 21);
   pdf.setFontSize(12); pdf.text(rncCode(work, rnc.numero), 194, 17, { align: "right" });
   y = 40;
@@ -56,6 +61,6 @@ export async function generateRncPdf({ rnc, work, phase, subcontract, reporter, 
     }
   }
   const pages = pdf.getNumberOfPages();
-  for (let page = 1; page <= pages; page++) { pdf.setPage(page); pdf.setFontSize(7); pdf.setTextColor(120); pdf.text(`PRIMELINE · Página ${page}/${pages}`, 194, 291, { align: "right" }); }
+  for (let page = 1; page <= pages; page++) { pdf.setPage(page); pdf.setFontSize(7); pdf.setTextColor(120); pdf.text(`PRIMELINE GO · Página ${page}/${pages}`, 194, 291, { align: "right" }); }
   pdf.save(`RNC_${work.numero}_${String(rnc.numero).padStart(3, "0")}.pdf`);
 }
