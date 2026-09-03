@@ -5,6 +5,12 @@ const OPTIONAL_SHEETS = new Set(["faturacao"]);
 const BLOCKED_IMPORT_WORKS = new Set(["79", "85", "127"]);
 const norm = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-PT").replace(/\s+/g, " ");
 const sheetKey = value => norm(value).replace(/[\s_-]*-[\s_-]*/g, " ").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+const sheetMatches = (name, category, aliases) => {
+  const normalized = sheetKey(name);
+  if (aliases.includes(normalized)) return true;
+  return category === "mao_obra"
+    && (normalized.includes("mao de obra") || (normalized.includes("funcionarios") && normalized.includes("obra")));
+};
 const key = value => norm(value).replace(/[º°ª.()/%_-]/g, "").replace(/\s+/g, "");
 const money = value => { if (typeof value === "number") return value; const parsed = Number(String(value ?? "").replace(/\s|€/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; };
 const date = value => {
@@ -53,7 +59,7 @@ export function validateManagementImportRows(rows) {
 export function parseManagementWorkbook(workbook) {
   const result = [], errors = [];
   for (const [category, aliases] of Object.entries(SHEETS)) {
-    const sheetName = workbook.SheetNames.find(name => aliases.includes(sheetKey(name)));
+    const sheetName = workbook.SheetNames.find(name => sheetMatches(name, category, aliases));
     if (!sheetName) {
       if (!OPTIONAL_SHEETS.has(category)) errors.push(`Folha em falta: ${CATEGORY_LABELS[category]}.`);
       continue;
