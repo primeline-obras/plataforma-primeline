@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseManagementWorkbook, validateManagementImportRows } from "../src/management-map.js";
+import { parseManagementWorkbook, prepareManagementImportRows, validateManagementImportRows } from "../src/management-map.js";
 
 test("a pré-visualização bloqueia as obras reservadas ao Saldo de Abertura", () => {
   const errors = validateManagementImportRows([
@@ -80,4 +80,15 @@ test("continua a exigir as quatro folhas operacionais", () => {
   } finally {
     globalThis.XLSX = previousXlsx;
   }
+});
+
+test("remove duplicados do próprio ficheiro antes de o enviar em lotes", () => {
+  const first = { categoria: "materiais", obra_numero: "120", numero_documento: "FT 01", fornecedor: "Fornecedor Exemplo", valor_total: 12.345 };
+  const same = { ...first, obra_numero: "0120", numero_documento: " ft 01 ", fornecedor: "FORNECEDOR EXEMPLO", valor_total: "12,345" };
+  const different = { ...first, numero_documento: "FT 02" };
+  const invalid = { categoria: "materiais", obra_numero: "120", numero_documento: "", fornecedor: "", valor_total: null };
+  const result = prepareManagementImportRows([first, same, different, invalid, invalid]);
+
+  assert.equal(result.duplicates, 1);
+  assert.deepEqual(result.rows, [first, different, invalid, invalid]);
 });

@@ -3,6 +3,7 @@ const CATEGORY_LABELS = { materiais: "Materiais", estaleiro: "Despesas-Estaleiro
 const SHEETS = { materiais: ["materiais"], estaleiro: ["despesas estaleiro"], subempreitadas: ["subcontratos", "subempreitadas"], mao_obra: ["funcionarios obra"], faturacao: ["faturacao"] };
 const OPTIONAL_SHEETS = new Set(["faturacao"]);
 const BLOCKED_IMPORT_WORKS = new Set(["79", "85", "127"]);
+const IMPORT_BATCH_SIZE = 500;
 const norm = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-PT").replace(/\s+/g, " ");
 const sheetKey = value => norm(value).replace(/[\s_-]*-[\s_-]*/g, " ").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 const sheetMatches = (name, category, aliases) => {
@@ -56,6 +57,40 @@ export function validateManagementImportRows(rows) {
     : []);
 }
 
+function managementImportFingerprint(row) {
+  const category = String(row.categoria ?? "").trim();
+  const work = normalizedWorkNumber(row.obra_numero);
+  let document = row.numero_documento;
+  let entity = row.fornecedor;
+  let value = money(row.valor_total);
+  if (category === "mao_obra") {
+    document = row.data;
+    entity = row.colaborador;
+    const hours = money(row.horas), hourlyValue = money(row.valor_hora);
+    value = hours == null || hourlyValue == null ? null : hours * hourlyValue;
+  } else if (category === "faturacao") {
+    document = row.numero_fatura;
+    entity = "Cliente";
+    value = money(row.valor_recebido) ?? money(row.valor);
+  }
+  if (!category || !work || !String(document ?? "").trim() || !String(entity ?? "").trim() || value == null) return null;
+  return [category, work, norm(document), norm(entity), Number(value).toFixed(2)].join("|");
+}
+
+export function prepareManagementImportRows(rows) {
+  const seen = new Set(), uniqueRows = [];
+  let duplicates = 0;
+  rows.forEach(row => {
+    const fingerprint = managementImportFingerprint(row);
+    if (fingerprint && seen.has(fingerprint)) duplicates += 1;
+    else {
+      if (fingerprint) seen.add(fingerprint);
+      uniqueRows.push(row);
+    }
+  });
+  return { rows: uniqueRows, duplicates };
+}
+
 export function parseManagementWorkbook(workbook) {
   const result = [], errors = [];
   for (const [category, aliases] of Object.entries(SHEETS)) {
@@ -72,7 +107,7 @@ export function parseManagementWorkbook(workbook) {
 }
 
 export function createManagementMapModule({ root, supabase, isConfigured, getWorks, euro, toast }) {
-  const state = { loaded: false, loading: false, error: "", rows: [], mode: "categoria", importOpen: false, importRows: [], importErrors: [], preview: null, importing: false };
+  const state = { loaded: false, loading: false, error: "", rows: [], mode: "categoria", importOpen: false, importRows: [], importReadyRows: [], importErrors: [], importProgress: "", preview: null, importing: false };
   async function load(force = false) {
     if (state.loading || (state.loaded && !force)) return render(); state.loading = true; state.error = ""; render();
     try { if (!isConfigured) state.rows = []; else { const response = await supabase("rpc/fn_mapa_gestao_obras", { method: "POST", body: "{}" }); if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || payload.details || "Não foi possível consultar o Mapa de Gestão."); } state.rows = await response.json(); } state.loaded = true; }
@@ -90,15 +125,44 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   }
   function renderImport() {
     if (!state.importOpen) return ""; const preview = state.preview || {};
-    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${preview.erros.map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
+    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importProgress ? `<div class="work-warning"><strong>PROCESSAMENTO</strong><span>${esc(state.importProgress)}</span></div>` : ""}${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${preview.erros.map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
   }
   function render() {
     const works = [...getWorks()].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
     root.innerHTML = `<section class="panel management-map"><header><div><p class="eyebrow">CONSOLIDADO DA EMPRESA</p><h2>MAPA DE GESTÃO DE OBRAS</h2><p>Cinco categorias de custos e faturação, consultáveis por categoria ou por obra.</p></div><div class="management-head-actions"><button type="button" class="outline-action" data-open-management-import>IMPORTAR EXCEL</button><button type="button" class="outline-action" data-refresh-management-map>ATUALIZAR</button></div></header>${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)} Confirme se executou o SQL deste módulo.</span></div>` : ""}<div class="management-mode"><button type="button" data-management-mode="categoria" class="${state.mode === "categoria" ? "active" : ""}">POR CATEGORIA · TODAS AS OBRAS</button><button type="button" data-management-mode="obra" class="${state.mode === "obra" ? "active" : ""}">POR OBRA · TODAS AS CATEGORIAS</button></div><form class="management-map-filters" data-management-map-filters><label>OBRA<select name="obra_id"><option value="">${state.mode === "obra" ? "Escolher uma obra" : "Todas as obras"}</option>${works.map(work => `<option value="${work.id}">Obra ${esc(work.numero)} — ${esc(work.nome)}</option>`).join("")}</select></label><label class="${state.mode === "obra" ? "management-filter-disabled" : ""}">CATEGORIA<select name="categoria" ${state.mode === "obra" ? "disabled" : ""}><option value="">Todas as categorias</option>${Object.entries(CATEGORY_LABELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>DATA — DE<input type="date" name="data_inicio"></label><label>DATA — ATÉ<input type="date" name="data_fim"></label><label>FORNECEDOR / COLABORADOR<input name="entidade" placeholder="Pesquisar fornecedor ou colaborador"></label><label>DESCRIÇÃO<input name="descricao" placeholder="Pesquisar descrição"></label><label>DOCUMENTO<input name="documento" placeholder="Pesquisar documento"></label><label>VALOR EXATO (€)<input name="valor" type="number" min="0" step="0.01" placeholder="0,00"></label><button type="reset" class="outline-action management-clear-filters">LIMPAR FILTROS</button></form>${renderImport()}${state.loading ? '<div class="fleet-loading">A CARREGAR LANÇAMENTOS…</div>' : renderResults()}</section>`;
   }
-  async function previewImport(rows) { const response = await supabase("rpc/fn_importar_mapa_gestao", { method: "POST", body: JSON.stringify({ p_linhas: rows, p_confirmar: false }) }); if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || "Não foi possível pré-visualizar a importação."); } state.preview = await response.json(); render(); }
-  async function readImportFile(file) { state.importRows = []; state.importErrors = []; state.preview = null; if (!globalThis.XLSX) { state.importErrors = ["O leitor Excel não está disponível."]; return render(); } const workbook = globalThis.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false }); const parsed = parseManagementWorkbook(workbook); state.importRows = parsed.rows; state.importErrors = parsed.errors; render(); if (!parsed.errors.length) try { await previewImport(parsed.rows); } catch (error) { state.importErrors = [error.message]; render(); } }
-  async function confirmImport() { if (!state.preview || state.importing) return; if (!confirm(`Importar ${state.preview.criar || 0} linhas? Os ${state.preview.duplicados || 0} duplicados serão ignorados.`)) return; state.importing = true; render(); const response = await supabase("rpc/fn_importar_mapa_gestao", { method: "POST", body: JSON.stringify({ p_linhas: state.importRows, p_confirmar: true }) }); state.importing = false; if (!response.ok) { const payload = await response.json().catch(() => ({})); state.importErrors = [payload.message || "A importação falhou."]; return render(); } const result = await response.json(); toast(`${result.criados || 0} lançamentos importados. ${result.duplicados || 0} duplicados ignorados.`); state.importOpen = false; state.importRows = []; state.preview = null; await load(true); }
+  async function runImportBatches(rows, confirmImportRows) {
+    const result = { linhas: rows.length, criar: 0, criados: 0, duplicados: 0, erros: [] };
+    for (let start = 0; start < rows.length; start += IMPORT_BATCH_SIZE) {
+      const batch = rows.slice(start, start + IMPORT_BATCH_SIZE);
+      state.importProgress = `${confirmImportRows ? "A importar" : "A validar"} ${Math.min(start + batch.length, rows.length)} de ${rows.length} linhas…`;
+      render();
+      const response = await supabase("rpc/fn_importar_mapa_gestao", { method: "POST", body: JSON.stringify({ p_linhas: batch, p_confirmar: confirmImportRows }) });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.message || `${confirmImportRows ? "A importação" : "A validação"} falhou no lote iniciado na linha ${start + 1}.`);
+      }
+      const batchResult = await response.json();
+      result.criar += Number(batchResult.criar || 0);
+      result.criados += Number(batchResult.criados || 0);
+      result.duplicados += Number(batchResult.duplicados || 0);
+      result.erros.push(...(batchResult.erros || []));
+    }
+    state.importProgress = "";
+    return result;
+  }
+  async function previewImport(rows) {
+    const prepared = prepareManagementImportRows(rows);
+    state.importReadyRows = prepared.rows;
+    const result = await runImportBatches(prepared.rows, false);
+    result.linhas = rows.length;
+    result.duplicados += prepared.duplicates;
+    state.preview = result;
+    state.importProgress = "";
+    render();
+  }
+  async function readImportFile(file) { state.importRows = []; state.importReadyRows = []; state.importErrors = []; state.importProgress = ""; state.preview = null; if (!globalThis.XLSX) { state.importErrors = ["O leitor Excel não está disponível."]; return render(); } const workbook = globalThis.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false }); const parsed = parseManagementWorkbook(workbook); state.importRows = parsed.rows; state.importErrors = parsed.errors; render(); if (!parsed.errors.length) try { await previewImport(parsed.rows); } catch (error) { state.importProgress = ""; state.importErrors = [error.message]; render(); } }
+  async function confirmImport() { if (!state.preview || state.importing) return; if (!confirm(`Importar ${state.preview.criar || 0} linhas? Os ${state.preview.duplicados || 0} duplicados serão ignorados.`)) return; state.importing = true; render(); try { const result = await runImportBatches(state.importReadyRows, true); toast(`${result.criados || 0} lançamentos importados. ${result.duplicados || 0} duplicados ignorados.`); state.importOpen = false; state.importRows = []; state.importReadyRows = []; state.preview = null; await load(true); } catch (error) { state.importProgress = ""; state.importErrors = [`${error.message} Pode repetir a importação em segurança: os lotes já gravados serão reconhecidos como duplicados.`]; } finally { state.importing = false; render(); } }
   root.addEventListener("input", event => { if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
   root.addEventListener("change", event => { if (event.target.matches("[data-management-import-file]")) { const [file] = event.target.files; if (file) readImportFile(file); return; } if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
   root.addEventListener("reset", () => setTimeout(() => root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())), 0));
