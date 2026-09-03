@@ -13,7 +13,7 @@ const sheetMatches = (name, category, aliases) => {
     && (normalized.includes("mao de obra") || (normalized.includes("funcionarios") && normalized.includes("obra")));
 };
 const key = value => norm(value).replace(/[º°ª.()/%_-]/g, "").replace(/\s+/g, "");
-const money = value => { if (typeof value === "number") return value; const parsed = Number(String(value ?? "").replace(/\s|€/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; };
+const money = value => { if (typeof value === "number") return value; const text = String(value ?? "").trim(); if (!text) return null; const parsed = Number(text.replace(/\s|€/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : null; };
 const date = value => {
   if (!value) return null;
   if (typeof value === "number" && globalThis.XLSX?.SSF?.parse_date_code) { const parsed = globalThis.XLSX.SSF.parse_date_code(value); return parsed ? `${parsed.y}-${String(parsed.m).padStart(2, "0")}-${String(parsed.d).padStart(2, "0")}` : null; }
@@ -39,22 +39,48 @@ export function managementRowMatches(row, filters = {}, { mode = "categoria", ca
     && (requestedValue == null || Math.abs(Number(row.valor || 0) - requestedValue) < 0.005);
 }
 
-export function normalizeManagementRows(category, rows) {
-  return rows.filter(row => Object.values(row).some(value => String(value ?? "").trim())).map((row, index) => {
+const meaningfulImportValue = value => {
+  const text = String(value ?? "").trim();
+  return Boolean(text) && !["#N/A", "#VALUE!", "#REF!", "#DIV/0!"].includes(text.toUpperCase());
+};
+
+export function normalizeManagementRows(category, rows, firstDataLine = 2) {
+  return rows.map((row, index) => {
     const values = Object.fromEntries(Object.entries(row).map(([header, value]) => [key(header), value]));
-    const common = { categoria: category, linha: index + 2, obra_numero: String(values.obra ?? "").trim() };
-    if (category === "mao_obra") return { ...common, colaborador: String(values.colaborador ?? "").trim(), data: date(values.data), horas: money(values.horas), valor_hora: money(values.valorhora) };
+    const common = { categoria: category, linha: index + firstDataLine, obra_numero: String(values.obra ?? values.obran ?? values.numeroobra ?? values.nobra ?? "").trim() };
+    if (category === "mao_obra") return { ...common, colaborador: String(values.colaborador ?? values.nomefuncionario ?? values.funcionario ?? values.nome ?? "").trim(), data: date(values.data), horas: money(values.horas ?? values.quant ?? values.quantidade), valor_hora: money(values.valorhora ?? values.valorunit ?? values.valorunitario) };
     if (category === "faturacao") return { ...common, numero_fatura: String(values.nfatura ?? values.numerofatura ?? "").trim(), data_emissao: date(values.dataemissao), valor: money(values.valor), data_recebimento: date(values.datarecebimento), valor_recebido: money(values.valorrecebido), estado: String(values.estado ?? "").trim() };
-    return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), designacao: String(values.designacao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade: money(values.quant), valor_unitario: money(values.valorunit), valor_total: money(values.valortotal), data_pagamento: date(values.datapagamento) };
-  });
+    const quantidade = money(values.quant ?? values.quantidade), valorUnitario = money(values.valorunit ?? values.valorunitario);
+    return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? values.ndoc ?? values.n ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), designacao: String(values.designacao ?? values.descricao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade, valor_unitario: valorUnitario, valor_total: money(values.valortotal) ?? (quantidade != null && valorUnitario != null ? quantidade * valorUnitario : null), data_pagamento: date(values.datapagamento ?? values.datadepagamento) };
+  }).filter(row => category === "mao_obra"
+    ? [row.obra_numero, row.data, row.colaborador, row.horas].some(meaningfulImportValue)
+    : category === "faturacao"
+      ? [row.obra_numero, row.numero_fatura, row.data_emissao, row.valor].some(meaningfulImportValue)
+      : [row.obra_numero, row.numero_documento, row.data, row.fornecedor, row.designacao, row.quantidade, row.valor_unitario].some(meaningfulImportValue));
+}
+
+export function managementSheetTable(matrix) {
+  if (!matrix.length) return { rows: [], headerIndex: -1 };
+  const headerIndex = matrix.findIndex(row => Array.isArray(row) && row.some(cell => ["obra", "obran", "numeroobra", "nobra"].includes(key(cell))));
+  if (headerIndex < 0) return { rows: [], headerIndex };
+  const headers = matrix[headerIndex].map((header, index) => String(header ?? `__coluna_${index}`));
+  const rows = matrix.slice(headerIndex + 1).map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] ?? null])));
+  return { rows, headerIndex };
 }
 
 const normalizedWorkNumber = value => String(value ?? "").trim().replace(/^0+(?=\d)/, "");
 
 export function validateManagementImportRows(rows) {
-  return rows.flatMap(row => BLOCKED_IMPORT_WORKS.has(normalizedWorkNumber(row.obra_numero))
-    ? [`Linha ${row.linha}: Obra ${row.obra_numero} não aceita importação por este caminho — usar Saldo de Abertura.`]
-    : []);
+  const blocked = new Map();
+  rows.forEach(row => {
+    const work = normalizedWorkNumber(row.obra_numero);
+    if (!BLOCKED_IMPORT_WORKS.has(work)) return;
+    const entry = blocked.get(work) || { count: 0, lines: [] };
+    entry.count += 1;
+    if (entry.lines.length < 5) entry.lines.push(row.linha);
+    blocked.set(work, entry);
+  });
+  return [...blocked.entries()].map(([work, entry]) => `Obra ${work} não aceita importação por este caminho — usar Saldo de Abertura. ${entry.count} linha(s) afetada(s)${entry.lines.length ? `; primeiras: ${entry.lines.join(", ")}` : ""}.`);
 }
 
 function managementImportFingerprint(row) {
@@ -99,7 +125,13 @@ export function parseManagementWorkbook(workbook) {
       if (!OPTIONAL_SHEETS.has(category)) errors.push(`Folha em falta: ${CATEGORY_LABELS[category]}.`);
       continue;
     }
-    const rows = normalizeManagementRows(category, globalThis.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null, raw: true }));
+    const matrix = globalThis.XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: null, raw: true });
+    const table = managementSheetTable(matrix);
+    if (matrix.length && table.headerIndex < 0) {
+      errors.push(`Não foi possível localizar o cabeçalho com a coluna Obra na folha ${sheetName}.`);
+      continue;
+    }
+    const rows = normalizeManagementRows(category, table.rows, table.headerIndex + 2);
     result.push(...rows);
   }
   errors.push(...validateManagementImportRows(result));
