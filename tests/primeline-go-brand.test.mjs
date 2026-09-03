@@ -20,10 +20,14 @@ test("usa os dois logótipos oficiais e destaca GO com separador", () => {
   }
   assert.match(css, /grid-template-columns:\s*minmax\(0, 1fr\) 1px auto/);
   assert.match(css, /\.brand-go[^}]*font:\s*800 22px/);
+  assert.match(app, /class="brand-logo-vector"/);
+  assert.match(css, /\.auth-brand \.brand-logo-vector\s*\{[^}]*background-color:#FFFFFF;[^}]*mask:url\("\/assets\/brand\/logo\.svg"\)/s);
+  assert.match(css, /\.auth-brand\s*\{[^}]*align-items:center;[^}]*justify-content:center;/s);
+  assert.match(css, /\.auth-brand \.brand\s*\{[^}]*max-width:280px;[^}]*transform:none;/s);
 });
 
 test("inclui os recursos oficiais no pacote publicado", async () => {
-  for (const name of ["logo.png", "logo_branco.png"]) {
+  for (const name of ["logo.png", "logo_branco.png", "logo.svg"]) {
     const url = new URL(`assets/brand/${name}`, root);
     await access(url);
     assert.ok((await stat(url)).size > 1000, `${name} não contém uma imagem válida`);
