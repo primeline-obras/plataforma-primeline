@@ -76,7 +76,7 @@ function isPastDay(date, today = new Date()) {
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
-    expanded: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
+    expanded: new Set(), expandedTasks: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
   };
 
@@ -242,7 +242,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const metrics = taskDeviation(item);
       const weighted = Number(item.peso_percentual || 0) * Number(item.percentual_executado || 0) / 100;
       const status = visualState(item);
-      return `<article class="planning-editor-row ${item._new ? "new" : ""}" data-edit-item="${item.id}">
+      const detailsOpen = state.expandedTasks.has(item.id);
+      return `<article class="planning-editor-row ${item._new ? "new" : ""} ${detailsOpen ? "details-open" : ""}" data-edit-item="${item.id}">
       <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1">
       <input name="descricao" value="${escapeHtml(item.descricao || "")}" placeholder="Descrição da tarefa">
       <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável">
@@ -257,8 +258,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <input name="impacto" value="${escapeHtml(item.impacto || "")}" placeholder="Sem impacto registado">
       <output>${dayDeviation(metrics.startDays)}</output><output>${dayDeviation(metrics.endDays)}</output>
       <output>${escapeHtml(metrics.comparison)}</output><output><em class="${metrics.classification.key}">${metrics.classification.label}</em></output>
-      <div><button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button></div>
-      <section class="planning-editor-details"><label>FASE<select name="fase_id">${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}"></label><label>ESTADO CUSTO<select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00"></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}</div>${renderDependencies(item)}</section>
+      <div class="planning-row-actions"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button><button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button></div>
+      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id">${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}"></label><label>ESTADO CUSTO<select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00"></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}</div>${renderDependencies(item)}</section>
     </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</section>`;
     }).join("")}</div>`;
   }
@@ -592,7 +593,9 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function addNewTask() {
     const firstPhase = state.phases[0];
-    state.items.unshift({ id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", especialidade_id: null, executado_por: "", percentual_executado: 0, estado: "por_iniciar", _new: true });
+    const draft = { id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", especialidade_id: null, executado_por: "", percentual_executado: 0, estado: "por_iniciar", _new: true };
+    state.items.unshift(draft);
+    state.expandedTasks.add(draft.id);
     render();
     content.querySelector("[data-edit-item] input[name='codigo']")?.focus();
   }
@@ -646,13 +649,26 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     render();
   }
 
-  workSelect.addEventListener("change", () => { state.expanded.clear(); load(workSelect.value); });
+  workSelect.addEventListener("change", () => { state.expanded.clear(); state.expandedTasks.clear(); load(workSelect.value); });
   content.addEventListener("click", event => {
     if (readOnly() && event.target.closest("[data-open-import],[data-new-task],[data-save-task],[data-remove-task],[data-add-dependency],[data-remove-dependency],[data-confirm-import]")) return;
     if (event.target.closest("[data-open-import]")) { openImportPanel(); return; }
     if (event.target.closest("[data-close-import]")) { state.importOpen = false; state.importRows = []; state.importErrors = []; render(); return; }
     if (event.target.closest("[data-new-task]")) {
       addNewTask(); return;
+    }
+    const toggleTask = event.target.closest("[data-toggle-task]");
+    if (toggleTask) {
+      const itemId = toggleTask.dataset.toggleTask;
+      const row = toggleTask.closest("[data-edit-item]");
+      const details = row?.querySelector(".planning-editor-details");
+      const opening = Boolean(details?.hidden);
+      if (opening) state.expandedTasks.add(itemId); else state.expandedTasks.delete(itemId);
+      if (details) details.hidden = !opening;
+      row?.classList.toggle("details-open", opening);
+      toggleTask.setAttribute("aria-expanded", String(opening));
+      toggleTask.textContent = opening ? "FECHAR" : "DETALHES";
+      return;
     }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
