@@ -129,3 +129,28 @@ test("agrupa erros repetidos sem perder a contagem total da pré-visualização"
     "Linha 8: fornecedor Galp não encontrado.",
   ]), ["colaborador João Afonso não encontrado. (2 linhas)", "fornecedor Galp não encontrado."]);
 });
+
+test("lê colaborador de reembolso nas despesas de estaleiro sem fornecedor", () => {
+  const previousXlsx = globalThis.XLSX;
+  globalThis.XLSX = { utils: { sheet_to_json: sheet => sheet.rows }, SSF: { parse_date_code: () => ({ y: 2026, m: 3, d: 23 }) } };
+  try {
+    const workbook = {
+      SheetNames: ["MATERIAIS", "DESPESAS - ESTALEIRO", "SUBCONTRATOS", "FUNCIONÁRIOS EM OBRA"],
+      Sheets: {
+        MATERIAIS: { rows: [] },
+        SUBCONTRATOS: { rows: [] },
+        "FUNCIONÁRIOS EM OBRA": { rows: [] },
+        "DESPESAS - ESTALEIRO": { rows: [["OUTRAS DESPESAS"], ["Nº", "OBRA Nº", "DATA", "FORNECEDOR", "DESIGNAÇÃO", "UN MEDIDA", "QUANT", "VALOR UNIT", "VALOR TOTAL", "DATA DE PAGAMENTO", "COLABORADOR"], [null, 122, 46104, null, "Compra de água", "un", 1, 20, 20, null, "Vitor Lopes"]] },
+      },
+    };
+    const parsed = parseManagementWorkbook(workbook);
+    assert.deepEqual(parsed.errors, []);
+    assert.equal(parsed.rows[0].fornecedor, "");
+    assert.equal(parsed.rows[0].colaborador, "Vitor Lopes");
+    const prepared = prepareManagementImportRows([...parsed.rows, ...parsed.rows]);
+    assert.equal(prepared.duplicates, 1);
+    assert.equal(prepared.rows.length, 1);
+  } finally {
+    globalThis.XLSX = previousXlsx;
+  }
+});

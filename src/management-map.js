@@ -61,7 +61,7 @@ export function normalizeManagementRows(category, rows, firstDataLine = 2) {
     if (category === "mao_obra") return { ...common, colaborador: managementEmployeeName(values.colaborador ?? values.nomefuncionario ?? values.funcionario ?? values.nome), data: date(values.data), horas: money(values.horas ?? values.quant ?? values.quantidade), valor_hora: money(values.valorhora ?? values.valorunit ?? values.valorunitario) };
     if (category === "faturacao") return { ...common, numero_fatura: String(values.nfatura ?? values.numerofatura ?? "").trim(), data_emissao: date(values.dataemissao), valor: money(values.valor), data_recebimento: date(values.datarecebimento), valor_recebido: money(values.valorrecebido), estado: String(values.estado ?? "").trim() };
     const quantidade = money(values.quant ?? values.quantidade), valorUnitario = money(values.valorunit ?? values.valorunitario);
-    return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? values.ndoc ?? values.n ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), designacao: String(values.designacao ?? values.descricao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade, valor_unitario: valorUnitario, valor_total: money(values.valortotal) ?? (quantidade != null && valorUnitario != null ? quantidade * valorUnitario : null), data_pagamento: date(values.datapagamento ?? values.datadepagamento) };
+    return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? values.ndoc ?? values.n ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), colaborador: managementEmployeeName(values.colaborador ?? values.reembolso ?? ""), designacao: String(values.designacao ?? values.descricao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade, valor_unitario: valorUnitario, valor_total: money(values.valortotal) ?? (quantidade != null && valorUnitario != null ? quantidade * valorUnitario : null), data_pagamento: date(values.datapagamento ?? values.datadepagamento) };
   }).filter(row => category === "mao_obra"
     ? [row.obra_numero, row.data, row.colaborador, row.horas].some(meaningfulImportValue)
     : category === "faturacao"
@@ -108,6 +108,9 @@ function managementImportFingerprint(row) {
     document = row.numero_fatura;
     entity = "Cliente";
     value = money(row.valor_recebido) ?? money(row.valor);
+  } else if (category === "estaleiro") {
+    document ||= row.data;
+    entity ||= row.colaborador;
   }
   if (!category || !work || !String(document ?? "").trim() || !String(entity ?? "").trim() || value == null) return null;
   return [category, work, norm(document), norm(entity), Number(value).toFixed(2)].join("|");

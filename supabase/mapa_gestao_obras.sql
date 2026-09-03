@@ -1,6 +1,22 @@
 -- PRIMELINE | Mapa de Gestão de Obras — lançamentos pagos detalhados
 begin;
 
+alter table public.despesas_estaleiro
+  add column if not exists colaborador_id uuid references public.colaboradores(id);
+
+create index if not exists despesas_estaleiro_colaborador_id_idx
+  on public.despesas_estaleiro (colaborador_id);
+
+insert into public.fornecedores (empresa_id, nome)
+select '73fb13c8-d29f-4192-a506-4ca243343add'::uuid, novo.nome
+from (values ('MONTAEL SA'), ('Andaluga'), ('Loja Cascais')) as novo(nome)
+where not exists (
+  select 1
+  from public.fornecedores existente
+  where existente.empresa_id = '73fb13c8-d29f-4192-a506-4ca243343add'::uuid
+    and lower(btrim(existente.nome)) = lower(btrim(novo.nome))
+);
+
 create or replace function public.fn_mapa_gestao_obras()
 returns table (
   origem_id uuid,
@@ -95,6 +111,9 @@ begin
     select * into v_obra from public.obras o where o.id = v_uuid and o.empresa_id = v_atual.empresa_id; if not found then continue; end if;
     v_nome := null;
     begin v_uuid := nullif(v_json ->> 'fornecedor_id', '')::uuid; select f.nome into v_nome from public.fornecedores f where f.id = v_uuid; exception when others then v_nome := null; end;
+    if v_nome is null then
+      begin v_uuid := nullif(v_json ->> 'colaborador_id', '')::uuid; select c.nome into v_nome from public.colaboradores c where c.id = v_uuid; exception when others then v_nome := null; end;
+    end if;
     v_data_text := coalesce(nullif(v_json ->> 'data_pagamento',''), nullif(v_json ->> 'data',''), nullif(v_json ->> 'criado_em',''));
     origem_id := (v_json ->> 'id')::uuid; obra_id := v_obra.id; obra_numero := v_obra.numero::text; obra_nome := v_obra.nome; categoria := 'estaleiro';
     data_lancamento := left(v_data_text,10)::date; entidade_nome := coalesce(v_nome, v_json ->> 'fornecedor', 'Estaleiro');
@@ -179,7 +198,7 @@ returns jsonb language plpgsql security definer set search_path=public,pg_temp a
 declare
   v_atual public.utilizadores; v_linha jsonb; v_obra public.obras; v_fornecedor public.fornecedores;
   v_colaborador public.colaboradores; v_sub public.subempreitadas; v_categoria text; v_documento text;
-  v_entidade text; v_chave text; v_valor numeric; v_criar integer:=0; v_criados integer:=0;
+  v_entidade text; v_chave text; v_chave_documento text; v_valor numeric; v_criar integer:=0; v_criados integer:=0;
   v_duplicados integer:=0; v_erros jsonb:='[]'::jsonb; v_chaves text[]:=array[]::text[];
   v_chaves_existentes text[]:=array[]::text[]; v_dados jsonb;
 begin
@@ -218,13 +237,24 @@ begin
       v_entidade:='Cliente'; v_valor:=coalesce(nullif(v_linha->>'valor_recebido','')::numeric,(v_linha->>'valor')::numeric);
     else
       if v_categoria not in ('materiais','estaleiro','subempreitadas') then v_erros:=v_erros||jsonb_build_array(format('Linha %s: categoria inválida.',v_linha->>'linha')); continue; end if;
-      select * into v_fornecedor from public.fornecedores f where f.empresa_id=v_atual.empresa_id and lower(btrim(f.nome))=lower(btrim(v_linha->>'fornecedor')) limit 1;
-      if not found then v_erros:=v_erros||jsonb_build_array(format('Linha %s: fornecedor %s não encontrado.',v_linha->>'linha',coalesce(v_linha->>'fornecedor','—'))); continue; end if;
-      if nullif(v_documento,'') is null or nullif(v_linha->>'valor_total','') is null then v_erros:=v_erros||jsonb_build_array(format('Linha %s: documento e valor total são obrigatórios.',v_linha->>'linha')); continue; end if;
-      v_entidade:=v_fornecedor.nome; v_valor:=(v_linha->>'valor_total')::numeric;
+      v_fornecedor:=null; v_colaborador:=null;
+      if v_categoria='estaleiro' and nullif(btrim(v_linha->>'fornecedor'),'') is null and nullif(btrim(v_linha->>'colaborador'),'') is not null then
+        select * into v_colaborador from public.colaboradores c where c.empresa_id=v_atual.empresa_id and lower(btrim(c.nome))=lower(btrim(v_linha->>'colaborador')) limit 1;
+        if not found then v_erros:=v_erros||jsonb_build_array(format('Linha %s: colaborador %s não encontrado para o reembolso.',v_linha->>'linha',coalesce(v_linha->>'colaborador','—'))); continue; end if;
+        v_entidade:=v_colaborador.nome;
+      else
+        select * into v_fornecedor from public.fornecedores f where f.empresa_id=v_atual.empresa_id and lower(btrim(f.nome))=lower(btrim(v_linha->>'fornecedor')) limit 1;
+        if not found then v_erros:=v_erros||jsonb_build_array(format('Linha %s: fornecedor %s não encontrado.',v_linha->>'linha',coalesce(v_linha->>'fornecedor','—'))); continue; end if;
+        v_entidade:=v_fornecedor.nome;
+      end if;
+      if nullif(v_linha->>'valor_total','') is null then v_erros:=v_erros||jsonb_build_array(format('Linha %s: valor total é obrigatório.',v_linha->>'linha')); continue; end if;
+      if v_categoria<>'estaleiro' and nullif(v_documento,'') is null then v_erros:=v_erros||jsonb_build_array(format('Linha %s: documento é obrigatório.',v_linha->>'linha')); continue; end if;
+      if v_categoria='estaleiro' and nullif(v_documento,'') is null and nullif(v_linha->>'data','') is null then v_erros:=v_erros||jsonb_build_array(format('Linha %s: despesas sem documento exigem data para deduplicação.',v_linha->>'linha')); continue; end if;
+      v_valor:=(v_linha->>'valor_total')::numeric;
     end if;
 
-    v_chave:=lower(concat_ws('|',v_categoria,v_obra.id,v_documento,v_entidade,round(v_valor,2)));
+    v_chave_documento:=coalesce(nullif(v_documento,''), nullif(v_linha->>'data',''));
+    v_chave:=lower(concat_ws('|',v_categoria,v_obra.id,v_chave_documento,v_entidade,round(v_valor,2)));
     if v_chave=any(v_chaves) or v_chave=any(v_chaves_existentes) then
       v_duplicados:=v_duplicados+1; continue;
     end if;
@@ -243,7 +273,7 @@ begin
       v_dados:=jsonb_build_object('empresa_id',v_atual.empresa_id,'subempreitada_id',v_sub.id,'numero_doc',v_documento,'documento',v_documento,'data',v_linha->>'data','data_pagamento',v_linha->>'data_pagamento','valor',v_valor,'valor_total',v_valor,'estado_aprovacao','aprovado','estado_pagamento','pago','criado_por',v_atual.id);
       perform public.fn_mgo_inserir_json_compativel('public.pagamentos_subempreitada'::regclass,v_dados);
     else
-      v_dados:=jsonb_build_object('empresa_id',v_atual.empresa_id,'obra_id',v_obra.id,'fornecedor_id',v_fornecedor.id,'numero_doc',v_documento,'documento',v_documento,'data',v_linha->>'data','fornecedor',v_fornecedor.nome,'designacao',v_linha->>'designacao','descricao',v_linha->>'designacao','unidade',v_linha->>'unidade','quantidade',v_linha->>'quantidade','valor_unitario',v_linha->>'valor_unitario','valor_total',v_valor,'valor',v_valor,'data_pagamento',v_linha->>'data_pagamento','estado_aprovacao','aprovado','estado_pagamento','pago','criado_por',v_atual.id);
+      v_dados:=jsonb_build_object('empresa_id',v_atual.empresa_id,'obra_id',v_obra.id,'fornecedor_id',v_fornecedor.id,'colaborador_id',v_colaborador.id,'numero_doc',v_documento,'documento',v_documento,'data',v_linha->>'data','fornecedor',v_fornecedor.nome,'designacao',v_linha->>'designacao','descricao',v_linha->>'designacao','unidade',v_linha->>'unidade','quantidade',v_linha->>'quantidade','valor_unitario',v_linha->>'valor_unitario','valor_total',v_valor,'valor',v_valor,'data_pagamento',v_linha->>'data_pagamento','estado_aprovacao','aprovado','estado_pagamento','pago','criado_por',v_atual.id);
       perform public.fn_mgo_inserir_json_compativel(case when v_categoria='materiais' then 'public.lancamentos_materiais'::regclass else 'public.despesas_estaleiro'::regclass end,v_dados);
     end if;
     v_criados:=v_criados+1;
