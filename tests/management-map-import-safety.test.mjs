@@ -45,6 +45,27 @@ test("reconhece folhas sem distinguir caixa, espaços ou hífen e aceita Fatura�
   }
 });
 
+test("reconhece nomes extensos e abreviados da folha de mão de obra", () => {
+  const previousXlsx = globalThis.XLSX;
+  globalThis.XLSX = { utils: { sheet_to_json: sheet => sheet.rows } };
+  try {
+    for (const laborSheet of ["FUNCIONÁRIOS-OBRA - MÃO DE OBRA", "MÃO DE OBRA", "Funcionários da Obra"]) {
+      const workbook = {
+        SheetNames: ["MATERIAIS", "DESPESAS - ESTALEIRO", "SUBCONTRATOS", laborSheet],
+        Sheets: {
+          MATERIAIS: { rows: [] },
+          "DESPESAS - ESTALEIRO": { rows: [] },
+          SUBCONTRATOS: { rows: [] },
+          [laborSheet]: { rows: [] },
+        },
+      };
+      assert.deepEqual(parseManagementWorkbook(workbook), { rows: [], errors: [] }, laborSheet);
+    }
+  } finally {
+    globalThis.XLSX = previousXlsx;
+  }
+});
+
 test("continua a exigir as quatro folhas operacionais", () => {
   const previousXlsx = globalThis.XLSX;
   globalThis.XLSX = { utils: { sheet_to_json: sheet => sheet.rows } };
