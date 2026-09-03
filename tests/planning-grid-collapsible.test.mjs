@@ -4,6 +4,7 @@ import test from "node:test";
 
 const planning = await readFile(new URL("../src/planning.js", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+const identityStyles = await readFile(new URL("../src/visual-identity-final.css", import.meta.url), "utf8");
 
 test("detalhes das tarefas começam fechados e podem ser expandidos sem perder edições", () => {
   assert.match(planning, /expandedTasks:\s*new Set\(\)/);
@@ -20,4 +21,6 @@ test("grelha partilha uma única definição de colunas e reserva ações", () =
   assert.match(styles, /\.planning-row-actions\s*\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(styles, /minmax\(300px,1\.35fr\)/);
   assert.match(styles, /\s112px 112px 112px\s/);
+  assert.match(identityStyles, /\.planning-editor-head,[\s\S]*grid-template-columns:\s*var\(--planning-grid-columns\)/);
+  assert.doesNotMatch(identityStyles, /planning-editor-head,[\s\S]{0,160}grid-template-columns:\s*160px 90px/);
 });
