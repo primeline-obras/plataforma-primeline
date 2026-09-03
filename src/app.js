@@ -118,6 +118,7 @@ function brand() {
     <span class="brand-logo-wrap" aria-hidden="true">
       <img class="brand-logo brand-logo-dark" src="/assets/brand/logo.png" alt="">
       <img class="brand-logo brand-logo-light" src="/assets/brand/logo_branco.png" alt="">
+      <span class="brand-logo-vector"></span>
     </span>
     <span class="brand-separator" aria-hidden="true"></span>
     <strong class="brand-go" aria-hidden="true">GO</strong>

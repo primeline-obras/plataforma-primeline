@@ -22,8 +22,8 @@ svg { width: 19px; height: 19px; display: block; }
 .app-shell { min-height: 100vh; display: flex; }
 [hidden] { display: none !important; }
 .auth-screen { position: fixed; inset: 0; z-index: 100; display: grid; grid-template-columns: 1fr 1.25fr; background: #f3f3f0; }
-.auth-brand { background: var(--charcoal); padding: 54px; color: white; display: flex; align-items: flex-start; }
-.auth-brand .brand { transform: scale(1.2); transform-origin: top left; }
+.auth-brand { background: var(--charcoal); padding:54px; color:white; display:flex; align-items:center; justify-content:center; }
+.auth-brand .brand { max-width:280px; transform:none; align-items:center; }
 .auth-card { width: min(420px, calc(100% - 40px)); margin: auto; }
 .auth-card h1 { font-size: 39px; }.auth-card > p:not(.eyebrow) { color: var(--muted); font-size: 13px; margin: 8px 0 30px; }
 .auth-card form { padding: 0; }.auth-card label { margin-bottom: 20px; }
@@ -43,11 +43,22 @@ svg { width: 19px; height: 19px; display: block; }
 .brand { display: inline-grid; grid-template-columns: minmax(0, 1fr) 1px auto; align-items: start; gap: 0 8px; width: 100%; max-width: 208px; }
 .brand-logo-wrap { display: block; min-width: 0; }
 .brand-logo { display: block; width: 100%; height: auto; }
+.brand-logo-vector { display:none; }
 .brand-logo-light { display: none; }
 .brand-separator { width: 1px; height: 25px; background: currentColor; opacity: .72; }
 .brand-go { color: currentColor; font: 800 22px/1 "Manrope"; letter-spacing: .4px; }
 .sidebar .brand-logo-dark, .auth-brand .brand-logo-dark, .reset-brand .brand-logo-dark { display: none; }
 .sidebar .brand-logo-light, .auth-brand .brand-logo-light, .reset-brand .brand-logo-light { display: block; }
+.auth-brand .brand-logo-dark,
+.auth-brand .brand-logo-light { display:none; }
+.auth-brand .brand-logo-vector {
+  display:block;
+  width:100%;
+  aspect-ratio:1798.9 / 293.7;
+  background-color:#FFFFFF;
+  -webkit-mask:url("/assets/brand/logo.svg") center / contain no-repeat;
+  mask:url("/assets/brand/logo.svg") center / contain no-repeat;
+}
 .sidebar nav {
   flex: 1 1 auto;
   min-height: 0;
@@ -483,7 +494,7 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
   .overview-kpis, .meeting-kpis { grid-template-columns: repeat(2,1fr); }.meeting-two { grid-template-columns: 1fr; }.meeting-tabs { grid-template-columns: 1fr; }.overview-work-columns { grid-template-columns: 1fr 1fr; }.overview-work-columns > section:last-child { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
-  .auth-screen { grid-template-columns: 1fr; }.auth-brand { padding: 25px; min-height: 92px; }.auth-brand .brand { transform: scale(.9); }.auth-card { padding: 35px 0 50px; }
+  .auth-screen { grid-template-columns: 1fr; }.auth-brand { padding:25px; min-height:104px; }.auth-brand .brand { max-width:230px; transform:none; }.auth-card { padding: 35px 0 50px; }
   .sidebar { transform: translateX(-100%); transition: transform .24s ease; }.sidebar.open { transform: translateX(0); }
   .scrim.open { display: block; position: fixed; inset: 0; border: 0; background: rgba(14,17,19,.56); z-index: 20; }
   main { margin-left: 0; width: 100%; }.topbar { height: 62px; justify-content: space-between; padding: 0 18px; }
