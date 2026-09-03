@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseManagementWorkbook, prepareManagementImportRows, validateManagementImportRows } from "../src/management-map.js";
+import { parseManagementWorkbook, prepareManagementImportRows, summarizeManagementImportErrors, validateManagementImportRows } from "../src/management-map.js";
 
 test("a pré-visualização bloqueia as obras reservadas ao Saldo de Abertura", () => {
   const errors = validateManagementImportRows([
@@ -102,7 +102,7 @@ test("lê a estrutura real com título na primeira linha e cabeçalhos na segund
     const workbook = {
       SheetNames: ["FUNCIONÁRIOS EM OBRA", "MATERIAIS", "SUBCONTRATOS", "DESPESAS - ESTALEIRO"],
       Sheets: {
-        "FUNCIONÁRIOS EM OBRA": { rows: [["FUNCIONÁRIOS EM OBRA"], ["Nº", "OBRA Nº", "DATA", "Nº INTERNO", "  NOME FUNCIONÁRIO", "QUANT", "VALOR HORA", "VALOR TOTAL"], [null, 118, "01/09/2026", 4, "William Coimbra", 8, 15.61, 124.88]] },
+        "FUNCIONÁRIOS EM OBRA": { rows: [["FUNCIONÁRIOS EM OBRA"], ["Nº", "OBRA Nº", "DATA", "Nº INTERNO", "  NOME FUNCIONÁRIO", "QUANT", "VALOR HORA", "VALOR TOTAL"], [null, 118, "01/09/2026", 4, "William Coimbra (Enc. Obra - Nível 1)", 8, 15.61, 124.88]] },
         MATERIAIS: { rows: [["MATERIAIS EM OBRA"], ["N.º Doc", "OBRA Nº", "DATA", "FORNECEDOR", "DESIGNAÇÃO", "UN MEDIDA", "QUANT", "VALOR UNIT", "#VALUE!", "DATA DE PAGAMENTO"], ["FT 01", 120, "01/09/2026", "Fornecedor A", "Material A", "un", 2, 3.5, 7, "02/09/2026"]] },
         SUBCONTRATOS: { rows: [["SUBCONTRATOS"], ["Nº", "OBRA Nº", "DATA", "FORNECEDOR", "DESIGNAÇÃO", "UN MEDIDA", "QUANT", "VALOR UNIT", "VALOR TOTAL", "DATA DE PAGAMENTO"], ["FT 02", 122, "01/09/2026", "Fornecedor B", "Serviço B", "un", 1, 50, 50, "02/09/2026"]] },
         "DESPESAS - ESTALEIRO": { rows: [["OUTRAS DESPESAS"], ["Nº", "OBRA Nº", "DATA", "FORNECEDOR", "DESIGNAÇÃO", "UN MEDIDA", "QUANT", "VALOR UNIT", "VALOR TOTAL", "DATA DE PAGAMENTO"], ["FT 03", 120, "01/09/2026", "Fornecedor C", "Despesa C", "un", 1, 20, 20, "02/09/2026"]] },
@@ -120,4 +120,12 @@ test("lê a estrutura real com título na primeira linha e cabeçalhos na segund
   } finally {
     globalThis.XLSX = previousXlsx;
   }
+});
+
+test("agrupa erros repetidos sem perder a contagem total da pré-visualização", () => {
+  assert.deepEqual(summarizeManagementImportErrors([
+    "Linha 3: colaborador João Afonso não encontrado.",
+    "Linha 4: colaborador João Afonso não encontrado.",
+    "Linha 8: fornecedor Galp não encontrado.",
+  ]), ["colaborador João Afonso não encontrado. (2 linhas)", "fornecedor Galp não encontrado."]);
 });

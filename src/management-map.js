@@ -43,12 +43,22 @@ const meaningfulImportValue = value => {
   const text = String(value ?? "").trim();
   return Boolean(text) && !["#N/A", "#VALUE!", "#REF!", "#DIV/0!"].includes(text.toUpperCase());
 };
+const managementEmployeeName = value => String(value ?? "").replace(/\s*\([^)]*nível\s*\d+[^)]*\)\s*$/i, "").trim();
+
+export function summarizeManagementImportErrors(errors = []) {
+  const grouped = new Map();
+  errors.forEach(error => {
+    const message = String(error).replace(/^Linha\s+\d+:\s*/i, "").trim();
+    grouped.set(message, (grouped.get(message) || 0) + 1);
+  });
+  return [...grouped.entries()].map(([message, count]) => count > 1 ? `${message} (${count} linhas)` : message);
+}
 
 export function normalizeManagementRows(category, rows, firstDataLine = 2) {
   return rows.map((row, index) => {
     const values = Object.fromEntries(Object.entries(row).map(([header, value]) => [key(header), value]));
     const common = { categoria: category, linha: index + firstDataLine, obra_numero: String(values.obra ?? values.obran ?? values.numeroobra ?? values.nobra ?? "").trim() };
-    if (category === "mao_obra") return { ...common, colaborador: String(values.colaborador ?? values.nomefuncionario ?? values.funcionario ?? values.nome ?? "").trim(), data: date(values.data), horas: money(values.horas ?? values.quant ?? values.quantidade), valor_hora: money(values.valorhora ?? values.valorunit ?? values.valorunitario) };
+    if (category === "mao_obra") return { ...common, colaborador: managementEmployeeName(values.colaborador ?? values.nomefuncionario ?? values.funcionario ?? values.nome), data: date(values.data), horas: money(values.horas ?? values.quant ?? values.quantidade), valor_hora: money(values.valorhora ?? values.valorunit ?? values.valorunitario) };
     if (category === "faturacao") return { ...common, numero_fatura: String(values.nfatura ?? values.numerofatura ?? "").trim(), data_emissao: date(values.dataemissao), valor: money(values.valor), data_recebimento: date(values.datarecebimento), valor_recebido: money(values.valorrecebido), estado: String(values.estado ?? "").trim() };
     const quantidade = money(values.quant ?? values.quantidade), valorUnitario = money(values.valorunit ?? values.valorunitario);
     return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? values.ndoc ?? values.n ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), designacao: String(values.designacao ?? values.descricao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade, valor_unitario: valorUnitario, valor_total: money(values.valortotal) ?? (quantidade != null && valorUnitario != null ? quantidade * valorUnitario : null), data_pagamento: date(values.datapagamento ?? values.datadepagamento) };
@@ -157,7 +167,7 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   }
   function renderImport() {
     if (!state.importOpen) return ""; const preview = state.preview || {};
-    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importProgress ? `<div class="work-warning"><strong>PROCESSAMENTO</strong><span>${esc(state.importProgress)}</span></div>` : ""}${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${preview.erros.map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
+    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importProgress ? `<div class="work-warning"><strong>PROCESSAMENTO</strong><span>${esc(state.importProgress)}</span></div>` : ""}${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${summarizeManagementImportErrors(preview.erros).map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
   }
   function render() {
     const works = [...getWorks()].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
