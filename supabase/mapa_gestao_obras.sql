@@ -200,7 +200,8 @@ declare
   v_colaborador public.colaboradores; v_sub public.subempreitadas; v_categoria text; v_documento text;
   v_entidade text; v_chave text; v_chave_documento text; v_valor numeric; v_criar integer:=0; v_criados integer:=0;
   v_duplicados integer:=0; v_erros jsonb:='[]'::jsonb; v_chaves text[]:=array[]::text[];
-  v_chaves_existentes text[]:=array[]::text[]; v_dados jsonb;
+  v_chaves_existentes text[]:=array[]::text[]; v_dados jsonb; v_sub_chave text;
+  v_sub_chaves text[]:=array[]::text[]; v_sub_historicas jsonb:='[]'::jsonb;
 begin
   if not (public.fn_e_admin() or public.fn_e_financeiro()) then raise exception 'Sem permissão para importar o Mapa de Gestão.' using errcode='42501'; end if;
   select * into v_atual from public.utilizadores u where u.id=public.fn_utilizador_atual_id() and coalesce(u.ativo,true);
@@ -259,6 +260,26 @@ begin
       v_duplicados:=v_duplicados+1; continue;
     end if;
     v_chaves:=array_append(v_chaves,v_chave); v_criar:=v_criar+1;
+
+    if v_categoria='subempreitadas' then
+      v_sub:=null;
+      select * into v_sub
+      from public.subempreitadas s
+      where s.obra_id=v_obra.id and s.fornecedor_id=v_fornecedor.id
+      order by s.criado_em desc
+      limit 1;
+
+      if not found then
+        v_sub_chave:=v_obra.id::text||'|'||v_fornecedor.id::text;
+        if not (v_sub_chave=any(v_sub_chaves)) then
+          v_sub_chaves:=array_append(v_sub_chaves,v_sub_chave);
+          v_sub_historicas:=v_sub_historicas||jsonb_build_array(
+            format('Obra %s · %s',v_obra.numero,v_fornecedor.nome)
+          );
+        end if;
+      end if;
+    end if;
+
     if not p_confirmar then continue; end if;
 
     if v_categoria='mao_obra' then
@@ -268,8 +289,33 @@ begin
       v_dados:=jsonb_build_object('empresa_id',v_atual.empresa_id,'obra_id',v_obra.id,'numero_fatura',v_documento,'data_emissao_fatura',v_linha->>'data_emissao','valor',v_linha->>'valor','data_recebimento',v_linha->>'data_recebimento','valor_recebido',v_linha->>'valor_recebido','estado',coalesce(nullif(v_linha->>'estado',''),'recebida'));
       perform public.fn_mgo_inserir_json_compativel('public.faturacao'::regclass,v_dados);
     elsif v_categoria='subempreitadas' then
-      select * into v_sub from public.subempreitadas s where s.obra_id=v_obra.id and s.fornecedor_id=v_fornecedor.id order by s.criado_em desc limit 1;
-      if not found then raise exception 'Não existe subcontrato da obra % para o fornecedor %.',v_obra.numero,v_fornecedor.nome; end if;
+      if v_sub.id is null then
+        insert into public.subempreitadas (
+          obra_id, fornecedor_id, especialidade, valor_adjudicado, estado
+        ) values (
+          v_obra.id, v_fornecedor.id, 'Por classificar · Importação histórica', 0, 'adjudicado'
+        ) returning * into v_sub;
+
+        insert into public.alertas (
+          empresa_id, obra_id, tipo, entidade_tipo, entidade_id, titulo,
+          descricao, data_evento_referencia, antecedencia_dias, data_gatilho,
+          destinatario_role, estado
+        )
+        select
+          v_atual.empresa_id, v_obra.id, 'subempreitada_historica_por_validar',
+          'subempreitadas', v_sub.id, 'Subempreitada histórica por validar',
+          'Foi importado um lançamento de '||v_fornecedor.nome||' na Obra '||v_obra.numero||
+            ' sem subempreitada prévia. Regularize a especialidade e o valor adjudicado.',
+          coalesce(nullif(v_linha->>'data','')::date,current_date), 0, current_date,
+          'diretor_obra', 'pendente'
+        where not exists (
+          select 1 from public.alertas a
+          where a.tipo='subempreitada_historica_por_validar'
+            and a.entidade_tipo='subempreitadas'
+            and a.entidade_id=v_sub.id
+            and a.estado='pendente'
+        );
+      end if;
       v_dados:=jsonb_build_object('empresa_id',v_atual.empresa_id,'subempreitada_id',v_sub.id,'numero_doc',v_documento,'documento',v_documento,'data',v_linha->>'data','data_pagamento',v_linha->>'data_pagamento','valor',v_valor,'valor_total',v_valor,'estado_aprovacao','aprovado','estado_pagamento','pago','criado_por',v_atual.id);
       perform public.fn_mgo_inserir_json_compativel('public.pagamentos_subempreitada'::regclass,v_dados);
     else
@@ -279,7 +325,14 @@ begin
     v_criados:=v_criados+1;
   end loop;
   if p_confirmar and jsonb_array_length(v_erros)>0 then raise exception 'Importação cancelada: %',v_erros::text; end if;
-  return jsonb_build_object('linhas',jsonb_array_length(p_linhas),'criar',v_criar,'criados',v_criados,'duplicados',v_duplicados,'erros',v_erros);
+  return jsonb_build_object(
+    'linhas',jsonb_array_length(p_linhas),
+    'criar',v_criar,
+    'criados',v_criados,
+    'duplicados',v_duplicados,
+    'erros',v_erros,
+    'subempreitadas_historicas',v_sub_historicas
+  );
 end;$function$;
 
 revoke all on function public.fn_importar_mapa_gestao(jsonb,boolean) from public,anon;

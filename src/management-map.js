@@ -4,6 +4,7 @@ const SHEETS = { materiais: ["materiais"], estaleiro: ["despesas estaleiro"], su
 const OPTIONAL_SHEETS = new Set(["faturacao"]);
 const BLOCKED_IMPORT_WORKS = new Set(["79", "85", "127"]);
 const IMPORT_BATCH_SIZE = 500;
+const RESULT_PAGE_SIZE = 1000;
 const norm = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("pt-PT").replace(/\s+/g, " ");
 const sheetKey = value => norm(value).replace(/[\s_-]*-[\s_-]*/g, " ").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 const sheetMatches = (name, category, aliases) => {
@@ -155,7 +156,28 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   const state = { loaded: false, loading: false, error: "", rows: [], mode: "categoria", importOpen: false, importRows: [], importReadyRows: [], importErrors: [], importProgress: "", preview: null, importing: false };
   async function load(force = false) {
     if (state.loading || (state.loaded && !force)) return render(); state.loading = true; state.error = ""; render();
-    try { if (!isConfigured) state.rows = []; else { const response = await supabase("rpc/fn_mapa_gestao_obras", { method: "POST", body: "{}" }); if (!response.ok) { const payload = await response.json().catch(() => ({})); throw new Error(payload.message || payload.details || "Não foi possível consultar o Mapa de Gestão."); } state.rows = await response.json(); } state.loaded = true; }
+    try {
+      if (!isConfigured) state.rows = [];
+      else {
+        const rows = [];
+        for (let start = 0; ; start += RESULT_PAGE_SIZE) {
+          const response = await supabase("rpc/fn_mapa_gestao_obras?order=categoria.asc,obra_numero.asc,data_lancamento.asc,origem_id.asc", {
+            method: "POST",
+            body: "{}",
+            headers: { Range: `${start}-${start + RESULT_PAGE_SIZE - 1}`, "Range-Unit": "items" },
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.message || payload.details || "Não foi possível consultar o Mapa de Gestão.");
+          }
+          const page = await response.json();
+          rows.push(...page);
+          if (page.length < RESULT_PAGE_SIZE) break;
+        }
+        state.rows = rows;
+      }
+      state.loaded = true;
+    }
     catch (error) { state.error = error.message; } finally { state.loading = false; render(); }
   }
   function filters() { const form = root.querySelector("[data-management-map-filters]"); return form ? Object.fromEntries(new FormData(form)) : {}; }
@@ -170,14 +192,14 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   }
   function renderImport() {
     if (!state.importOpen) return ""; const preview = state.preview || {};
-    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importProgress ? `<div class="work-warning"><strong>PROCESSAMENTO</strong><span>${esc(state.importProgress)}</span></div>` : ""}${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.erros?.length ? `<div class="work-warning"><span>${summarizeManagementImportErrors(preview.erros).map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
+    return `<section class="management-import"><header><div><strong>IMPORTAR MAPA DE GESTÃO</strong><span>Folhas obrigatórias: Materiais, Despesas-Estaleiro, Subcontratos e Funcionários-Obra. Faturação é opcional.</span></div><button type="button" data-close-management-import>×</button></header><label class="management-file">FICHEIRO .XLSX<input type="file" accept=".xlsx,.xls" data-management-import-file></label>${state.importProgress ? `<div class="work-warning"><strong>PROCESSAMENTO</strong><span>${esc(state.importProgress)}</span></div>` : ""}${state.importErrors.length ? `<div class="work-warning"><strong>VALIDAÇÃO</strong><span>${state.importErrors.map(esc).join(" · ")}</span></div>` : ""}${state.importRows.length ? `<div class="management-import-preview"><span><small>LINHAS LIDAS</small><strong>${state.importRows.length}</strong></span><span><small>A CRIAR</small><strong>${preview.criar ?? "—"}</strong></span><span><small>DUPLICADOS</small><strong>${preview.duplicados ?? "—"}</strong></span><span><small>COM ERRO</small><strong>${preview.erros?.length ?? 0}</strong></span></div>${preview.subempreitadas_historicas?.length ? `<div class="work-warning"><strong>SUBEMPREITADAS HISTÓRICAS</strong><span>${preview.subempreitadas_historicas.map(esc).join(" · ")} Ao confirmar, serão criadas automaticamente e o Diretor de Obra receberá um alerta.</span></div>` : ""}${preview.erros?.length ? `<div class="work-warning"><span>${summarizeManagementImportErrors(preview.erros).map(esc).join(" · ")}</span></div>` : ""}<button type="button" class="primary-action" data-confirm-management-import ${!state.preview || state.importing || preview.erros?.length ? "disabled" : ""}>${state.importing ? "A IMPORTAR…" : `CONFIRMAR IMPORTAÇÃO · ${preview.criar || 0} LINHAS`}</button>` : ""}</section>`;
   }
   function render() {
     const works = [...getWorks()].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
     root.innerHTML = `<section class="panel management-map"><header><div><p class="eyebrow">CONSOLIDADO DA EMPRESA</p><h2>MAPA DE GESTÃO DE OBRAS</h2><p>Cinco categorias de custos e faturação, consultáveis por categoria ou por obra.</p></div><div class="management-head-actions"><button type="button" class="outline-action" data-open-management-import>IMPORTAR EXCEL</button><button type="button" class="outline-action" data-refresh-management-map>ATUALIZAR</button></div></header>${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)} Confirme se executou o SQL deste módulo.</span></div>` : ""}<div class="management-mode"><button type="button" data-management-mode="categoria" class="${state.mode === "categoria" ? "active" : ""}">POR CATEGORIA · TODAS AS OBRAS</button><button type="button" data-management-mode="obra" class="${state.mode === "obra" ? "active" : ""}">POR OBRA · TODAS AS CATEGORIAS</button></div><form class="management-map-filters" data-management-map-filters><label>OBRA<select name="obra_id"><option value="">${state.mode === "obra" ? "Escolher uma obra" : "Todas as obras"}</option>${works.map(work => `<option value="${work.id}">Obra ${esc(work.numero)} — ${esc(work.nome)}</option>`).join("")}</select></label><label class="${state.mode === "obra" ? "management-filter-disabled" : ""}">CATEGORIA<select name="categoria" ${state.mode === "obra" ? "disabled" : ""}><option value="">Todas as categorias</option>${Object.entries(CATEGORY_LABELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>DATA — DE<input type="date" name="data_inicio"></label><label>DATA — ATÉ<input type="date" name="data_fim"></label><label>FORNECEDOR / COLABORADOR<input name="entidade" placeholder="Pesquisar fornecedor ou colaborador"></label><label>DESCRIÇÃO<input name="descricao" placeholder="Pesquisar descrição"></label><label>DOCUMENTO<input name="documento" placeholder="Pesquisar documento"></label><label>VALOR EXATO (€)<input name="valor" type="number" min="0" step="0.01" placeholder="0,00"></label><button type="reset" class="outline-action management-clear-filters">LIMPAR FILTROS</button></form>${renderImport()}${state.loading ? '<div class="fleet-loading">A CARREGAR LANÇAMENTOS…</div>' : renderResults()}</section>`;
   }
   async function runImportBatches(rows, confirmImportRows) {
-    const result = { linhas: rows.length, criar: 0, criados: 0, duplicados: 0, erros: [] };
+    const result = { linhas: rows.length, criar: 0, criados: 0, duplicados: 0, erros: [], subempreitadas_historicas: [] };
     for (let start = 0; start < rows.length; start += IMPORT_BATCH_SIZE) {
       const batch = rows.slice(start, start + IMPORT_BATCH_SIZE);
       state.importProgress = `${confirmImportRows ? "A importar" : "A validar"} ${Math.min(start + batch.length, rows.length)} de ${rows.length} linhas…`;
@@ -192,6 +214,7 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
       result.criados += Number(batchResult.criados || 0);
       result.duplicados += Number(batchResult.duplicados || 0);
       result.erros.push(...(batchResult.erros || []));
+      result.subempreitadas_historicas.push(...(batchResult.subempreitadas_historicas || []).filter(item => !result.subempreitadas_historicas.includes(item)));
     }
     state.importProgress = "";
     return result;
