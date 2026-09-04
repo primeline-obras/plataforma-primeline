@@ -19,7 +19,7 @@ assert.doesNotMatch(access.match(/financeiro:\s*\{[\s\S]*?\n\s*\},/)[0], /manage
 for (const filter of ["obra_id", "categoria", "data_inicio", "data_fim", "entidade", "descricao", "documento", "valor"]) assert.match(moduleSource, new RegExp(filter));
 for (const category of ["materiais", "estaleiro", "mao_obra", "subempreitadas", "faturacao"]) assert.match(moduleSource, new RegExp(category));
 assert.match(moduleSource, /rpc\/fn_mapa_gestao_obras/);
-assert.match(moduleSource, /Range: `\$\{start\}-\$\{start \+ RESULT_PAGE_SIZE - 1\}`/);
+assert.match(moduleSource, /limit=\$\{RESULT_PAGE_SIZE\}&offset=\$\{start\}/);
 assert.match(moduleSource, /if \(page\.length < RESULT_PAGE_SIZE\) break/);
 assert.match(moduleSource, /POR OBRA · TODAS AS CATEGORIAS/);
 assert.match(moduleSource, /IMPORTAR EXCEL/);
