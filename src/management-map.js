@@ -161,10 +161,9 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
       else {
         const rows = [];
         for (let start = 0; ; start += RESULT_PAGE_SIZE) {
-          const response = await supabase("rpc/fn_mapa_gestao_obras?order=categoria.asc,obra_numero.asc,data_lancamento.asc,origem_id.asc", {
+          const response = await supabase(`rpc/fn_mapa_gestao_obras?order=categoria.asc,obra_numero.asc,data_lancamento.asc,origem_id.asc&limit=${RESULT_PAGE_SIZE}&offset=${start}`, {
             method: "POST",
             body: "{}",
-            headers: { Range: `${start}-${start + RESULT_PAGE_SIZE - 1}`, "Range-Unit": "items" },
           });
           if (!response.ok) {
             const payload = await response.json().catch(() => ({}));
