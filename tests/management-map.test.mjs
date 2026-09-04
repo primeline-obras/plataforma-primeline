@@ -19,6 +19,8 @@ assert.doesNotMatch(access.match(/financeiro:\s*\{[\s\S]*?\n\s*\},/)[0], /manage
 for (const filter of ["obra_id", "categoria", "data_inicio", "data_fim", "entidade", "descricao", "documento", "valor"]) assert.match(moduleSource, new RegExp(filter));
 for (const category of ["materiais", "estaleiro", "mao_obra", "subempreitadas", "faturacao"]) assert.match(moduleSource, new RegExp(category));
 assert.match(moduleSource, /rpc\/fn_mapa_gestao_obras/);
+assert.match(moduleSource, /Range: `\$\{start\}-\$\{start \+ RESULT_PAGE_SIZE - 1\}`/);
+assert.match(moduleSource, /if \(page\.length < RESULT_PAGE_SIZE\) break/);
 assert.match(moduleSource, /POR OBRA · TODAS AS CATEGORIAS/);
 assert.match(moduleSource, /IMPORTAR EXCEL/);
 assert.match(moduleSource, /rpc\/fn_importar_mapa_gestao/);
@@ -40,5 +42,9 @@ assert.match(sql, /v_chaves_existentes[\s\S]*?array_agg[\s\S]*?from public\.fn_m
 assert.match(sql, /v_chave=any\(v_chaves\) or v_chave=any\(v_chaves_existentes\)/i);
 assert.match(sql, /valor_recebido/i);
 assert.match(sql, /horas.*valor_hora/is);
+assert.match(sql, /Por classificar · Importação histórica/);
+assert.match(sql, /subempreitada_historica_por_validar/);
+assert.match(sql, /destinatario_role[\s\S]*?'diretor_obra'/i);
+assert.match(sql, /subempreitadas_historicas/);
 
 console.log("Mapa de Gestão de Obras detalhado e respetivos filtros validados.");
