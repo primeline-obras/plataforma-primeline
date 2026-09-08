@@ -6,6 +6,10 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("migração consolida PL, misto e compromisso de subempreitada", async () => {
   const sql = await read("supabase/custos_estimados_consolidado.sql");
+  assert.match(sql, /add column if not exists executado_por text/);
+  assert.match(sql, /add column if not exists custo_estado text/);
+  assert.match(sql, /add column if not exists valor_estimado numeric/);
+  assert.match(sql, /add column if not exists compromisso_confirmado boolean/);
   assert.match(sql, /executado_por in \('PL','subempreitada','misto'\)/);
   assert.match(sql, /fn_confirmar_custo_real_pl/);
   assert.match(sql, /v_item\.estado<>'concluido'/);
@@ -21,6 +25,9 @@ test("card da obra confirma custos e RSP reutiliza-o em leitura", async () => {
   assert.match(source, /data-confirm-sub-cost/);
   assert.match(source, /renderCostTrace\(projection, false\)/);
   assert.match(source, /const canEdit = editable && canAdjustWorkCosts\(\)/);
+  assert.match(source, /Array\.isArray\(componentPayload\)/);
+  assert.match(source, /row\.valor_orca_pl \?\? row\.valor_orcamentado/);
+  assert.doesNotMatch(source, /rpc\/fn_resumo_componentes_custo_obra/);
 });
 
 test("planeamento aceita tarefas mistas e remete confirmação para o card", async () => {

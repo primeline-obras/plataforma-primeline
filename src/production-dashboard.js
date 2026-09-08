@@ -796,10 +796,19 @@ export function createProductionDashboard(options) {
     const summary = model.costSummary;
     const real = summary.real || {};
     const remaining = summary.por_concluir || {};
-    const components = summary.componentes || [];
     const adjustments = summary.ajustes || [];
-    const costComponents = summary.componentes || {};
-    const packages = costComponents.pacotes || [];
+    const componentPayload = summary.componentes || [];
+    const packages = Array.isArray(componentPayload) ? componentPayload : (componentPayload.pacotes || []);
+    const costComponents = Array.isArray(componentPayload) ? {
+      formula: summary.formula,
+      pl_real: real.pl,
+      sub_real: real.subempreitadas,
+      custo_real_total: real.total,
+      pl_estimado: remaining.pl,
+      sub_estimado: remaining.sub_orcamento_aguarda_confirmacao,
+      compromisso_total: remaining.sub_compromisso_remanescente,
+      custos_estimados_total: number(remaining.pl) + number(remaining.sub_orcamento_aguarda_confirmacao),
+    } : componentPayload;
     const canEdit = editable && canAdjustWorkCosts();
     return `<details class="cost-trace" open><summary>COMPOSIÇÃO AUDITÁVEL DO CUSTO</summary>
       ${costComponents.formula ? `<div class="cost-trace-formula"><span>FÓRMULA APLICADA</span><strong>${escapeHtml(costComponents.formula)}</strong><dl><div><dt>CUSTO REAL</dt><dd>${euro.format(number(costComponents.custo_real_total))}</dd></div><div><dt>CUSTOS ESTIMADOS</dt><dd>${euro.format(number(costComponents.custos_estimados_total))}</dd></div><div><dt>COMPROMISSO</dt><dd>${euro.format(number(costComponents.compromisso_total))}</dd></div></dl></div>` : ""}
@@ -807,7 +816,7 @@ export function createProductionDashboard(options) {
         <section><strong>REAL ACUMULADO</strong><span>PL confirmado <b>${euro.format(number(costComponents.pl_real))}</b></span><span>Subempreitadas pagas <b>${euro.format(number(costComponents.sub_real))}</b></span><span>Estaleiro registado <b>${euro.format(number(real.estaleiro))}</b></span><em>Total reconhecido ${euro.format(number(costComponents.custo_real_total || real.total))}</em></section>
         <section><strong>POR CONCLUIR / COMPROMETIDO</strong><span>PL · valor Orca <b>${euro.format(number(costComponents.pl_estimado))}</b></span><span>Adjudicações por confirmar <b>${euro.format(number(costComponents.sub_estimado))}</b></span><span>Compromisso confirmado <b>${euro.format(number(costComponents.compromisso_total))}</b></span><em>Estimado ${euro.format(number(costComponents.custos_estimados_total || remaining.total))}</em></section>
       </div>
-      ${packages.length ? `<div class="cost-component-list"><header><strong>COMPONENTES POR PACOTE / ESPECIALIDADE</strong><span>PL e subempreitada tratados separadamente</span></header>${packages.map(row => `<article><div class="cost-component-title"><strong>${escapeHtml(row.codigo || "SEM CÓDIGO")} · ${escapeHtml(row.descricao || "Pacote")}</strong><span>${escapeHtml(String(row.executado_por || "por definir").toUpperCase())}</span></div><dl><div><dt>ORCA PL</dt><dd>${euro.format(number(row.valor_orca_pl))}</dd></div><div><dt>REAL PL</dt><dd>${euro.format(number(row.valor_real_pl))}</dd></div><div><dt>ADJUDICADO</dt><dd>${euro.format(number(row.valor_adjudicado))}</dd></div><div><dt>FATURADO / PAGO</dt><dd>${number(row.percentual_faturado).toFixed(1)}% / ${number(row.percentual_pago).toFixed(1)}%</dd></div></dl>${row.pl_confirmacao_pendente ? (canEdit ? `<form data-confirm-pl-cost data-item-id="${row.planeamento_item_id}"><label>VALOR REAL PL (€)<input name="valor_real" type="number" min="0" step="0.01" value="${number(row.valor_orca_pl).toFixed(2)}" required></label><button class="secondary-button" type="submit">CONFIRMAR PL CONCLUÍDO</button><p class="form-error"></p></form>` : '<p class="cost-decision-pending">PL concluído · confirmação pendente no ecrã da obra</p>') : ""}${row.sub_confirmacao_pendente ? (canEdit ? `<button class="secondary-button" type="button" data-confirm-sub-cost="${row.planeamento_item_id}">CONFIRMAR ADJUDICAÇÃO</button>` : '<p class="cost-decision-pending">Adjudicação pendente de confirmação no ecrã da obra</p>') : ""}</article>`).join("")}</div>` : ""}
+      ${packages.length ? `<div class="cost-component-list"><header><strong>COMPONENTES POR PACOTE / ESPECIALIDADE</strong><span>PL e subempreitada tratados separadamente</span></header>${packages.map(row => `<article><div class="cost-component-title"><strong>${escapeHtml(row.codigo || row.especialidade || "SEM CÓDIGO")} · ${escapeHtml(row.descricao || "Pacote")}</strong><span>${escapeHtml(String(row.executado_por || row.tipo || "por definir").toUpperCase())}</span></div><dl><div><dt>ORCA PL</dt><dd>${euro.format(number(row.valor_orca_pl ?? row.valor_orcamentado))}</dd></div><div><dt>REAL PL</dt><dd>${euro.format(number(row.valor_real_pl ?? row.valor_real))}</dd></div><div><dt>ADJUDICADO</dt><dd>${euro.format(number(row.valor_adjudicado))}</dd></div><div><dt>FATURADO / PAGO</dt><dd>${number(row.percentual_faturado).toFixed(1)}% / ${number(row.percentual_pago).toFixed(1)}%</dd></div></dl>${row.pl_confirmacao_pendente ? (canEdit ? `<form data-confirm-pl-cost data-item-id="${row.planeamento_item_id}"><label>VALOR REAL PL (€)<input name="valor_real" type="number" min="0" step="0.01" value="${number(row.valor_orca_pl ?? row.valor_orcamentado).toFixed(2)}" required></label><button class="secondary-button" type="submit">CONFIRMAR PL CONCLUÍDO</button><p class="form-error"></p></form>` : '<p class="cost-decision-pending">PL concluído · confirmação pendente no ecrã da obra</p>') : ""}${row.sub_confirmacao_pendente ? (canEdit ? `<button class="secondary-button" type="button" data-confirm-sub-cost="${row.planeamento_item_id}">CONFIRMAR ADJUDICAÇÃO</button>` : '<p class="cost-decision-pending">Adjudicação pendente de confirmação no ecrã da obra</p>') : ""}</article>`).join("")}</div>` : ""}
       ${number(summary.lancamentos_sem_apropriacao) ? `<div class="cost-trace-warning"><strong>${number(summary.lancamentos_sem_apropriacao)} LANÇAMENTOS SEM APROPRIAÇÃO</strong><span>Contam no realizado, mas ainda não indicam TEE/artigo de origem. Não foram abatidos por inferência.</span></div>` : ""}
       <div class="cost-adjustments"><header><strong>AJUSTES MANUAIS JUSTIFICADOS</strong><span>${euro.format(number(summary.ajustes_total))}</span></header>
         ${adjustments.map(row => `<article><div><strong>${escapeHtml(row.motivo)}</strong><small>${escapeHtml(row.autor || "Utilizador")} · ${prettyDate.format(safeDate(row.criado_em))}</small></div><b>${euro.format(number(row.valor))}</b>${canEdit ? `<button type="button" data-delete-cost-adjustment="${row.id}">REMOVER</button>` : ""}</article>`).join("") || '<p class="overview-empty">SEM AJUSTES REGISTADOS</p>'}
@@ -1037,9 +1046,6 @@ export function createProductionDashboard(options) {
       const costResponse = await supabase("rpc/fn_resumo_custos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) });
       if (costResponse.ok) costSummary = await costResponse.json();
       else warnings.push("Custos automáticos: execute a migração custos_obra_automaticos.sql");
-      const componentsResponse = await supabase("rpc/fn_resumo_componentes_custo_obra", { method: "POST", body: JSON.stringify({ p_obra_id: work.id }) });
-      if (componentsResponse.ok) costSummary = { ...(costSummary || {}), componentes: await componentsResponse.json() };
-      else warnings.push("Componentes de custo: execute a migração custos_estimados_consolidado.sql");
     }
     return { work, warnings, data: { contracts, tees, investments, impacts, measurements, phases, planning, planningItems, budget, subcontracts: baseSubcontracts, consultations, payments, labor, siteExpenses, directDebits, directDebitEntries, billings, monthlyForecast, materialInvoices, materialInvoiceItems, costSummary } };
   }
