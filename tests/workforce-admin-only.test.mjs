@@ -27,11 +27,16 @@ test("Preparador não vê nem gere Ausências ou Horas Extra", () => {
   assert.match(teamSql, /drop policy if exists documentos_ausencias_equipa_select/);
 });
 
-test("Equipa não apresenta números de alocação", () => {
+test("Equipa Técnica vê só o Mapa de Férias, sem indicadores de RH", () => {
   const kpis = app.match(/\$\("#team-kpis"\)\.innerHTML = \[[\s\S]*?\.join\(""\);/)?.[0] || "";
   assert.doesNotMatch(kpis, /ALOCADOS|SEM ALOCAÇÃO/);
-  assert.match(kpis, /COLABORADORES ATIVOS/);
-  assert.match(kpis, /AUSENTES NA SEMANA/);
+  assert.match(app, /const vacationOnly = !canManageTeam\(\);/);
+  assert.match(app, /\$\("#team-active-stat"\)\.hidden = vacationOnly/);
+  assert.match(app, /\$\("#team-kpis"\)\.hidden = vacationOnly/);
+  assert.match(app, /\$\("#team-alert-summary"\)\.hidden = vacationOnly/);
+  assert.match(app, /Consulta do Mapa de Férias da equipa\./);
+  assert.match(app, /\$\("#team-kpis"\)\.innerHTML = vacationOnly \? ""/);
+  assert.match(app, /\$\("#team-alert-summary"\)\.innerHTML = vacationOnly \? ""/);
 });
 
 test("diretório da Equipa calcula as alocações da semana antes de as consultar", () => {
