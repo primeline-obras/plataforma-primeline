@@ -28,6 +28,22 @@ test("card da obra confirma custos e RSP reutiliza-o em leitura", async () => {
   assert.match(source, /Array\.isArray\(componentPayload\)/);
   assert.match(source, /row\.valor_orca_pl \?\? row\.valor_orcamentado/);
   assert.doesNotMatch(source, /rpc\/fn_resumo_componentes_custo_obra/);
+  assert.match(source, /ORÇAMENTO DE CUSTO AINDA NÃO CARREGADO/);
+});
+
+test("migração histórica do orçamento é limitada e idempotente", async () => {
+  const migration = await read("supabase/migrar_itens_orcamento_para_fases.sql");
+  assert.match(migration, /o\.numero in \(118, 120, 128\)/i);
+  assert.match(migration, /coalesce\(io\.custo_materiais, 0\)/i);
+  assert.match(migration, /coalesce\(io\.custo_mao_obra, 0\)/i);
+  assert.match(migration, /on conflict \(fase_id\) do nothing/i);
+  assert.match(migration, /Recuperação de itens_orcamento históricos/i);
+});
+
+test("importador separa custo PL dos valores subcontratados", async () => {
+  const importer = await read("src/xlsx-operational-import.js");
+  assert.match(importer, /const plComponents = \["deslocacoes", "mao_obra", "maquinas", "materiais"\]/);
+  assert.match(importer, /const total = hasPlBreakdown \? plComponents/);
 });
 
 test("planeamento aceita tarefas mistas e remete confirmação para o card", async () => {

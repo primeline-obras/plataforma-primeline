@@ -18,7 +18,7 @@ import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=10";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
-import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=2";
+import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 
