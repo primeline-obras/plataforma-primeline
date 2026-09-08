@@ -311,8 +311,8 @@ document.querySelector("#root").innerHTML = `
       </div>
       <div class="page team-view" id="team-view" hidden>
         <div class="page-heading">
-          <div><p class="eyebrow">GESTÃO DE PESSOAS</p><h1>EQUIPA</h1><p>Colaboradores, frota, documentos, ausências e contratos.</p></div>
-          <div class="heading-stat"><span>ATIVOS</span><strong id="team-active-count">00</strong></div>
+          <div><p class="eyebrow">GESTÃO DE PESSOAS</p><h1>EQUIPA</h1><p id="team-page-description">Colaboradores, frota, documentos, ausências e contratos.</p></div>
+          <div class="heading-stat" id="team-active-stat"><span>ATIVOS</span><strong id="team-active-count">00</strong></div>
         </div>
         <div class="team-toolbar directory-toolbar">
           <div class="search-box">${icon("search")}<input id="team-directory-search" placeholder="Pesquisar colaborador ou função…"></div>
@@ -1961,7 +1961,14 @@ async function reactivateCollaborator(personId) {
 
 function renderTeam() {
   renderWorkforceLineEditor();
-  if ($("#team-lifecycle-actions")) $("#team-lifecycle-actions").hidden = !canManageTeam();
+  const vacationOnly = !canManageTeam();
+  if ($("#team-lifecycle-actions")) $("#team-lifecycle-actions").hidden = vacationOnly;
+  if ($("#team-active-stat")) $("#team-active-stat").hidden = vacationOnly;
+  if ($("#team-kpis")) $("#team-kpis").hidden = vacationOnly;
+  if ($("#team-alert-summary")) $("#team-alert-summary").hidden = vacationOnly;
+  if ($("#team-page-description")) $("#team-page-description").textContent = vacationOnly
+    ? "Consulta do Mapa de Férias da equipa."
+    : "Colaboradores, frota, documentos, ausências e contratos.";
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const isForemanReadOnly = effectiveRole() === "encarregado";
@@ -1997,10 +2004,10 @@ function renderTeam() {
     return days <= 30;
   });
 
-  $("#team-active-count").textContent = String(collaborators.length).padStart(2, "0");
+  $("#team-active-count").textContent = vacationOnly ? "" : String(collaborators.length).padStart(2, "0");
   $("#team-week").value = selectedTeamWeek;
   $("#team-week-label").textContent = `SEMANA ATUAL · ${prettyDate.format(new Date(`${selectedTeamWeek}T12:00:00`))}`;
-  $("#team-kpis").innerHTML = [
+  $("#team-kpis").innerHTML = vacationOnly ? "" : [
     ["COLABORADORES ATIVOS", boardPeople.length],
     ["AUSENTES NA SEMANA", absentIds.size],
   ].map(([label, value]) => `<article><span>${label}</span><strong>${String(value).padStart(2, "0")}</strong></article>`).join("");
@@ -2143,7 +2150,7 @@ function renderTeam() {
   if ($("#toggle-inactive-collaborators")) $("#toggle-inactive-collaborators").textContent = showInactiveCollaborators ? "OCULTAR INATIVOS" : `VER INATIVOS (${inactivePeople.length})`;
 
   const endingContracts = activeContracts.filter(contract => contract.data_fim_prevista && contract.data_fim_prevista <= addDaysIso(new Date().toISOString().slice(0, 10), 30));
-  $("#team-alert-summary").innerHTML = [
+  $("#team-alert-summary").innerHTML = vacationOnly ? "" : [
     endingContracts.length ? `<button type="button" data-team-alert-filter="ending_contract" data-team-alert-tab="contracts" class="attention ${teamQuickFilter === "ending_contract" ? "active" : ""}"><strong>${endingContracts.length}</strong><span>CONTRATO${endingContracts.length === 1 ? "" : "S"} A TERMINAR EM 30 DIAS<small>VER PESSOAS →</small></span></button>` : "",
     missingContracts.length ? `<button type="button" data-team-alert-filter="missing_contract" data-team-alert-tab="collaborators" class="pending ${teamQuickFilter === "missing_contract" ? "active" : ""}"><strong>${missingContracts.length}</strong><span>COLABORADOR${missingContracts.length === 1 ? "" : "ES"} SEM CONTRATO REGISTADO<small>VER PESSOAS →</small></span></button>` : "",
     absentIds.size ? `<button type="button" data-team-alert-filter="absent" data-team-alert-tab="absences" class="info ${teamQuickFilter === "absent" ? "active" : ""}"><strong>${absentIds.size}</strong><span>AUSENTE${absentIds.size === 1 ? "" : "S"} ESTA SEMANA<small>VER PESSOAS →</small></span></button>` : "",
