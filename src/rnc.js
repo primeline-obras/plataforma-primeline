@@ -19,7 +19,7 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
   const subcontract = id => state.subcontracts.find(item => item.id === id);
   const user = id => state.users.find(item => item.id === id)?.nome || "—";
   const annexesFor = id => state.annexes.filter(item => item.rnc_id === id);
-  const canCreate = () => ["gerencia", "diretor_obra", "preparador", "encarregado"].includes(getRole());
+  const canCreate = () => ["gerencia", "diretor_obra", "adjunto", "preparador", "encarregado"].includes(getRole());
 
   function newForm() {
     if (!state.openForm || !canCreate()) return "";
