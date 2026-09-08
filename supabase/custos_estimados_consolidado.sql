@@ -3,6 +3,14 @@
 begin;
 
 alter table public.planeamento_itens
+  add column if not exists especialidade_id uuid references public.especialidades(id) on delete set null,
+  add column if not exists item_orcamento_id uuid references public.itens_orcamento(id) on delete set null,
+  add column if not exists executado_por text,
+  add column if not exists custo_estado text not null default 'orcamentado',
+  add column if not exists valor_estimado numeric,
+  add column if not exists compromisso_confirmado boolean not null default false,
+  add column if not exists compromisso_confirmado_por uuid references public.utilizadores(id),
+  add column if not exists compromisso_confirmado_em timestamptz,
   add column if not exists valor_orca_pl numeric,
   add column if not exists valor_real_pl numeric,
   add column if not exists custo_pl_confirmado boolean not null default false,
@@ -15,6 +23,12 @@ where valor_orca_pl is null and valor_estimado is not null
   and coalesce(executado_por,'PL') in ('PL','misto');
 
 alter table public.planeamento_itens
+  drop constraint if exists planeamento_itens_custo_estado_check,
+  add constraint planeamento_itens_custo_estado_check check (custo_estado in (
+    'orcamentado','em_consulta','adjudicado','em_execucao','concluido','cancelado'
+  )),
+  drop constraint if exists planeamento_itens_valor_estimado_check,
+  add constraint planeamento_itens_valor_estimado_check check (valor_estimado is null or valor_estimado>=0),
   drop constraint if exists planeamento_itens_executado_por_check,
   add constraint planeamento_itens_executado_por_check
     check (executado_por is null or executado_por in ('PL','subempreitada','misto')),
