@@ -7,6 +7,7 @@ import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
+import { createComparativeMapModule } from "./comparative-map.js?v=1";
 import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=4";
@@ -112,6 +113,7 @@ let selectedWorkforcePeriod = "dia_inteiro";
 let pendingWorkforceRows = [];
 let settingsModule = null;
 let procurementModule = null;
+let comparativeMapModule = null;
 
 function brand() {
   return `<div class="brand" aria-label="PRIMELINE GO">
@@ -2998,6 +3000,7 @@ function renderSubcontractsTab(work) {
         </article>`;
       }).join("") : `<div class="empty-state"><strong>SEM SUBEMPREITADAS</strong><span>Ainda não existem adjudicações nesta obra.</span></div>`}
     </div>
+    <div data-comparative-map-root></div>
     <div data-procurement-root></div>`;
 }
 
@@ -3683,7 +3686,10 @@ function renderWorkDetail(work) {
     </nav>
     ${financialReadOnly ? `<div class="readonly-note">CONSULTA FINANCEIRA · SEM PERMISSÃO PARA ALTERAR A OBRA</div>` : ""}
     <div class="work-tab-content">${renderWorkTab(work)}${selectedWorkTab === "summary" && !financialReadOnly ? `<section class="work-cost-summary" data-work-cost-card="${safeText(work.id)}"></section>` : ""}</div>`;
-  if (selectedWorkTab === "subcontracts") procurementModule?.show(work);
+  if (selectedWorkTab === "subcontracts") {
+    comparativeMapModule?.show(work);
+    procurementModule?.show(work);
+  }
   if (selectedWorkTab === "summary" && !financialReadOnly) productionDashboard.showWorkCosts(work.id);
 }
 
@@ -5909,6 +5915,22 @@ procurementModule = createProcurementModule({
     if (!row?.id) return;
     const existing = subcontracts.find(item => item.id === row.id);
     if (existing) Object.assign(existing, row); else subcontracts.push(row);
+    if (selectedWorkId === row.obra_id) productionDashboard.showWorkCosts(row.obra_id);
+  },
+});
+comparativeMapModule = createComparativeMapModule({
+  host: $("#work-detail"),
+  supabase,
+  isConfigured: isSupabaseConfigured,
+  getSuppliers: () => suppliers,
+  getPhases: () => workDetails.phases,
+  euro,
+  toast,
+  onAdjudicated: async row => {
+    if (!row?.id) return;
+    const existing = subcontracts.find(item => item.id === row.id);
+    if (existing) Object.assign(existing, row); else subcontracts.push(row);
+    procurementModule?.reload();
     if (selectedWorkId === row.obra_id) productionDashboard.showWorkCosts(row.obra_id);
   },
 });
