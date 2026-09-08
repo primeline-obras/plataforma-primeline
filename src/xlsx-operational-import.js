@@ -193,8 +193,11 @@ function parsePhaseBudget(workbook, context) {
     if (!phaseText && row.every(value => String(value ?? "").trim() === "")) return null;
     const phase = phases.find(item => normalize(item.codigo) === normalize(phaseText) || normalize(item.descricao) === normalize(phaseText));
     const amount = key => columns[key] >= 0 ? number(row[columns[key]]) : 0;
-    const components = ["deslocacoes", "mao_obra", "maquinas", "materiais", "mao_obra_sub", "subempreitada"].reduce((sum, key) => sum + (amount(key) || 0), 0);
-    const total = amount("custo_total_estimado") ?? components;
+    const plComponents = ["deslocacoes", "mao_obra", "maquinas", "materiais"].reduce((sum, key) => sum + (amount(key) || 0), 0);
+    const hasPlBreakdown = ["deslocacoes", "mao_obra", "maquinas", "materiais"].some(key => columns[key] >= 0);
+    // custo_total_estimado alimenta apenas a componente PL. Mão de obra
+    // subcontratada e subempreitada seguem o fluxo próprio de compromisso.
+    const total = hasPlBreakdown ? plComponents : amount("custo_total_estimado");
     const errors = [];
     if (!phase) errors.push(`A fase “${phaseText || "(vazia)"}” não existe nesta obra.`);
     if (total == null || total < 0) errors.push("Custo total estimado inválido.");
