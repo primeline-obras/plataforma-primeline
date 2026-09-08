@@ -1824,6 +1824,46 @@ button, input, select, textarea,
 .chosen-candidate { justify-self: end; padding: 7px 10px; border: 1px solid var(--pos-border); border-radius: 999px; background: var(--pos-bg); color: var(--pos-text); font-size: 9px; font-weight: 900; }
 .procurement-empty { padding: 30px 20px; color: var(--text-muted); font-size: 10px; font-weight: 900; letter-spacing: .6px; text-align: center; }
 
+/* Mapa comparativo validado: estrutura do modelo Excel, com propostas dinâmicas. */
+.comparison-module { margin-top: 20px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.comparison-module > header { min-height: 92px; padding: 20px 24px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+.comparison-module > header h3 { margin: 4px 0; font-size: 19px; }
+.comparison-module > header span { color: var(--text-secondary); font-size: 12px; }
+.comparison-module > header > b { width: 38px; height: 38px; border-radius: 999px; display: grid; place-items: center; background: var(--sidebar-bg); color: #fff; }
+.comparison-new-wrap { padding: 15px 20px; border-bottom: 1px solid var(--card-border); background: var(--bg-soft); }
+.comparison-new-form { margin-top: 12px; display: grid; grid-template-columns: 1fr 1.5fr .8fr .8fr auto; align-items: end; gap: 10px; }
+.comparison-new-form label,.comparison-commercial-card label,.comparison-costing label { display: grid; gap: 5px; color: var(--text-muted); font-size: 9px; font-weight: 900; letter-spacing: .7px; }
+.comparison-new-form input,.comparison-commercial-card input,.comparison-commercial-card textarea,.comparison-costing input,.comparison-entry-forms input,.comparison-entry-forms select,.comparison-adjustments input,.comparison-adjustments select,.comparison-adjudicate input,.comparison-adjudicate select { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); color: var(--text-primary); }
+.comparison-map { border-bottom: 1px solid var(--card-border); }
+.comparison-map-head { width: 100%; min-height: 74px; padding: 14px 20px; border: 0; background: transparent; color: var(--text-primary); display: grid; grid-template-columns: minmax(260px,1fr) 90px 110px 130px 30px; align-items: center; gap: 12px; text-align: left; }
+.comparison-map-head:hover,.comparison-map.expanded .comparison-map-head { background: var(--bg-soft); }
+.comparison-map-head > span:first-child { display: grid; gap: 4px; }.comparison-map-head small { color: var(--accent); font-weight: 900; }.comparison-map-head > span:not(:first-child) { color: var(--text-secondary); font-size: 11px; font-weight: 800; }
+.comparison-map-body { padding: 18px 20px 24px; border-top: 1px solid var(--card-border); background: color-mix(in srgb,var(--bg-soft) 65%,transparent); display: grid; gap: 16px; }
+.comparison-entry-forms { display: grid; grid-template-columns: 1.7fr 1fr; gap: 12px; }
+.comparison-entry-forms form { padding: 12px; border: 1px solid var(--card-border); border-radius: 9px; background: var(--card); display: grid; grid-template-columns: auto .35fr 1.5fr .35fr .45fr auto; align-items: end; gap: 8px; }
+.comparison-entry-forms form:last-child { grid-template-columns: auto 1fr .8fr auto; }
+.comparison-entry-forms button,.comparison-table button,.comparison-adjustments button,.comparison-adjudicate button { min-height: 38px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--sidebar-bg); color: #fff; font-size: 9px; font-weight: 900; }
+.comparison-table-wrap { overflow-x: auto; border: 1px solid var(--card-border); border-radius: 9px; background: var(--card); }
+.comparison-table { width: 100%; min-width: 980px; border-collapse: collapse; }
+.comparison-table th { padding: 11px 9px; background: var(--sidebar-bg); color: #fff; font-size: 9px; letter-spacing: .5px; text-align: left; white-space: nowrap; }
+.comparison-table th span,.comparison-table th small { display: block; }.comparison-table th small { margin-top: 4px; color: rgba(255,255,255,.65); }
+.comparison-table td { padding: 9px; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); color: var(--text-secondary); font-size: 11px; vertical-align: top; }
+.comparison-table td:nth-child(2) { min-width: 250px; color: var(--text-primary); }
+.comparison-table td form { min-width: 160px; display: grid; gap: 5px; }.comparison-table td input { width: 100%; min-height: 31px; padding: 5px 7px; border: 1px solid var(--card-border); border-radius: 6px; background: var(--bg); color: var(--text-primary); }.comparison-table output { color: var(--info-text); font-weight: 900; }
+.comparison-best { min-width: 130px; background: var(--pos-bg); }.comparison-best strong,.comparison-best span { display: block; }.comparison-best span { margin-top: 5px; color: var(--pos-text); font-weight: 900; }
+.comparison-total td { background: var(--bg-soft); color: var(--text-primary); font-weight: 900; }.comparison-total small,.comparison-total strong { display: block; }
+.comparison-adjustments,.comparison-costing,.comparison-commercial { border: 1px solid var(--card-border); border-radius: 9px; background: var(--card); overflow: hidden; }
+.comparison-adjustments > header,.comparison-costing > header,.comparison-commercial > header { padding: 12px 14px; background: var(--sidebar-bg); color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .6px; }
+.comparison-adjustments > header span { display: block; margin-top: 4px; color: rgba(255,255,255,.7); font-size: 9px; }
+.comparison-adjustments article { padding: 10px 14px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 170px 1fr 130px; gap: 12px; font-size: 11px; }.comparison-adjustments article strong { text-align: right; }
+.comparison-adjustments form { padding: 12px 14px; display: grid; grid-template-columns: 1fr .6fr 2fr auto; gap: 8px; }
+.comparison-costing form { padding: 14px; display: grid; grid-template-columns: repeat(3,minmax(180px,1fr)); gap: 10px; }.comparison-costing form > div,.comparison-costing form > label { min-height: 72px; padding: 10px; border: 1px solid var(--card-border); border-radius: 8px; }.comparison-costing form > div { display: grid; gap: 6px; }.comparison-costing span { color: var(--text-muted); font-size: 9px; font-weight: 900; letter-spacing: .5px; }.comparison-costing strong { font-size: 14px; }.comparison-margin { background: var(--pos-bg); }.comparison-margin small { color: var(--pos-text); }
+.comparison-commercial { display: grid; gap: 0; }.comparison-commercial-card { padding: 14px; border-bottom: 1px solid var(--card-border); }.comparison-commercial-card:last-child { border-bottom: 0; }.comparison-commercial-card > header { margin-bottom: 10px; display: flex; justify-content: space-between; }.comparison-commercial-card > header span { color: var(--text-muted); font-size: 9px; font-weight: 900; }
+.comparison-commercial-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 9px; }.comparison-commercial-grid label:nth-child(n+5) { grid-column: span 2; }.comparison-commercial-card textarea { min-height: 72px; resize: vertical; }.comparison-commercial-card .primeline-note textarea { background: var(--warn-bg); border-color: var(--warn-border); }
+.comparison-adjudicate { padding: 14px; border: 1px solid var(--card-border); border-radius: 9px; background: var(--card); display: grid; grid-template-columns: auto 1.2fr 1fr .8fr .8fr 1fr auto; align-items: end; gap: 8px; }
+@media(max-width:1100px){.comparison-new-form,.comparison-costing form,.comparison-commercial-grid{grid-template-columns:repeat(2,1fr)}.comparison-entry-forms{grid-template-columns:1fr}.comparison-adjudicate{grid-template-columns:repeat(2,1fr)}.comparison-map-head{grid-template-columns:1fr auto}.comparison-map-head>span:not(:first-child){display:none}}
+@media(max-width:680px){.comparison-new-form,.comparison-costing form,.comparison-commercial-grid,.comparison-adjustments form,.comparison-adjudicate{grid-template-columns:1fr}.comparison-commercial-grid label:nth-child(n+5){grid-column:auto}.comparison-entry-forms form,.comparison-entry-forms form:last-child{grid-template-columns:1fr}.comparison-adjustments article{grid-template-columns:1fr}.comparison-adjustments article strong{text-align:left}}
+
 @container (max-width: 760px) {
   .procurement-form-row, .procurement-candidate-form, .procurement-candidate-action, [data-adjudicate] { grid-template-columns: 1fr 1fr; }
   .procurement-candidate-form > div { grid-column: 1 / -1; }
