@@ -70,3 +70,16 @@ test("eliminar exige confirmação e usa RPCs que verificam a cascata", async ()
   assert.match(cascadeTest, /rollback;/i);
   assert.match(cascadeTest, /v_precos_depois <> 0 or v_ajustes_depois <> 0/);
 });
+
+test("eliminar o mapa completo preserva adjudicações e verifica todos os descendentes", async () => {
+  const frontend = await read("src/comparative-map.js");
+  const deletion = await read("supabase/eliminar_mapa_comparativo.sql");
+  assert.match(frontend, /deleteActions\("map", map\.id\)/);
+  assert.match(frontend, /fn_eliminar_mapa_comparativo/);
+  assert.match(frontend, /mapas_restantes/);
+  assert.match(deletion, /subempreitadas where mapa_comparativo_id = p_mapa_id/);
+  assert.match(deletion, /histórico da adjudicação deve ser preservado/);
+  for (const field of ["mapas_restantes", "itens_restantes", "propostas_restantes", "precos_restantes", "ajustes_restantes"]) {
+    assert.match(deletion, new RegExp(`'${field}'`));
+  }
+});
