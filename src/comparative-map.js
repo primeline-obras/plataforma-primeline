@@ -100,6 +100,7 @@ export function createComparativeMapModule({ host, supabase, isConfigured, getSu
     const expanded = state.expanded === map.id;
     const proposals = proposalsFor(map.id);
     return `<article class="comparison-map ${expanded ? "expanded" : ""}"><button class="comparison-map-head" type="button" data-toggle-map="${map.id}"><span><small>${esc(state.work?.numero)} · ${esc(map.especialidade)}</small><strong>${esc(map.descricao || map.especialidade)}</strong></span><span>${itemsFor(map.id).length} ITENS</span><span>${proposals.length} PROPOSTAS</span><span>${money(bestSum(map.id))}</span><b>${expanded ? "−" : "+"}</b></button>${expanded ? `<div class="comparison-map-body">
+      ${state.canEdit ? `<div class="comparison-map-actions"><span>GESTÃO DO MAPA</span>${deleteActions("map", map.id)}</div>` : ""}
       <div class="comparison-entry-forms">${state.canEdit ? `<form data-add-item="${map.id}"><strong>NOVO ITEM</strong><input name="numero" required placeholder="Nº"><input name="designacao" required placeholder="Designação"><input name="unidade" value="un" required><input name="quantidade" type="number" min="0.0001" step="0.0001" value="1" required><button type="submit">ADICIONAR</button><p class="form-error"></p></form><form data-add-proposal="${map.id}"><strong>NOVA PROPOSTA</strong><select name="fornecedor_id" required><option value="">Fornecedor</option>${supplierOptions()}</select><input name="data_proposta" type="date"><button type="submit">ADICIONAR</button><p class="form-error"></p></form>` : ""}</div>
       ${renderGrid(map)}${renderAdjustments(map)}${renderCosting(map)}
       <section class="comparison-commercial"><header>CONDIÇÕES / INFORMAÇÃO COMERCIAL</header>${proposals.map(p => renderProposalInfo(map,p)).join("") || '<p class="procurement-empty">SEM PROPOSTAS</p>'}</section>
@@ -147,6 +148,14 @@ export function createComparativeMapModule({ host, supabase, isConfigured, getSu
     state.pendingDelete = ""; state.editingProposalId = ""; await load(state.work); toast(`Proposta eliminada com ${num(result?.precos_eliminados)} preço(s) e ${num(result?.ajustes_eliminados)} ajuste(s).`);
   }
 
+  async function deleteMap(id) {
+    const result = await api("rpc/fn_eliminar_mapa_comparativo", { method: "POST", body: JSON.stringify({ p_mapa_id: id }) });
+    const remaining = ["mapas_restantes", "itens_restantes", "propostas_restantes", "precos_restantes", "ajustes_restantes"];
+    if (remaining.some(field => num(result?.[field]) !== 0)) throw new Error("A eliminação do mapa deixou registos relacionados na base.");
+    state.pendingDelete = ""; state.expanded = ""; await load(state.work);
+    toast(`Mapa eliminado com ${num(result?.itens_eliminados)} item(ns), ${num(result?.propostas_eliminadas)} proposta(s), ${num(result?.precos_eliminados)} preço(s) e ${num(result?.ajustes_eliminados)} ajuste(s).`);
+  }
+
   host.addEventListener("click", event => {
     const toggleNew = event.target.closest("[data-toggle-new-map]");
     if (toggleNew) { state.newOpen = !state.newOpen; render(); return; }
@@ -168,17 +177,18 @@ export function createComparativeMapModule({ host, supabase, isConfigured, getSu
     if (editProposal) { state.editingProposalId = editProposal.dataset.editProposal; state.pendingDelete = ""; render(); return; }
     if (event.target.closest("[data-cancel-edit-proposal]")) { state.editingProposalId = ""; render(); return; }
     if (event.target.closest("[data-cancel-delete]")) { state.pendingDelete = ""; render(); return; }
-    for (const type of ["item", "proposal"]) {
+    for (const type of ["item", "proposal", "map"]) {
       const request = event.target.closest(`[data-request-delete-${type}]`);
       if (request) {
-        const attribute = type === "item" ? "requestDeleteItem" : "requestDeleteProposal";
+        const attribute = type === "item" ? "requestDeleteItem" : type === "proposal" ? "requestDeleteProposal" : "requestDeleteMap";
         state.pendingDelete = `${type}:${request.dataset[attribute]}`; render(); return;
       }
       const confirm = event.target.closest(`[data-confirm-delete-${type}]`);
       if (confirm) {
-        const attribute = type === "item" ? "confirmDeleteItem" : "confirmDeleteProposal";
+        const attribute = type === "item" ? "confirmDeleteItem" : type === "proposal" ? "confirmDeleteProposal" : "confirmDeleteMap";
         const id = confirm.dataset[attribute];
-        return void (type === "item" ? deleteItem(id) : deleteProposal(id))
+        const action = type === "item" ? deleteItem : type === "proposal" ? deleteProposal : deleteMap;
+        return void action(id)
           .catch(error => toast(error.message || "Não foi possível eliminar o registo.", "error"));
       }
     }
