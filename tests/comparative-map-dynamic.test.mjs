@@ -43,3 +43,30 @@ test("margem real usa o adjudicado e nunca o melhor preço", () => {
   assert.equal(result.marginPct, 40 / 140 * 100);
   assert.notEqual(result.margin, 140 - 80);
 });
+
+test("editar abre itens e propostas com os valores existentes", async () => {
+  const frontend = await read("src/comparative-map.js");
+  assert.match(frontend, /data-item-field="numero" value="\$\{esc\(item\.numero\)\}"/);
+  assert.match(frontend, /data-item-field="designacao" value="\$\{esc\(item\.designacao\)\}"/);
+  assert.match(frontend, /supplierOptions\(proposal\.fornecedor_id\)/);
+  for (const field of ["data_proposta", "prazo_validade", "contacto", "telemovel", "condicoes_pagamento", "exclusoes_ambito", "outras_informacoes", "nota_primeline"]) {
+    assert.match(frontend, new RegExp(`proposal\\.${field}`), `${field} deve ser pré-preenchido.`);
+  }
+  assert.match(frontend, /Proposta atualizada sem perder preços ou ajustes/);
+});
+
+test("eliminar exige confirmação e usa RPCs que verificam a cascata", async () => {
+  const frontend = await read("src/comparative-map.js");
+  const deletion = await read("supabase/mapa_comparativo_editar_eliminar.sql");
+  const cascadeTest = await read("supabase/teste_mapa_comparativo_editar_eliminar.sql");
+  assert.match(frontend, /CONFIRMAR\?/);
+  assert.match(frontend, /data-confirm-delete-\$\{type\}/);
+  assert.match(frontend, /\[data-confirm-delete-\$\{type\}\]/);
+  assert.match(frontend, /fn_eliminar_item_comparativo/);
+  assert.match(frontend, /fn_eliminar_proposta_comparativo/);
+  assert.match(deletion, /precos_restantes[\s\S]*v_precos_depois/);
+  assert.match(deletion, /ajustes_restantes[\s\S]*v_ajustes_depois/);
+  assert.match(cascadeTest, /Ajuste de escopo temporário/);
+  assert.match(cascadeTest, /rollback;/i);
+  assert.match(cascadeTest, /v_precos_depois <> 0 or v_ajustes_depois <> 0/);
+});

@@ -22,7 +22,7 @@ export function calculateCosting({ melhor_preco, custo_estimado, valor_adjudicad
 }
 
 export function createComparativeMapModule({ host, supabase, isConfigured, getSuppliers, getPhases, euro, toast, onAdjudicated }) {
-  const state = { work: null, maps: [], proposals: [], items: [], prices: [], adjustments: [], canEdit: false, expanded: "", newOpen: false, loading: false };
+  const state = { work: null, maps: [], proposals: [], items: [], prices: [], adjustments: [], canEdit: false, expanded: "", newOpen: false, loading: false, editingItemId: "", editingProposalId: "", pendingDelete: "" };
   const root = () => host.querySelector("[data-comparative-map-root]");
   const supplierName = id => getSuppliers().find(row => row.id === id)?.nome || "Fornecedor";
   const proposalsFor = id => state.proposals.filter(row => row.mapa_id === id);
@@ -56,22 +56,30 @@ export function createComparativeMapModule({ host, supabase, isConfigured, getSu
       ${state.newOpen ? `<form class="comparison-new-form" data-new-map><label>ESPECIALIDADE<input name="especialidade" required></label><label>DESCRIÇÃO<input name="descricao"></label><label>CUSTO ESTIMADO (€)<input name="custo_estimado" type="number" min="0" step="0.01"></label><label>PREÇO DE VENDA (€)<input name="preco_venda" type="number" min="0" step="0.01"></label><button class="primary-button" type="submit">CRIAR MAPA</button><p class="form-error"></p></form>` : ""}</div>`;
   }
 
+  function deleteActions(type, id) {
+    const key = `${type}:${id}`;
+    if (state.pendingDelete !== key) return `<button class="comparison-delete-button" type="button" data-request-delete-${type}="${id}">ELIMINAR</button>`;
+    return `<span class="comparison-delete-confirm"><b>CONFIRMAR?</b><button type="button" data-cancel-delete>CANCELAR</button><button class="comparison-delete-button" type="button" data-confirm-delete-${type}="${id}">SIM, ELIMINAR</button></span>`;
+  }
+
   function renderProposalInfo(map, proposal) {
-    return `<form class="comparison-commercial-card" data-proposal-info="${proposal.id}"><header><strong>${esc(supplierName(proposal.fornecedor_id))}</strong><span>NOTA PRIMELINE</span></header><div class="comparison-commercial-grid">
-      <label>DATA DA PROPOSTA<input type="date" name="data_proposta" value="${esc(proposal.data_proposta || "")}"></label><label>VALIDADE<input type="date" name="prazo_validade" value="${esc(proposal.prazo_validade || "")}"></label>
+    const editing = state.editingProposalId === proposal.id;
+    if (!editing) return `<article class="comparison-commercial-card"><header><strong>${esc(supplierName(proposal.fornecedor_id))}</strong>${state.canEdit ? `<span class="comparison-row-actions"><button type="button" data-edit-proposal="${proposal.id}">EDITAR</button>${deleteActions("proposal", proposal.id)}</span>` : ""}</header><div class="comparison-proposal-summary"><span>PROPOSTA <strong>${esc(proposal.data_proposta || "—")}</strong></span><span>VALIDADE <strong>${esc(proposal.prazo_validade || "—")}</strong></span><span>CONTACTO <strong>${esc(proposal.contacto || proposal.telemovel || "—")}</strong></span><span>CONDIÇÕES <strong>${esc(proposal.condicoes_pagamento || "—")}</strong></span></div></article>`;
+    return `<form class="comparison-commercial-card editing" data-proposal-info="${proposal.id}"><header><strong>EDITAR PROPOSTA · ${esc(supplierName(proposal.fornecedor_id))}</strong><button type="button" data-cancel-edit-proposal>CANCELAR</button></header><div class="comparison-commercial-grid">
+      <label>FORNECEDOR<select name="fornecedor_id" required>${supplierOptions(proposal.fornecedor_id)}</select></label><label>DATA DA PROPOSTA<input type="date" name="data_proposta" value="${esc(proposal.data_proposta || "")}"></label><label>VALIDADE<input type="date" name="prazo_validade" value="${esc(proposal.prazo_validade || "")}"></label>
       <label>CONTACTO<input name="contacto" value="${esc(proposal.contacto || "")}"></label><label>TELEMÓVEL<input name="telemovel" value="${esc(proposal.telemovel || "")}"></label>
       <label>CONDIÇÕES DE PAGAMENTO<textarea name="condicoes_pagamento">${esc(proposal.condicoes_pagamento || "")}</textarea></label><label>EXCLUSÕES / ÂMBITO<textarea name="exclusoes_ambito">${esc(proposal.exclusoes_ambito || "")}</textarea></label>
       <label>OUTRAS INFORMAÇÕES<textarea name="outras_informacoes">${esc(proposal.outras_informacoes || "")}</textarea></label><label class="primeline-note">NOTA PRIMELINE<textarea name="nota_primeline">${esc(proposal.nota_primeline || "")}</textarea></label>
-    </div>${state.canEdit ? '<button class="secondary-button" type="submit">GUARDAR INFORMAÇÃO</button>' : ""}<p class="form-error"></p></form>`;
+    </div><div class="comparison-edit-actions"><button type="button" data-cancel-edit-proposal>CANCELAR</button><button class="secondary-button" type="submit">GUARDAR ALTERAÇÕES</button></div><p class="form-error"></p></form>`;
   }
 
   function renderGrid(map) {
     const proposals = proposalsFor(map.id);
     const items = itemsFor(map.id);
     if (!proposals.length || !items.length) return `<div class="procurement-empty">ADICIONE ITENS E PROPOSTAS PARA COMEÇAR A COMPARAÇÃO.</div>`;
-    return `<div class="comparison-table-wrap"><table class="comparison-table"><thead><tr><th>Nº</th><th>DESIGNAÇÃO / DESCRITIVO</th><th>UNID.</th><th>QUANT.</th>${proposals.map(p => `<th><span>${esc(supplierName(p.fornecedor_id))}</span><small>UNITÁRIO / TOTAL</small></th>`).join("")}<th>MELHOR PREÇO</th></tr></thead><tbody>
-      ${items.map(item => { const best = bestFor(item); return `<tr><td>${esc(item.numero)}</td><td><strong>${esc(item.designacao)}</strong></td><td>${esc(item.unidade)}</td><td>${num(item.quantidade)}</td>${proposals.map(proposal => { const price = priceFor(item.id, proposal.id); return `<td><form data-save-price data-item="${item.id}" data-proposal="${proposal.id}"><input aria-label="Preço unitário ${esc(supplierName(proposal.fornecedor_id))}" name="preco_unitario" type="number" min="0" step="0.0001" value="${price?.preco_unitario ?? ""}" placeholder="Sem cotação" ${state.canEdit ? "" : "disabled"}><output>${price ? money(price.preco_total) : "—"}</output><input name="observacoes" value="${esc(price?.observacoes || "")}" placeholder="Inclui / exclui" ${state.canEdit ? "" : "disabled"}>${state.canEdit ? '<button type="submit">GUARDAR</button>' : ""}</form></td>`; }).join("")}<td class="comparison-best"><strong>${best ? esc(supplierName(proposals.find(p => p.id === best.proposta_id)?.fornecedor_id)) : "SEM COTAÇÃO"}</strong><span>${best ? money(best.preco_total) : "—"}</span></td></tr>`; }).join("")}
-      <tr class="comparison-total"><td colspan="4">TOTAL POR PROPOSTA</td>${proposals.map(p => `<td>${money(pricesForProposal(p.id).reduce((sum,row) => sum+num(row.preco_total),0))}</td>`).join("")}<td><small>SOMA DOS MENORES</small><strong>${money(bestSum(map.id))}</strong></td></tr>
+    return `<div class="comparison-table-wrap"><table class="comparison-table"><thead><tr><th>Nº</th><th>DESIGNAÇÃO / DESCRITIVO</th><th>UNID.</th><th>QUANT.</th>${proposals.map(p => `<th><span>${esc(supplierName(p.fornecedor_id))}</span><small>UNITÁRIO / TOTAL</small></th>`).join("")}<th>MELHOR PREÇO</th><th>AÇÕES</th></tr></thead><tbody>
+      ${items.map(item => { const best = bestFor(item); const editing = state.editingItemId === item.id; return `<tr class="${editing ? "comparison-item-editing" : ""}"><td>${editing ? `<input data-item-field="numero" value="${esc(item.numero)}" required>` : esc(item.numero)}</td><td>${editing ? `<input data-item-field="designacao" value="${esc(item.designacao)}" required>` : `<strong>${esc(item.designacao)}</strong>`}</td><td>${editing ? `<input data-item-field="unidade" value="${esc(item.unidade)}" required>` : esc(item.unidade)}</td><td>${editing ? `<input data-item-field="quantidade" type="number" min="0.0001" step="0.0001" value="${num(item.quantidade)}" required>` : num(item.quantidade)}</td>${proposals.map(proposal => { const price = priceFor(item.id, proposal.id); return `<td><form data-save-price data-item="${item.id}" data-proposal="${proposal.id}"><input aria-label="Preço unitário ${esc(supplierName(proposal.fornecedor_id))}" name="preco_unitario" type="number" min="0" step="0.0001" value="${price?.preco_unitario ?? ""}" placeholder="Sem cotação" ${state.canEdit && !editing ? "" : "disabled"}><output>${price ? money(price.preco_total) : "—"}</output><input name="observacoes" value="${esc(price?.observacoes || "")}" placeholder="Inclui / exclui" ${state.canEdit && !editing ? "" : "disabled"}>${state.canEdit && !editing ? '<button type="submit">GUARDAR</button>' : ""}</form></td>`; }).join("")}<td class="comparison-best"><strong>${best ? esc(supplierName(proposals.find(p => p.id === best.proposta_id)?.fornecedor_id)) : "SEM COTAÇÃO"}</strong><span>${best ? money(best.preco_total) : "—"}</span></td><td class="comparison-item-actions">${state.canEdit ? editing ? `<button type="button" data-save-item="${item.id}">GUARDAR</button><button type="button" data-cancel-edit-item>CANCELAR</button>` : `<button type="button" data-edit-item="${item.id}">EDITAR</button>${deleteActions("item", item.id)}` : "—"}</td></tr>`; }).join("")}
+      <tr class="comparison-total"><td colspan="4">TOTAL POR PROPOSTA</td>${proposals.map(p => `<td>${money(pricesForProposal(p.id).reduce((sum,row) => sum+num(row.preco_total),0))}</td>`).join("")}<td><small>SOMA DOS MENORES</small><strong>${money(bestSum(map.id))}</strong></td><td></td></tr>
     </tbody></table></div>`;
   }
 
@@ -127,13 +135,62 @@ export function createComparativeMapModule({ host, supabase, isConfigured, getSu
   const post = (table,payload) => api(table,{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
   const patch = (table,id,payload) => api(`${table}?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
 
-  host.addEventListener("click",event=>{const toggleNew=event.target.closest('[data-toggle-new-map]');if(toggleNew){state.newOpen=!state.newOpen;render();return;}const toggle=event.target.closest('[data-toggle-map]');if(toggle){state.expanded=state.expanded===toggle.dataset.toggleMap?"":toggle.dataset.toggleMap;render();}});
+  async function deleteItem(id) {
+    const result = await api("rpc/fn_eliminar_item_comparativo", { method: "POST", body: JSON.stringify({ p_item_id: id }) });
+    if (num(result?.precos_restantes) !== 0) throw new Error("A eliminação do item deixou preços relacionados na base.");
+    state.pendingDelete = ""; state.editingItemId = ""; await load(state.work); toast(`Item eliminado com ${num(result?.precos_eliminados)} preço(s) relacionado(s).`);
+  }
+
+  async function deleteProposal(id) {
+    const result = await api("rpc/fn_eliminar_proposta_comparativo", { method: "POST", body: JSON.stringify({ p_proposta_id: id }) });
+    if (num(result?.precos_restantes) !== 0 || num(result?.ajustes_restantes) !== 0) throw new Error("A eliminação da proposta deixou registos relacionados na base.");
+    state.pendingDelete = ""; state.editingProposalId = ""; await load(state.work); toast(`Proposta eliminada com ${num(result?.precos_eliminados)} preço(s) e ${num(result?.ajustes_eliminados)} ajuste(s).`);
+  }
+
+  host.addEventListener("click", event => {
+    const toggleNew = event.target.closest("[data-toggle-new-map]");
+    if (toggleNew) { state.newOpen = !state.newOpen; render(); return; }
+    const editItem = event.target.closest("[data-edit-item]");
+    if (editItem) { state.editingItemId = editItem.dataset.editItem; state.pendingDelete = ""; render(); return; }
+    if (event.target.closest("[data-cancel-edit-item]")) { state.editingItemId = ""; render(); return; }
+    const saveItem = event.target.closest("[data-save-item]");
+    if (saveItem) {
+      const row = saveItem.closest("tr");
+      return void submit(row, async () => {
+        const value = name => row.querySelector(`[data-item-field="${name}"]`)?.value.trim() || "";
+        const quantity = num(value("quantidade"));
+        if (!value("numero") || !value("designacao") || !value("unidade") || quantity <= 0) throw new Error("Preencha os dados válidos do item.");
+        await patch("comparativo_itens", saveItem.dataset.saveItem, { numero: value("numero"), designacao: value("designacao"), unidade: value("unidade"), quantidade: quantity });
+        state.editingItemId = ""; await load(state.work); toast("Item atualizado sem perder os preços existentes.");
+      });
+    }
+    const editProposal = event.target.closest("[data-edit-proposal]");
+    if (editProposal) { state.editingProposalId = editProposal.dataset.editProposal; state.pendingDelete = ""; render(); return; }
+    if (event.target.closest("[data-cancel-edit-proposal]")) { state.editingProposalId = ""; render(); return; }
+    if (event.target.closest("[data-cancel-delete]")) { state.pendingDelete = ""; render(); return; }
+    for (const type of ["item", "proposal"]) {
+      const request = event.target.closest(`[data-request-delete-${type}]`);
+      if (request) {
+        const attribute = type === "item" ? "requestDeleteItem" : "requestDeleteProposal";
+        state.pendingDelete = `${type}:${request.dataset[attribute]}`; render(); return;
+      }
+      const confirm = event.target.closest(`[data-confirm-delete-${type}]`);
+      if (confirm) {
+        const attribute = type === "item" ? "confirmDeleteItem" : "confirmDeleteProposal";
+        const id = confirm.dataset[attribute];
+        return void (type === "item" ? deleteItem(id) : deleteProposal(id))
+          .catch(error => toast(error.message || "Não foi possível eliminar o registo.", "error"));
+      }
+    }
+    const toggle = event.target.closest("[data-toggle-map]");
+    if (toggle) { state.expanded = state.expanded === toggle.dataset.toggleMap ? "" : toggle.dataset.toggleMap; render(); }
+  });
   host.addEventListener("submit",event=>{const form=event.target;if(!form.closest('[data-comparative-map-root]'))return;event.preventDefault();
     if(form.matches('[data-new-map]'))return submit(form,async()=>{await post('mapas_comparativos',{obra_id:state.work.id,especialidade:form.elements.especialidade.value.trim(),descricao:form.elements.descricao.value.trim()||null,custo_estimado_orcamento:nullableNumber(form.elements.custo_estimado.value),preco_venda:nullableNumber(form.elements.preco_venda.value)});state.newOpen=false;await load(state.work);toast('Mapa comparativo criado.');});
     if(form.matches('[data-add-item]'))return submit(form,async()=>{await post('comparativo_itens',{mapa_id:form.dataset.addItem,numero:form.elements.numero.value.trim(),designacao:form.elements.designacao.value.trim(),unidade:form.elements.unidade.value.trim(),quantidade:num(form.elements.quantidade.value)});await load(state.work);toast('Item adicionado.');});
     if(form.matches('[data-add-proposal]'))return submit(form,async()=>{await post('comparativo_propostas',{mapa_id:form.dataset.addProposal,fornecedor_id:form.elements.fornecedor_id.value,data_proposta:form.elements.data_proposta.value||null});await load(state.work);toast('Proposta adicionada.');});
     if(form.matches('[data-save-price]'))return submit(form,async()=>{if(form.elements.preco_unitario.value==='')throw new Error('Indique um preço ou deixe o item sem cotação.');const payload={item_id:form.dataset.item,proposta_id:form.dataset.proposal,preco_unitario:num(form.elements.preco_unitario.value),observacoes:form.elements.observacoes.value.trim()||null};await api('comparativo_itens_precos?on_conflict=item_id,proposta_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(payload)});await load(state.work);toast('Preço guardado.');});
-    if(form.matches('[data-proposal-info]'))return submit(form,async()=>{const payload={};['data_proposta','prazo_validade','contacto','telemovel','condicoes_pagamento','exclusoes_ambito','outras_informacoes','nota_primeline'].forEach(k=>payload[k]=form.elements[k].value.trim()||null);await patch('comparativo_propostas',form.dataset.proposalInfo,payload);await load(state.work);toast('Informação da proposta guardada.');});
+    if(form.matches('[data-proposal-info]'))return submit(form,async()=>{const payload={fornecedor_id:form.elements.fornecedor_id.value};['data_proposta','prazo_validade','contacto','telemovel','condicoes_pagamento','exclusoes_ambito','outras_informacoes','nota_primeline'].forEach(k=>payload[k]=form.elements[k].value.trim()||null);await patch('comparativo_propostas',form.dataset.proposalInfo,payload);state.editingProposalId="";await load(state.work);toast('Proposta atualizada sem perder preços ou ajustes.');});
     if(form.matches('[data-add-adjustment]'))return submit(form,async()=>{await post('comparativo_ajustes',{mapa_id:form.dataset.addAdjustment,proposta_id:form.elements.proposta_id.value,valor_ajustado:num(form.elements.valor_ajustado.value),justificacao:form.elements.justificacao.value.trim()});await load(state.work);toast('Ajuste registado.');});
     if(form.matches('[data-save-costing]'))return submit(form,async()=>{await patch('mapas_comparativos',form.dataset.saveCosting,{custo_estimado_orcamento:nullableNumber(form.elements.custo_estimado_orcamento.value),valor_adjudicado_real:nullableNumber(form.elements.valor_adjudicado_real.value),preco_venda:nullableNumber(form.elements.preco_venda.value)});await load(state.work);toast('Custeio guardado.');});
     if(form.matches('[data-adjudicate-map]'))return submit(form,async()=>{const result=await api('rpc/fn_criar_subempreitada_do_comparativo',{method:'POST',body:JSON.stringify({p_mapa_id:form.dataset.adjudicateMap,p_proposta_id:form.elements.proposta_id.value,p_fase_id:form.elements.fase_id.value,p_data_inicio_prevista:form.elements.data_inicio.value,p_data_fim_prevista:form.elements.data_fim.value,p_condicao_pagamento:form.elements.condicao_pagamento.value||null})});await onAdjudicated?.(Array.isArray(result)?result[0]:result);toast('Subempreitada criada com o Valor Adjudicado Real.');});
