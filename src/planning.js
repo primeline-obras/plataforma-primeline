@@ -76,7 +76,7 @@ function isPastDay(date, today = new Date()) {
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
-    expanded: new Set(), expandedTasks: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
+    expanded: new Set(), expandedTasks: new Set(), collapsedEditorPhases: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
   };
 
@@ -207,9 +207,9 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const rows = state.dependencies.filter(row => row.item_id === item.id);
     return `<div class="planning-dependency-editor"><div>${rows.map(row => {
       const predecessor = state.items.find(candidate => candidate.id === row.depende_de_item_id);
-      return `<span>${escapeHtml(predecessor?.codigo || "Tarefa")}<button type="button" data-remove-dependency="${row.id}" title="Remover dependência">×</button></span>`;
+      return `<span>${escapeHtml(predecessor?.codigo || "Tarefa")}${readOnly() ? "" : `<button type="button" data-remove-dependency="${row.id}" title="Remover dependência">×</button>`}</span>`;
     }).join("") || `<small>SEM PREDECESSORAS</small>`}</div>
-      ${item._new ? "" : `<label><select data-dependency-choice><option value="">Esta tarefa depende de…</option>${dependencyOptions(item)}</select><button type="button" data-add-dependency="${item.id}">LIGAR</button></label>`}</div>`;
+      ${item._new || readOnly() ? "" : `<label><select data-dependency-choice><option value="">Esta tarefa depende de…</option>${dependencyOptions(item)}</select><button type="button" data-add-dependency="${item.id}">LIGAR</button></label>`}</div>`;
   }
 
   function taskDeviation(item) {
@@ -233,34 +233,35 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderEditor() {
+    const locked = readOnly() ? "disabled" : "";
     return `<div class="planning-editor-wrap"><div class="planning-editor-head">
-      <span>CÓDIGO</span><span>DESCRIÇÃO / TRABALHOS</span><span>RESPONSÁVEL</span><span>DATA INÍCIO</span><span>FIM PREV.</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>% PONDERADA</span><span>ESTADO</span><span>CAUSA DO ATRASO</span><span>IMPACTO</span><span>DESVIO INÍCIO</span><span>DESVIO FIM</span><span>COMPARAÇÃO DE PRAZO</span><span>CLASSIFICAÇÃO</span><span>AÇÕES</span>
+      <span>CÓDIGO</span><span>DESCRIÇÃO / TRABALHOS</span><span>RESPONSÁVEL</span><span>DATA INÍCIO</span><span>FIM PREV.</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>% PONDERADA</span><span>ESTADO</span><span>CAUSA DO ATRASO</span><span>IMPACTO</span><span>AÇÕES</span>
     </div>${state.phases.map(phase => {
       const phaseItems = state.items.filter(item => item.fase_id === phase.id);
-      return `<section class="planning-editor-phase"><header><strong>${escapeHtml(phase.codigo || "—")}</strong><span>${escapeHtml(phase.descricao || "FASE")}</span><b>${phaseItems.length} ${phaseItems.length === 1 ? "TAREFA" : "TAREFAS"}</b></header>${phaseItems.map(item => {
+      const collapsed = state.collapsedEditorPhases.has(phase.id);
+      const progress = phaseProgress(phaseItems);
+      return `<section class="planning-editor-phase ${collapsed ? "collapsed" : ""}"><button class="planning-editor-phase-toggle" type="button" data-toggle-editor-phase="${phase.id}" aria-expanded="${!collapsed}"><i>${collapsed ? "+" : "−"}</i><strong>${escapeHtml(phase.codigo || "—")}</strong><span>${escapeHtml(phase.descricao || "FASE")}</span><em>${progress === null ? "—" : `${progress}%`}</em><b>${phaseItems.length} ${phaseItems.length === 1 ? "TAREFA" : "TAREFAS"}</b></button><div class="planning-editor-phase-rows" ${collapsed ? "hidden" : ""}>${phaseItems.map(item => {
       const cost = state.costs.get(String(item.id)) || item;
-      const metrics = taskDeviation(item);
       const weighted = Number(item.peso_percentual || 0) * Number(item.percentual_executado || 0) / 100;
-      const status = visualState(item);
+      const progressValue = Number(item.percentual_executado || 0);
+      const status = progressValue >= 100 ? "concluido" : progressValue > 0 ? "em_execucao" : "por_iniciar";
       const detailsOpen = state.expandedTasks.has(item.id);
       return `<article class="planning-editor-row ${item._new ? "new" : ""} ${detailsOpen ? "details-open" : ""}" data-edit-item="${item.id}">
-      <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1">
-      <input name="descricao" value="${escapeHtml(item.descricao || "")}" placeholder="Descrição da tarefa">
-      <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável">
-      <input name="data_inicio_prevista" type="date" value="${isoDate(item.data_inicio_prevista)}">
-      <input name="data_fim_prevista" type="date" value="${isoDate(item.data_fim_prevista)}">
-      <input name="data_fim_real" type="date" value="${isoDate(item.data_fim_real)}">
-      <input name="peso_percentual" type="number" min="0" step="0.01" value="${item.peso_percentual ?? ""}">
-      <input name="percentual_executado" type="number" min="0" max="100" step="1" value="${item.percentual_executado ?? 0}">
-      <output>${weighted.toFixed(2)}%</output>
-      <select name="estado"><option value="por_iniciar" ${item.estado === "por_iniciar" ? "selected" : ""}>Por iniciar</option><option value="em_execucao" ${item.estado === "em_execucao" ? "selected" : ""}>Em execução</option><option value="concluido" ${item.estado === "concluido" ? "selected" : ""}>Concluído</option></select>
-      <input name="causa_atraso" value="${escapeHtml(item.causa_atraso || "")}" placeholder="Sem causa registada">
-      <input name="impacto" value="${escapeHtml(item.impacto || "")}" placeholder="Sem impacto registado">
-      <output>${dayDeviation(metrics.startDays)}</output><output>${dayDeviation(metrics.endDays)}</output>
-      <output>${escapeHtml(metrics.comparison)}</output><output><em class="${metrics.classification.key}">${metrics.classification.label}</em></output>
-      <div class="planning-row-actions"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button><button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button></div>
-      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id">${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id">${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por"><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}"></label><label>ESTADO CUSTO<select name="custo_estado">${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id"><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00"></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}</div>${renderDependencies(item)}</section>
-    </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</section>`;
+      <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1" ${locked}>
+      <textarea name="descricao" rows="2" placeholder="Descrição da tarefa" ${locked}>${escapeHtml(item.descricao || "")}</textarea>
+      <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável" ${locked}>
+      <input name="data_inicio_prevista" type="date" value="${isoDate(item.data_inicio_prevista)}" ${locked}>
+      <input name="data_fim_prevista" type="date" value="${isoDate(item.data_fim_prevista)}" ${locked}>
+      <input name="data_fim_real" type="date" value="${isoDate(item.data_fim_real)}" ${locked}>
+      <input name="peso_percentual" type="number" min="0" step="0.01" value="${item.peso_percentual ?? ""}" ${locked}>
+      <input name="percentual_executado" type="number" min="0" max="100" step="1" value="${item.percentual_executado ?? 0}" ${locked}>
+      <output data-weighted>${weighted.toFixed(2)}%</output>
+      <input name="estado" type="hidden" value="${escapeHtml(status)}"><output data-derived-state><span class="planning-state ${escapeHtml(status)}">${stateLabel(status)}</span></output>
+      <textarea name="causa_atraso" rows="2" placeholder="Sem causa registada" ${locked}>${escapeHtml(item.causa_atraso || "")}</textarea>
+      <textarea name="impacto" rows="2" placeholder="Sem impacto registado" ${locked}>${escapeHtml(item.impacto || "")}</textarea>
+      <div class="planning-row-actions ${readOnly() ? "readonly" : ""}"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button>${readOnly() ? "" : `<button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button>`}</div>
+      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id" ${locked}>${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id" ${locked}>${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por" ${locked}><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}" ${locked}></label><label>ESTADO CUSTO<select name="custo_estado" ${locked}>${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id" ${locked}><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00" ${locked}></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}</div>${renderDependencies(item)}</section>
+    </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</div></section>`;
     }).join("")}</div>`;
   }
 
@@ -423,11 +424,9 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderUnifiedPlanning() {
-    return `${renderBaselineNotice()}
-      <section class="planning-unified-gantt"><header><div><p class="eyebrow">GANTT POR FASE</p><h3>Baseline original × execução atual</h3></div><div class="planning-legend"><span><i class="done"></i>DENTRO DO PRAZO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="late"></i>ATRASADO</span></div></header>${renderSummary()}</section>
-      <section class="planning-unified-detail"><header><div><p class="eyebrow">GRELHA DETALHADA</p><h3>Tarefas agrupadas por fase</h3></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></header>
-        <div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div></div>
-        ${renderCostSummary()}${renderImportPanel()}${renderEditor()}
+    return `<section class="planning-unified-detail"><header><div><p class="eyebrow">PLANEAMENTO DA OBRA</p><h3>Tarefas organizadas por fase</h3></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></header>
+        <div class="planning-effective-toolbar">${readOnly() ? `<span>CONSULTA · O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS</span>` : `<div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>EDIÇÃO DIRETA NA GRELHA</span>`}</div>
+        ${renderImportPanel()}${renderEditor()}
       </section>`;
   }
 
@@ -466,11 +465,13 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const descricao = String(get("descricao") || "").trim();
       const phase = phaseForCode(codigo, get("fase"));
       const progress = Math.max(0, Math.min(100, parsedNumber(get("percentual_executado"), 0)));
+      const weight = parsedNumber(get("peso_percentual"));
       const item = {
         fase_id: phase?.id, codigo, descricao, responsavel: String(get("responsavel") || "").trim() || null,
         data_inicio_prevista: parsedDate(get("data_inicio_prevista")), data_fim_prevista: parsedDate(get("data_fim_prevista")),
-        data_inicio_real: parsedDate(get("data_inicio_real")), data_fim_real: parsedDate(get("data_fim_real")), peso_percentual: parsedNumber(get("peso_percentual")),
-        percentual_executado: progress, estado: parsedState(get("estado"), progress), causa_atraso: String(get("causa_atraso") || "").trim() || null,
+        data_inicio_real: parsedDate(get("data_inicio_real")), data_fim_real: parsedDate(get("data_fim_real")), peso_percentual: weight,
+        percentual_executado: progress, percentual_ponderado: weight === null ? null : weight * progress / 100,
+        estado: parsedState(get("estado"), progress), causa_atraso: String(get("causa_atraso") || "").trim() || null,
         impacto: String(get("impacto") || "").trim() || null,
       };
       const rowErrors = [];
@@ -492,12 +493,15 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const item = state.items.find(candidate => candidate.id === itemId);
     if (!row || !item) return;
     const value = name => row.querySelector(`[name="${name}"]`)?.value ?? "";
+    const weight = parsedNumber(value("peso_percentual"));
+    const progress = parsedNumber(value("percentual_executado"), 0);
     const payload = {
       fase_id: value("fase_id"), codigo: value("codigo").trim() || null, descricao: value("descricao").trim(),
       responsavel: value("responsavel").trim() || null, especialidade_id: value("especialidade_id") || null,
       executado_por: value("executado_por") || null, data_inicio_prevista: value("data_inicio_prevista") || null,
       data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
-      peso_percentual: parsedNumber(value("peso_percentual")), percentual_executado: parsedNumber(value("percentual_executado"), 0),
+      peso_percentual: weight, percentual_executado: progress,
+      percentual_ponderado: weight === null ? null : weight * progress / 100,
       estado: value("estado"), custo_estado: value("custo_estado") || "orcamentado", item_orcamento_id: value("item_orcamento_id") || null,
       valor_orca_pl: parsedNumber(value("valor_orca_pl")), valor_estimado: parsedNumber(value("valor_orca_pl")), causa_atraso: value("causa_atraso").trim() || null,
       impacto: value("impacto").trim() || null,
@@ -569,7 +573,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       content.innerHTML = `<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não possui fases configuradas.</span></div>`;
       return;
     }
-    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Gantt e controlo detalhado da execução</h2></div><div class="planning-legend"><span><i class="done"></i>CONCLUÍDO</span><span><i class="doing"></i>EM EXECUÇÃO</span><span><i class="todo"></i>POR INICIAR</span><span><i class="late"></i>EM ATRASO</span></div></header>${renderUnifiedPlanning()}</section></div>`;
+    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Planeamento detalhado da execução</h2></div><span class="planning-sheet-note">Estrutura operacional por fase</span></header>${renderUnifiedPlanning()}</section></div>`;
 
     // Bind the primary import action directly too. This keeps it reliable in
     // embedded browsers where a delegated toolbar click may be swallowed.
@@ -649,7 +653,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     render();
   }
 
-  workSelect.addEventListener("change", () => { state.expanded.clear(); state.expandedTasks.clear(); load(workSelect.value); });
+  workSelect.addEventListener("change", () => { state.expanded.clear(); state.expandedTasks.clear(); state.collapsedEditorPhases.clear(); load(workSelect.value); });
   content.addEventListener("click", event => {
     if (readOnly() && event.target.closest("[data-open-import],[data-new-task],[data-save-task],[data-remove-task],[data-add-dependency],[data-remove-dependency],[data-confirm-import]")) return;
     if (event.target.closest("[data-open-import]")) { openImportPanel(); return; }
@@ -670,6 +674,14 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       toggleTask.textContent = opening ? "FECHAR" : "DETALHES";
       return;
     }
+    const toggleEditorPhase = event.target.closest("[data-toggle-editor-phase]");
+    if (toggleEditorPhase) {
+      const phaseId = toggleEditorPhase.dataset.toggleEditorPhase;
+      if (state.collapsedEditorPhases.has(phaseId)) state.collapsedEditorPhases.delete(phaseId);
+      else state.collapsedEditorPhases.add(phaseId);
+      render();
+      return;
+    }
     const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
     const addDep = event.target.closest("[data-add-dependency]"); if (addDep) { addDependency(addDep.dataset.addDependency, addDep.closest("label")?.querySelector("select")); return; }
@@ -685,6 +697,17 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   });
   content.addEventListener("input", event => {
     if (event.target.matches("[data-import-paste]")) prepareImport(csvRows(event.target.value));
+    const row = event.target.closest("[data-edit-item]");
+    if (row && event.target.matches('[name="peso_percentual"],[name="percentual_executado"]')) {
+      const weight = Number(row.querySelector('[name="peso_percentual"]')?.value || 0);
+      const progress = Math.max(0, Math.min(100, Number(row.querySelector('[name="percentual_executado"]')?.value || 0)));
+      const stateValue = progress >= 100 ? "concluido" : progress > 0 ? "em_execucao" : "por_iniciar";
+      const stateInput = row.querySelector('[name="estado"]');
+      const stateOutput = row.querySelector("[data-derived-state]");
+      if (row.querySelector("[data-weighted]")) row.querySelector("[data-weighted]").textContent = `${(weight * progress / 100).toFixed(2)}%`;
+      if (stateInput) stateInput.value = stateValue;
+      if (stateOutput) stateOutput.innerHTML = `<span class="planning-state ${stateValue}">${stateLabel(stateValue)}</span>`;
+    }
   });
   content.addEventListener("change", async event => {
     if (event.target.matches("[data-control-mode]")) {
