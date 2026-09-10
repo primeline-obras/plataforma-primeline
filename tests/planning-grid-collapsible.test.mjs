@@ -19,13 +19,21 @@ test("grelha simples replica os campos operacionais do planeamento", () => {
   assert.match(styles, /grid-template-columns:var\(--planning-grid-columns\)/);
   assert.match(planning, /class="planning-row-actions/);
   assert.match(styles, /\.planning-row-actions\s*\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(styles, /minmax\(280px,1\.6fr\)/);
-  assert.match(styles, /\s112px 112px 112px\s/);
+  assert.match(styles, /minmax\(300px,1\.8fr\)/);
+  assert.match(styles, /\s110px 110px 110px\s/);
   assert.match(planning, /<span>CÓDIGO<\/span><span>DESCRIÇÃO \/ TRABALHOS<\/span>/);
   assert.match(planning, /data-weighted/);
   assert.match(planning, /data-derived-state/);
   assert.match(identityStyles, /\.planning-editor-head,[\s\S]*grid-template-columns:\s*var\(--planning-grid-columns\)/);
   assert.doesNotMatch(identityStyles, /planning-editor-head,[\s\S]{0,160}grid-template-columns:\s*160px 90px/);
+});
+
+test("causa do atraso e impacto ficam nos detalhes sem alargar a grelha principal", () => {
+  const header = planning.match(/<div class="planning-editor-head">([\s\S]*?)<\/div>/)?.[1] || "";
+  assert.doesNotMatch(header, /CAUSA DO ATRASO|IMPACTO/);
+  assert.match(planning, /class="planning-detail-wide">CAUSA DO ATRASO/);
+  assert.match(planning, /class="planning-detail-wide">IMPACTO/);
+  assert.match(styles, /min-width:1440px/);
 });
 
 test("fases são recolhíveis e o Gantt não ocupa o ecrã operacional", () => {

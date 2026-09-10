@@ -234,7 +234,7 @@ input:focus, select:focus, textarea:focus, .search-box:focus-within {
 /* Planeamento: especialidade e executor são campos operacionais por tarefa. */
 .planning-editor-head,
 .planning-editor-row {
-  min-width: 1760px;
+  min-width: 1440px;
   grid-template-columns: var(--planning-grid-columns);
 }
 
