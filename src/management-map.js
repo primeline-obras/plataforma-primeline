@@ -161,10 +161,16 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
       else {
         const rows = [];
         for (let start = 0; ; start += RESULT_PAGE_SIZE) {
-          const response = await supabase(`rpc/fn_mapa_gestao_obras?order=categoria.asc,obra_numero.asc,data_lancamento.asc,origem_id.asc&limit=${RESULT_PAGE_SIZE}&offset=${start}`, {
+          let response = await supabase(`rpc/fn_mapa_gestao_obras_excel?order=categoria.asc,obra_numero.asc,data_lancamento.asc,origem_id.asc&limit=${RESULT_PAGE_SIZE}&offset=${start}`, {
             method: "POST",
             body: "{}",
           });
+          if (response.status === 404) {
+            response = await supabase(`rpc/fn_mapa_gestao_obras?order=categoria.asc,obra_numero.asc,data_lancamento.asc,origem_id.asc&limit=${RESULT_PAGE_SIZE}&offset=${start}`, {
+              method: "POST",
+              body: "{}",
+            });
+          }
           if (!response.ok) {
             const payload = await response.json().catch(() => ({}));
             throw new Error(payload.message || payload.details || "Não foi possível consultar o Mapa de Gestão.");
@@ -181,8 +187,8 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   }
   function filters() { const form = root.querySelector("[data-management-map-filters]"); return form ? Object.fromEntries(new FormData(form)) : {}; }
   function filteredRows(category = "") { const value = filters(); return state.rows.filter(row => managementRowMatches(row, value, { mode: state.mode, category })); }
-  const rowHtml = row => `<tr><td class="management-date">${esc(formatManagementDate(row.data_lancamento))}</td><td class="management-work"><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td class="management-wrap management-entity">${esc(row.entidade_nome || "—")}</td><td class="management-wrap management-description">${esc(row.descricao || "—")}</td><td class="management-document">${esc(row.documento || "—")}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td></tr>`;
-  const table = (rows, empty = "SEM LANÇAMENTOS NESTE FILTRO") => `<div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>CATEGORIA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>DOCUMENTO</th><th>VALOR</th></tr></thead><tbody>${rows.length ? rows.map(rowHtml).join("") : `<tr><td colspan="7" class="management-map-empty">${empty}</td></tr>`}</tbody></table></div>`;
+  const rowHtml = row => `<tr><td class="management-date">${esc(formatManagementDate(row.data_lancamento))}</td><td class="management-work"><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td class="management-wrap management-entity">${esc(row.entidade_nome || "—")}</td><td class="management-wrap management-description">${esc(row.descricao || "—")}</td><td>${esc(row.unidade_medida || "—")}</td><td class="management-number">${row.quantidade == null ? "—" : esc(row.quantidade)}</td><td class="management-value">${row.valor_unitario == null ? "—" : euro.format(Number(row.valor_unitario))}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td><td class="management-date">${esc(formatManagementDate(row.data_pagamento))}</td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td class="management-document">${esc(row.documento || "—")}</td></tr>`;
+  const table = (rows, empty = "SEM LANÇAMENTOS NESTE FILTRO") => `<div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>UN. MEDIDA</th><th>QUANTIDADE</th><th>VALOR UNITÁRIO</th><th>VALOR TOTAL</th><th>DATA DE PAGAMENTO</th><th>CATEGORIA</th><th>DOCUMENTO</th></tr></thead><tbody>${rows.length ? rows.map(rowHtml).join("") : `<tr><td colspan="11" class="management-map-empty">${empty}</td></tr>`}</tbody></table></div>`;
   function renderResults() {
     const rows = filteredRows(), total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
     const summary = `<div class="management-map-summary"><span><small>LANÇAMENTOS VISÍVEIS</small><strong>${rows.length}</strong></span><span><small>VALOR VISÍVEL</small><strong>${euro.format(total)}</strong></span></div>`;

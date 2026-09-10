@@ -180,6 +180,36 @@ const FINANCIAL_ALERT_PATTERN = /(fatura|pagamento|recebimento|cobran[cç]a|d[e�
 const TECHNICAL_RECURRING_TYPES = new Set(["pedido_mensal_horas", "pedido_semanal_horas", "informacao_reuniao_semanal", "informacao_reuniao_producao"]);
 const isMeetingInformation = alert => alert?.tipo === "reserva_sala";
 
+export function alertTopic(alert = {}) {
+  const text = `${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
+  if (/(viatura|seguro.*auto|inspecao.*viatura|epi|seguranca|acidente)/.test(text)) return "safety";
+  if (/(medicina|consulta.*medic|contrato.*trabalho|fim_contrato_rh|ferias|ausencia|hora.*extra|aniversario)/.test(text)) return "people";
+  if (FINANCIAL_ALERT_PATTERN.test(text)) return "finance";
+  if (/(obra|subempreitada|planeamento|rnc|reuniao|medicao|tee|documento)/.test(text) || alert.obra_id) return "production";
+  return "general";
+}
+
+const ALERT_TOPIC_LABELS = {
+  safety: "SEGURANÇA E VIATURAS",
+  people: "PESSOAS E RH",
+  finance: "FINANCEIRO",
+  production: "OBRAS E PRODUÇÃO",
+  general: "GERAL",
+};
+
+export function groupAlertsByTopic(alerts = []) {
+  const grouped = new Map();
+  sortAlertsByPriority(alerts).forEach(alert => {
+    const topic = alertTopic(alert);
+    if (!grouped.has(topic)) grouped.set(topic, []);
+    grouped.get(topic).push(alert);
+  });
+  return ["safety", "people", "finance", "production", "general"]
+    .filter(topic => grouped.has(topic))
+    .map(topic => ({ topic, label: ALERT_TOPIC_LABELS[topic], alerts: grouped.get(topic) }));
+}
+
 export function invoiceDueDate(invoice = {}) {
   if (invoice.condicao_pagamento === "outra_data") return invoice.data_vencimento || null;
   const base = safeDate(invoice.data_fatura);
@@ -468,11 +498,12 @@ export function createProductionDashboard(options) {
       <section class="overview-alert-layout">
         <article class="panel overview-panel">
           <div class="overview-section-head"><div><p class="eyebrow">PRIORIDADES</p><h2>ALERTAS PENDENTES</h2></div><span>${visibleAlerts.length}</span></div>
-          <div class="overview-alerts">${visibleAlerts.length ? visibleAlerts.map(alert => `
-            <div class="alert-${alertSeverity(alert)}"><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
+          <div class="overview-alerts">${visibleAlerts.length ? groupAlertsByTopic(visibleAlerts).map(group => `<section class="overview-alert-group overview-alert-group-${group.topic}">
+            <header><strong>${group.label}</strong><span>${group.alerts.length}</span></header>${group.alerts.map(alert => `
+            <div class="overview-alert-item alert-${alertSeverity(alert)}"><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time>
               <span><strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong><small>${escapeHtml(alert.descricao || "")}</small></span>
               <span class="overview-alert-actions"><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em>${isMeetingInformation(alert) ? '<small>INFORMATIVO</small>' : `<button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button>`}</span>
-            </div>`).join("") : `<div class="overview-empty">SEM ALERTAS PENDENTES</div>`}</div>
+            </div>`).join("")}</section>`).join("") : `<div class="overview-empty">SEM ALERTAS PENDENTES</div>`}</div>
         </article>
       </section>
       ${isProductionRole && scopedWorks.length
@@ -516,15 +547,17 @@ export function createProductionDashboard(options) {
     const list = document.querySelector("#notification-drawer-list");
     if (!list) return;
     const alerts = overviewState.visibleAlerts || overviewState.alerts;
-    list.innerHTML = alerts.length ? sortAlertsByPriority(alerts).map(alert => {
-      const destination = alertDestination(alert);
-      return `<article class="notification-drawer-item alert-${alertSeverity(alert)}">
+    list.innerHTML = alerts.length ? groupAlertsByTopic(alerts).map(group => `<section class="notification-group notification-group-${group.topic}">
+      <header><strong>${group.label}</strong><span>${group.alerts.length}</span></header>
+      ${group.alerts.map(alert => {
+        const destination = alertDestination(alert);
+        return `<article class="notification-drawer-item alert-${alertSeverity(alert)}">
         <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><span><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><em class="notification-channel">${alert.enviar_email ? "PLATAFORMA + EMAIL" : "PLATAFORMA"}</em></span></div>
         <strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong>
         <p>${escapeHtml(alert.descricao || "")}</p>
         ${isMeetingInformation(alert) ? "" : `<footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>`}
       </article>`;
-    }).join("") : `<div class="notification-drawer-empty"><strong>TUDO EM DIA</strong><span>Não existem alertas pendentes.</span></div>`;
+      }).join("")}</section>`).join("") : `<div class="notification-drawer-empty"><strong>TUDO EM DIA</strong><span>Não existem alertas pendentes.</span></div>`;
   }
 
   async function resolveAlert(alertId, resolveButton) {
