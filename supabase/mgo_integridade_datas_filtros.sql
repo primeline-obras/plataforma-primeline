@@ -1,28 +1,6 @@
--- PRIMELINE GO | MGO: leitura técnica e colunas de origem compatíveis com o Excel
--- Aditivo: não altera nem elimina lançamentos existentes.
+-- PRIMELINE GO | MGO: não inventar datas de pagamento.
+-- O filtro de obras históricas é tratado no frontend; este aditivo corrige a RPC.
 begin;
-
-create or replace function public.fn_pode_ver_mapa_gestao_obras()
-returns boolean language sql stable security definer set search_path=public as $$
-  select exists (
-    select 1 from public.utilizadores u
-    where u.id=public.fn_utilizador_atual_id()
-      and coalesce(u.ativo,true)
-      and u.funcao in ('gestao_plataforma','administrativo','diretor_obra','adjunto','preparador')
-  );
-$$;
-
-do $$
-declare original text; adjusted text;
-begin
-  select pg_get_functiondef('public.fn_mapa_gestao_obras()'::regprocedure) into original;
-  adjusted:=regexp_replace(original,
-    'if\s+not\s+\(\s*public\.fn_e_admin\(\)\s+or\s+public\.fn_e_financeiro\(\)\s*\)\s+then\s+raise\s+exception\s+''O Mapa de Gestão de Obras está reservado à Gerência e ao Financeiro\.'';\s+end\s+if;',
-    'if not public.fn_pode_ver_mapa_gestao_obras() then
-      raise exception ''Sem acesso ao Mapa de Gestão de Obras.'' using errcode = ''42501'';
-    end if;', 'i');
-  if adjusted<>original then execute adjusted; end if;
-end $$;
 
 create or replace function public.fn_mapa_gestao_obras_excel()
 returns table (
@@ -77,4 +55,5 @@ commit;
 
 select
   to_regprocedure('public.fn_mapa_gestao_obras_excel()') is not null as rpc_excel_ativa,
-  public.fn_pode_ver_mapa_gestao_obras() as utilizador_atual_pode_ver;
+  pg_get_functiondef('public.fn_mapa_gestao_obras_excel()'::regprocedure)
+    not ilike '%data_pagamento := COALESCE%' as sem_data_pagamento_inventada;
