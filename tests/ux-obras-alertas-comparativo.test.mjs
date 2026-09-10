@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { alertTopic, groupAlertsByTopic } from "../src/production-dashboard.js";
+import { managementFilterWorks } from "../src/management-map.js";
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -41,4 +42,17 @@ test("comparativo e MGO apresentam matrizes orientadas à leitura", async () => 
   assert.match(migration, /'gestao_plataforma','administrativo','diretor_obra','adjunto','preparador'/);
   assert.match(migration, /unidade_medida text, quantidade numeric/);
   assert.match(management, /DATA[\s\S]*OBRA[\s\S]*FORNECEDOR \/ COLABORADOR[\s\S]*DESCRIÇÃO[\s\S]*UN\. MEDIDA[\s\S]*QUANTIDADE[\s\S]*VALOR UNITÁRIO[\s\S]*VALOR TOTAL[\s\S]*DATA DE PAGAMENTO[\s\S]*CATEGORIA[\s\S]*DOCUMENTO/);
+});
+
+test("filtro do MGO inclui obras históricas presentes nos lançamentos", () => {
+  const works = managementFilterWorks(
+    [{ id: "obra-118", numero: "118", nome: "Saboia 37" }],
+    [
+      { obra_id: "obra-118", obra_numero: "118", obra_nome: "Saboia 37" },
+      { obra_id: "obra-114", obra_numero: "114", obra_nome: "Bairro do Rosário" },
+      { obra_id: "obra-122", obra_numero: "122", obra_nome: "Av Bombeiros Voluntários" },
+    ],
+  );
+  assert.deepEqual(works.map(work => work.numero), ["114", "118", "122"]);
+  assert.equal(works.filter(work => work.numero === "118").length, 1);
 });
