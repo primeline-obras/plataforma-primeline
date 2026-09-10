@@ -29,19 +29,13 @@ test("datas calculadas das vistas de resumo e controlo são apresentáveis", () 
   assert.equal(isoDate("2026-08-05"), "2026-08-05");
 });
 
-test("a aba única mantém o Gantt por fase e a grelha detalhada", () => {
+test("a aba única apresenta a grelha operacional simples por fase", () => {
   assert.match(planning, /function renderUnifiedPlanning\(\)/);
-  assert.match(planning, /GANTT POR FASE/);
-  assert.match(planning, /GRELHA DETALHADA/);
+  assert.match(planning, /PLANEAMENTO DA OBRA/);
+  assert.doesNotMatch(planning, /<p class="eyebrow">GANTT POR FASE<\/p>/);
   assert.doesNotMatch(planning, /<aside class="planning-layer-nav"/);
-  assert.match(planningStyles, /\.planning-baseline-head,\s*\.planning-baseline-row/);
-  assert.match(planningStyles, /\.planning-baseline-track\s*>\s*i/);
-  assert.match(planningStyles, /\.planning-summary-kpis/);
-  assert.match(planningStyles, /\.planning-summary-head,\s*\.planning-summary-row/);
-  assert.match(planningStyles, /\.planning-summary-track\s*>\s*i\.baseline/);
-  assert.match(planningStyles, /\.planning-summary-track\s*>\s*i\.effective/);
-  assert.match(planningStyles, /\.planning-editor-phase\s*>\s*header/);
-  ["% PONDERADA", "CAUSA DO ATRASO", "IMPACTO", "DESVIO INÍCIO", "DESVIO FIM", "COMPARAÇÃO DE PRAZO", "CLASSIFICAÇÃO"].forEach(label => assert.ok(planning.includes(label), `falta ${label}`));
+  assert.match(planningStyles, /\.planning-editor-phase-toggle/);
+  ["% PONDERADA", "CAUSA DO ATRASO", "IMPACTO", "AÇÕES"].forEach(label => assert.ok(planning.includes(label), `falta ${label}`));
 });
 
 test("o planeamento oferece pré-visualização, criação, atualização e dependências", () => {
@@ -65,6 +59,7 @@ test("o planeamento oferece pré-visualização, criação, atualização e depe
   assert.match(planning, /A CRIAR/);
   assert.match(planning, /A ATUALIZAR/);
   assert.match(planning, /method:\s*item\._new\s*\?\s*"POST"\s*:\s*"PATCH"/);
+  assert.match(planning, /percentual_ponderado:\s*weight === null \? null : weight \* progress \/ 100/);
   assert.match(planning, /data-remove-task/);
   assert.match(planning, /planeamento_itens_dependencias/);
   assert.match(planning, /data-remove-dependency/);
