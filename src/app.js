@@ -1,13 +1,13 @@
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=20";
+import { createProductionDashboard } from "./production-dashboard.js?v=21";
 import { createPlanningModule } from "./planning.js?v=11";
 import { createSubcontractorsModule } from "./subcontractors.js?v=4";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
-import { createComparativeMapModule } from "./comparative-map.js?v=3";
+import { createComparativeMapModule } from "./comparative-map.js?v=4";
 import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=4";
@@ -17,7 +17,7 @@ import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
-import { createManagementMapModule } from "./management-map.js?v=10";
+import { createManagementMapModule } from "./management-map.js?v=11";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
@@ -226,15 +226,20 @@ document.querySelector("#root").innerHTML = `
           <div class="heading-stat"><span>ATIVAS</span><strong id="active-works-count">00</strong></div>
         </div>
         <div class="works-toolbar">
-          <div class="search-box">${icon("search")}<input id="work-search" placeholder="Pesquisar número, nome ou cliente…"></div>
-          <div class="select-wrap"><select id="work-status-filter"><option value="all">Todas as situações</option></select><b>⌄</b></div>
+          <button class="work-picker-toggle" id="work-picker-toggle" type="button" aria-expanded="false" aria-controls="works-picker-panel">
+            ${icon("search")}<span><small>OBRA SELECIONADA</small><strong id="selected-work-label">PESQUISAR E SELECIONAR OBRA</strong></span><b>⌄</b>
+          </button>
           <button class="outline-action" id="new-work" type="button">＋ NOVA OBRA</button>
         </div>
-        <div class="works-layout">
-          <section class="works-list-panel panel">
-            <div class="works-list-head"><span>PORTFÓLIO</span><small id="works-result-count">0 OBRAS</small></div>
+        <section class="works-list-panel panel" id="works-picker-panel" hidden>
+          <div class="works-picker-controls">
+            <div class="search-box">${icon("search")}<input id="work-search" placeholder="Pesquisar número, nome ou cliente…"></div>
+            <div class="select-wrap"><select id="work-status-filter"><option value="all">Todas as situações</option></select><b>⌄</b></div>
+          </div>
+          <div class="works-list-head"><span>RESULTADOS</span><small id="works-result-count">0 OBRAS</small></div>
             <div id="works-list" class="works-list"></div>
-          </section>
+        </section>
+        <div class="works-layout">
           <section class="work-detail panel" id="work-detail">
             <div class="empty-state"><strong>SELECIONE UMA OBRA</strong><span>Consulte os principais dados e indicadores.</span></div>
           </section>
@@ -1437,6 +1442,12 @@ function renderWorks() {
   const active = works.filter(work => !["concluida", "concluído", "concluido", "cancelada"].includes((work.situacao || "").toLocaleLowerCase("pt-PT")));
   if ($("#active-works-count")) $("#active-works-count").textContent = String(active.length).padStart(2, "0");
   if ($("#works-result-count")) $("#works-result-count").textContent = `${filtered.length} ${filtered.length === 1 ? "OBRA" : "OBRAS"}`;
+  const selectedWork = works.find(work => work.id === selectedWorkId);
+  if ($("#selected-work-label")) {
+    $("#selected-work-label").textContent = selectedWork
+      ? `${selectedWork.numero || "—"} · ${selectedWork.nome || "Obra sem designação"}`
+      : "PESQUISAR E SELECIONAR OBRA";
+  }
   if (!$("#works-list")) return;
   const orderedWorks = [...filtered].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   $("#works-list").innerHTML = orderedWorks.length ? orderedWorks.map(work => `
@@ -3826,6 +3837,16 @@ $("#work-filter").addEventListener("change", e => { currentFilter = e.target.val
 document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
 $("#work-search").addEventListener("input", renderWorks);
 $("#work-status-filter").addEventListener("change", renderWorks);
+$("#work-picker-toggle").addEventListener("click", () => {
+  const panel = $("#works-picker-panel");
+  const opening = panel.hidden;
+  panel.hidden = !opening;
+  $("#work-picker-toggle").setAttribute("aria-expanded", String(opening));
+  if (opening) {
+    renderWorks();
+    requestAnimationFrame(() => $("#work-search")?.focus());
+  }
+});
 $("#team-search").addEventListener("input", renderTeam);
 $("#team-directory-search").addEventListener("input", renderTeam);
 $("#new-collaborator").addEventListener("click", () => openCollaboratorDialog());
@@ -4358,7 +4379,11 @@ $("#work-form").addEventListener("submit", async event => {
 });
 $("#works-list").addEventListener("click", event => {
   const item = event.target.closest("[data-work-id]");
-  if (item) loadWorkDetails(item.dataset.workId);
+  if (item) {
+    loadWorkDetails(item.dataset.workId);
+    $("#works-picker-panel").hidden = true;
+    $("#work-picker-toggle").setAttribute("aria-expanded", "false");
+  }
 });
 function closeWorkflowDialog() {
   $("#workflow-dialog").hidden = true;
