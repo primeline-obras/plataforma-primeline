@@ -2096,6 +2096,23 @@ button, input, select, textarea,
 
 /* Visão Geral focada em alertas e Reunião Semanal consolidada */
 .overview-alert-layout { display:grid; grid-template-columns:1fr; gap:18px; }
+.overview-alert-layout .overview-panel { padding:20px; }
+.overview-alerts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; align-items:start; }
+.overview-alert-group { --alert-topic:var(--info-text); min-width:0; overflow:hidden; border:1px solid var(--card-border); border-top:3px solid var(--alert-topic); border-radius:11px; background:var(--card); box-shadow:0 2px 8px rgba(24,29,32,.04); }
+.overview-alert-group > header { min-height:43px; padding:9px 12px; border-bottom:1px solid var(--card-border); background:color-mix(in srgb,var(--alert-topic) 7%,var(--card)); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.overview-alert-group > header strong { color:var(--text-primary); font:850 10px "Manrope"; letter-spacing:.65px; }
+.overview-alert-group > header span { display:grid; place-items:center; min-width:25px; height:25px; padding:0 7px; border-radius:999px; background:var(--alert-topic); color:#fff; font:850 10px "Manrope"; }
+.overview-alert-group-vehicles { --alert-topic:#556b83; }.overview-alert-group-safety { --alert-topic:var(--neg-text); }.overview-alert-group-people { --alert-topic:#8a6c9d; }.overview-alert-group-finance { --alert-topic:#5c8665; }.overview-alert-group-subcontracts { --alert-topic:#a16e34; }.overview-alert-group-meetings { --alert-topic:#577fa8; }.overview-alert-group-quality { --alert-topic:#a24f4a; }.overview-alert-group-documents { --alert-topic:#6b7882; }.overview-alert-group-production { --alert-topic:#6678a5; }
+.overview-alert-item { min-height:72px; padding:11px 12px; border-bottom:1px solid var(--card-border); display:grid; grid-template-columns:67px minmax(0,1fr); gap:4px 10px; align-items:start; }
+.overview-alert-item:last-child { border-bottom:0; }
+.overview-alert-item time { padding-top:2px; color:var(--text-muted); font:750 9px "Manrope"; text-transform:uppercase; }
+.overview-alert-item > span:nth-child(2) { min-width:0; }
+.overview-alert-item > span:nth-child(2) strong { display:block; color:var(--text-primary); font-size:12px; line-height:1.35; }
+.overview-alert-item > span:nth-child(2) small { display:block; margin-top:3px; color:var(--text-secondary); font-size:10px; line-height:1.4; }
+.overview-alert-item .overview-alert-actions { grid-column:2; display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:6px; }
+.overview-alert-item .overview-alert-actions em { padding:3px 5px; border:1px solid var(--card-border); border-radius:5px; background:var(--bg-soft); color:var(--text-secondary); font:750 8px "Manrope"; font-style:normal; text-transform:uppercase; }
+.overview-alert-item .overview-alert-actions button { min-height:28px; padding:0 8px; border:1px solid var(--card-border); border-radius:6px; background:transparent; color:var(--text-primary); font-size:8px; font-weight:850; }
+.overview-alert-item.alert-urgent { border-left:3px solid var(--neg-text); background:color-mix(in srgb,var(--neg-bg) 55%,var(--card)); }.overview-alert-item.alert-attention { border-left:3px solid var(--warn-text); background:color-mix(in srgb,var(--warn-bg) 45%,var(--card)); }.overview-alert-item.alert-pending { border-left:3px solid var(--info-text); }
 .overview-alert-work-sections { display:grid; gap:18px; margin-top:18px; }
 .overview-alert-work { padding:20px; }
 .overview-alert-work > header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -2113,8 +2130,8 @@ button, input, select, textarea,
 .overview-cash-values { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); margin:14px 0; border:1px solid var(--card-border); border-radius:10px; overflow:hidden; }
 .overview-cash-values > span { display:grid; gap:7px; padding:15px; border-right:1px solid var(--card-border); background:var(--bg-soft); }.overview-cash-values > span:last-child { border-right:0; }
 .overview-cash-values small { color:var(--text-muted); font:800 9px "Manrope"; letter-spacing:.06em; }.overview-cash-values b { color:var(--accent-value); font-size:17px; }.overview-cash-values .positive b { color:var(--pos-text); }.overview-cash-values .negative b { color:var(--neg-text); }
-@media (max-width:1100px) { .overview-financial-alerts { grid-template-columns:1fr 1fr; }.overview-cash-summary { grid-column:1/-1; } }
-@media (max-width:700px) { .overview-financial-alerts { grid-template-columns:1fr; }.overview-cash-summary { grid-column:auto; }.overview-cash-values { grid-template-columns:1fr 1fr; }.overview-cash-values > span:nth-child(2) { border-right:0; }.overview-cash-values > span { border-bottom:1px solid var(--card-border); } }
+@media (max-width:1100px) { .overview-financial-alerts { grid-template-columns:1fr 1fr; }.overview-cash-summary { grid-column:1/-1; }.overview-alerts { grid-template-columns:1fr; } }
+@media (max-width:700px) { .overview-financial-alerts { grid-template-columns:1fr; }.overview-cash-summary { grid-column:auto; }.overview-cash-values { grid-template-columns:1fr 1fr; }.overview-cash-values > span:nth-child(2) { border-right:0; }.overview-cash-values > span { border-bottom:1px solid var(--card-border); }.overview-alert-layout .overview-panel { padding:14px; }.overview-alert-item { grid-template-columns:58px minmax(0,1fr); } }
 
 .rsp-view { display:grid; gap:22px; }
 .rsp-heading { margin-bottom:0; }
