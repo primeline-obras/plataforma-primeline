@@ -13,6 +13,18 @@ test("o formulário permite escolher uma obra-modelo e copiar o orçamento estru
   assert.match(app, /p_copiar_orcamento:\s*workForm\.elements\.copiar_orcamento\.checked/);
 });
 
+test("a criação oferece apenas situações aceites pela base de produção", () => {
+  const situationSelect = app.match(/<select name="situacao">([\s\S]*?)<\/select>/)?.[1] || "";
+  for (const state of ["preparacao", "em_curso", "receb_provisoria", "fechada"]) {
+    assert.match(situationSelect, new RegExp(`value="${state}"`));
+  }
+  for (const invalidState of ["planeamento", "suspensa"]) {
+    assert.doesNotMatch(situationSelect, new RegExp(`value="${invalidState}"`));
+  }
+  assert.match(sql, /p_situacao text default 'preparacao'/);
+  assert.doesNotMatch(sql, /p_situacao text default 'planeamento'/);
+});
+
 test("a RPC é transacional, restrita à Gerência e não concede acesso anon", () => {
   assert.match(sql, /^begin;/m);
   assert.match(sql, /security definer/i);

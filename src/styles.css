@@ -241,6 +241,9 @@ input::placeholder { color: #acb0b1; }
 .work-list-copy { min-width: 0; }.work-list-copy strong { display: block; font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }.work-list-copy small { color: #8a9092; font-size: 12px; }
 .work-arrow { color: #9ba0a2; }.work-status { display: inline-block; font: 700 10px "Manrope"; letter-spacing: .5px; text-transform: uppercase; border: 1px solid #d3d6d3; color: #677074; background: #f5f6f4; padding: 4px 6px; white-space: nowrap; }
 .work-status.em_curso, .work-status.ativa, .work-status.ativo { color: #55715a; background: #eff6f0; border-color: #c8dacb; }
+.work-status.preparacao { color: var(--info-text); background: var(--info-bg); border-color: var(--info-border); }
+.work-status.receb_provisoria { color: var(--warn-text); background: var(--warn-bg); border-color: var(--warn-border); }
+.work-status.fechada { color: var(--text-muted); background: var(--bg-soft); border-color: var(--card-border); }
 .work-status.concluida, .work-status.concluido { color: #606b75; background: #f1f4f6; border-color: #cdd6dc; }
 .work-status.suspensa, .work-status.cancelada { color: #855b5b; background: #faf1f1; border-color: #dfcaca; }
 .work-detail { padding: 25px; min-height: 430px; }
