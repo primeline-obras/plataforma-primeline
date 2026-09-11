@@ -22,6 +22,7 @@ import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
+import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -504,6 +505,7 @@ function setInvoiceType(type) {
 function canEditPendingInvoice(invoice) {
   if (!invoice || invoice.estado_aprovacao !== "pendente") return false;
   if (hasFullAccess()) return true;
+  if (invoiceFlowState(invoice) === "devolvida_administrativo") return isAdministrative();
   return isAdministrative() && Boolean(invoice.criado_por) && invoice.criado_por === accessContext.profile?.id;
 }
 
@@ -850,6 +852,12 @@ function canPayInvoices() {
   return accessFor(accessContext).payInvoices;
 }
 
+function canReturnInvoiceToAdministrative(invoice) {
+  const role = effectiveRole();
+  if (!["diretor_obra", "adjunto", "gestao_plataforma", "gerencia"].includes(role)) return false;
+  return ["recebida", "em_validacao", "aprovada_tecnicamente"].includes(invoiceFlowState(invoice));
+}
+
 function canDeleteInvoiceFiles() {
   return canApproveInvoices() || canPayInvoices() || isAdministrative() || hasFullAccess();
 }
@@ -968,10 +976,6 @@ function toast(message, kind = "success") {
 // Confirmação partilhada pelos módulos carregados no arranque. É uma função
 // declarada (hoisted) para estar disponível mesmo quando um módulo é criado
 // antes deste ponto do ficheiro.
-function platformConfirm(message) {
-  return Promise.resolve(window.confirm(message));
-}
-
 async function friendlyApiError(response, fallback) {
   const payload = await response.json().catch(async () => ({ message: await response.text().catch(() => "") }));
   const detail = payload.message || payload.details || payload.hint || fallback;
@@ -1020,17 +1024,19 @@ function renderInvoices() {
     const actionable = canApproveInvoices();
     const editable = canEditPendingInvoice(invoice);
     const flowState = invoiceFlowState(invoice);
-    const flowIndex = Math.max(0, INVOICE_FLOW.indexOf(flowState));
+    const flowIndex = INVOICE_FLOW.indexOf(flowState);
+    const returnedToAdministrative = flowState === "devolvida_administrativo";
     const nextFlow = flowState === "recebida" ? "em_validacao" : flowState === "em_validacao" ? "aprovada_tecnicamente" : flowState === "aprovada_tecnicamente" ? "enviada_financeiro" : "";
     const nextLabel = flowState === "recebida" ? "INICIAR VALIDAÇÃO" : flowState === "em_validacao" ? "APROVAR TECNICAMENTE" : flowState === "aprovada_tecnicamente" ? "ENVIAR AO FINANCEIRO" : "";
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
-        <ol class="invoice-flow-steps" aria-label="Fluxo da fatura">${INVOICE_FLOW.map((state, index) => `<li class="${index < flowIndex ? "complete" : index === flowIndex ? "current" : ""}">${INVOICE_FLOW_LABELS[state]}</li>`).join("")}</ol>
+        <ol class="invoice-flow-steps ${returnedToAdministrative ? "returned" : ""}" aria-label="Fluxo da fatura">${returnedToAdministrative ? '<li class="current">Devolvida ao Administrativo</li>' : INVOICE_FLOW.map((state, index) => `<li class="${index < flowIndex ? "complete" : index === flowIndex ? "current" : ""}">${INVOICE_FLOW_LABELS[state]}</li>`).join("")}</ol>
         <div class="invoice-primary-actions">
           <button type="button" class="invoice-detail-action" data-invoice-detail="${invoice.id}">${icon("invoice")} VER DETALHE</button>
           ${actionable && flowState === "em_validacao" ? `<button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button>` : ""}
+          ${canReturnInvoiceToAdministrative(invoice) ? `<button type="button" class="invoice-return-administrative" data-return-administrative="${invoice.id}">${icon("x")} DEVOLVER AO ADMINISTRATIVO</button>` : ""}
           ${actionable && nextFlow ? `<button class="approve" data-advance-invoice="${invoice.id}" data-next-flow="${nextFlow}" title="${hasGuide || nextFlow !== "aprovada_tecnicamente" ? nextLabel : "Aprovar tecnicamente sem guia de remessa"}">${icon("check")} ${nextLabel}</button>` : ""}
         </div>
         ${!actionable ? `<div class="readonly-note">CONSULTA · SEM PERMISSÃO PARA APROVAR OU RECUSAR</div>` : ""}
@@ -1043,7 +1049,7 @@ function renderInvoices() {
         </div>
         ${!hasGuide ? `<div class="invoice-guide-warning" data-guide-warning="${invoice.id}"><strong>SEM GUIA DE REMESSA</strong><span>Esta fatura não tem guia de remessa anexada. A aprovação é permitida temporariamente.</span></div>` : ""}
         ${actionable ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="3" maxlength="1000" data-approval-observation="${invoice.id}" placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
-        ${invoice.observacao_devolucao ? `<div class="finance-return-note"><strong>DEVOLVIDA PELO FINANCEIRO</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p><small>É necessária uma nova verificação e aprovação antes do pagamento.</small></div>` : ""}
+        ${invoice.observacao_devolucao ? `<div class="finance-return-note ${returnedToAdministrative ? "administrative" : ""}"><strong>${returnedToAdministrative ? "DEVOLVIDA AO ADMINISTRATIVO" : "DEVOLVIDA PELO FINANCEIRO"}</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p><small>${returnedToAdministrative ? "Corrija a fatura e guarde as alterações para a reenviar ao Diretor." : "É necessária uma nova verificação e aprovação antes do pagamento."}</small></div>` : ""}
         <div class="invoice-extra-attachments"><div><strong>ANEXOS ADICIONAIS</strong><small>OPCIONAL · não substituem a guia de remessa</small></div>
           ${actionable ? `<label class="extra-attachment-picker">${icon("upload")} ADICIONAR ANEXOS<input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" data-invoice-attachment-input="${invoice.id}"></label>` : ""}
           <div>${attachments.map((item, index) => invoiceFileButton(item, index, "attachment", "ANEXO")).join("") || "<small>Sem anexos adicionais</small>"}</div>
@@ -1098,7 +1104,8 @@ async function openInvoiceDetail(invoiceId) {
         ${items.length ? `<div class="invoice-detail-table"><table><thead><tr><th>DESIGNAÇÃO</th><th>UN.</th><th>QTD.</th><th>PREÇO UNIT.</th><th>DESCONTO</th><th>TOTAL</th></tr></thead><tbody>${items.map(item => `<tr><td>${safeText(item.designacao || "—")}</td><td>${safeText(item.unidade || "—")}</td><td>${safeText(item.quantidade ?? "—")}</td><td>${euro.format(Number(item.valor_unitario || 0))}</td><td>${euro.format(Number(item.valor_desconto || 0))}</td><td>${euro.format(Number(item.valor_total || 0))}</td></tr>`).join("")}</tbody></table></div>` : `<div class="invoice-detail-empty">Esta fatura não tem itens extraídos registados.</div>`}
         ${items.length ? `<div class="invoice-reconciliation ${reconciled ? "ok" : "warning"}"><span>SOMA DOS ITENS</span><strong>${euro.format(itemsCents / 100)}</strong><span>DIFERENÇA</span><strong>${euro.format(differenceCents / 100)}</strong><p>${reconciled ? "Os itens coincidem com o valor do documento." : "Os valores não coincidem. Confirme o PDF e peça a correção da fatura antes de aprovar."}</p></div>` : ""}
       </section>
-      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() && flowState === "em_validacao" ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button>` : ""}${canApproveInvoices() && nextFlow ? `<button class="primary-button" type="button" data-detail-advance="${nextFlow}" ${reconciled || nextFlow !== "aprovada_tecnicamente" ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>${nextLabel} →</button>` : ""}</div>
+      ${invoice.observacao_devolucao ? `<div class="finance-return-note ${flowState === "devolvida_administrativo" ? "administrative" : ""}"><strong>${flowState === "devolvida_administrativo" ? "DEVOLVIDA AO ADMINISTRATIVO" : "NOTA DE DEVOLUÇÃO"}</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p></div>` : ""}
+      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() && flowState === "em_validacao" ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button>` : ""}${canReturnInvoiceToAdministrative(invoice) ? `<button class="invoice-return-administrative" type="button" data-detail-return-administrative="${invoice.id}">DEVOLVER AO ADMINISTRATIVO</button>` : ""}${canApproveInvoices() && nextFlow ? `<button class="primary-button" type="button" data-detail-advance="${nextFlow}" ${reconciled || nextFlow !== "aprovada_tecnicamente" ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>${nextLabel} →</button>` : ""}</div>
     </div>`;
   } catch (error) {
     $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-error"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><p>${safeText(error.message)}</p><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div>`;
@@ -1166,7 +1173,7 @@ function invoiceTraceStage(label, date, actor, state = "waiting") {
 function invoiceTraceEvents(invoice) {
   const events = Array.isArray(invoice.eventos) ? invoice.eventos : [];
   if (!events.length) return "";
-  const labels = { paga: "MARCADA COMO PAGA", pagamento_revertido: "PAGAMENTO REVERTIDO", devolvida: "DEVOLVIDA PELO FINANCEIRO", anexo_adicionado: "ANEXO ADICIONADO" };
+  const labels = { paga: "MARCADA COMO PAGA", pagamento_revertido: "PAGAMENTO REVERTIDO", devolvida: "DEVOLVIDA PELO FINANCEIRO", devolvida_administrativo: "DEVOLVIDA AO ADMINISTRATIVO", corrigida_reenviada: "CORRIGIDA E REENVIADA", anexo_adicionado: "ANEXO ADICIONADO" };
   return `<div class="invoice-trace-events">${events.map(event => `<div><time>${traceMoment(event.criado_em)}</time><strong>${escapeHtml(labels[event.tipo] || event.tipo || "AÇÃO")}</strong><span>${event.utilizador_nome ? `POR ${escapeHtml(event.utilizador_nome)}` : "—"}</span>${event.observacao ? `<p>${escapeHtml(event.observacao)}</p>` : ""}</div>`).join("")}</div>`;
 }
 
@@ -1357,7 +1364,7 @@ async function loadData() {
       isFinancial()
         ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
         : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
-      supabase("faturas?select=*&estado_fluxo=in.(recebida,em_validacao,aprovada_tecnicamente)&order=criado_em.desc"),
+      supabase("faturas?select=*&estado_fluxo=in.(recebida,em_validacao,aprovada_tecnicamente,devolvida_administrativo)&order=criado_em.desc"),
       supabase("faturas?select=*&estado_fluxo=in.(enviada_financeiro,paga)&order=data_aprovacao.desc"),
       supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
       supabase("faturas_anexos?select=*&order=criado_em.asc"),
@@ -5336,12 +5343,15 @@ form.addEventListener("submit", async event => {
   submit.firstChild.textContent = "A GUARDAR… ";
   let saved = false;
   if (!isSupabaseConfigured) {
-    if (editingInvoice) Object.assign(editingInvoice, payload);
+    if (editingInvoice) Object.assign(editingInvoice, payload, invoiceFlowState(editingInvoice) === "devolvida_administrativo" ? {
+      estado_fluxo: "recebida", observacao_devolucao: null, devolvido_por: null, devolvido_em: null,
+    } : {});
     else invoices.unshift({ ...payload, id: `demo-${Date.now()}`, estado_aprovacao: "pendente", criado_em: new Date().toISOString() });
     saved = true;
     toast(editingInvoice ? "Fatura pendente atualizada em modo de demonstração." : "Fatura adicionada em modo de demonstração.");
   } else {
     if (editingInvoice) {
+      const wasReturnedToAdministrative = invoiceFlowState(editingInvoice) === "devolvida_administrativo";
       submit.firstChild.textContent = "A ATUALIZAR… ";
       const result = await supabase("rpc/fn_editar_fatura_pendente", {
         method: "POST",
@@ -5366,7 +5376,7 @@ form.addEventListener("submit", async event => {
         const index = invoices.findIndex(item => item.id === editingInvoice.id);
         if (index >= 0) invoices[index] = updated;
         saved = true;
-        toast("Fatura pendente atualizada e mantida na fila de aprovação.");
+        toast(wasReturnedToAdministrative ? "Fatura corrigida e reenviada ao Diretor para aprovação." : "Fatura pendente atualizada e mantida na fila de aprovação.");
       }
     } else if (selectedPdf) {
       submit.firstChild.textContent = "A ENVIAR PDF… ";
@@ -5433,6 +5443,15 @@ $("#invoice-list").addEventListener("click", async event => {
   const deleteFileButton = event.target.closest("[data-delete-invoice-guide], [data-delete-invoice-attachment]");
   if (deleteFileButton) {
     try { await removeInvoiceRelatedFile(deleteFileButton); } catch (error) { toast(error.message, "error"); deleteFileButton.disabled = false; }
+    return;
+  }
+  const returnAdministrativeButton = event.target.closest("[data-return-administrative]");
+  if (returnAdministrativeButton) {
+    const invoice = invoices.find(item => String(item.id) === String(returnAdministrativeButton.dataset.returnAdministrative));
+    if (!invoice) return toast("A fatura já não está disponível.", "error");
+    returnAdministrativeButton.disabled = true;
+    try { await returnInvoiceToAdministrative(invoice); }
+    catch (error) { toast(error.message, "error"); returnAdministrativeButton.disabled = false; }
     return;
   }
   const advanceButton = event.target.closest("[data-advance-invoice]");
@@ -5542,6 +5561,15 @@ $("#workflow-dialog").addEventListener("click", async event => {
     cardPdfButton?.click();
     return;
   }
+  const returnAdministrativeButton = event.target.closest("[data-detail-return-administrative]");
+  if (returnAdministrativeButton) {
+    const invoice = invoices.find(item => String(item.id) === String(returnAdministrativeButton.dataset.detailReturnAdministrative));
+    if (!invoice) return toast("A fatura já não está disponível.", "error");
+    returnAdministrativeButton.disabled = true;
+    try { await returnInvoiceToAdministrative(invoice); closeWorkflowDialog(); }
+    catch (error) { toast(error.message, "error"); returnAdministrativeButton.disabled = false; }
+    return;
+  }
   const advanceDetail = event.target.closest("[data-detail-advance]");
   if (advanceDetail) {
     const detail = advanceDetail.closest("[data-open-invoice]");
@@ -5642,6 +5670,37 @@ async function addFinanceAttachments(input) {
   } finally {
     input.disabled = false;
   }
+}
+
+async function returnInvoiceToAdministrative(invoice) {
+  if (!canReturnInvoiceToAdministrative(invoice)) throw new Error("Esta ação está reservada ao Diretor ou Adjunto responsável pela obra.");
+  const observation = await platformPrompt(
+    "Explique ao Administrativo o que deve ser corrigido antes de a fatura voltar à aprovação.",
+    "",
+    { title: "Devolver ao Administrativo", label: "NOTA OBRIGATÓRIA", confirmLabel: "CONTINUAR" },
+  );
+  if (!observation) return;
+  if (!await platformConfirm(
+    "A fatura ficará bloqueada para aprovação até o Administrativo a corrigir e reenviar.",
+    { title: "Confirmar devolução", danger: true, confirmLabel: "DEVOLVER" },
+  )) return;
+  if (isSupabaseConfigured) {
+    const response = await supabase("rpc/fn_devolver_fatura_administrativo", {
+      method: "POST",
+      body: JSON.stringify({ p_fatura_id: invoice.id, p_observacao: observation }),
+    });
+    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível devolver a fatura ao Administrativo."));
+    Object.assign(invoice, await response.json());
+  } else {
+    Object.assign(invoice, {
+      estado_aprovacao: "pendente", estado_pagamento: "por_pagar",
+      estado_fluxo: "devolvida_administrativo", observacao_devolucao: observation,
+      devolvido_por: accessContext.profile?.id || null, devolvido_em: new Date().toISOString(),
+    });
+  }
+  if (allowedViews().has("finance")) await loadInvoiceTrace();
+  renderInvoices();
+  toast("Fatura devolvida ao Administrativo com a nota registada.", "warning");
 }
 
 async function returnInvoiceToReview(invoice) {
