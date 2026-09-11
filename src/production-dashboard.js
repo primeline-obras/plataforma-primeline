@@ -741,28 +741,41 @@ export function createProductionDashboard(options) {
     const todayPosition = clampPercent((today.getTime() - start.getTime()) / total * 100);
     const months = buildMonths(work.data_inicio, work.data_fim_prevista);
     const sortedPhases = [...data.phases].sort((a, b) => String(a.codigo || a.numero).localeCompare(String(b.codigo || b.numero), "pt", { numeric: true }));
+    const phaseColors = ["#879bbd", "#9b8aca", "#75a9b1", "#7ca4d2", "#70b6a6", "#d1a45f", "#b89ad8", "#80b8b4", "#8eabd0", "#9bbb78", "#d69a67"];
+    const responsibleForPhase = phaseId => {
+      const names = [...new Set((data.planningItems || [])
+        .filter(item => item.fase_id === phaseId)
+        .map(item => String(item.responsavel || "").trim())
+        .filter(Boolean))];
+      if (!names.length) return "POR DEFINIR";
+      return names.length > 3 ? `${names.slice(0, 3).join(" / ")} +${names.length - 3}` : names.join(" / ");
+    };
     return `<div class="phase-timeline" style="--months:${months.length}">
-      <div class="phase-timeline-head"><span>FASE</span><div>${months.map(month => `<b>${monthLabel(month).split(" ")[0]}</b>`).join("")}<i style="left:${todayPosition}%"></i></div><em>%</em></div>
-      ${sortedPhases.map(phase => {
+      <div class="phase-timeline-head"><span>FASE</span><span>FORNECEDOR / RESP.</span><div>${months.map(month => `<b>${monthLabel(month).split(" ")[0]}</b>`).join("")}<i style="left:${todayPosition}%"></i></div><em>%</em></div>
+      ${sortedPhases.map((phase, phaseIndex) => {
         const plan = { ...phase, ...(data.planning.find(row => row.fase_id === phase.id) || {}) };
         const phaseStart = safeDate(plannedStart(plan));
         const phaseEnd = safeDate(plannedEnd(plan));
         const progress = clampPercent(number(plan.percentual_executado));
-        if (!phaseStart || !phaseEnd) return `<div class="phase-timeline-row no-dates"><span><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small></span><div><i style="left:${todayPosition}%"></i><small>SEM DATAS PREVISTAS</small></div><em>${Math.round(progress)}%</em></div>`;
+        const phaseCode = escapeHtml(phase.codigo || phase.numero || "—");
+        const phaseColor = phaseColors[phaseIndex % phaseColors.length];
+        const responsible = escapeHtml(responsibleForPhase(phase.id));
+        const rowStyle = `--phase-color:${phaseColor}`;
+        if (!phaseStart || !phaseEnd) return `<div class="phase-timeline-row no-dates" style="${rowStyle}"><span><strong>${phaseCode}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small></span><span class="phase-responsible">${responsible}</span><div><i class="today-line" style="left:${todayPosition}%"></i><small>SEM DATAS PREVISTAS</small></div><em>${Math.round(progress)}%</em></div>`;
         const left = clampPercent((phaseStart.getTime() - start.getTime()) / total * 100);
         const right = clampPercent((phaseEnd.getTime() - start.getTime()) / total * 100);
         const width = Math.max(1, right - left);
         const expected = today <= phaseStart ? 0 : today >= phaseEnd ? 100 : clampPercent((today.getTime() - phaseStart.getTime()) / (phaseEnd.getTime() - phaseStart.getTime()) * 100);
         const delta = progress - expected;
         const state = delta < -10 ? "late" : delta > 10 ? "ahead" : "on-time";
-        const stateLabel = state === "late" ? "ATRASADA" : state === "ahead" ? "ADIANTADA" : "DENTRO DO PRAZO";
-        return `<div class="phase-timeline-row ${state}">
-          <span><strong>${escapeHtml(phase.codigo || phase.numero || "—")}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small><i>${stateLabel}</i></span>
-          <div><i class="today-line" style="left:${todayPosition}%"></i><b class="phase-window" style="left:${left}%;width:${width}%"><span style="width:${progress}%"></span><small>${prettyDate.format(phaseStart)} → ${prettyDate.format(phaseEnd)}</small></b></div>
+        return `<div class="phase-timeline-row ${state}" style="${rowStyle}">
+          <span><strong>${phaseCode}</strong><small>${escapeHtml(phase.descricao || "Fase")}</small></span>
+          <span class="phase-responsible">${responsible}</span>
+          <div><i class="today-line" style="left:${todayPosition}%"></i><span class="phase-track"></span><b class="phase-window" style="left:${left}%;width:${width}%" title="${prettyDate.format(phaseStart)} → ${prettyDate.format(phaseEnd)}"><span style="width:${progress}%"></span><small>${phaseCode}</small></b></div>
           <em>${Math.round(progress)}%</em>
         </div>`;
       }).join("") || `<div class="overview-empty">SEM PLANEAMENTO DISPONÍVEL</div>`}
-      <div class="phase-timeline-legend"><span><i class="late"></i>ATRASADA</span><span><i class="on-time"></i>DENTRO DO PRAZO</span><span><i class="ahead"></i>ADIANTADA</span><strong>A LINHA VERTICAL MARCA HOJE</strong></div>
+      <div class="phase-timeline-legend"><span><i class="planned"></i>PERÍODO PREVISTO</span><span><i class="completed"></i>EXECUTADO</span><strong>A LINHA VERTICAL MARCA HOJE</strong></div>
     </div>`;
   }
 
@@ -1060,7 +1073,7 @@ export function createProductionDashboard(options) {
       investmentMode ? meetingQuery(`impactos_obra?select=*&obra_id=eq.${encoded}&order=data.desc`, "Impactos de obra", warnings) : [],
       investmentMode ? [] : meetingQuery(`autos_medicao?select=id,obra_id,mes_referencia,numero_auto,tipo,data_medicao,estado,valor_bruto_medido,valor_retencao_garantia,valor_deduzido_adiantamento,valor_a_faturar&obra_id=eq.${encoded}`, "Autos", warnings),
       phaseIds.length ? meetingQuery(`planeamento_fases_resumo?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Planeamento", warnings) : [],
-      phaseIds.length ? meetingQuery(`planeamento_itens?select=id,fase_id,codigo,descricao,especialidade_id,executado_por,subempreitada_id,item_orcamento_id,estado&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=codigo`, "Tarefas de planeamento", warnings) : [],
+      phaseIds.length ? meetingQuery(`planeamento_itens?select=id,fase_id,codigo,descricao,responsavel,especialidade_id,executado_por,subempreitada_id,item_orcamento_id,estado&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=codigo`, "Tarefas de planeamento", warnings) : [],
       phaseIds.length ? meetingQuery(`itens_orcamento?select=*&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})`, "Orçamento", warnings) : [],
       meetingQuery(`consultas_subempreitada?select=*&obra_id=eq.${encoded}`, "Consultas", warnings),
       subcontractIds.length ? meetingQuery(`pagamentos_subempreitada?select=*&subempreitada_id=in.(${subcontractIds.map(encodeURIComponent).join(",")})`, "Pagamentos", warnings) : [],

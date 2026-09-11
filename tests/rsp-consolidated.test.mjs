@@ -24,5 +24,10 @@ assert.match(dashboard, /OBRA EXECUTADA/);
 assert.match(dashboard, /PRAZO CONSUMIDO/);
 assert.match(dashboard, /CASH FLOW MENSAL/);
 assert.match(dashboard, /PLANEAMENTO DE FASES/);
+assert.match(dashboard, /FORNECEDOR \/ RESP\./);
+assert.match(dashboard, /responsibleForPhase/);
+assert.match(dashboard, /planeamento_itens\?select=id,fase_id,codigo,descricao,responsavel/);
+assert.match(dashboard, /phase-track/);
+assert.match(dashboard, /phaseColors/);
 
 console.log("RSP consolidada reutiliza o carregador e os cálculos da reunião individual.");
