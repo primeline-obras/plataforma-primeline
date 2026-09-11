@@ -12,11 +12,25 @@ test("alertas são agrupados por tema e mantêm prioridade dentro do grupo", () 
     { tipo: "seguro_viatura", titulo: "Seguro", data_gatilho: "2026-09-12" },
     { tipo: "consulta_medicina", titulo: "Consulta", data_gatilho: "2026-09-11" },
     { tipo: "pagamento_fatura", titulo: "Pagamento", data_gatilho: "2026-09-10" },
+    { tipo: "subempreitada_execucao_sem_aprovacao", titulo: "Subempreitada", obra_id: "obra-1", data_gatilho: "2026-09-10" },
+    { tipo: "reserva_sala", titulo: "Reunião", data_gatilho: "2026-09-10" },
     { tipo: "rnc_obra", titulo: "RNC", obra_id: "obra-1", data_gatilho: "2026-09-10" },
   ]);
-  assert.deepEqual(groups.map(group => group.topic), ["safety", "people", "finance", "production"]);
-  assert.equal(alertTopic({ tipo: "seguro_viatura" }), "safety");
+  assert.deepEqual(groups.map(group => group.topic), ["vehicles", "people", "finance", "subcontracts", "meetings", "quality"]);
+  assert.equal(alertTopic({ tipo: "seguro_viatura" }), "vehicles");
+  assert.equal(alertTopic({ tipo: "subempreitada_historica_por_validar", obra_id: "obra-1" }), "subcontracts");
+  assert.equal(alertTopic({ tipo: "informacao_reuniao_producao" }), "meetings");
   assert.deepEqual(groups.find(group => group.topic === "people").alerts.map(alert => alert.tipo), ["consulta_medicina", "aniversario"]);
+});
+
+test("visão geral apresenta cartões visuais independentes por categoria", async () => {
+  const css = await read("src/styles.css");
+  const dashboard = await read("src/production-dashboard.js");
+  assert.match(dashboard, /overview-alert-group-\$\{group\.topic\}/);
+  assert.match(css, /\.overview-alerts\s*\{[^}]*grid-template-columns:repeat\(2/);
+  assert.match(css, /\.overview-alert-group\s*\{[^}]*border-top:3px solid/);
+  assert.match(css, /\.overview-alert-group-subcontracts/);
+  assert.match(css, /\.overview-alert-group-meetings/);
 });
 
 test("obras usam seletor recolhível e detalhe a toda a largura", async () => {

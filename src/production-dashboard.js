@@ -183,20 +183,32 @@ const isMeetingInformation = alert => alert?.tipo === "reserva_sala";
 export function alertTopic(alert = {}) {
   const text = `${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-PT");
-  if (/(viatura|seguro.*auto|inspecao.*viatura|epi|seguranca|acidente)/.test(text)) return "safety";
+  if (/(viatura|seguro.*auto|inspecao.*viatura)/.test(text)) return "vehicles";
+  if (/(epi|seguranca|acidente)/.test(text)) return "safety";
   if (/(medicina|consulta.*medic|contrato.*trabalho|fim_contrato_rh|ferias|ausencia|hora.*extra|aniversario)/.test(text)) return "people";
   if (FINANCIAL_ALERT_PATTERN.test(text)) return "finance";
-  if (/(obra|subempreitada|planeamento|rnc|reuniao|medicao|tee|documento)/.test(text) || alert.obra_id) return "production";
+  if (/(subempreitada|subcontrato|adjudic)/.test(text)) return "subcontracts";
+  if (/(reserva_sala|reuniao|sala)/.test(text)) return "meetings";
+  if (/(rnc|nao.?conformidade|qualidade)/.test(text)) return "quality";
+  if (/(documento|validade_documental|certidao)/.test(text)) return "documents";
+  if (/(obra|planeamento|medicao|tee|tarefa|fase)/.test(text) || alert.obra_id) return "production";
   return "general";
 }
 
 const ALERT_TOPIC_LABELS = {
-  safety: "SEGURANÇA E VIATURAS",
+  vehicles: "VIATURAS",
+  safety: "SEGURANÇA E EPI",
   people: "PESSOAS E RH",
   finance: "FINANCEIRO",
-  production: "OBRAS E PRODUÇÃO",
+  subcontracts: "SUBEMPREITADAS",
+  meetings: "REUNIÕES",
+  quality: "RNC E QUALIDADE",
+  documents: "DOCUMENTOS",
+  production: "PLANEAMENTO E OBRA",
   general: "GERAL",
 };
+
+const ALERT_TOPIC_ORDER = ["vehicles", "safety", "people", "finance", "subcontracts", "meetings", "quality", "documents", "production", "general"];
 
 export function groupAlertsByTopic(alerts = []) {
   const grouped = new Map();
@@ -205,7 +217,7 @@ export function groupAlertsByTopic(alerts = []) {
     if (!grouped.has(topic)) grouped.set(topic, []);
     grouped.get(topic).push(alert);
   });
-  return ["safety", "people", "finance", "production", "general"]
+  return ALERT_TOPIC_ORDER
     .filter(topic => grouped.has(topic))
     .map(topic => ({ topic, label: ALERT_TOPIC_LABELS[topic], alerts: grouped.get(topic) }));
 }
