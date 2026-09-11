@@ -13,7 +13,7 @@ create or replace function public.fn_criar_obra_de_modelo(
   p_tipo text default null,
   p_modalidade text default null,
   p_diretor_obra_id uuid default null,
-  p_situacao text default 'planeamento',
+  p_situacao text default 'preparacao',
   p_data_inicio date default null,
   p_data_fim_prevista date default null,
   p_copiar_orcamento boolean default true
@@ -67,7 +67,7 @@ begin
     btrim(p_numero), btrim(p_nome), nullif(btrim(p_cliente), ''),
     nullif(btrim(p_morada), ''), nullif(btrim(p_tipo), ''),
     nullif(btrim(p_modalidade), ''), p_diretor_obra_id,
-    coalesce(nullif(btrim(p_situacao), ''), 'planeamento'),
+    coalesce(nullif(btrim(p_situacao), ''), 'preparacao'),
     p_data_inicio, p_data_fim_prevista
   ) returning * into v_obra;
 

@@ -415,7 +415,7 @@ document.querySelector("#root").innerHTML = `
       <section class="work-dialog-card" role="dialog" aria-modal="true" aria-labelledby="work-dialog-title">
         <div class="panel-title"><span id="work-dialog-title">＋ NOVA OBRA</span><button id="close-work-dialog" type="button" aria-label="Fechar">×</button></div>
         <form id="work-form">
-          <div class="form-row"><label>N.º DA OBRA<input name="numero" required maxlength="30" placeholder="Ex. 121"></label><label>SITUAÇÃO<div class="select-wrap"><select name="situacao"><option value="em_curso">Em curso</option><option value="planeamento">Planeamento</option><option value="suspensa">Suspensa</option></select><b>⌄</b></div></label></div>
+          <div class="form-row"><label>N.º DA OBRA<input name="numero" required maxlength="30" placeholder="Ex. 121"></label><label>SITUAÇÃO<div class="select-wrap"><select name="situacao"><option value="preparacao">Preparação</option><option value="em_curso">Em curso</option><option value="receb_provisoria">Receção provisória</option><option value="fechada">Fechada</option></select><b>⌄</b></div></label></div>
           <label>DESIGNAÇÃO<input name="nome" required maxlength="160" placeholder="Ex. Moradia Unifamiliar — Cascais"></label>
           <div class="form-row"><label>CLIENTE<input name="cliente" maxlength="160"></label><label>DIRETOR DE OBRA<div class="select-wrap"><select name="diretor_obra_id"><option value="">Não definido</option></select><b>⌄</b></div></label></div>
           <label>MORADA<input name="morada" maxlength="240"></label>
@@ -4317,7 +4317,7 @@ $("#work-form").addEventListener("submit", async event => {
     modalidade: fields.modalidade.trim() || null,
     projeto_id: fields.projeto_id || null,
     diretor_obra_id: fields.diretor_obra_id || null,
-    situacao: fields.situacao || "em_curso",
+    situacao: fields.situacao || "preparacao",
     data_inicio: fields.data_inicio || null,
     data_fim_prevista: fields.data_fim_prevista || null,
   };
