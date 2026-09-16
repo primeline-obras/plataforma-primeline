@@ -7,7 +7,7 @@ import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
-import { createComparativeMapModule } from "./comparative-map.js?v=4";
+import { createComparativeMapModule } from "./comparative-map.js?v=5";
 import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=4";
@@ -1360,7 +1360,7 @@ async function loadData() {
   {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,projeto_id,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
-      supabase("fornecedores?select=id,nome&order=nome"),
+      supabase("fornecedores?select=id,nome,tipo_entidade,estado_confianca&order=nome"),
       isFinancial()
         ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
         : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
@@ -6010,6 +6010,15 @@ comparativeMapModule = createComparativeMapModule({
   getPhases: () => workDetails.phases,
   euro,
   toast,
+  uploadProposalPdf: uploadWorkDocument,
+  downloadProposalPdf: downloadWorkDocument,
+  deleteProposalPdf: deleteWorkDocument,
+  onSupplierCreated: row => {
+    if (!row?.id) return;
+    const existing = suppliers.find(item => item.id === row.id);
+    if (existing) Object.assign(existing, row); else suppliers.push(row);
+    suppliers.sort((a, b) => String(a.nome).localeCompare(String(b.nome), "pt-PT"));
+  },
   onAdjudicated: async row => {
     if (!row?.id) return;
     const existing = subcontracts.find(item => item.id === row.id);
