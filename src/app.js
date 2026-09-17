@@ -1043,7 +1043,6 @@ function renderInvoices() {
         <ol class="invoice-flow-steps ${returnedToAdministrative ? "returned" : ""}" aria-label="Fluxo da fatura">${returnedToAdministrative ? '<li class="current">Devolvida ao Administrativo</li>' : INVOICE_FLOW.map((state, index) => `<li class="${index < flowIndex ? "complete" : index === flowIndex ? "current" : ""}">${INVOICE_FLOW_LABELS[state]}</li>`).join("")}</ol>
         <div class="invoice-primary-actions">
           <button type="button" class="invoice-detail-action" data-invoice-detail="${invoice.id}">${icon("invoice")} VER DETALHE</button>
-          ${actionable && flowState === "em_validacao" ? `<button class="reject" data-action="recusado" data-id="${invoice.id}">${icon("x")} RECUSAR</button>` : ""}
           ${canReturnInvoiceToAdministrative(invoice) ? `<button type="button" class="invoice-return-administrative" data-return-administrative="${invoice.id}">${icon("x")} DEVOLVER AO ADMINISTRATIVO</button>` : ""}
           ${actionable && nextFlow ? `<button class="approve" data-advance-invoice="${invoice.id}" data-next-flow="${nextFlow}" title="${hasGuide || nextFlow !== "aprovada_tecnicamente" ? nextLabel : "Aprovar tecnicamente sem guia de remessa"}">${icon("check")} ${nextLabel}</button>` : ""}
         </div>
@@ -1113,7 +1112,7 @@ async function openInvoiceDetail(invoiceId) {
         ${items.length ? `<div class="invoice-reconciliation ${reconciled ? "ok" : "warning"}"><span>SOMA DOS ITENS</span><strong>${euro.format(itemsCents / 100)}</strong><span>DIFERENÇA</span><strong>${euro.format(differenceCents / 100)}</strong><p>${reconciled ? "Os itens coincidem com o valor do documento." : "Os valores não coincidem. Confirme o PDF e peça a correção da fatura antes de aprovar."}</p></div>` : ""}
       </section>
       ${invoice.observacao_devolucao ? `<div class="finance-return-note ${flowState === "devolvida_administrativo" ? "administrative" : ""}"><strong>${flowState === "devolvida_administrativo" ? "DEVOLVIDA AO ADMINISTRATIVO" : "NOTA DE DEVOLUÇÃO"}</strong><p>${escapeHtml(invoice.observacao_devolucao)}</p></div>` : ""}
-      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canApproveInvoices() && flowState === "em_validacao" ? `<button class="reject" type="button" data-detail-decision="recusado">RECUSAR</button>` : ""}${canReturnInvoiceToAdministrative(invoice) ? `<button class="invoice-return-administrative" type="button" data-detail-return-administrative="${invoice.id}">DEVOLVER AO ADMINISTRATIVO</button>` : ""}${canApproveInvoices() && nextFlow ? `<button class="primary-button" type="button" data-detail-advance="${nextFlow}" ${reconciled || nextFlow !== "aprovada_tecnicamente" ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>${nextLabel} →</button>` : ""}</div>
+      <div class="dialog-actions invoice-detail-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button>${canReturnInvoiceToAdministrative(invoice) ? `<button class="invoice-return-administrative" type="button" data-detail-return-administrative="${invoice.id}">DEVOLVER AO ADMINISTRATIVO</button>` : ""}${canApproveInvoices() && nextFlow ? `<button class="primary-button" type="button" data-detail-advance="${nextFlow}" ${reconciled || nextFlow !== "aprovada_tecnicamente" ? "" : `title="Existe uma diferença de ${euro.format(Math.abs(differenceCents) / 100)}"`}>${nextLabel} →</button>` : ""}</div>
     </div>`;
   } catch (error) {
     $("#workflow-dialog-content").innerHTML = `<div class="invoice-detail-error"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><p>${safeText(error.message)}</p><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div>`;
@@ -3751,11 +3750,11 @@ function renderWorkDetail(work) {
   if (selectedWorkTab === "summary" && !financialReadOnly) productionDashboard.showWorkCosts(work.id);
 }
 
-async function advanceInvoiceFlow(invoice, nextState) {
+async function advanceInvoiceFlow(invoice, nextState, observation = null) {
   if (!invoice || !INVOICE_FLOW.includes(nextState)) throw new Error("Transição de fatura inválida.");
   const response = await supabase("rpc/fn_avancar_estado_fluxo_fatura", {
     method: "POST",
-    body: JSON.stringify({ p_fatura_id: invoice.id, p_novo_estado: nextState }),
+    body: JSON.stringify({ p_fatura_id: invoice.id, p_novo_estado: nextState, p_observacao: observation || null }),
   });
   if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível avançar o fluxo da fatura."));
   const payload = await response.json();
@@ -3768,7 +3767,9 @@ async function advanceInvoiceFlow(invoice, nextState) {
   renderInvoices();
   renderFinance();
   if (allowedViews().has("finance")) await loadInvoiceTrace();
-  toast(`Fatura: ${INVOICE_FLOW_LABELS[nextState]}.`);
+  toast(nextState === "aprovada_tecnicamente" && invoice.aprovada_sem_guia
+    ? "Fatura aprovada sem guia de remessa."
+    : `Fatura: ${INVOICE_FLOW_LABELS[nextState]}.`, invoice.aprovada_sem_guia ? "warning" : "success");
 }
 
 async function removeInvoiceRelatedFile(button) {
@@ -5372,6 +5373,27 @@ async function confirmSimilarInvoice(match, actionLabel = "continuar") {
   );
 }
 
+async function uploadSelectedInvoiceGuides(invoice, guideInput) {
+  const selectedGuides = [...(guideInput?.files || [])];
+  if (!selectedGuides.length) return [];
+  const createdGuides = [];
+  for (const file of selectedGuides) {
+    if (!isSupabaseConfigured) {
+      createdGuides.push({ id: crypto.randomUUID(), fatura_id: invoice.id, arquivo_url: URL.createObjectURL(file), nome_arquivo: file.name, mime_type: file.type });
+      continue;
+    }
+    const arquivoUrl = await uploadDeliveryNote(file, invoice.obra_id, invoice.id);
+    const response = await supabase("faturas_guias?select=*", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: arquivoUrl, nome_arquivo: file.name, mime_type: file.type }),
+    });
+    if (!response.ok) throw new Error(await friendlyApiError(response, `Não foi possível registar a guia ${file.name}.`));
+    createdGuides.push((await response.json())[0]);
+  }
+  return createdGuides;
+}
+
 async function confirmSubcontractContractLimit(invoice, stage) {
   if (!invoice?.subempreitada_id || !isSupabaseConfigured) return true;
   const response = await supabase("rpc/fn_verificar_limite_fatura_subempreitada", {
@@ -5575,13 +5597,35 @@ $("#invoice-list").addEventListener("click", async event => {
     const invoice = invoices.find(item => String(item.id) === String(advanceButton.dataset.advanceInvoice));
     if (!invoice) return;
     const nextState = advanceButton.dataset.nextFlow;
+    const card = advanceButton.closest("[data-invoice-card]");
+    const guideInput = card?.querySelector("[data-guide-input]");
+    const approvalObservation = card?.querySelector(`[data-approval-observation="${invoice.id}"]`)?.value.trim() || "";
+    const selectedGuides = [...(guideInput?.files || [])];
+    const existingGuides = invoiceGuides.filter(item => String(item.fatura_id) === String(invoice.id));
+    const approvingWithoutGuide = nextState === "aprovada_tecnicamente" && !existingGuides.length && !selectedGuides.length;
     try {
+      if (nextState === "aprovada_tecnicamente") {
+        const match = await findDuplicateInvoice(invoice, invoice.id);
+        if (match && !await confirmSimilarInvoice(match, "aprovar esta fatura")) return;
+      }
       if (nextState === "aprovada_tecnicamente" && !await confirmSubcontractContractLimit(invoice, nextState)) return;
     } catch (error) { return toast(error.message, "error"); }
-    if (nextState === "aprovada_tecnicamente" && !invoiceGuides.some(item => String(item.fatura_id) === String(invoice.id))
+    if (approvingWithoutGuide
       && !await platformConfirm("Esta fatura não tem guia de remessa. Confirma a aprovação técnica sem guia?", { title: "Aprovar sem guia", danger: true, confirmLabel: "APROVAR" })) return;
     advanceButton.disabled = true;
-    try { await advanceInvoiceFlow(invoice, nextState); } catch (error) { toast(error.message, "error"); advanceButton.disabled = false; }
+    try {
+      if (nextState === "aprovada_tecnicamente" && selectedGuides.length) {
+        advanceButton.innerHTML = `${icon("upload")} A ENVIAR GUIAS…`;
+        const createdGuides = await uploadSelectedInvoiceGuides(invoice, guideInput);
+        invoiceGuides.push(...createdGuides);
+        guideInput.value = "";
+      }
+      await advanceInvoiceFlow(invoice, nextState, approvalObservation);
+    } catch (error) {
+      toast(error.message, "error");
+      advanceButton.disabled = false;
+      advanceButton.innerHTML = `${icon("check")} ${nextState === "aprovada_tecnicamente" ? "APROVAR TECNICAMENTE" : "AVANÇAR"}`;
+    }
     return;
   }
   const detailButton = event.target.closest("[data-invoice-detail]");
@@ -5611,67 +5655,6 @@ $("#invoice-list").addEventListener("click", async event => {
     }
     return;
   }
-  const button = event.target.closest("[data-action]"); if (!button) return;
-  if (!canApproveInvoices()) return toast("Não tem permissão para aprovar ou recusar faturas.", "error");
-  const invoice = invoices.find(item => String(item.id) === button.dataset.id); if (!invoice) return;
-  const decision = button.dataset.action;
-  if (decision === "aprovado") {
-    try {
-      const match = await findDuplicateInvoice(invoice, invoice.id);
-      if (match && !await confirmSimilarInvoice(match, "aprovar esta fatura")) return;
-      if (!await confirmSubcontractContractLimit(invoice, "aprovada_tecnicamente")) return;
-    } catch (error) {
-      return toast(error.message, "error");
-    }
-  }
-  const card = button.closest("[data-invoice-card]");
-  const approvalObservation = card?.querySelector(`[data-approval-observation="${invoice.id}"]`)?.value.trim() || "";
-  const guideInput = card?.querySelector("[data-guide-input]");
-  const existingGuides = invoiceGuides.filter(guide => guide.fatura_id === invoice.id);
-  const selectedGuides = [...(guideInput?.files || [])];
-  const approvingWithoutGuide = decision === "aprovado" && !existingGuides.length && !selectedGuides.length;
-  if (approvingWithoutGuide) toast("Esta fatura não tem guia de remessa anexada. A aprovação continuará.", "warning");
-  button.disabled = true;
-  const createdGuides = [];
-  if (decision === "aprovado" && selectedGuides.length && isSupabaseConfigured) {
-    try {
-      button.innerHTML = `${icon("upload")} A ENVIAR GUIAS…`;
-      for (const file of selectedGuides) {
-        const arquivoUrl = await uploadDeliveryNote(file, invoice.obra_id, invoice.id);
-        const response = await supabase("faturas_guias?select=*", {
-          method: "POST",
-          headers: { Prefer: "return=representation" },
-          body: JSON.stringify({ fatura_id: invoice.id, arquivo_url: arquivoUrl, nome_arquivo: file.name, mime_type: file.type }),
-        });
-        if (!response.ok) throw new Error(await response.text());
-        createdGuides.push((await response.json())[0]);
-      }
-    } catch (error) {
-      toast(error.message || "Não foi possível enviar as guias.", "error");
-      button.disabled = false;
-      button.innerHTML = `${icon("check")} APROVAR`;
-      return;
-    }
-  }
-  if (isSupabaseConfigured) {
-    const result = await supabase("rpc/fn_decidir_fatura", {
-      method: "POST",
-      body: JSON.stringify({ p_fatura_id: invoice.id, p_decisao: decision, p_observacao: approvalObservation }),
-    });
-    if (!result.ok) { toast(`Não foi possível concluir: ${await result.text()}`, "error"); button.disabled = false; return; }
-  }
-  if (decision === "aprovado") {
-    if (isSupabaseConfigured) invoiceGuides.push(...createdGuides);
-    else if (!existingGuides.length) invoiceGuides.push(...selectedGuides.map((file, index) => ({ id: `demo-guide-${Date.now()}-${index}`, fatura_id: invoice.id, arquivo_url: URL.createObjectURL(file), nome_arquivo: file.name, mime_type: file.type })));
-    financeInvoices.unshift({ ...invoice, observacao: approvalObservation || null, estado_aprovacao: "aprovado", estado_pagamento: "por_pagar", aprovada_sem_guia: approvingWithoutGuide, data_aprovacao: new Date().toISOString(), aprovado_por_nome: accessContext.profile?.nome || null });
-    renderFinance();
-  }
-  if (editingInvoiceId === String(invoice.id)) stopInvoiceEditing();
-  invoices = invoices.filter(item => item.id !== invoice.id); renderInvoices();
-  if (allowedViews().has("finance")) await loadInvoiceTrace();
-  toast(approvingWithoutGuide
-    ? `Fatura aprovada sem guia de remessa${isSupabaseConfigured ? "" : " em modo de demonstração"}.`
-    : `Fatura ${decision === "aprovado" ? "aprovada" : "recusada"}${isSupabaseConfigured ? "" : " em modo de demonstração"}.`, approvingWithoutGuide ? "warning" : "success");
 });
 $("#workflow-dialog").addEventListener("click", async event => {
   const pdfButton = event.target.closest("[data-open-invoice] [data-pdf]");
@@ -5698,25 +5681,13 @@ $("#workflow-dialog").addEventListener("click", async event => {
       { title: "Diferença no valor da fatura", danger: true, confirmLabel: "APROVAR" },
     )) return;
     const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-next-flow="${advanceDetail.dataset.detailAdvance}"]`);
+    const cardObservation = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-approval-observation]`);
+    const detailObservation = detail.querySelector("[data-detail-approval-observation]");
+    if (cardObservation && detailObservation) cardObservation.value = detailObservation.value;
     closeWorkflowDialog();
     cardButton?.click();
     return;
   }
-  const decisionButton = event.target.closest("[data-detail-decision]");
-  if (!decisionButton) return;
-  const detail = decisionButton.closest("[data-open-invoice]");
-  const differenceCents = Number(detail.dataset.differenceCents || 0);
-  if (decisionButton.dataset.detailDecision === "aprovado" && differenceCents !== 0 && !await platformConfirm(
-    `O valor do documento e a soma dos itens diferem ${euro.format(Math.abs(differenceCents) / 100)}. Confirma que verificou o PDF e pretende aprovar mesmo assim?`,
-    { title: "Diferença no valor da fatura", danger: true, confirmLabel: "APROVAR" },
-  )) return;
-  const cardButton = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-action="${decisionButton.dataset.detailDecision}"]`);
-  if (!cardButton) return toast("A fatura já não está pendente.", "error");
-  const cardObservation = document.querySelector(`[data-invoice-card="${detail.dataset.openInvoice}"] [data-approval-observation]`);
-  const detailObservation = detail.querySelector("[data-detail-approval-observation]");
-  if (cardObservation && detailObservation) cardObservation.value = detailObservation.value;
-  closeWorkflowDialog();
-  cardButton.click();
 });
 
 $("#invoice-list").addEventListener("change", event => {
