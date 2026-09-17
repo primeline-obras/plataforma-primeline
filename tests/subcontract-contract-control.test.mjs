@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const sql = readFileSync(new URL("../supabase/subempreitadas_controle_contratual.sql", import.meta.url), "utf8");
+const alertBackfill = readFileSync(new URL("../supabase/subempreitadas_alertas_limite_backfill.sql", import.meta.url), "utf8");
 
 test("TEE do cliente só aumenta o contrato quando ligado a aditamento aprovado", () => {
   assert.match(sql, /subempreitada_aditamentos/);
@@ -28,6 +29,11 @@ test("Diretor e Financeiro recebem alerta antes de ultrapassar o aprovado", () =
   assert.match(sql, /subempreitada_limite_contratual/);
   assert.match(sql, /trg_alerta_limite_fatura_subempreitada/);
   assert.match(sql, /Limite contratual da subempreitada ultrapassado/);
+  assert.match(sql, /current_date,0,current_date,'diretor_obra','pendente'/);
+  assert.match(alertBackfill, /for v_subempreitada_id in select id from public\.subempreitadas loop/);
+  assert.match(alertBackfill, /destinatario_role='diretor_obra'/);
+  assert.doesNotMatch(alertBackfill, /from public\.fn_resumo_controle_subempreitadas_obra/);
+  assert.match(alertBackfill, /Editor SQL, onde não existe sessão da aplicação/);
 });
 
 test("aprovação técnica atualiza faturado sem o confundir com custo pago", () => {
