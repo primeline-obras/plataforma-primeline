@@ -197,9 +197,41 @@ begin
   select * into v_sub from public.subempreitadas where id=p_subempreitada_id;
   if not found then return; end if;
   select * into v_obra from public.obras where id=v_sub.obra_id;
-  select * into v_res from public.fn_resumo_controle_subempreitadas_obra(v_sub.obra_id) r
-  where r.subempreitada_id=v_sub.id;
-  v_excesso:=greatest(coalesce(v_res.ultrapassagem_faturada,0),coalesce(v_res.ultrapassagem_paga,0));
+  select
+    coalesce(v_sub.valor_adjudicado,0)::numeric as valor_contratual,
+    coalesce((select sum(a.valor) from public.subempreitada_aditamentos a
+      where a.subempreitada_id=v_sub.id and a.estado='aprovado'),0)::numeric as aditamentos_aprovados,
+    (coalesce(v_sub.valor_adjudicado,0)+coalesce((select sum(a.valor)
+      from public.subempreitada_aditamentos a
+      where a.subempreitada_id=v_sub.id and a.estado='aprovado'),0))::numeric as total_aprovado,
+    (coalesce((select sum(f.valor) from public.faturas f
+      where f.subempreitada_id=v_sub.id
+        and f.estado_fluxo in ('aprovada_tecnicamente','enviada_financeiro','paga')),0)
+      + coalesce((select sum(p.valor) from public.pagamentos_subempreitada p
+        where p.subempreitada_id=v_sub.id and not exists (
+          select 1 from public.faturas f
+          where f.subempreitada_id=p.subempreitada_id
+            and (f.estado_fluxo='paga' or f.estado_pagamento='pago')
+            and nullif(lower(btrim(coalesce(f.numero_doc,''))),'') is not null
+            and lower(btrim(f.numero_doc))=lower(btrim(coalesce(to_jsonb(p)->>'numero_doc',to_jsonb(p)->>'documento','')))
+        )),0))::numeric as total_faturado,
+    (coalesce((select sum(f.valor) from public.faturas f
+      where f.subempreitada_id=v_sub.id
+        and (f.estado_fluxo='paga' or f.estado_pagamento='pago')),0)
+      + coalesce((select sum(p.valor) from public.pagamentos_subempreitada p
+        where p.subempreitada_id=v_sub.id and not exists (
+          select 1 from public.faturas f
+          where f.subempreitada_id=p.subempreitada_id
+            and (f.estado_fluxo='paga' or f.estado_pagamento='pago')
+            and nullif(lower(btrim(coalesce(f.numero_doc,''))),'') is not null
+            and lower(btrim(f.numero_doc))=lower(btrim(coalesce(to_jsonb(p)->>'numero_doc',to_jsonb(p)->>'documento','')))
+        )),0))::numeric as total_pago
+  into v_res;
+  v_excesso:=greatest(
+    coalesce(v_res.total_faturado-v_res.total_aprovado,0),
+    coalesce(v_res.total_pago-v_res.total_aprovado,0),
+    0
+  );
   if v_excesso>0 then
     insert into public.alertas(
       empresa_id,obra_id,tipo,entidade_tipo,entidade_id,titulo,descricao,
@@ -207,9 +239,9 @@ begin
     ) select v_obra.empresa_id,v_sub.obra_id,'subempreitada_limite_contratual','subempreitadas',v_sub.id,
       'Limite contratual da subempreitada ultrapassado',
       coalesce(v_sub.especialidade,'Subempreitada')||' · Obra '||coalesce(v_obra.numero::text,'—')||
-      ' · aprovado '||to_char(v_res.total_aprovado,'FM999G999G990D00')||' € · faturado '||
-      to_char(v_res.total_faturado,'FM999G999G990D00')||' € · excesso '||to_char(v_excesso,'FM999G999G990D00')||' €',
-      current_date,0,current_date,'gerencia','pendente'
+      ' · aprovado '||translate(to_char(v_res.total_aprovado,'FM999G999G990D00'),',.',' ,')||' € · faturado '||
+      translate(to_char(v_res.total_faturado,'FM999G999G990D00'),',.',' ,')||' € · excesso '||translate(to_char(v_excesso,'FM999G999G990D00'),',.',' ,')||' €',
+      current_date,0,current_date,'diretor_obra','pendente'
     where not exists (
       select 1 from public.alertas a where a.tipo='subempreitada_limite_contratual'
       and a.entidade_tipo='subempreitadas' and a.entidade_id=v_sub.id and a.estado='pendente'
@@ -245,6 +277,18 @@ drop trigger if exists trg_alerta_limite_aditamento_subempreitada on public.sube
 create trigger trg_alerta_limite_aditamento_subempreitada
 after insert or update of valor,estado,subempreitada_id or delete on public.subempreitada_aditamentos
 for each row execute function public.fn_trigger_alerta_limite_subempreitada();
+
+-- O gatilho protege movimentos futuros. Esta passagem inicial garante que
+-- contratos que já estavam ultrapassados antes da migração também aparecem
+-- imediatamente na Visão Geral dos responsáveis da obra.
+do $backfill$
+declare v_subempreitada_id uuid;
+begin
+  for v_subempreitada_id in select id from public.subempreitadas loop
+    perform public.fn_sincronizar_alerta_limite_subempreitada(v_subempreitada_id);
+  end loop;
+end;
+$backfill$;
 
 -- A aprovação técnica passa a refletir-se imediatamente no faturado do pacote.
 -- O custo realizado continua corretamente separado: só muda quando há pagamento.
