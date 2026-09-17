@@ -14,6 +14,7 @@ import { createRncModule } from "./rnc.js?v=4";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=2";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
+import { createCalendarModule } from "./calendar.js?v=1";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
@@ -159,7 +160,7 @@ document.querySelector("#root").innerHTML = `
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
         <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">${icon("layout-dashboard")} <span>Visão geral</span></button><button data-view="rsp">${icon("users-round")} <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">${icon("layout-kanban")} <span>Projetos</span></button><button data-view="works">${icon("building")} <span>Obras</span></button>
-        <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
+        <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="calendar">◷ <span>Agenda</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -399,6 +400,7 @@ document.querySelector("#root").innerHTML = `
       <div class="page rnc-view" id="rnc-view" hidden></div>
       <div class="page vehicles-view" id="vehicles-view" hidden></div>
       <div class="page meeting-rooms-view" id="rooms-view" hidden></div>
+      <div class="page calendar-view" id="calendar-view" hidden></div>
       <div class="page properties-view" id="properties-view" hidden></div>
       <div class="page budget-requests-view" id="budget-requests-view" hidden></div>
       <div class="page placeholder-view" id="placeholder-view" hidden>
@@ -740,6 +742,10 @@ const vehiclesModule = createVehiclesModule({
 });
 const meetingRoomsModule = createMeetingRoomsModule({
   root: $("#rooms-view"), supabase, isConfigured: isSupabaseConfigured,
+  getProfile: () => accessContext.profile, toast,
+});
+const calendarModule = createCalendarModule({
+  root: $("#calendar-view"), supabase, isConfigured: isSupabaseConfigured,
   getProfile: () => accessContext.profile, toast,
 });
 const propertiesModule = createPropertiesModule({
@@ -3816,10 +3822,11 @@ function switchView(view, context = {}) {
   $("#rnc-view").hidden = view !== "rnc";
   $("#vehicles-view").hidden = view !== "vehicles";
   $("#rooms-view").hidden = view !== "rooms";
+  $("#calendar-view").hidden = view !== "calendar";
   $("#properties-view").hidden = view !== "properties";
   $("#budget-requests-view").hidden = view !== "budget-requests";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -3834,6 +3841,7 @@ function switchView(view, context = {}) {
   if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
   if (view === "vehicles") vehiclesModule.show();
   if (view === "rooms") meetingRoomsModule.show();
+  if (view === "calendar") calendarModule.show();
   if (view === "properties") propertiesModule.show();
   if (view === "budget-requests") budgetRequestsModule.show();
   if (view === "subcontractors") subcontractorsModule.show();
