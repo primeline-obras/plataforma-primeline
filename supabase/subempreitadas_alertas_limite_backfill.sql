@@ -64,8 +64,8 @@ begin
     set destinatario_role='diretor_obra',
         titulo='Limite contratual da subempreitada ultrapassado',
         descricao=coalesce(v_sub.especialidade,'Subempreitada')||' · Obra '||coalesce(v_obra.numero::text,'—')||
-          ' · aprovado '||to_char(v_res.total_aprovado,'FM999G999G990D00')||' € · faturado '||
-          to_char(v_res.total_faturado,'FM999G999G990D00')||' € · excesso '||to_char(v_excesso,'FM999G999G990D00')||' €',
+          ' · aprovado '||translate(to_char(v_res.total_aprovado,'FM999G999G990D00'),',.',' ,')||' € · faturado '||
+          translate(to_char(v_res.total_faturado,'FM999G999G990D00'),',.',' ,')||' € · excesso '||translate(to_char(v_excesso,'FM999G999G990D00'),',.',' ,')||' €',
         data_evento_referencia=current_date,
         data_gatilho=current_date
     where tipo='subempreitada_limite_contratual'
@@ -81,8 +81,8 @@ begin
         v_obra.empresa_id,v_sub.obra_id,'subempreitada_limite_contratual','subempreitadas',v_sub.id,
         'Limite contratual da subempreitada ultrapassado',
         coalesce(v_sub.especialidade,'Subempreitada')||' · Obra '||coalesce(v_obra.numero::text,'—')||
-          ' · aprovado '||to_char(v_res.total_aprovado,'FM999G999G990D00')||' € · faturado '||
-          to_char(v_res.total_faturado,'FM999G999G990D00')||' € · excesso '||to_char(v_excesso,'FM999G999G990D00')||' €',
+          ' · aprovado '||translate(to_char(v_res.total_aprovado,'FM999G999G990D00'),',.',' ,')||' € · faturado '||
+          translate(to_char(v_res.total_faturado,'FM999G999G990D00'),',.',' ,')||' € · excesso '||translate(to_char(v_excesso,'FM999G999G990D00'),',.',' ,')||' €',
         current_date,0,current_date,'diretor_obra','pendente'
       );
     end if;

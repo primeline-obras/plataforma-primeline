@@ -34,6 +34,7 @@ test("Diretor e Financeiro recebem alerta antes de ultrapassar o aprovado", () =
   assert.match(alertBackfill, /destinatario_role='diretor_obra'/);
   assert.doesNotMatch(alertBackfill, /from public\.fn_resumo_controle_subempreitadas_obra/);
   assert.match(alertBackfill, /Editor SQL, onde não existe sessão da aplicação/);
+  assert.match(alertBackfill, /translate\(to_char\(v_res\.total_aprovado/);
 });
 
 test("aprovação técnica atualiza faturado sem o confundir com custo pago", () => {
