@@ -296,6 +296,30 @@ input::placeholder { color: #acb0b1; }
 .mini-progress, .payment-progress { height: 4px; background: #e1e3e0; margin-top: 7px; }.mini-progress i, .payment-progress i { display: block; height: 100%; background: var(--accent); }
 .subcontracts-list { display: flex; flex-direction: column; gap: 7px; margin-top: 13px; }
 .subcontract-card { display: grid; grid-template-columns: 1.2fr .68fr 1fr auto; gap: 14px; align-items: center; border: 1px solid #e1e2df; padding: 13px; background: white; }
+.procurement-summary.contractual { grid-template-columns: repeat(7,minmax(0,1fr)); }
+.procurement-summary.contractual small { display:block; margin-top:4px; color:#858b8d; font-size:9px; }
+.subcontract-card.contractual { grid-template-columns:minmax(170px,.8fr) minmax(480px,2.2fr) minmax(155px,.7fr) auto; }
+.subcontract-card.contractual.overrun { border-color:#c95b50; box-shadow:inset 4px 0 #a33b34; }
+.subcontract-contract-grid { display:grid; grid-template-columns:repeat(6,minmax(78px,1fr)); gap:0; margin:0; border:1px solid #e6e2d9; }
+.subcontract-contract-grid div { min-width:0; padding:9px 10px; border-right:1px solid #e6e2d9; }
+.subcontract-contract-grid div:last-child { border-right:0; }
+.subcontract-contract-grid dt { color:#858b8d; font:700 8px "Manrope"; letter-spacing:.55px; }
+.subcontract-contract-grid dd { margin:4px 0 0; font:750 12px "Manrope"; white-space:nowrap; }
+.subcontract-overrun { padding:8px 10px; border:1px solid #cf7a71; background:#fff1ef; color:#8b3029; }
+.subcontract-overrun strong,.subcontract-overrun span { display:block; }
+.subcontract-overrun strong { font:850 9px "Manrope"; letter-spacing:.55px; }.subcontract-overrun span { margin-top:3px; font-size:10px; }
+.subcontract-addenda { grid-column:1/-1; border-top:1px solid #e6e2d9; padding-top:10px; }
+.subcontract-addenda summary { cursor:pointer; font:800 10px "Manrope"; letter-spacing:.65px; }.subcontract-addenda summary b { margin-left:6px; }
+.subcontract-addenda-list { display:grid; gap:6px; margin-top:10px; }
+.subcontract-addenda-list > div { display:grid; grid-template-columns:minmax(180px,1fr) auto auto auto auto; gap:9px; align-items:center; padding:8px 10px; background:#f7f5ef; }
+.subcontract-addenda-list span strong,.subcontract-addenda-list span small { display:block; }.subcontract-addenda-list span small { margin-top:2px; color:#858b8d; font-size:9px; }
+.subcontract-addenda-list em { padding:4px 6px; border:1px solid #d8d3c8; font:750 8px "Manrope"; text-transform:uppercase; }.subcontract-addenda-list em.aprovado { color:#237146; border-color:#91c1a4; }.subcontract-addenda-list em.rejeitado { color:#913b34; border-color:#d5a29e; }
+.subcontract-addenda-list button { padding:6px 8px; border:1px solid #252a2d; background:#252a2d; color:#fff; font:750 8px "Manrope"; }.subcontract-addenda-list button.reject { border-color:#ad4a42; background:#fff; color:#913b34; }
+.subcontract-addenda form { display:grid; grid-template-columns:minmax(220px,2fr) 140px minmax(190px,1fr) auto; gap:9px; align-items:end; margin-top:10px; padding:10px; border:1px dashed #cfc8ba; }
+.subcontract-addenda form label { color:#77736c; font:750 8px "Manrope"; letter-spacing:.55px; }.subcontract-addenda form input,.subcontract-addenda form select { width:100%; margin-top:5px; min-height:34px; border:1px solid #d8d3c8; background:#fff; padding:7px; }.subcontract-addenda form .form-error { grid-column:1/-1; }
+:root[data-theme="dark"] .subcontract-contract-grid,:root[data-theme="dark"] .subcontract-contract-grid div,:root[data-theme="dark"] .subcontract-addenda,:root[data-theme="dark"] .subcontract-addenda form { border-color:#4d5356; }
+:root[data-theme="dark"] .subcontract-addenda-list > div { background:#303538; }:root[data-theme="dark"] .subcontract-addenda form input,:root[data-theme="dark"] .subcontract-addenda form select { background:#252a2d; border-color:#555b5e; color:#f1efe8; }
+:root[data-theme="dark"] .subcontract-overrun { background:#432b2b; border-color:#80504d; color:#ffb5ae; }
 .subcontract-main { min-width: 0; }.subcontract-main strong { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }.subcontract-main small { color: #8a9092; font-size: 11px; }
 .subcontract-specialty { display: block; color: #9a7a46; font: 700 10px "Manrope"; letter-spacing: .6px; text-transform: uppercase; margin-bottom: 3px; }
 .subcontract-value span, .subcontract-paid span { color: #858b8d; font: 700 10px "Manrope"; letter-spacing: .6px; }.subcontract-value strong { display: block; font: 700 14px "Manrope"; margin-top: 3px; }
@@ -511,7 +535,7 @@ body[data-user-role="administrativo"] [data-mark-paid] { display: none !importan
   .page { padding: 28px 16px 45px; }.heading-stat { display: none; }.invoice-grid { display: block; }.pending-panel { margin-top: 18px; padding: 18px; }
   .works-toolbar { grid-template-columns: 1fr; }.works-layout { display: block; }.work-detail { margin-top: 16px; padding: 18px; }.work-kpis { grid-template-columns: 1fr; }.work-kpis > div { border-right: 0; border-bottom: 1px solid #e0e1de; }.work-detail-grid { grid-template-columns: 1fr; }.work-timeline { grid-template-columns: 1fr; }.phase-tags { grid-template-columns: 1fr; }
   .works-toolbar .outline-action { width: 100%; }.dialog-backdrop { padding: 12px; }.work-dialog-card .form-row { grid-template-columns: 1fr; }.dialog-actions { flex-direction: column-reverse; }.dialog-actions .primary-button { flex-basis: 41px; }
-  .work-tabs { margin-left: -18px; margin-right: -18px; padding: 0 12px; }.procurement-summary { grid-template-columns: repeat(2,1fr); }.procurement-summary > div:nth-child(2) { border-right: 0; }.procurement-summary > div:nth-child(-n+2) { border-bottom: 1px solid #e0e1de; }.subcontract-card { grid-template-columns: 1fr 1fr; }.approval-badge { justify-self: start; }.consultation-grid { grid-template-columns: 1fr; }
+  .work-tabs { margin-left: -18px; margin-right: -18px; padding: 0 12px; }.procurement-summary,.procurement-summary.contractual { grid-template-columns: repeat(2,1fr); }.procurement-summary > div:nth-child(2) { border-right: 0; }.procurement-summary > div:nth-child(-n+2) { border-bottom: 1px solid #e0e1de; }.subcontract-card,.subcontract-card.contractual { grid-template-columns: 1fr; }.subcontract-contract-grid { grid-template-columns:repeat(2,1fr); }.subcontract-contract-grid div { border-bottom:1px solid #e6e2d9; }.subcontract-addenda form { grid-template-columns:1fr; }.subcontract-addenda-list > div { grid-template-columns:1fr auto; }.approval-badge { justify-self: start; }.consultation-grid { grid-template-columns: 1fr; }
   .measurement-toolbar { flex-direction: column; }.measurement-kpis { grid-template-columns: 1fr; }.measurement-kpis > div { border-right: 0; border-bottom: 1px solid #e0e1de; }.measurement-values { grid-template-columns: repeat(2,1fr); }.workflow-line { grid-template-columns: 1fr; }.workflow-line i { display: none; }.billing-summary { flex-wrap: wrap; }
   .pending-head { align-items: end; }.pending-head h2 { font-size: 17px; }.pending-head .select-wrap { width: 130px; }
   .invoice-card { padding: 13px; }.invoice-icon { display: none; }.form-row { grid-template-columns: 1fr; gap: 0; }.form-actions { flex-direction: column; }
