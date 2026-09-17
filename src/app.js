@@ -1,6 +1,6 @@
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=23";
+import { createProductionDashboard } from "./production-dashboard.js?v=24";
 import { createPlanningModule } from "./planning.js?v=13";
 import { createSubcontractorsModule } from "./subcontractors.js?v=4";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
@@ -84,7 +84,7 @@ let selectedInvoiceTraceId = "";
 let expandedDirectDebitId = "";
 let selectedWorkId = "";
 let workDetails = {
-  contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [],
+  contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [], subcontractControl: [],
   labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
   billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
   drawings: [], rfis: [], pames: [], extensionRequests: [], safetyIncidents: [], safetyInspections: [], epis: [],
@@ -838,6 +838,14 @@ function canViewFinancialMap() {
 
 function canManageDirectDebits() {
   return hasFullAccess() || isAdministrative() || isFinancial();
+}
+
+function canRegisterSubcontractAddenda() {
+  return hasFullAccess() || isAdministrative() || ["diretor_obra", "adjunto"].includes(effectiveRole());
+}
+
+function canDecideSubcontractAddenda() {
+  return hasFullAccess();
 }
 
 function canApproveInvoices() {
@@ -2703,7 +2711,7 @@ async function loadWorkDetails(workId) {
   selectedWorkId = workId;
   selectedWorkTab = "summary";
   workDetails = {
-    contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [],
+    contract: null, investment: null, impacts: [], tees: [], phases: [], phasePlanning: [], measurements: [], payments: [], consultations: [], subcontractControl: [],
     labor: [], siteExpenses: [], directDebits: [], directDebitEntries: [],
     billings: [], billingLinks: [], documents: [], workDocuments: [], documentUsers: {},
     drawings: [], rfis: [], pames: [], extensionRequests: [], safetyIncidents: [], safetyInspections: [], epis: [],
@@ -2735,7 +2743,7 @@ async function loadWorkDetails(workId) {
       consultations: [
         { id: "c-caix", obra_id: work.id, especialidade: "Caixilharia", estado: "em_consulta", fornecedor_id: null },
         { id: "c-gas", obra_id: work.id, especialidade: "Gás", estado: "em_consulta", fornecedor_id: null },
-      ],
+      ], subcontractControl: [],
       billings: [],
       billingLinks: [],
       documents: [],
@@ -2834,10 +2842,13 @@ async function loadWorkDetails(workId) {
     return;
   }
   const subcontractIds = subcontracts.filter(item => item.obra_id === workId).map(item => item.id);
-  const [consultationsResult, paymentsResult] = await Promise.all([
+  const [consultationsResult, paymentsResult, controlResult] = await Promise.all([
     supabase(`consultas_subempreitada?select=*&obra_id=eq.${encodeURIComponent(workId)}`),
     subcontractIds.length
       ? supabase(`pagamentos_subempreitada?select=subempreitada_id,valor,estado_aprovacao&subempreitada_id=in.(${subcontractIds.map(encodeURIComponent).join(",")})`)
+      : Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })),
+    subcontractIds.length
+      ? supabase("rpc/fn_resumo_controle_subempreitadas_obra", { method: "POST", body: JSON.stringify({ p_obra_id: workId }) })
       : Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } })),
   ]);
   if (!consultationsResult.ok || !paymentsResult.ok) {
@@ -2848,6 +2859,8 @@ async function loadWorkDetails(workId) {
     workDetails.consultations = await consultationsResult.json();
     workDetails.payments = await paymentsResult.json();
   }
+  if (controlResult.ok) workDetails.subcontractControl = await controlResult.json();
+  else workDetails.procurementError = `${workDetails.procurementError ? `${workDetails.procurementError} · ` : ""}Controlo contratual de subempreitadas indisponível.`;
   const securityRequests = [
     supabase(`seguranca_incidentes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
     supabase(`seguranca_inspecoes?select=*&obra_id=eq.${encodeURIComponent(workId)}&order=data.desc`),
@@ -2988,33 +3001,60 @@ function supplierName(id) {
 
 function renderSubcontractsTab(work) {
   const rows = subcontracts.filter(item => item.obra_id === work.id);
-  const paidBySubcontract = new Map();
-  workDetails.payments.forEach(payment => {
-    paidBySubcontract.set(payment.subempreitada_id, (paidBySubcontract.get(payment.subempreitada_id) || 0) + Number(payment.valor || 0));
-  });
+  const controlBySubcontract = new Map(workDetails.subcontractControl.map(item => [String(item.subempreitada_id), item]));
+  const legacyPaidBySubcontract = new Map();
+  workDetails.payments.forEach(payment => legacyPaidBySubcontract.set(String(payment.subempreitada_id), (legacyPaidBySubcontract.get(String(payment.subempreitada_id)) || 0) + Number(payment.valor || 0)));
   const openConsultations = workDetails.consultations.filter(item => !item.fornecedor_id && (item.estado === "em_consulta" || !item.estado));
-  const adjudicatedTotal = rows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
-  const paidTotal = rows.reduce((sum, item) => sum + (paidBySubcontract.get(item.id) || 0), 0);
-  const overallPercent = adjudicatedTotal > 0 ? Math.min(100, Math.round((paidTotal / adjudicatedTotal) * 100)) : 0;
+  const totals = rows.reduce((result, item) => {
+    const control = controlBySubcontract.get(String(item.id));
+    result.contract += Number(control?.valor_contratual ?? item.valor_adjudicado ?? 0);
+    result.addenda += Number(control?.aditamentos_aprovados || 0);
+    result.approved += Number(control?.total_aprovado ?? item.valor_adjudicado ?? 0);
+    result.invoiced += Number(control?.total_faturado ?? legacyPaidBySubcontract.get(String(item.id)) ?? 0);
+    result.paid += Number(control?.total_pago ?? legacyPaidBySubcontract.get(String(item.id)) ?? 0);
+    return result;
+  }, { contract: 0, addenda: 0, approved: 0, invoiced: 0, paid: 0 });
+  const overallPercent = totals.approved > 0 ? Math.round((totals.invoiced / totals.approved) * 100) : 0;
   return `
     ${workDetails.procurementError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.procurementError} Execute o script RLS do separador Subempreitadas.</span></div>` : ""}
-    <div class="procurement-summary">
-      <div><span>ADJUDICADO</span><strong>${euro.format(adjudicatedTotal)}</strong></div>
-      <div><span>PAGO</span><strong>${euro.format(paidTotal)}</strong></div>
-      <div><span>EXECUÇÃO FINANCEIRA</span><strong>${overallPercent}%</strong><div class="mini-progress"><i style="width:${overallPercent}%"></i></div></div>
+    <div class="procurement-summary contractual">
+      <div><span>CONTRATUAL</span><strong>${euro.format(totals.contract)}</strong></div>
+      <div><span>ADITAMENTOS APROVADOS</span><strong>${euro.format(totals.addenda)}</strong></div>
+      <div><span>TOTAL APROVADO</span><strong>${euro.format(totals.approved)}</strong></div>
+      <div><span>FATURADO VALIDADO</span><strong>${euro.format(totals.invoiced)}</strong><small>${overallPercent}% do aprovado</small></div>
+      <div><span>PAGO</span><strong>${euro.format(totals.paid)}</strong></div>
+      <div><span>SALDO CONTRATUAL</span><strong>${euro.format(Math.max(totals.approved - totals.invoiced, 0))}</strong></div>
       <div><span>POR ADJUDICAR</span><strong>${openConsultations.length}</strong></div>
     </div>
     <div class="subcontracts-list">
       ${rows.length ? rows.map(row => {
-        const adjudicated = Number(row.valor_adjudicado || 0);
-        const paid = paidBySubcontract.get(row.id) || 0;
-        const percent = adjudicated > 0 ? Math.min(100, Math.round((paid / adjudicated) * 100)) : 0;
+        const control = controlBySubcontract.get(String(row.id)) || {};
+        const contract = Number(control.valor_contratual ?? row.valor_adjudicado ?? 0);
+        const addenda = Number(control.aditamentos_aprovados || 0);
+        const approved = Number(control.total_aprovado ?? contract);
+        const invoiced = Number(control.total_faturado ?? legacyPaidBySubcontract.get(String(row.id)) ?? 0);
+        const paid = Number(control.total_pago ?? legacyPaidBySubcontract.get(String(row.id)) ?? 0);
+        const balance = Math.max(Number(control.saldo ?? approved - invoiced), 0);
+        const overrun = Math.max(Number(control.ultrapassagem_faturada || 0), Number(control.ultrapassagem_paga || 0));
+        const percent = approved > 0 ? Math.round((invoiced / approved) * 100) : 0;
+        const addendaRows = Array.isArray(control.aditamentos) ? control.aditamentos : [];
         const approval = row.estado_aprovacao_gerencia || (row.aprovado_por_gerencia ? "aprovado" : "pendente");
-        return `<article class="subcontract-card">
-          <div class="subcontract-main"><span class="subcontract-specialty">${row.especialidade || "Sem especialidade"}</span><strong>${supplierName(row.fornecedor_id)}</strong><small>${workSituationLabel(row.estado)}</small></div>
-          <div class="subcontract-value"><span>ADJUDICADO</span><strong>${euro.format(adjudicated)}</strong></div>
-          <div class="subcontract-paid"><div><span>PAGO</span><strong>${euro.format(paid)}</strong><em>${percent}%</em></div><div class="payment-progress"><i style="width:${percent}%"></i></div></div>
-          <span class="approval-badge ${approval}">${workSituationLabel(approval)}</span>
+        return `<article class="subcontract-card contractual ${overrun > 0 ? "overrun" : ""}">
+          <div class="subcontract-main"><span class="subcontract-specialty">${safeText(row.especialidade || "Sem especialidade")}</span><strong>${safeText(supplierName(row.fornecedor_id))}</strong><small>${workSituationLabel(row.estado)}</small></div>
+          <dl class="subcontract-contract-grid">
+            <div><dt>CONTRATUAL</dt><dd>${euro.format(contract)}</dd></div>
+            <div><dt>ADITAMENTOS</dt><dd>${euro.format(addenda)}</dd></div>
+            <div><dt>TOTAL APROVADO</dt><dd>${euro.format(approved)}</dd></div>
+            <div><dt>FATURADO</dt><dd>${euro.format(invoiced)}</dd></div>
+            <div><dt>PAGO</dt><dd>${euro.format(paid)}</dd></div>
+            <div><dt>SALDO</dt><dd>${euro.format(balance)}</dd></div>
+          </dl>
+          <div class="subcontract-paid"><div><span>CONSUMO DO APROVADO</span><strong>${percent}%</strong></div><div class="payment-progress"><i style="width:${Math.min(percent, 100)}%"></i></div></div>
+          ${overrun > 0 ? `<div class="subcontract-overrun"><strong>LIMITE ULTRAPASSADO</strong><span>${euro.format(overrun)} acima do total aprovado</span></div>` : `<span class="approval-badge ${approval}">${workSituationLabel(approval)}</span>`}
+          <details class="subcontract-addenda"><summary>ADITAMENTOS <b>${addendaRows.length}</b></summary>
+            <div class="subcontract-addenda-list">${addendaRows.length ? addendaRows.map(item => `<div><span><strong>${safeText(item.descricao)}</strong><small>${item.alteracao_tee_id ? "Ligado a TEE" : "Sem TEE associado"}</small></span><b>${euro.format(Number(item.valor || 0))}</b><em class="${safeText(item.estado)}">${workSituationLabel(item.estado)}</em>${canDecideSubcontractAddenda() && item.estado === "pendente" ? `<button type="button" data-decide-subcontract-addendum="${item.id}" data-decision="aprovado">APROVAR</button><button type="button" class="reject" data-decide-subcontract-addendum="${item.id}" data-decision="rejeitado">REJEITAR</button>` : ""}</div>`).join("") : '<p>Sem aditamentos registados.</p>'}</div>
+            ${canRegisterSubcontractAddenda() ? `<form data-subcontract-addendum="${row.id}"><label>DESCRIÇÃO<input name="descricao" maxlength="300" required placeholder="Trabalho adicional / alteração"></label><label>VALOR (€)<input name="valor" type="number" min="0.01" step="0.01" required></label><label>TEE RELACIONADO (OPCIONAL)<select name="alteracao_tee_id"><option value="">Sem ligação a TEE</option>${workDetails.tees.map(tee => `<option value="${tee.id}">${safeText(tee.numero || tee.descricao || "TEE")}</option>`).join("")}</select></label><button type="submit" class="outline-action">REGISTAR PARA APROVAÇÃO</button><p class="form-error"></p></form>` : ""}
+          </details>
         </article>`;
       }).join("") : `<div class="empty-state"><strong>SEM SUBEMPREITADAS</strong><span>Ainda não existem adjudicações nesta obra.</span></div>`}
     </div>
@@ -4570,6 +4610,34 @@ $("#work-detail").addEventListener("input", event => {
   }
 });
 $("#work-detail").addEventListener("submit", async event => {
+  const addendumForm = event.target.closest("[data-subcontract-addendum]");
+  if (addendumForm) {
+    event.preventDefault();
+    if (!canRegisterSubcontractAddenda()) return toast("Não tem permissão para registar aditamentos.", "error");
+    const values = Object.fromEntries(new FormData(addendumForm));
+    const submitButton = addendumForm.querySelector('button[type="submit"]');
+    const errorNode = addendumForm.querySelector(".form-error");
+    submitButton.disabled = true;
+    errorNode.textContent = "";
+    try {
+      const response = await supabase("rpc/fn_registar_aditamento_subempreitada", {
+        method: "POST",
+        body: JSON.stringify({
+          p_subempreitada_id: addendumForm.dataset.subcontractAddendum,
+          p_descricao: values.descricao.trim(),
+          p_valor: Number(values.valor),
+          p_alteracao_tee_id: values.alteracao_tee_id || null,
+        }),
+      });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível registar o aditamento."));
+      toast("Aditamento registado e enviado para aprovação.");
+      await loadWorkDetails(selectedWorkId);
+      selectedWorkTab = "subcontracts";
+      renderWorkDetail(works.find(item => item.id === selectedWorkId));
+    } catch (error) { errorNode.textContent = error.message; }
+    finally { submitButton.disabled = false; }
+    return;
+  }
   if (event.target.id === "safety-incident-form" || event.target.id === "safety-inspection-form") {
     event.preventDefault();
     const safetyForm = event.target;
@@ -4700,6 +4768,29 @@ $("#work-detail").addEventListener("submit", async event => {
   }
 });
 $("#work-detail").addEventListener("click", async event => {
+  const decideAddendumButton = event.target.closest("[data-decide-subcontract-addendum]");
+  if (decideAddendumButton) {
+    if (!canDecideSubcontractAddenda()) return toast("A aprovação de aditamentos está reservada à Gerência.", "error");
+    const decision = decideAddendumButton.dataset.decision;
+    const confirmed = await platformConfirm(
+      `${decision === "aprovado" ? "Aprovar" : "Rejeitar"} este aditamento? O total contratual aprovado será recalculado imediatamente.`,
+      { title: "Decisão de aditamento", danger: decision === "rejeitado", confirmLabel: decision === "aprovado" ? "APROVAR" : "REJEITAR" },
+    );
+    if (!confirmed) return;
+    decideAddendumButton.disabled = true;
+    try {
+      const response = await supabase("rpc/fn_decidir_aditamento_subempreitada", {
+        method: "POST",
+        body: JSON.stringify({ p_aditamento_id: decideAddendumButton.dataset.decideSubcontractAddendum, p_estado: decision, p_observacao: null }),
+      });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível guardar a decisão."));
+      await loadWorkDetails(selectedWorkId);
+      selectedWorkTab = "subcontracts";
+      renderWorkDetail(works.find(item => item.id === selectedWorkId));
+      toast(`Aditamento ${decision}.`);
+    } catch (error) { toast(error.message, "error"); decideAddendumButton.disabled = false; }
+    return;
+  }
   const rncButton = event.target.closest("[data-open-rnc]");
   if (rncButton) { selectedWorkId = rncButton.dataset.openRnc; switchView("rnc"); return; }
   const meetingButton = event.target.closest("[data-open-meeting]");
@@ -5238,7 +5329,7 @@ $("#recovery-form").addEventListener("submit", async event => {
   }
 });
 
-async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber, valor }, excludedInvoiceId = "") {
+async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: documentNumber, valor, obra_id: workId }, excludedInvoiceId = "") {
   const normalizedNumber = String(documentNumber || "").trim();
   const localCandidates = [...invoices, ...financeInvoices].filter((invoice, index, rows) =>
     rows.findIndex(candidate => String(candidate.id) === String(invoice.id)) === index
@@ -5251,7 +5342,9 @@ async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: doc
   if (!isSupabaseConfigured) {
     if (localDuplicate) return { ...localDuplicate, tipo_correspondencia: "exata" };
     const tolerance = Math.max(1, Math.abs(Number(valor || 0)) * 0.005);
-    const similar = localCandidates.find(invoice => Math.abs(Number(invoice.valor || 0) - Number(valor || 0)) <= tolerance);
+    const similar = [...localCandidates]
+      .sort((a, b) => Number(b.obra_id !== workId) - Number(a.obra_id !== workId))
+      .find(invoice => Math.abs(Number(invoice.valor || 0) - Number(valor || 0)) <= tolerance);
     return similar ? { ...similar, tipo_correspondencia: "semelhante" } : null;
   }
 
@@ -5261,6 +5354,7 @@ async function findDuplicateInvoice({ fornecedor_id: supplierId, numero_doc: doc
       p_fornecedor_id: supplierId,
       p_valor: Number(valor),
       p_numero_doc: normalizedNumber,
+      p_obra_id: workId || null,
       p_excluir_fatura_id: excludedInvoiceId || null,
     }),
   });
@@ -5275,6 +5369,27 @@ async function confirmSimilarInvoice(match, actionLabel = "continuar") {
   return platformConfirm(
     `AVISO DE POSSÍVEL DUPLICAÇÃO ENTRE OBRAS\n\nJá existe a fatura ${match.numero_doc || "sem número"} na Obra ${match.obra_numero || "—"}, do mesmo fornecedor, com o valor ${euro.format(Number(match.valor || 0))}.\n\nConfirma que são documentos diferentes e pretende ${actionLabel}?`,
     { title: "Possível duplicação", confirmLabel: "CONTINUAR" },
+  );
+}
+
+async function confirmSubcontractContractLimit(invoice, stage) {
+  if (!invoice?.subempreitada_id || !isSupabaseConfigured) return true;
+  const response = await supabase("rpc/fn_verificar_limite_fatura_subempreitada", {
+    method: "POST",
+    body: JSON.stringify({ p_fatura_id: invoice.id, p_etapa: stage }),
+  });
+  if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível verificar o limite contratual da subempreitada."));
+  const payload = await response.json();
+  const control = Array.isArray(payload) ? payload[0] : payload;
+  if (!control?.aplicavel) return true;
+  const isPayment = stage === "paga";
+  const exceeds = isPayment ? control.ultrapassa_pagamento : control.ultrapassa_faturacao;
+  if (!exceeds) return true;
+  const projected = Number(isPayment ? control.total_pago_projetado : control.total_faturado_projetado);
+  const excess = Number(isPayment ? control.excesso_pagamento : control.excesso_faturacao);
+  return platformConfirm(
+    `O ${isPayment ? "pagamento" : "faturado validado"} acumulado passará para ${euro.format(projected)}, ultrapassando em ${euro.format(excess)} o total aprovado de ${euro.format(Number(control.total_aprovado || 0))}.\n\nContrato: ${euro.format(Number(control.valor_contratual || 0))}\nAditamentos aprovados: ${euro.format(Number(control.aditamentos_aprovados || 0))}\n\nConfirma que pretende continuar?`,
+    { title: "Limite contratual ultrapassado", danger: true, confirmLabel: "CONTINUAR COM ALERTA" },
   );
 }
 
@@ -5460,6 +5575,9 @@ $("#invoice-list").addEventListener("click", async event => {
     const invoice = invoices.find(item => String(item.id) === String(advanceButton.dataset.advanceInvoice));
     if (!invoice) return;
     const nextState = advanceButton.dataset.nextFlow;
+    try {
+      if (nextState === "aprovada_tecnicamente" && !await confirmSubcontractContractLimit(invoice, nextState)) return;
+    } catch (error) { return toast(error.message, "error"); }
     if (nextState === "aprovada_tecnicamente" && !invoiceGuides.some(item => String(item.fatura_id) === String(invoice.id))
       && !await platformConfirm("Esta fatura não tem guia de remessa. Confirma a aprovação técnica sem guia?", { title: "Aprovar sem guia", danger: true, confirmLabel: "APROVAR" })) return;
     advanceButton.disabled = true;
@@ -5501,6 +5619,7 @@ $("#invoice-list").addEventListener("click", async event => {
     try {
       const match = await findDuplicateInvoice(invoice, invoice.id);
       if (match && !await confirmSimilarInvoice(match, "aprovar esta fatura")) return;
+      if (!await confirmSubcontractContractLimit(invoice, "aprovada_tecnicamente")) return;
     } catch (error) {
       return toast(error.message, "error");
     }
@@ -5768,6 +5887,7 @@ $("#finance-board").addEventListener("click", async event => {
   try {
     const match = await findDuplicateInvoice(invoice, invoice.id);
     if (match && !await confirmSimilarInvoice(match, "marcar esta fatura como paga")) return;
+    if (!await confirmSubcontractContractLimit(invoice, "paga")) return;
   } catch (error) {
     return toast(error.message, "error");
   }
