@@ -20,7 +20,7 @@ assert.match(app, /data-view="calendar"[^>]*>[\s\S]*?Agenda/);
 assert.match(app, /id="calendar-view"/);
 assert.match(app, /view === "calendar"\) calendarModule\.show\(\)/);
 
-assert.match(calendar, /ativo=eq\.true/);
+assert.match(calendar, /rpc\/fn_listar_colegas_agenda/);
 assert.match(calendar, /MARCAR COLEGAS/);
 assert.match(calendar, /data\.getAll\("participantes"\)/);
 assert.match(calendar, /p_participantes:participants/);
@@ -32,6 +32,8 @@ assert.match(sql, /create table if not exists public\.compromissos\s*\(/i);
 assert.match(sql, /create table if not exists public\.compromissos_participantes/i);
 assert.match(sql, /references public\.compromissos\(id\) on delete cascade/i);
 assert.match(sql, /fn_pode_ver_compromisso/i);
+assert.match(sql, /create or replace function public\.fn_listar_colegas_agenda\(\)/i);
+assert.match(sql, /u\.empresa_id=atual\.empresa_id/i);
 assert.match(sql, /coalesce\(u\.ativo,true\)/i);
 assert.match(sql, /'compromisso_agenda'/);
 assert.match(sql, /destinatario_utilizador_id/);
@@ -42,6 +44,6 @@ assert.match(dashboard, /alert\.tipo === "compromisso_agenda"[\s\S]*?view: "cale
 assert.match(styles, /\.agenda-layout/);
 assert.match(styles, /\.agenda-participants/);
 assert.match(html, /styles\.css\?v=98/);
-assert.match(html, /app\.js\?v=143/);
+assert.match(html, /app\.js\?v=144/);
 
 console.log("Agenda: permissões, marcação de colegas, alertas pessoais, edição, eliminação e interface validados.");
