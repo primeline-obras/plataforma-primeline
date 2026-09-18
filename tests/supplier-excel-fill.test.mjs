@@ -26,3 +26,10 @@ test("Excel enrichment adds only known zones and historical specialties", async 
   assert.match(sql, /select distinct a\.fornecedor_id,e\.id,'historico'/i);
   assert.match(sql, /on conflict\(fornecedor_id,zona\) do nothing/i);
 });
+
+test("SQL Editor execution remains scoped to Primeline", async () => {
+  const sql = await read("supabase/preencher_fornecedores_fontes_excel.sql");
+  assert.match(sql, /auth\.uid\(\) is not null and not/);
+  assert.match(sql, /f\.empresa_id='73fb13c8-d29f-4192-a506-4ca243343add'::uuid/);
+  assert.match(sql, /lower\(u\.email\)='primeline\.gestao@gmail\.com'/);
+});

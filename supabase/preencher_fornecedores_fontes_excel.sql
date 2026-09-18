@@ -4,7 +4,7 @@ begin;
 
 do $guard$
 begin
-  if not (public.fn_e_admin() or public.fn_e_administrativo()) then
+  if auth.uid() is not null and not (public.fn_e_admin() or public.fn_e_administrativo()) then
     raise exception 'Só a Gestão da Plataforma ou o Administrativo pode preencher o diretório.' using errcode='42501';
   end if;
 end;
@@ -32,8 +32,7 @@ with fontes as (
       'áàãâäéèêëíìîïóòõôöúùûüçñ',
       'aaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9]', '', 'g') as nome_base
   from public.fornecedores f
-  join public.utilizadores u on u.id=public.fn_utilizador_atual_id()
-   and u.empresa_id=f.empresa_id and coalesce(u.ativo,true)
+  where f.empresa_id='73fb13c8-d29f-4192-a506-4ca243343add'::uuid
 ), fornecedores_normalizados as (
   select f.*,
     count(*) over(partition by f.nome_norm) as repeticoes_nome,
@@ -86,7 +85,9 @@ where f.id=a.fornecedor_id
     or (a.preencher_notas and nullif(a.notas,'') is not null));
 
 insert into public.fornecedores_zonas(fornecedor_id,zona,criado_por)
-select distinct a.fornecedor_id,z.zona,public.fn_utilizador_atual_id()
+select distinct a.fornecedor_id,z.zona,
+  (select u.id from public.utilizadores u
+   where lower(u.email)='primeline.gestao@gmail.com' and coalesce(u.ativo,true) limit 1)
 from _alvos_excel a cross join lateral unnest(a.zonas) z(zona)
 where z.zona in ('lisboa_cascais','algarve')
 on conflict(fornecedor_id,zona) do nothing;
