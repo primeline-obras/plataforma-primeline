@@ -187,7 +187,7 @@ document.querySelector("#root").innerHTML = `
               </div></label>
               <input type="hidden" name="tipo_origem" value="subempreitada">
               <label>FORNECEDOR<div class="select-wrap"><select name="fornecedor_id" required></select><b>⌄</b></div></label>
-              <label class="conditional" id="subcontract-field">SUBEMPREITADA<div class="select-wrap"><select name="subempreitada_id" required></select><b>⌄</b></div><em id="subcontract-hint"></em></label>
+              <label class="conditional" id="subcontract-field">TRABALHO / ORÇAMENTO (OPCIONAL)<div class="select-wrap"><select name="subempreitada_id"></select><b>⌄</b></div><em id="subcontract-hint">Se souber, pode sugerir. O Diretor confirma o vínculo antes da aprovação técnica.</em></label>
               <div class="form-row"><label>N.º DOCUMENTO<input name="numero_doc" placeholder="Ex. FT 2026/001" required></label><label>DATA<input name="data_fatura" type="date" required></label></div>
               <label>VALOR (EUR)<div class="money-input"><input name="valor" type="number" min="0.01" step="0.01" placeholder="0,00" required><span>€</span></div></label>
               <section class="material-items-editor" id="material-items-editor" hidden>
@@ -496,7 +496,7 @@ function setInvoiceType(type) {
   form.tipo_origem.value = normalized;
   const isSubcontract = normalized === "subempreitada";
   $("#subcontract-field").hidden = !isSubcontract;
-  form.subempreitada_id.required = isSubcontract;
+  form.subempreitada_id.required = false;
   if (!isSubcontract) form.subempreitada_id.value = "";
   const isMaterial = normalized === "material";
   $("#material-items-editor").hidden = !isMaterial;
@@ -1013,8 +1013,61 @@ function renderSelectors() {
 
 function renderSubcontracts() {
   const eligible = subcontracts.filter(s => s.obra_id === form.obra_id.value && (!form.fornecedor_id.value || s.fornecedor_id === form.fornecedor_id.value));
-  form.subempreitada_id.innerHTML = optionList(eligible, s => s.especialidade, "Selecionar especialidade");
-  $("#subcontract-hint").textContent = form.fornecedor_id.value && !eligible.length ? "Sem subempreitadas compatíveis nesta obra." : "";
+  form.subempreitada_id.innerHTML = optionList(eligible, subcontractOptionLabel, "Deixar para confirmação do Diretor");
+  $("#subcontract-hint").textContent = form.fornecedor_id.value && !eligible.length
+    ? "Sem trabalhos compatíveis. A fatura pode ser registada e o Diretor fará a regularização."
+    : "Se souber, pode sugerir. O Diretor confirma o vínculo antes da aprovação técnica.";
+}
+
+function subcontractOptionLabel(subcontract) {
+  const origin = subcontract.mapa_comparativo_id ? "MAPA ADJUDICADO" : "REGISTO DIRETO / HISTÓRICO";
+  return `${subcontract.especialidade || "Trabalho sem designação"} · ${euro.format(Number(subcontract.valor_adjudicado || 0))} · ${origin}`;
+}
+
+function eligibleInvoiceSubcontracts(invoice) {
+  return subcontracts.filter(subcontract =>
+    String(subcontract.obra_id) === String(invoice.obra_id)
+    && String(subcontract.fornecedor_id) === String(invoice.fornecedor_id));
+}
+
+function invoiceSubcontractControl(invoice, { detail = false } = {}) {
+  if (invoice.tipo_origem !== "subempreitada") return "";
+  const eligible = eligibleInvoiceSubcontracts(invoice);
+  const current = eligible.find(item => String(item.id) === String(invoice.subempreitada_id));
+  const canLink = canApproveInvoices() && ["recebida", "em_validacao"].includes(invoiceFlowState(invoice));
+  if (!canLink) {
+    return `<div class="invoice-subcontract-link ${current ? "linked" : "missing"}"><span>TRABALHO / ORÇAMENTO</span><strong>${safeText(current ? subcontractOptionLabel(current) : "Por identificar")}</strong></div>`;
+  }
+  return `<label class="invoice-subcontract-link ${current ? "linked" : "missing"}">
+    <span>${current ? "TRABALHO / ORÇAMENTO CONFIRMADO" : "AÇÃO OBRIGATÓRIA DO DIRETOR"}</span>
+    <select data-invoice-subcontract="${invoice.id}" ${eligible.length ? "" : "disabled"}>
+      <option value="">${eligible.length ? "Selecionar o trabalho desta fatura" : "Sem trabalhos deste fornecedor nesta obra"}</option>
+      ${eligible.map(item => `<option value="${item.id}" ${String(item.id) === String(invoice.subempreitada_id) ? "selected" : ""}>${safeText(subcontractOptionLabel(item))}</option>`).join("")}
+    </select>
+    <small>${detail ? "O vínculo determina o contrato, aditamentos, saldo e alertas desta fatura." : "Confirme antes da aprovação técnica; pode alterar enquanto estiver em validação."}</small>
+  </label>`;
+}
+
+async function linkInvoiceSubcontract(select) {
+  const invoice = invoices.find(item => String(item.id) === String(select.dataset.invoiceSubcontract));
+  if (!invoice) throw new Error("A fatura já não está disponível.");
+  const subcontractId = select.value || null;
+  select.disabled = true;
+  try {
+    if (isSupabaseConfigured) {
+      const response = await supabase("rpc/fn_vincular_fatura_subempreitada", {
+        method: "POST",
+        body: JSON.stringify({ p_fatura_id: invoice.id, p_subempreitada_id: subcontractId }),
+      });
+      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível vincular a fatura ao trabalho."));
+      Object.assign(invoice, await response.json());
+    } else invoice.subempreitada_id = subcontractId;
+    renderInvoices();
+    toast(subcontractId ? "Trabalho vinculado. O controlo contratual desta fatura foi atualizado." : "Vínculo removido. Escolha o trabalho antes da aprovação técnica.", subcontractId ? "success" : "warning");
+    if (select.closest("#workflow-dialog-content")) await openInvoiceDetail(invoice.id);
+  } finally {
+    if (select.isConnected) select.disabled = false;
+  }
 }
 
 function renderInvoices() {
@@ -1047,6 +1100,7 @@ function renderInvoices() {
         <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
         <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
         <ol class="invoice-flow-steps ${returnedToAdministrative ? "returned" : ""}" aria-label="Fluxo da fatura">${returnedToAdministrative ? '<li class="current">Devolvida ao Administrativo</li>' : INVOICE_FLOW.map((state, index) => `<li class="${index < flowIndex ? "complete" : index === flowIndex ? "current" : ""}">${INVOICE_FLOW_LABELS[state]}</li>`).join("")}</ol>
+        ${invoiceSubcontractControl(invoice)}
         <div class="invoice-primary-actions">
           <button type="button" class="invoice-detail-action" data-invoice-detail="${invoice.id}">${icon("invoice")} VER DETALHE</button>
           ${canReturnInvoiceToAdministrative(invoice) ? `<button type="button" class="invoice-return-administrative" data-return-administrative="${invoice.id}">${icon("x")} DEVOLVER AO ADMINISTRATIVO</button>` : ""}
@@ -1110,6 +1164,7 @@ async function openInvoiceDetail(invoiceId) {
         <div><span>DATA</span><strong>${invoice.data_fatura ? prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`)) : "—"}</strong></div>
         <div><span>VALOR DO DOCUMENTO</span><strong>${euro.format(documentCents / 100)}</strong></div>
       </section>
+      ${invoiceSubcontractControl(invoice, { detail: true })}
       ${invoice.arquivo_url ? `<button type="button" class="outline-action invoice-detail-pdf" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} ABRIR PDF ORIGINAL</button>` : `<div class="invoice-detail-no-pdf">PDF ORIGINAL NÃO DISPONÍVEL</div>`}
       ${canApproveInvoices() ? `<label class="invoice-approval-observation">OBSERVAÇÃO DA FATURA<textarea rows="4" maxlength="1000" data-detail-approval-observation placeholder="Adicionar ou editar observação antes da decisão">${escapeHtml(invoice.observacao || "")}</textarea></label>` : invoice.observacao ? `<div class="invoice-observation-readonly"><strong>OBSERVAÇÃO</strong><p>${escapeHtml(invoice.observacao)}</p></div>` : ""}
       <section class="invoice-detail-items">
@@ -1376,7 +1431,7 @@ async function loadData() {
       supabase("fornecedores?select=id,nome,tipo_entidade,estado_confianca&order=nome"),
       isFinancial()
         ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
-        : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id&order=especialidade"),
+        : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id,mapa_comparativo_id&order=especialidade"),
       supabase("faturas?select=*&estado_fluxo=in.(recebida,em_validacao,aprovada_tecnicamente,devolvida_administrativo)&order=criado_em.desc"),
       supabase("faturas?select=*&estado_fluxo=in.(enviada_financeiro,paga)&order=data_aprovacao.desc"),
       supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
@@ -5613,6 +5668,9 @@ $("#invoice-list").addEventListener("click", async event => {
     const approvingWithoutGuide = nextState === "aprovada_tecnicamente" && !existingGuides.length && !selectedGuides.length;
     try {
       if (nextState === "aprovada_tecnicamente") {
+        if (invoice.tipo_origem === "subempreitada" && !invoice.subempreitada_id) {
+          throw new Error("Selecione primeiro o trabalho/orçamento a que esta fatura pertence.");
+        }
         const match = await findDuplicateInvoice(invoice, invoice.id);
         if (match && !await confirmSimilarInvoice(match, "aprovar esta fatura")) return;
       }
@@ -5698,7 +5756,24 @@ $("#workflow-dialog").addEventListener("click", async event => {
   }
 });
 
+$("#workflow-dialog").addEventListener("change", event => {
+  const subcontractSelect = event.target.closest("[data-invoice-subcontract]");
+  if (!subcontractSelect) return;
+  linkInvoiceSubcontract(subcontractSelect).catch(error => {
+    toast(error.message, "error");
+    openInvoiceDetail(subcontractSelect.dataset.invoiceSubcontract);
+  });
+});
+
 $("#invoice-list").addEventListener("change", event => {
+  const subcontractSelect = event.target.closest("[data-invoice-subcontract]");
+  if (subcontractSelect) {
+    linkInvoiceSubcontract(subcontractSelect).catch(error => {
+      toast(error.message, "error");
+      renderInvoices();
+    });
+    return;
+  }
   const attachmentInput = event.target.closest("[data-invoice-attachment-input]");
   if (attachmentInput) {
     const files = [...attachmentInput.files];

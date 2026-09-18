@@ -44,6 +44,6 @@ assert.match(dashboard, /alert\.tipo === "compromisso_agenda"[\s\S]*?view: "cale
 assert.match(styles, /\.agenda-layout/);
 assert.match(styles, /\.agenda-participants/);
 assert.match(html, /styles\.css\?v=98/);
-assert.match(html, /app\.js\?v=144/);
+assert.match(html, /app\.js\?v=145/);
 
 console.log("Agenda: permissões, marcação de colegas, alertas pessoais, edição, eliminação e interface validados.");
