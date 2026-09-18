@@ -198,6 +198,16 @@ input::placeholder { color: #acb0b1; }
 .invoice-detail-summary span, .invoice-detail-items header span, .invoice-reconciliation span { display: block; color: var(--text-muted); font: 700 10px "Manrope"; letter-spacing: 1px; }
 .invoice-detail-summary strong { display: block; margin-top: 6px; font: 700 14px "Manrope"; }
 .invoice-detail-pdf { margin: 16px 0; }.invoice-detail-no-pdf { margin: 16px 0; padding: 12px; background: #f3f3f1; color: var(--text-muted); font: 700 10px "Manrope"; letter-spacing: 1px; }
+.invoice-subcontract-link { display:block; margin-top:12px; padding:12px 13px; border:1px solid #e2c477; border-left:4px solid #b47b08; border-radius:9px; background:#fff8e7; color:#6f5012; }
+.invoice-subcontract-link.linked { border-color:#b9d0bd; border-left-color:#4e7655; background:#f1f7f2; color:#405f46; }
+.invoice-subcontract-link > span { display:block; margin-bottom:6px; font:850 9px "Manrope"; letter-spacing:.7px; }
+.invoice-subcontract-link > strong { display:block; color:inherit; font:750 12px "Manrope"; line-height:1.4; }
+.invoice-subcontract-link select { width:100%; min-height:38px; margin:0; border:1px solid currentColor; background:#fff; color:#303638; padding:0 10px; font:650 11px "Manrope"; }
+.invoice-subcontract-link small { display:block; margin-top:6px; color:inherit; font-size:10px; line-height:1.4; }
+.invoice-detail > .invoice-subcontract-link { margin:16px 0 0; }
+:root[data-theme="dark"] .invoice-subcontract-link { background:#342d1e; border-color:#7d642d; color:#f0d994; }
+:root[data-theme="dark"] .invoice-subcontract-link.linked { background:#223128; border-color:#4f7258; color:#b9d8c0; }
+:root[data-theme="dark"] .invoice-subcontract-link select { background:#1f2426; color:#f1efe8; }
 .invoice-detail-items { margin-top: 18px; }.invoice-detail-items header { display: flex; justify-content: space-between; align-items: end; margin-bottom: 10px; }.invoice-detail-items header strong { display: block; margin-top: 4px; }.invoice-detail-items header small { color: var(--text-muted); }
 .invoice-detail-table { overflow-x: auto; border: 1px solid #dddeda; }.invoice-detail-table table { width: 100%; border-collapse: collapse; }.invoice-detail-table th { background: var(--charcoal); color: #fff; font: 700 9px "Manrope"; letter-spacing: .8px; text-align: left; padding: 10px; }.invoice-detail-table td { padding: 10px; border-bottom: 1px solid #ececea; font-size: 12px; }
 .invoice-detail-empty { padding: 24px; border: 1px solid #dddeda; color: var(--text-muted); text-align: center; }
