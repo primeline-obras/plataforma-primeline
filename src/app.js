@@ -2,7 +2,7 @@ import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocum
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
 import { createPlanningModule } from "./planning.js?v=13";
-import { createSubcontractorsModule } from "./subcontractors.js?v=4";
+import { createSubcontractorsModule } from "./subcontractors.js?v=5";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
@@ -784,6 +784,12 @@ const subcontractorsModule = createSubcontractorsModule({
   euro,
   toast,
   canManageSpecialties: () => hasFullAccess() || isAdministrative(),
+  onSupplierUpdated: updated => {
+    const index = suppliers.findIndex(item => item.id === updated.id);
+    if (index >= 0) suppliers[index] = updated;
+    else suppliers.push(updated);
+    renderSelectors();
+  },
 });
 
 function renderUser() {

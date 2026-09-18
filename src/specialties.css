@@ -28,6 +28,102 @@
   letter-spacing: .05em;
 }
 
+.supplier-zone-tabs {
+  padding: 14px 18px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.supplier-zone-tabs button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .04em;
+}
+
+.supplier-zone-tabs button b { margin-left: 6px; }
+.supplier-zone-tabs button.active { border-color: var(--sidebar-bg); background: var(--sidebar-bg); color: #fff; }
+.supplier-zone-tabs button.warning:not(.active) { color: var(--warn-text); }
+
+.supplier-zone-badges {
+  width: 100%;
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.supplier-zone-badges em {
+  padding: 3px 7px;
+  border: 1px solid var(--info-border);
+  border-radius: 999px;
+  background: var(--info-bg);
+  color: var(--info-text);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: .05em;
+}
+
+.supplier-zone-badges.empty em { border-color: var(--warn-border); background: var(--warn-bg); color: var(--warn-text); }
+
+.supplier-profile-editor {
+  margin: 20px;
+  padding: 18px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card, 6px);
+  background: var(--bg-soft);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.supplier-editor-heading { grid-column: 1 / -1; display: grid; gap: 5px; }
+.supplier-editor-heading span { color: var(--text-secondary); font-size: 11px; }
+.supplier-profile-editor label { display: grid; align-content: start; gap: 6px; }
+.supplier-profile-editor label > span { color: var(--text-muted); font-size: 8px; font-weight: 900; letter-spacing: .07em; }
+.supplier-profile-editor input,
+.supplier-profile-editor select,
+.supplier-profile-editor textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--text-primary);
+  font: inherit;
+}
+.supplier-profile-editor textarea { min-height: 76px; resize: vertical; }
+.supplier-profile-editor .wide { grid-column: span 2; }
+.supplier-profile-editor .full { grid-column: 1 / -1; }
+.supplier-editor-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
+.supplier-editor-actions .form-error { margin: 0; color: var(--neg-text); font-size: 10px; }
+
+.supplier-zones-editor {
+  margin: 0 20px 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card, 6px);
+  background: var(--bg-soft);
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.2fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+.supplier-zones-editor > div:first-child { display: grid; gap: 5px; }
+.supplier-zones-editor > div:first-child span { color: var(--text-secondary); font-size: 11px; }
+.supplier-zones-editor > div:nth-child(2) { display: flex; flex-wrap: wrap; gap: 8px; }
+.supplier-zones-editor label { display: flex; align-items: center; gap: 7px; color: var(--text-primary); font-size: 10px; font-weight: 800; }
+.supplier-zones-editor input { width: 16px; height: 16px; accent-color: var(--accent); }
+.supplier-zones-editor .form-error { grid-column: 1 / -1; margin: 0; color: var(--neg-text); font-size: 10px; }
+
 .supplier-specialties-editor {
   margin: 0 0 20px;
   padding: 18px;
@@ -89,9 +185,16 @@
   .supplier-directory-toolbar { grid-template-columns: 1fr 1fr; }
   .supplier-specialties-editor { grid-template-columns: 1fr; }
   .supplier-specialties-editor .form-error { grid-column: auto; }
+  .supplier-profile-editor { grid-template-columns: 1fr 1fr; }
+  .supplier-zones-editor { grid-template-columns: 1fr; }
+  .supplier-zones-editor .form-error { grid-column: auto; }
 }
 
 @media (max-width: 620px) {
   .supplier-directory-toolbar,
   .supplier-specialties-options { grid-template-columns: 1fr; }
+  .supplier-profile-editor { grid-template-columns: 1fr; }
+  .supplier-profile-editor .wide,
+  .supplier-profile-editor .full { grid-column: auto; }
+  .supplier-editor-actions { grid-column: auto; align-items: stretch; flex-direction: column; }
 }
