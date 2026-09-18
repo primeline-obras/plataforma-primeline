@@ -38,6 +38,23 @@ alter table public.compromissos_participantes enable row level security;
 revoke all on public.compromissos,public.compromissos_participantes from anon;
 grant select on public.compromissos,public.compromissos_participantes to authenticated;
 
+-- A RLS de utilizadores protege o diretório completo. Esta função expõe à
+-- Agenda somente id, nome e função de contas ativas da mesma empresa.
+create or replace function public.fn_listar_colegas_agenda()
+returns table(id uuid,nome text,funcao text)
+language sql stable security definer set search_path=public as $$
+  select u.id,u.nome,u.funcao
+  from public.utilizadores u
+  join public.utilizadores atual on atual.id=public.fn_utilizador_atual_id()
+  where coalesce(atual.ativo,true)
+    and u.empresa_id=atual.empresa_id
+    and coalesce(u.ativo,true)
+    and u.id<>atual.id
+  order by u.nome;
+$$;
+revoke all on function public.fn_listar_colegas_agenda() from public,anon;
+grant execute on function public.fn_listar_colegas_agenda() to authenticated;
+
 create or replace function public.fn_pode_ver_compromisso(p_id uuid)
 returns boolean language sql stable security definer set search_path=public as $$
   select exists(
@@ -129,4 +146,7 @@ do $$ begin
 end $$;
 
 commit;
-select to_regclass('public.compromissos') is not null as calendario_ativo,to_regprocedure('public.fn_guardar_compromisso(uuid,text,date,time without time zone,time without time zone,boolean,text,uuid,uuid,text,text,text,integer,uuid[])') is not null as colegas_ativos;
+select
+  to_regclass('public.compromissos') is not null as calendario_ativo,
+  to_regprocedure('public.fn_guardar_compromisso(uuid,text,date,time without time zone,time without time zone,boolean,text,uuid,uuid,text,text,text,integer,uuid[])') is not null as colegas_ativos,
+  to_regprocedure('public.fn_listar_colegas_agenda()') is not null as lista_colegas_ativa;
