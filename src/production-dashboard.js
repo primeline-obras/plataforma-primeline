@@ -188,6 +188,7 @@ export function alertTopic(alert = {}) {
   if (/(medicina|consulta.*medic|contrato.*trabalho|fim_contrato_rh|ferias|ausencia|hora.*extra|aniversario)/.test(text)) return "people";
   if (FINANCIAL_ALERT_PATTERN.test(text)) return "finance";
   if (/(subempreitada|subcontrato|adjudic)/.test(text)) return "subcontracts";
+  if (/(compromisso_agenda|compromisso|agenda)/.test(text)) return "calendar";
   if (/(reserva_sala|reuniao|sala)/.test(text)) return "meetings";
   if (/(rnc|nao.?conformidade|qualidade)/.test(text)) return "quality";
   if (/(documento|validade_documental|certidao)/.test(text)) return "documents";
@@ -202,13 +203,14 @@ const ALERT_TOPIC_LABELS = {
   finance: "FINANCEIRO",
   subcontracts: "SUBEMPREITADAS",
   meetings: "REUNIÕES",
+  calendar: "AGENDA",
   quality: "RNC E QUALIDADE",
   documents: "DOCUMENTOS",
   production: "PLANEAMENTO E OBRA",
   general: "GERAL",
 };
 
-const ALERT_TOPIC_ORDER = ["vehicles", "safety", "people", "finance", "subcontracts", "meetings", "quality", "documents", "production", "general"];
+const ALERT_TOPIC_ORDER = ["vehicles", "safety", "people", "finance", "subcontracts", "calendar", "meetings", "quality", "documents", "production", "general"];
 
 export function groupAlertsByTopic(alerts = []) {
   const grouped = new Map();
@@ -527,6 +529,7 @@ export function createProductionDashboard(options) {
   }
 
   function alertDestination(alert) {
+    if (alert.tipo === "compromisso_agenda") return { view: "calendar" };
     if (alert.tipo === "reserva_sala") return { view: "rooms" };
     if (["consulta_medicina", "primeira_consulta_medicina"].includes(alert.tipo)) return { view: "team", teamTab: "medicine" };
     if (["inspecao_viatura", "seguro_viatura"].includes(alert.tipo)) return { view: "vehicles" };
