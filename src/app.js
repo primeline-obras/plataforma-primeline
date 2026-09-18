@@ -259,7 +259,7 @@ document.querySelector("#root").innerHTML = `
       </div>
       <div class="page subcontractors-view" id="subcontractors-view" hidden>
         <div class="page-heading">
-          <div><p class="eyebrow">BASE DE PARCEIROS</p><h1>SUBEMPREITEIROS</h1><p>Diretório geral, experiência em obra e avaliação histórica.</p></div>
+          <div><p class="eyebrow">BASE DE PARCEIROS</p><h1>FORNECEDORES E SUBEMPREITEIROS</h1><p>Cadastro, zonas operacionais, experiência em obra e avaliação histórica.</p></div>
         </div>
         <div id="subcontractors-content"></div>
       </div>

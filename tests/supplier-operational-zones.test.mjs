@@ -41,3 +41,10 @@ test("edited supplier propagates to the shared application list", async () => {
   assert.match(source, /suppliers\[index\] = updated/);
   assert.match(source, /renderSelectors\(\)/);
 });
+
+test("page title reflects the combined directory", async () => {
+  const source = await read("src/app.js");
+  assert.match(source, /FORNECEDORES E SUBEMPREITEIROS/);
+  const css = await read("src/specialties.css");
+  assert.match(css, /supplier-editor-actions \.primary-button \{ flex: 0 0 auto; width: auto/);
+});
