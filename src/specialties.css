@@ -104,6 +104,7 @@
 .supplier-profile-editor .wide { grid-column: span 2; }
 .supplier-profile-editor .full { grid-column: 1 / -1; }
 .supplier-editor-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
+.supplier-editor-actions .primary-button { flex: 0 0 auto; width: auto; min-width: 190px; min-height: 40px; }
 .supplier-editor-actions .form-error { margin: 0; color: var(--neg-text); font-size: 10px; }
 
 .supplier-zones-editor {
@@ -197,4 +198,5 @@
   .supplier-profile-editor .wide,
   .supplier-profile-editor .full { grid-column: auto; }
   .supplier-editor-actions { grid-column: auto; align-items: stretch; flex-direction: column; }
+  .supplier-editor-actions .primary-button { width: 100%; min-width: 0; }
 }
