@@ -38,6 +38,21 @@ const average = values => {
 
 const formatScore = value => Number.isFinite(value) ? value.toFixed(1).replace(".", ",") : "—";
 
+export function supplierProfileStatus(supplier = {}, { zones = [], specialties = [] } = {}) {
+  const hasValue = value => String(value ?? "").trim().length > 0;
+  const fields = [
+    ["NIF", hasValue(supplier.nif)],
+    ["EMAIL", hasValue(supplier.email || supplier.email_contacto)],
+    ["TELEFONE", hasValue(supplier.telefone || supplier.telemovel || supplier.telefone_contacto)],
+    ["REPRESENTANTE", hasValue(supplier.representante || supplier.contacto || supplier.nome_contacto || supplier.pessoa_contacto || supplier.responsavel)],
+    ["NOTAS", hasValue(supplier.notas)],
+    ["ZONA", zones.length > 0],
+    ["ESPECIALIDADE", specialties.length > 0],
+  ];
+  const missing = fields.filter(([, present]) => !present).map(([label]) => label);
+  return { complete: missing.length === 0, missing };
+}
+
 export function createSubcontractorsModule({
   supabase,
   isSupabaseConfigured,
@@ -67,6 +82,7 @@ export function createSubcontractorsModule({
     trustFilter: "all",
     specialtyFilter: "all",
     zoneFilter: "all",
+    profileFilter: "all",
     sort: "rating",
     selectedSupplierId: null,
     loaded: false,
@@ -138,6 +154,10 @@ export function createSubcontractorsModule({
       trust: normalizeState(supplier.estado_confianca),
       metrics: supplierMetrics(supplier),
       contacts: supplierContacts(supplier),
+      profile: supplierProfileStatus(supplier, {
+        zones: zonesFor(supplier.id),
+        specialties: specialtiesFor(supplier.id),
+      }),
     })).filter(row => {
       const matchesState = state.trustFilter === "all" || row.trust === state.trustFilter;
       const specialtyRows = specialtiesFor(row.supplier.id);
@@ -146,9 +166,12 @@ export function createSubcontractorsModule({
       const zones = zonesFor(row.supplier.id);
       const matchesZone = state.zoneFilter === "all"
         || (state.zoneFilter === "unclassified" ? !zones.length : zones.includes(state.zoneFilter));
-      const searchable = [row.supplier.nome, ...row.contacts, ...specialtyRows.map(item => item.nome), ...zones.map(zone => OPERATIONAL_ZONES[zone])]
+      const matchesProfile = state.profileFilter === "all"
+        || (state.profileFilter === "complete" ? row.profile.complete : !row.profile.complete);
+      const searchable = [row.supplier.nome, row.supplier.nif, row.supplier.notas, ...row.contacts,
+        ...specialtyRows.map(item => item.nome), ...zones.map(zone => OPERATIONAL_ZONES[zone])]
         .join(" ").toLocaleLowerCase("pt-PT");
-      return matchesState && matchesSpecialty && matchesZone && (!needle || searchable.includes(needle));
+      return matchesState && matchesSpecialty && matchesZone && matchesProfile && (!needle || searchable.includes(needle));
     }).sort((left, right) => {
       const ratingDifference = (right.metrics.rating ?? -1) - (left.metrics.rating ?? -1);
       if (ratingDifference) return ratingDifference;
@@ -209,6 +232,9 @@ export function createSubcontractorsModule({
           ${trustBadge(row.supplier.estado_confianca)}
           ${zoneBadges(row.supplier.id)}
           ${specialtyBadges(row.supplier.id)}
+          ${row.profile.complete
+            ? `<span class="supplier-profile-status complete">CADASTRO COMPLETO</span>`
+            : `<span class="supplier-profile-status incomplete" title="Em falta: ${escapeHtml(row.profile.missing.join(", "))}">${row.profile.missing.length} DADOS EM FALTA</span>`}
           <small>${row.contacts.length
             ? row.contacts.map(escapeHtml).join(" · ")
             : "CONTACTO NÃO INDICADO"}</small></div>
@@ -254,13 +280,20 @@ export function createSubcontractorsModule({
     const evaluations = metrics.evaluations.slice().sort((a, b) =>
       String(b.criado_em || "").localeCompare(String(a.criado_em || "")));
     const contacts = supplierContacts(supplier);
+    const profile = supplierProfileStatus(supplier, {
+      zones: zonesFor(supplier.id),
+      specialties: specialtiesFor(supplier.id),
+    });
     return `<section class="supplier-detail">
       <div class="supplier-detail-head">
         <div><p class="eyebrow">HISTÓRICO COMPLETO</p><h2>${escapeHtml(supplier.nome || "Subempreiteiro")}</h2>
           <div class="supplier-detail-meta">${trustBadge(supplier.estado_confianca)}
             <span>${contacts.length ? contacts.map(escapeHtml).join(" · ") : "CONTACTO NÃO INDICADO"}</span></div>
           ${zoneBadges(supplier.id)}
-          ${specialtyBadges(supplier.id)}</div>
+          ${specialtyBadges(supplier.id)}
+          <div class="supplier-profile-summary ${profile.complete ? "complete" : "incomplete"}">${profile.complete
+            ? "CADASTRO COMPLETO"
+            : `POR COMPLETAR: ${escapeHtml(profile.missing.join(" · "))}`}</div></div>
         <button type="button" data-close-supplier-detail>FECHAR ×</button>
       </div>
       <div class="supplier-detail-kpis">
@@ -390,12 +423,16 @@ export function createSubcontractorsModule({
     const zoneCounts = Object.fromEntries(Object.keys(OPERATIONAL_ZONES).map(zone => [zone,
       state.suppliers.filter(item => zonesFor(item.id).includes(zone)).length]));
     const unclassifiedZones = state.suppliers.filter(item => !zonesFor(item.id).length).length;
+    const incompleteProfiles = state.suppliers.filter(supplier => !supplierProfileStatus(supplier, {
+      zones: zonesFor(supplier.id), specialties: specialtiesFor(supplier.id),
+    }).complete).length;
 
     content.innerHTML = `${renderModuleTabs()}
       <section class="subcontractors-kpis">
         <article><span>FORNECEDORES / SUBEMPREITEIROS</span><strong>${state.suppliers.length}</strong></article>
         <article><span>ATIVOS / RECOMENDADOS</span><strong>${recommended}</strong></article>
         <article><span>COM AVALIAÇÃO</span><strong>${evaluated}</strong></article>
+        <article><span>CADASTROS POR COMPLETAR</span><strong>${incompleteProfiles}</strong></article>
       </section>
       <section class="supplier-directory-panel">
         <nav class="supplier-zone-tabs" aria-label="Zona operacional">
@@ -417,6 +454,11 @@ export function createSubcontractorsModule({
           <label><span>ESPECIALIDADE</span><div class="select-wrap"><select data-supplier-specialty>
             <option value="all">Todas as especialidades</option>
             ${state.specialties.map(item => `<option value="${item.id}" ${state.specialtyFilter === item.id ? "selected" : ""}>${escapeHtml(item.nome)}</option>`).join("")}
+          </select><b>⌄</b></div></label>
+          <label><span>COMPLETUDE DO CADASTRO</span><div class="select-wrap"><select data-supplier-profile>
+            <option value="all">Todos os cadastros</option>
+            <option value="incomplete" ${state.profileFilter === "incomplete" ? "selected" : ""}>Por completar</option>
+            <option value="complete" ${state.profileFilter === "complete" ? "selected" : ""}>Completos</option>
           </select><b>⌄</b></div></label>
         </div>
         <div class="supplier-directory-heading">
@@ -597,6 +639,11 @@ export function createSubcontractorsModule({
     }
     if (event.target.matches("[data-supplier-specialty]")) {
       state.specialtyFilter = event.target.value;
+      state.selectedSupplierId = null;
+      render();
+    }
+    if (event.target.matches("[data-supplier-profile]")) {
+      state.profileFilter = event.target.value;
       state.selectedSupplierId = null;
       render();
     }
