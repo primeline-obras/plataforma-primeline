@@ -26,7 +26,7 @@ export function calculateCosting({ melhor_preco, custo_estimado, valor_adjudicad
 export function createComparativeMapModule({ host, supabase, isConfigured, getSuppliers, getPhases, euro, toast, onAdjudicated, uploadProposalPdf, downloadProposalPdf, deleteProposalPdf, onSupplierCreated }) {
   const state = { work: null, maps: [], proposals: [], items: [], prices: [], adjustments: [], canEdit: false, expanded: "", newOpen: false, loading: false, editingItemId: "", editingProposalId: "", pendingDelete: "", importMapId: "", importFile: null, importPreview: null, importBusy: false, importNewSupplier: false };
   const root = () => host.querySelector("[data-comparative-map-root]");
-  const comparisonSuppliers = () => getSuppliers().filter(row => !row.tipo_entidade || row.tipo_entidade === "subempreiteiro");
+  const comparisonSuppliers = () => getSuppliers().filter(row => !row.tipo_entidade || ["subempreiteiro", "ambos"].includes(row.tipo_entidade));
   const supplierName = id => getSuppliers().find(row => row.id === id)?.nome || "Fornecedor";
   const proposalsFor = id => state.proposals.filter(row => row.mapa_id === id);
   const itemsFor = id => state.items.filter(row => row.mapa_id === id).sort((a, b) => String(a.numero).localeCompare(String(b.numero), "pt", { numeric: true }));
