@@ -35,6 +35,27 @@ test("directory exposes region filters and complete supplier form", async () => 
   assert.doesNotMatch(source, /tipo_entidade=eq\.subempreiteiro/);
 });
 
+test("directory supports safe manual review of incomplete profiles", async () => {
+  const source = await read("src/subcontractors.js");
+  for (const expected of [
+    "supplierProfileStatus", "CADASTROS POR COMPLETAR", "COMPLETUDE DO CADASTRO",
+    "data-supplier-profile", "DADOS EM FALTA", "POR COMPLETAR:",
+  ]) assert.ok(source.includes(expected), `missing ${expected}`);
+  assert.match(source, /row\.supplier\.nif, row\.supplier\.notas/);
+
+  const { supplierProfileStatus } = await import("../src/subcontractors.js");
+  const incomplete = supplierProfileStatus({ nome: "Empresa", email: "geral@empresa.pt" }, {
+    zones: ["lisboa_cascais"], specialties: [{ id: "especialidade" }],
+  });
+  assert.equal(incomplete.complete, false);
+  assert.deepEqual(incomplete.missing, ["NIF", "TELEFONE", "REPRESENTANTE", "NOTAS"]);
+  const complete = supplierProfileStatus({
+    nif: "500000000", email: "geral@empresa.pt", telefone: "210000000",
+    representante: "Ana", notas: "Referência validada",
+  }, { zones: ["algarve"], specialties: [{ id: "especialidade" }] });
+  assert.deepEqual(complete, { complete: true, missing: [] });
+});
+
 test("edited supplier propagates to the shared application list", async () => {
   const source = await read("src/app.js");
   assert.match(source, /onSupplierUpdated: updated =>/);
