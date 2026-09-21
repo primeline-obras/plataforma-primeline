@@ -79,7 +79,7 @@ test("authorized users save the complete profile and a new specialty once", asyn
   const source = await read("src/subcontractors.js");
   for (const expected of [
     "NOVA ESPECIALIDADE", 'name="nova_especialidade"',
-    "rpc/fn_guardar_cadastro_fornecedor", ">GUARDAR</button>",
+    "rpc/fn_guardar_cadastro_fornecedor", 'creating ? "CRIAR PARCEIRO" : "GUARDAR"',
   ]) assert.ok(source.includes(expected), `missing ${expected}`);
   assert.doesNotMatch(source, /GUARDAR ZONAS|GUARDAR CLASSIFICAÇÃO|CRIAR E ASSOCIAR/);
   assert.match(source, /state\.selectedSupplierId = null;[\s\S]*Cadastro completo atualizado/);
@@ -96,6 +96,25 @@ test("authorized users save the complete profile and a new specialty once", asyn
   assert.match(classificationSql, /tipo_entidade[^;]+fornecedor[^;]+subempreiteiro[^;]+ambos/is);
   assert.match(classificationSql, /pg_advisory_xact_lock/);
   assert.match(classificationSql, /on conflict \(fornecedor_id, especialidade_id\) do nothing/i);
+});
+
+test("directory creates a new partner and filters every operational-zone combination", async () => {
+  const source = await read("src/subcontractors.js");
+  for (const expected of [
+    "+ NOVO PARCEIRO", "data-new-supplier", 'data-supplier-mode="create"',
+    "Novo parceiro criado.", "data-supplier-zone-filter", 'value="both"',
+    "Lisboa / Cascais e Algarve", "Por classificar",
+  ]) assert.ok(source.includes(expected), `missing ${expected}`);
+  assert.match(source, /p_fornecedor_id:\s*supplierForm\.dataset\.supplierEditor \|\| null/);
+  assert.match(source, /Object\.keys\(OPERATIONAL_ZONES\)\.every\(zone => zones\.includes\(zone\)\)/);
+
+  const sql = await read("supabase/cadastro_fornecedor_unificado.sql");
+  assert.match(sql, /if v_fornecedor_id is null then/i);
+  assert.match(sql, /insert into public\.fornecedores/i);
+  assert.match(sql, /Já existe um cadastro com este nome/i);
+  assert.match(sql, /Já existe um cadastro com este NIF/i);
+  assert.match(sql, /exception when unique_violation/i);
+  assert.match(sql, /criacao_fornecedor_ativa/i);
 });
 
 test("duplicate supplier deletion is explicit and refuses records with business history", async () => {
