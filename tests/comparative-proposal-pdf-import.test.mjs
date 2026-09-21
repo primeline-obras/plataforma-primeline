@@ -49,7 +49,7 @@ test("migração autoriza cadastro controlado e importação atómica com evidê
 test("interface liga à lista de subempreiteiros e usa o arquivo documental da obra", () => {
   const frontend = fs.readFileSync(new URL("../src/comparative-map.js", import.meta.url), "utf8");
   const app = fs.readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(frontend, /row\.tipo_entidade === "subempreiteiro"/);
+  assert.match(frontend, /\["subempreiteiro",\s*"ambos"\]\.includes\(row\.tipo_entidade\)/);
   assert.match(frontend, /fn_criar_fornecedor_comparativo/);
   assert.match(frontend, /data-add-import-line/);
   assert.match(frontend, /ABRIR PDF ORIGINAL/);

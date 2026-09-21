@@ -5,6 +5,7 @@ const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character =>
 const TRUST_STATES = {
   ativo: { label: "ATIVO", tone: "positive" },
   recomendado: { label: "RECOMENDADO", tone: "positive" },
+  recomendado_com_ressalvas: { label: "RECOMENDADO COM RESSALVAS", tone: "warning" },
   nao_avaliado: { label: "NÃO AVALIADO", tone: "neutral" },
   nao_recomendado: { label: "NÃO RECOMENDADO", tone: "negative" },
   bloqueado: { label: "BLOQUEADO", tone: "negative" },
@@ -23,9 +24,20 @@ const OPERATIONAL_ZONES = {
   algarve: "ALGARVE",
 };
 
+const ENTITY_TYPES = {
+  fornecedor: "FORNECEDOR",
+  subempreiteiro: "SUBEMPREITEIRO",
+  ambos: "FORNECEDOR E SUBEMPREITEIRO",
+};
+
 const normalizeState = value => String(value || "nao_avaliado")
   .trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
   .replaceAll("-", "_").replaceAll(" ", "_");
+
+const normalizeEntityType = value => {
+  const normalized = normalizeState(value || "por_classificar");
+  return Object.hasOwn(ENTITY_TYPES, normalized) ? normalized : "por_classificar";
+};
 
 const isoDate = value => value ? String(value).slice(0, 10) : "";
 
@@ -46,6 +58,7 @@ export function supplierProfileStatus(supplier = {}, { zones = [], specialties =
     ["TELEFONE", hasValue(supplier.telefone || supplier.telemovel || supplier.telefone_contacto)],
     ["REPRESENTANTE", hasValue(supplier.representante || supplier.contacto || supplier.nome_contacto || supplier.pessoa_contacto || supplier.responsavel)],
     ["NOTAS", hasValue(supplier.notas)],
+    ["TIPO", normalizeEntityType(supplier.tipo_entidade) !== "por_classificar"],
     ["ZONA", zones.length > 0],
     ["ESPECIALIDADE", specialties.length > 0],
   ];
@@ -80,6 +93,7 @@ export function createSubcontractorsModule({
     activeTab: "directory",
     search: "",
     trustFilter: "all",
+    entityFilter: "all",
     specialtyFilter: "all",
     zoneFilter: "all",
     profileFilter: "all",
@@ -152,6 +166,7 @@ export function createSubcontractorsModule({
     return state.suppliers.map(supplier => ({
       supplier,
       trust: normalizeState(supplier.estado_confianca),
+      entityType: normalizeEntityType(supplier.tipo_entidade),
       metrics: supplierMetrics(supplier),
       contacts: supplierContacts(supplier),
       profile: supplierProfileStatus(supplier, {
@@ -160,6 +175,7 @@ export function createSubcontractorsModule({
       }),
     })).filter(row => {
       const matchesState = state.trustFilter === "all" || row.trust === state.trustFilter;
+      const matchesEntity = state.entityFilter === "all" || row.entityType === state.entityFilter;
       const specialtyRows = specialtiesFor(row.supplier.id);
       const matchesSpecialty = state.specialtyFilter === "all"
         || specialtyRows.some(item => item.especialidade_id === state.specialtyFilter);
@@ -171,7 +187,7 @@ export function createSubcontractorsModule({
       const searchable = [row.supplier.nome, row.supplier.nif, row.supplier.notas, ...row.contacts,
         ...specialtyRows.map(item => item.nome), ...zones.map(zone => OPERATIONAL_ZONES[zone])]
         .join(" ").toLocaleLowerCase("pt-PT");
-      return matchesState && matchesSpecialty && matchesZone && matchesProfile && (!needle || searchable.includes(needle));
+      return matchesState && matchesEntity && matchesSpecialty && matchesZone && matchesProfile && (!needle || searchable.includes(needle));
     }).sort((left, right) => {
       const ratingDifference = (right.metrics.rating ?? -1) - (left.metrics.rating ?? -1);
       if (ratingDifference) return ratingDifference;
@@ -208,6 +224,12 @@ export function createSubcontractorsModule({
     return `<span class="supplier-trust ${config.tone}">${escapeHtml(config.label)}</span>`;
   }
 
+  function entityBadge(value) {
+    const normalized = normalizeEntityType(value);
+    return `<span class="supplier-entity-type ${normalized}">${escapeHtml(
+      ENTITY_TYPES[normalized] || "TIPO POR CLASSIFICAR")}</span>`;
+  }
+
   function renderRating(metrics, compact = false) {
     if (!metrics.evaluations.length) {
       return `<div class="supplier-rating empty"><strong>—</strong><span>SEM AVALIAÇÕES</span></div>`;
@@ -230,6 +252,7 @@ export function createSubcontractorsModule({
           .split(/\s+/).slice(0, 2).map(part => part[0]).join("").toUpperCase())}</span>
         <div><strong>${escapeHtml(row.supplier.nome || "Fornecedor sem nome")}</strong>
           ${trustBadge(row.supplier.estado_confianca)}
+          ${entityBadge(row.supplier.tipo_entidade)}
           ${zoneBadges(row.supplier.id)}
           ${specialtyBadges(row.supplier.id)}
           ${row.profile.complete
@@ -288,13 +311,17 @@ export function createSubcontractorsModule({
       <div class="supplier-detail-head">
         <div><p class="eyebrow">HISTÓRICO COMPLETO</p><h2>${escapeHtml(supplier.nome || "Subempreiteiro")}</h2>
           <div class="supplier-detail-meta">${trustBadge(supplier.estado_confianca)}
+            ${entityBadge(supplier.tipo_entidade)}
             <span>${contacts.length ? contacts.map(escapeHtml).join(" · ") : "CONTACTO NÃO INDICADO"}</span></div>
           ${zoneBadges(supplier.id)}
           ${specialtyBadges(supplier.id)}
           <div class="supplier-profile-summary ${profile.complete ? "complete" : "incomplete"}">${profile.complete
             ? "CADASTRO COMPLETO"
             : `POR COMPLETAR: ${escapeHtml(profile.missing.join(" · "))}`}</div></div>
-        <button type="button" data-close-supplier-detail>FECHAR ×</button>
+        <div class="supplier-detail-head-actions">
+          ${canManageSpecialties() ? `<button type="button" class="danger-action" data-delete-supplier="${supplier.id}">ELIMINAR DUPLICADO</button>` : ""}
+          <button type="button" data-close-supplier-detail>FECHAR ×</button>
+        </div>
       </div>
       <div class="supplier-detail-kpis">
         <div><span>OBRAS</span><strong>${metrics.workCount}</strong></div>
@@ -305,6 +332,10 @@ export function createSubcontractorsModule({
         <div class="supplier-editor-heading"><strong>CADASTRO DA EMPRESA</strong><span>Dados comuns às compras, faturas, subempreitadas e mapas comparativos.</span></div>
         <label class="wide"><span>NOME *</span><input name="nome" required value="${escapeHtml(supplier.nome || "")}"></label>
         <label><span>NIF</span><input name="nif" inputmode="numeric" value="${escapeHtml(supplier.nif || "")}"></label>
+        <label><span>TIPO DE PARCEIRO *</span><select name="tipo_entidade" required>
+          <option value="">Por classificar</option>
+          ${Object.entries(ENTITY_TYPES).map(([value, label]) => `<option value="${value}" ${normalizeEntityType(supplier.tipo_entidade) === value ? "selected" : ""}>${label}</option>`).join("")}
+        </select></label>
         <label><span>ESTADO</span><select name="estado_confianca">${Object.entries(TRUST_STATES).map(([value, config]) => `<option value="${value}" ${normalizeState(supplier.estado_confianca) === value ? "selected" : ""}>${config.label}</option>`).join("")}</select></label>
         <label><span>EMAIL</span><input name="email" type="email" value="${escapeHtml(supplier.email || "")}"></label>
         <label><span>TELEFONE</span><input name="telefone" value="${escapeHtml(supplier.telefone || "")}"></label>
@@ -321,6 +352,11 @@ export function createSubcontractorsModule({
         <div><strong>ESPECIALIDADES</strong><span>Selecione todas as áreas em que este subempreiteiro pode ser consultado.</span></div>
         <div class="supplier-specialties-options">${state.specialties.map(item => `<label><input type="checkbox" name="especialidade_id" value="${item.id}" ${specialtiesFor(supplier.id).some(link => link.especialidade_id === item.id) ? "checked" : ""}><span>${escapeHtml(item.nome)}</span></label>`).join("")}</div>
         <button type="submit" class="primary-button">GUARDAR CLASSIFICAÇÃO</button><p class="form-error"></p>
+      </form>` : ""}
+      ${canManageSpecialties() ? `<form class="supplier-new-specialty" data-new-specialty="${supplier.id}">
+        <div><strong>CRIAR NOVA ESPECIALIDADE</strong><span>Use apenas quando a especialidade ainda não existir. A nova especialidade fica imediatamente associada a esta empresa.</span></div>
+        <input name="nome" required maxlength="120" placeholder="Ex. Projetista de AVAC">
+        <button type="submit" class="primary-button">CRIAR E ASSOCIAR</button><p class="form-error"></p>
       </form>` : ""}
       <div class="supplier-detail-columns">
         <section><div class="supplier-subsection-title"><div><p class="eyebrow">EXECUÇÃO</p>
@@ -417,7 +453,7 @@ export function createSubcontractorsModule({
     const allMetrics = state.suppliers.map(supplier => supplierMetrics(supplier));
     const evaluated = allMetrics.filter(item => item.evaluations.length).length;
     const recommended = state.suppliers.filter(item =>
-      ["ativo", "recomendado"].includes(normalizeState(item.estado_confianca))).length;
+      ["ativo", "recomendado", "recomendado_com_ressalvas"].includes(normalizeState(item.estado_confianca))).length;
     const trustOptions = [...new Set(state.suppliers.map(item =>
       normalizeState(item.estado_confianca)))].sort();
     const zoneCounts = Object.fromEntries(Object.keys(OPERATIONAL_ZONES).map(zone => [zone,
@@ -434,6 +470,7 @@ export function createSubcontractorsModule({
         <article><span>COM AVALIAÇÃO</span><strong>${evaluated}</strong></article>
         <article><span>CADASTROS POR COMPLETAR</span><strong>${incompleteProfiles}</strong></article>
       </section>
+      ${renderDetail()}
       <section class="supplier-directory-panel">
         <nav class="supplier-zone-tabs" aria-label="Zona operacional">
           <button type="button" data-supplier-zone="all" class="${state.zoneFilter === "all" ? "active" : ""}">TODOS <b>${state.suppliers.length}</b></button>
@@ -455,6 +492,11 @@ export function createSubcontractorsModule({
             <option value="all">Todas as especialidades</option>
             ${state.specialties.map(item => `<option value="${item.id}" ${state.specialtyFilter === item.id ? "selected" : ""}>${escapeHtml(item.nome)}</option>`).join("")}
           </select><b>⌄</b></div></label>
+          <label><span>TIPO DE PARCEIRO</span><div class="select-wrap"><select data-supplier-entity>
+            <option value="all">Todos os tipos</option>
+            ${Object.entries(ENTITY_TYPES).map(([value, label]) => `<option value="${value}" ${state.entityFilter === value ? "selected" : ""}>${label}</option>`).join("")}
+            <option value="por_classificar" ${state.entityFilter === "por_classificar" ? "selected" : ""}>Por classificar</option>
+          </select><b>⌄</b></div></label>
           <label><span>COMPLETUDE DO CADASTRO</span><div class="select-wrap"><select data-supplier-profile>
             <option value="all">Todos os cadastros</option>
             <option value="incomplete" ${state.profileFilter === "incomplete" ? "selected" : ""}>Por completar</option>
@@ -468,8 +510,7 @@ export function createSubcontractorsModule({
         <div class="supplier-directory-list grouped">${rows.length
           ? groups.map(group => `<section class="supplier-specialty-group"><header><div><span>ESPECIALIDADE</span><h3>${escapeHtml(group.nome)}</h3></div><b>${group.rows.length}</b></header><div>${group.rows.map(renderDirectoryCard).join("")}</div></section>`).join("")
           : `<div class="subcontract-empty">NENHUM FORNECEDOR OU SUBEMPREITEIRO CORRESPONDE AOS FILTROS</div>`}</div>
-      </section>
-      ${renderDetail()}`;
+      </section>`;
   }
 
   async function query(path, options = {}) {
@@ -642,6 +683,11 @@ export function createSubcontractorsModule({
       state.selectedSupplierId = null;
       render();
     }
+    if (event.target.matches("[data-supplier-entity]")) {
+      state.entityFilter = event.target.value;
+      state.selectedSupplierId = null;
+      render();
+    }
     if (event.target.matches("[data-supplier-profile]")) {
       state.profileFilter = event.target.value;
       state.selectedSupplierId = null;
@@ -649,7 +695,7 @@ export function createSubcontractorsModule({
     }
   });
 
-  content.addEventListener("click", event => {
+  content.addEventListener("click", async event => {
     const zone = event.target.closest("[data-supplier-zone]");
     if (zone) {
       state.zoneFilter = zone.dataset.supplierZone;
@@ -674,6 +720,34 @@ export function createSubcontractorsModule({
     if (event.target.closest("[data-close-supplier-detail]")) {
       state.selectedSupplierId = null;
       render();
+      return;
+    }
+    const deleteButton = event.target.closest("[data-delete-supplier]");
+    if (deleteButton) {
+      const supplier = state.suppliers.find(item => item.id === deleteButton.dataset.deleteSupplier);
+      if (!supplier) return;
+      const confirmed = window.confirm(
+        `Eliminar definitivamente o registo duplicado “${supplier.nome}”?\n\n` +
+        "A eliminação só será permitida se este registo não tiver documentos, obras, faturas, propostas ou subempreitadas associados."
+      );
+      if (!confirmed) return;
+      deleteButton.disabled = true;
+      try {
+        await query("rpc/fn_eliminar_fornecedor_duplicado", {
+          method: "POST",
+          body: JSON.stringify({ p_fornecedor_id: supplier.id }),
+        });
+        state.suppliers = state.suppliers.filter(item => item.id !== supplier.id);
+        state.allSuppliers = state.allSuppliers.filter(item => item.id !== supplier.id);
+        state.supplierZones = state.supplierZones.filter(item => item.fornecedor_id !== supplier.id);
+        state.supplierSpecialties = state.supplierSpecialties.filter(item => item.fornecedor_id !== supplier.id);
+        state.selectedSupplierId = null;
+        toast("Registo duplicado eliminado.");
+        render();
+      } catch (error) {
+        toast(error.message, "error");
+        deleteButton.disabled = false;
+      }
     }
   });
 
@@ -687,11 +761,12 @@ export function createSubcontractorsModule({
       button.disabled = true;
       errorNode.textContent = "";
       try {
-        const updated = await query("rpc/fn_editar_fornecedor_diretorio", {
+        const updated = await query("rpc/fn_editar_fornecedor_diretorio_v2", {
           method: "POST",
           body: JSON.stringify({
             p_fornecedor_id: supplierForm.dataset.supplierEditor,
             p_nome: fields.nome,
+            p_tipo_entidade: fields.tipo_entidade,
             p_nif: fields.nif,
             p_email: fields.email,
             p_telefone: fields.telefone,
@@ -706,6 +781,34 @@ export function createSubcontractorsModule({
         onSupplierUpdated(saved);
         toast("Cadastro do fornecedor atualizado.");
         render();
+        content.querySelector(".supplier-detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (error) {
+        errorNode.textContent = error.message;
+      } finally { button.disabled = false; }
+      return;
+    }
+    const newSpecialtyForm = event.target.closest("[data-new-specialty]");
+    if (newSpecialtyForm) {
+      event.preventDefault();
+      const button = newSpecialtyForm.querySelector("button[type=submit]");
+      const errorNode = newSpecialtyForm.querySelector(".form-error");
+      button.disabled = true;
+      errorNode.textContent = "";
+      try {
+        await query("rpc/fn_criar_especialidade_fornecedor", {
+          method: "POST",
+          body: JSON.stringify({
+            p_fornecedor_id: newSpecialtyForm.dataset.newSpecialty,
+            p_nome: new FormData(newSpecialtyForm).get("nome"),
+          }),
+        });
+        [state.specialties, state.supplierSpecialties] = await Promise.all([
+          query("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
+          query("fornecedores_especialidades?select=*&order=criado_em"),
+        ]);
+        toast("Especialidade criada e associada à empresa.");
+        render();
+        content.querySelector(".supplier-detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
         errorNode.textContent = error.message;
       } finally { button.disabled = false; }

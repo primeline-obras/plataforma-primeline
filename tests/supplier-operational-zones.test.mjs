@@ -48,12 +48,62 @@ test("directory supports safe manual review of incomplete profiles", async () =>
     zones: ["lisboa_cascais"], specialties: [{ id: "especialidade" }],
   });
   assert.equal(incomplete.complete, false);
-  assert.deepEqual(incomplete.missing, ["NIF", "TELEFONE", "REPRESENTANTE", "NOTAS"]);
+  assert.deepEqual(incomplete.missing, ["NIF", "TELEFONE", "REPRESENTANTE", "NOTAS", "TIPO"]);
   const complete = supplierProfileStatus({
     nif: "500000000", email: "geral@empresa.pt", telefone: "210000000",
-    representante: "Ana", notas: "Referência validada",
+    representante: "Ana", notas: "Referência validada", tipo_entidade: "ambos",
   }, { zones: ["algarve"], specialties: [{ id: "especialidade" }] });
   assert.deepEqual(complete, { complete: true, missing: [] });
+});
+
+test("supplier editing stays above the directory instead of jumping to the page end", async () => {
+  const source = await read("src/subcontractors.js");
+  const detailPosition = source.indexOf("${renderDetail()}");
+  const directoryPosition = source.indexOf('<section class="supplier-directory-panel">');
+  assert.ok(detailPosition >= 0 && detailPosition < directoryPosition);
+  assert.match(source, /Cadastro do fornecedor atualizado[\s\S]*supplier-detail[\s\S]*scrollIntoView/);
+});
+
+test("directory distinguishes partner type and accepts an intermediate assessment", async () => {
+  const source = await read("src/subcontractors.js");
+  for (const expected of [
+    "FORNECEDOR", "SUBEMPREITEIRO", "FORNECEDOR E SUBEMPREITEIRO",
+    "RECOMENDADO COM RESSALVAS", "data-supplier-entity", 'name="tipo_entidade"',
+    "rpc/fn_editar_fornecedor_diretorio_v2",
+  ]) assert.ok(source.includes(expected), `missing ${expected}`);
+  const comparative = await read("src/comparative-map.js");
+  assert.match(comparative, /\["subempreiteiro",\s*"ambos"\]\.includes\(row\.tipo_entidade\)/);
+});
+
+test("authorized users can create and immediately associate a new specialty", async () => {
+  const source = await read("src/subcontractors.js");
+  for (const expected of [
+    "CRIAR NOVA ESPECIALIDADE", "data-new-specialty", "CRIAR E ASSOCIAR",
+    "rpc/fn_criar_especialidade_fornecedor",
+  ]) assert.ok(source.includes(expected), `missing ${expected}`);
+  const sql = await read("supabase/diretorio_tipos_avaliacao_especialidades.sql");
+  assert.match(sql, /recomendado_com_ressalvas/);
+  assert.match(sql, /set tipo_entidade = 'fornecedor'[\s\S]*where tipo_entidade = 'fornecedor_material'/);
+  assert.match(sql, /tipo_entidade[^;]+fornecedor[^;]+subempreiteiro[^;]+ambos/is);
+  assert.match(sql, /fn_editar_fornecedor_diretorio_v2/);
+  assert.match(sql, /fn_criar_especialidade_fornecedor/);
+  assert.match(sql, /pg_advisory_xact_lock/);
+  assert.match(sql, /on conflict \(fornecedor_id, especialidade_id\) do nothing/i);
+});
+
+test("duplicate supplier deletion is explicit and refuses records with business history", async () => {
+  const source = await read("src/subcontractors.js");
+  for (const expected of [
+    "ELIMINAR DUPLICADO", "data-delete-supplier", "fn_eliminar_fornecedor_duplicado",
+    "window.confirm", "Registo duplicado eliminado",
+  ]) assert.ok(source.includes(expected), `missing ${expected}`);
+  const sql = await read("supabase/diretorio_tipos_avaliacao_especialidades.sql");
+  assert.match(sql, /fn_eliminar_fornecedor_duplicado/);
+  assert.match(sql, /Qualquer referência de negócio bloqueia a eliminação/);
+  assert.match(sql, /Este registo não pode ser eliminado porque já tem histórico associado/);
+  assert.match(sql, /delete from public\.fornecedores_zonas/);
+  assert.match(sql, /delete from public\.fornecedores_especialidades/);
+  assert.match(sql, /delete from public\.fornecedores where id = p_fornecedor_id/);
 });
 
 test("edited supplier propagates to the shared application list", async () => {
