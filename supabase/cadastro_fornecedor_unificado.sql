@@ -32,8 +32,9 @@ begin
 
   if exists (
     select 1
-    from unnest(v_especialidades) id
-    left join public.especialidades e on e.id = id
+    from unnest(v_especialidades) as selecionada(especialidade_id)
+    left join public.especialidades e
+      on e.id = selecionada.especialidade_id
     where e.id is null or not coalesce(e.aplicavel_subempreiteiro, false)
   ) then
     raise exception 'A seleção contém uma especialidade inválida.';
@@ -70,8 +71,8 @@ begin
   end if;
 
   select * into v_fornecedor
-  from public.fornecedores
-  where id = p_fornecedor_id;
+  from public.fornecedores f
+  where f.id = p_fornecedor_id;
 
   return v_fornecedor;
 end;
