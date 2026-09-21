@@ -341,22 +341,19 @@ export function createSubcontractorsModule({
         <label><span>TELEFONE</span><input name="telefone" value="${escapeHtml(supplier.telefone || "")}"></label>
         <label class="wide"><span>REPRESENTANTE / CONTACTO</span><input name="representante" value="${escapeHtml(supplier.representante || "")}"></label>
         <label class="full"><span>NOTAS / OBSERVAÇÕES</span><textarea name="notas" rows="3" placeholder="Referências, condições habituais ou informação útil…">${escapeHtml(supplier.notas || "")}</textarea></label>
-        <div class="supplier-editor-actions"><button type="submit" class="primary-button">GUARDAR CADASTRO</button><p class="form-error"></p></div>
-      </form>` : ""}
-      ${canManageSpecialties() ? `<form class="supplier-zones-editor" data-zones-editor="${supplier.id}">
-        <div><strong>ZONAS OPERACIONAIS</strong><span>Uma empresa pode trabalhar nas duas regiões.</span></div>
-        <div>${Object.entries(OPERATIONAL_ZONES).map(([zone, label]) => `<label><input type="checkbox" name="zona" value="${zone}" ${zonesFor(supplier.id).includes(zone) ? "checked" : ""}><span>${label}</span></label>`).join("")}</div>
-        <button type="submit" class="primary-button">GUARDAR ZONAS</button><p class="form-error"></p>
-      </form>` : ""}
-      ${canManageSpecialties() ? `<form class="supplier-specialties-editor" data-specialties-editor="${supplier.id}">
-        <div><strong>ESPECIALIDADES</strong><span>Selecione todas as áreas em que este subempreiteiro pode ser consultado.</span></div>
-        <div class="supplier-specialties-options">${state.specialties.map(item => `<label><input type="checkbox" name="especialidade_id" value="${item.id}" ${specialtiesFor(supplier.id).some(link => link.especialidade_id === item.id) ? "checked" : ""}><span>${escapeHtml(item.nome)}</span></label>`).join("")}</div>
-        <button type="submit" class="primary-button">GUARDAR CLASSIFICAÇÃO</button><p class="form-error"></p>
-      </form>` : ""}
-      ${canManageSpecialties() ? `<form class="supplier-new-specialty" data-new-specialty="${supplier.id}">
-        <div><strong>CRIAR NOVA ESPECIALIDADE</strong><span>Use apenas quando a especialidade ainda não existir. A nova especialidade fica imediatamente associada a esta empresa.</span></div>
-        <input name="nome" required maxlength="120" placeholder="Ex. Projetista de AVAC">
-        <button type="submit" class="primary-button">CRIAR E ASSOCIAR</button><p class="form-error"></p>
+        <section class="supplier-editor-section supplier-zones-editor">
+          <div><strong>ZONAS OPERACIONAIS</strong><span>Uma empresa pode trabalhar nas duas regiões.</span></div>
+          <div>${Object.entries(OPERATIONAL_ZONES).map(([zone, label]) => `<label><input type="checkbox" name="zona" value="${zone}" ${zonesFor(supplier.id).includes(zone) ? "checked" : ""}><span>${label}</span></label>`).join("")}</div>
+        </section>
+        <section class="supplier-editor-section supplier-specialties-editor">
+          <div><strong>ESPECIALIDADES</strong><span>Selecione todas as áreas em que esta empresa pode ser consultada.</span></div>
+          <div class="supplier-specialties-options">${state.specialties.map(item => `<label><input type="checkbox" name="especialidade_id" value="${item.id}" ${specialtiesFor(supplier.id).some(link => link.especialidade_id === item.id) ? "checked" : ""}><span>${escapeHtml(item.nome)}</span></label>`).join("")}</div>
+        </section>
+        <section class="supplier-editor-section supplier-new-specialty">
+          <div><strong>NOVA ESPECIALIDADE</strong><span>Se a especialidade ainda não existir, escreva-a aqui. Será criada e associada ao guardar o cadastro.</span></div>
+          <input name="nova_especialidade" maxlength="120" placeholder="Ex. Projetista de AVAC">
+        </section>
+        <div class="supplier-editor-actions"><button type="submit" class="primary-button">GUARDAR</button><p class="form-error"></p></div>
       </form>` : ""}
       <div class="supplier-detail-columns">
         <section><div class="supplier-subsection-title"><div><p class="eyebrow">EXECUÇÃO</p>
@@ -758,10 +755,12 @@ export function createSubcontractorsModule({
       const button = supplierForm.querySelector("button[type=submit]");
       const errorNode = supplierForm.querySelector(".form-error");
       const fields = Object.fromEntries(new FormData(supplierForm).entries());
+      const zones = [...supplierForm.querySelectorAll('[name="zona"]:checked')].map(input => input.value);
+      const specialtyIds = [...supplierForm.querySelectorAll('[name="especialidade_id"]:checked')].map(input => input.value);
       button.disabled = true;
       errorNode.textContent = "";
       try {
-        const updated = await query("rpc/fn_editar_fornecedor_diretorio_v2", {
+        await query("rpc/fn_guardar_cadastro_fornecedor", {
           method: "POST",
           body: JSON.stringify({
             p_fornecedor_id: supplierForm.dataset.supplierEditor,
@@ -773,90 +772,31 @@ export function createSubcontractorsModule({
             p_representante: fields.representante,
             p_notas: fields.notas,
             p_estado_confianca: fields.estado_confianca,
+            p_zonas: zones,
+            p_especialidades: specialtyIds,
+            p_nova_especialidade: fields.nova_especialidade,
           }),
         });
-        const saved = Array.isArray(updated) ? updated[0] : updated;
-        const index = state.suppliers.findIndex(item => item.id === saved.id);
-        if (index >= 0) state.suppliers[index] = saved;
-        onSupplierUpdated(saved);
-        toast("Cadastro do fornecedor atualizado.");
-        render();
-        content.querySelector(".supplier-detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      } catch (error) {
-        errorNode.textContent = error.message;
-      } finally { button.disabled = false; }
-      return;
-    }
-    const newSpecialtyForm = event.target.closest("[data-new-specialty]");
-    if (newSpecialtyForm) {
-      event.preventDefault();
-      const button = newSpecialtyForm.querySelector("button[type=submit]");
-      const errorNode = newSpecialtyForm.querySelector(".form-error");
-      button.disabled = true;
-      errorNode.textContent = "";
-      try {
-        await query("rpc/fn_criar_especialidade_fornecedor", {
-          method: "POST",
-          body: JSON.stringify({
-            p_fornecedor_id: newSpecialtyForm.dataset.newSpecialty,
-            p_nome: new FormData(newSpecialtyForm).get("nome"),
-          }),
-        });
-        [state.specialties, state.supplierSpecialties] = await Promise.all([
+        const [suppliers, specialties, supplierSpecialties, supplierZones] = await Promise.all([
+          query("fornecedores?select=*&order=nome"),
           query("especialidades?select=*&aplicavel_subempreiteiro=eq.true&order=nome"),
           query("fornecedores_especialidades?select=*&order=criado_em"),
+          query("fornecedores_zonas?select=*&order=zona"),
         ]);
-        toast("Especialidade criada e associada à empresa.");
+        state.suppliers = suppliers;
+        state.specialties = specialties;
+        state.supplierSpecialties = supplierSpecialties;
+        state.supplierZones = supplierZones;
+        const saved = state.suppliers.find(item => item.id === supplierForm.dataset.supplierEditor);
+        if (saved) onSupplierUpdated(saved);
+        state.selectedSupplierId = null;
+        toast("Cadastro completo atualizado.");
         render();
-        content.querySelector(".supplier-detail")?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (error) {
         errorNode.textContent = error.message;
       } finally { button.disabled = false; }
       return;
     }
-    const zoneForm = event.target.closest("[data-zones-editor]");
-    if (zoneForm) {
-      event.preventDefault();
-      const button = zoneForm.querySelector("button[type=submit]");
-      button.disabled = true;
-      try {
-        const zones = [...zoneForm.querySelectorAll('[name="zona"]:checked')].map(input => input.value);
-        await query("rpc/fn_definir_zonas_fornecedor", {
-          method: "POST",
-          body: JSON.stringify({ p_fornecedor_id: zoneForm.dataset.zonesEditor, p_zonas: zones }),
-        });
-        state.supplierZones = await query("fornecedores_zonas?select=*&order=zona");
-        toast(zones.length ? "Zonas operacionais atualizadas." : "Fornecedor devolvido a Por classificar.", zones.length ? "success" : "warning");
-        render();
-      } catch (error) {
-        zoneForm.querySelector(".form-error").textContent = error.message;
-      } finally { button.disabled = false; }
-      return;
-    }
-    const form = event.target.closest("[data-specialties-editor]");
-    if (!form) return;
-    event.preventDefault();
-    const supplierId = form.dataset.specialtiesEditor;
-    const selected = new Set([...form.querySelectorAll('[name="especialidade_id"]:checked')].map(input => input.value));
-    const current = state.supplierSpecialties.filter(item => item.fornecedor_id === supplierId);
-    const remove = current.filter(item => !selected.has(item.especialidade_id));
-    const add = [...selected].filter(id => !current.some(item => item.especialidade_id === id));
-    const button = form.querySelector("button[type=submit]");
-    button.disabled = true;
-    try {
-      await Promise.all(remove.map(item => query(`fornecedores_especialidades?id=eq.${encodeURIComponent(item.id)}`, { method: "DELETE" })));
-      if (add.length) {
-        await query("fornecedores_especialidades", {
-          method: "POST", headers: { Prefer: "return=representation" },
-          body: JSON.stringify(add.map(especialidade_id => ({ fornecedor_id: supplierId, especialidade_id, origem: "manual" }))),
-        });
-      }
-      state.supplierSpecialties = await query("fornecedores_especialidades?select=*&order=criado_em");
-      toast("Especialidades atualizadas.");
-      render();
-    } catch (error) {
-      form.querySelector(".form-error").textContent = error.message;
-    } finally { button.disabled = false; }
   });
 
   return { show: load, refresh: load };

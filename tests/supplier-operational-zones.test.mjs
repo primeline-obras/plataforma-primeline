@@ -29,7 +29,7 @@ test("directory exposes region filters and complete supplier form", async () => 
     "LISBOA / CASCAIS", "ALGARVE", "POR CLASSIFICAR",
     "CADASTRO DA EMPRESA", "name=\"nif\"", "name=\"email\"",
     "name=\"telefone\"", "name=\"representante\"", "name=\"notas\"",
-    "rpc/fn_editar_fornecedor_diretorio", "rpc/fn_definir_zonas_fornecedor",
+    "rpc/fn_guardar_cadastro_fornecedor",
   ]) assert.ok(source.includes(expected), `missing ${expected}`);
   assert.match(source, /fornecedores\?select=\*&order=nome/);
   assert.doesNotMatch(source, /tipo_entidade=eq\.subempreiteiro/);
@@ -61,7 +61,7 @@ test("supplier editing stays above the directory instead of jumping to the page 
   const detailPosition = source.indexOf("${renderDetail()}");
   const directoryPosition = source.indexOf('<section class="supplier-directory-panel">');
   assert.ok(detailPosition >= 0 && detailPosition < directoryPosition);
-  assert.match(source, /Cadastro do fornecedor atualizado[\s\S]*supplier-detail[\s\S]*scrollIntoView/);
+  assert.match(source, /Cadastro completo atualizado/);
 });
 
 test("directory distinguishes partner type and accepts an intermediate assessment", async () => {
@@ -69,26 +69,33 @@ test("directory distinguishes partner type and accepts an intermediate assessmen
   for (const expected of [
     "FORNECEDOR", "SUBEMPREITEIRO", "FORNECEDOR E SUBEMPREITEIRO",
     "RECOMENDADO COM RESSALVAS", "data-supplier-entity", 'name="tipo_entidade"',
-    "rpc/fn_editar_fornecedor_diretorio_v2",
+    "rpc/fn_guardar_cadastro_fornecedor",
   ]) assert.ok(source.includes(expected), `missing ${expected}`);
   const comparative = await read("src/comparative-map.js");
   assert.match(comparative, /\["subempreiteiro",\s*"ambos"\]\.includes\(row\.tipo_entidade\)/);
 });
 
-test("authorized users can create and immediately associate a new specialty", async () => {
+test("authorized users save the complete profile and a new specialty once", async () => {
   const source = await read("src/subcontractors.js");
   for (const expected of [
-    "CRIAR NOVA ESPECIALIDADE", "data-new-specialty", "CRIAR E ASSOCIAR",
-    "rpc/fn_criar_especialidade_fornecedor",
+    "NOVA ESPECIALIDADE", 'name="nova_especialidade"',
+    "rpc/fn_guardar_cadastro_fornecedor", ">GUARDAR</button>",
   ]) assert.ok(source.includes(expected), `missing ${expected}`);
-  const sql = await read("supabase/diretorio_tipos_avaliacao_especialidades.sql");
-  assert.match(sql, /recomendado_com_ressalvas/);
-  assert.match(sql, /set tipo_entidade = 'fornecedor'[\s\S]*where tipo_entidade = 'fornecedor_material'/);
-  assert.match(sql, /tipo_entidade[^;]+fornecedor[^;]+subempreiteiro[^;]+ambos/is);
+  assert.doesNotMatch(source, /GUARDAR ZONAS|GUARDAR CLASSIFICAÇÃO|CRIAR E ASSOCIAR/);
+  assert.match(source, /state\.selectedSupplierId = null;[\s\S]*Cadastro completo atualizado/);
+  const sql = await read("supabase/cadastro_fornecedor_unificado.sql");
+  assert.match(sql, /fn_guardar_cadastro_fornecedor/);
   assert.match(sql, /fn_editar_fornecedor_diretorio_v2/);
+  assert.match(sql, /fn_definir_zonas_fornecedor/);
   assert.match(sql, /fn_criar_especialidade_fornecedor/);
-  assert.match(sql, /pg_advisory_xact_lock/);
-  assert.match(sql, /on conflict \(fornecedor_id, especialidade_id\) do nothing/i);
+  assert.match(sql, /delete from public\.fornecedores_especialidades/);
+  assert.match(sql, /grant execute[\s\S]+to authenticated/i);
+  const classificationSql = await read("supabase/diretorio_tipos_avaliacao_especialidades.sql");
+  assert.match(classificationSql, /recomendado_com_ressalvas/);
+  assert.match(classificationSql, /set tipo_entidade = 'fornecedor'[\s\S]*where tipo_entidade = 'fornecedor_material'/);
+  assert.match(classificationSql, /tipo_entidade[^;]+fornecedor[^;]+subempreiteiro[^;]+ambos/is);
+  assert.match(classificationSql, /pg_advisory_xact_lock/);
+  assert.match(classificationSql, /on conflict \(fornecedor_id, especialidade_id\) do nothing/i);
 });
 
 test("duplicate supplier deletion is explicit and refuses records with business history", async () => {

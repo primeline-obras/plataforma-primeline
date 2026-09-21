@@ -150,12 +150,13 @@
 .supplier-profile-editor textarea { min-height: 76px; resize: vertical; }
 .supplier-profile-editor .wide { grid-column: span 2; }
 .supplier-profile-editor .full { grid-column: 1 / -1; }
-.supplier-editor-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; }
+.supplier-editor-section { grid-column: 1 / -1; }
+.supplier-editor-actions { grid-column: 1 / -1; padding-top: 3px; display: flex; align-items: center; gap: 14px; }
 .supplier-editor-actions .primary-button { flex: 0 0 auto; width: auto; min-width: 190px; min-height: 40px; }
 .supplier-editor-actions .form-error { margin: 0; color: var(--neg-text); font-size: 10px; }
 
 .supplier-zones-editor {
-  margin: 0 20px 20px;
+  margin: 4px 0 0;
   padding: 16px 18px;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card, 6px);
@@ -173,7 +174,7 @@
 .supplier-zones-editor .form-error { grid-column: 1 / -1; margin: 0; color: var(--neg-text); font-size: 10px; }
 
 .supplier-specialties-editor {
-  margin: 0 0 20px;
+  margin: 4px 0 0;
   padding: 18px;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card, 6px);
@@ -224,13 +225,13 @@
 }
 
 .supplier-new-specialty {
-  margin: 0 20px 20px;
+  margin: 4px 0 0;
   padding: 16px 18px;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card, 6px);
   background: var(--bg-soft);
   display: grid;
-  grid-template-columns: minmax(260px, .75fr) minmax(240px, 1fr) auto;
+  grid-template-columns: minmax(260px, .75fr) minmax(240px, 1fr);
   align-items: center;
   gap: 16px;
 }
