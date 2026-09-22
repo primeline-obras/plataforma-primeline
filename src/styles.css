@@ -1075,6 +1075,14 @@ button, input, select, textarea,
 .attendance-toolbar label span, .attendance-row label > span, .attendance-result > span { color: var(--text-muted); font-size: 8px; font-weight: 900; letter-spacing: .07em; }
 .attendance-toolbar input, .attendance-toolbar select, .attendance-row input, .attendance-row select { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--card); color: var(--text-primary); font: inherit; }
 .attendance-toolbar button, .attendance-actions button { min-height: 40px; padding: 0 13px; border: 1px solid var(--sidebar-bg); border-radius: 7px; background: var(--sidebar-bg); color: #fff; font-size: 9px; font-weight: 850; letter-spacing: .04em; }
+.attendance-report { margin: 14px 20px 0; padding: 14px; border: 1px solid var(--card-border); border-radius: 8px; background: var(--card); display: grid; grid-template-columns: minmax(260px,1fr) minmax(180px,240px) auto; align-items: end; gap: 14px; }
+.attendance-report > div, .attendance-report label { display: grid; gap: 5px; }
+.attendance-report > div strong { font-size: 10px; letter-spacing: .06em; }
+.attendance-report > div span { color: var(--text-secondary); font-size: 10px; }
+.attendance-report label > span { color: var(--text-muted); font-size: 8px; font-weight: 900; letter-spacing: .07em; }
+.attendance-report input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--card); color: var(--text-primary); font: inherit; }
+.attendance-report button { min-height: 40px; padding: 0 14px; border: 1px solid var(--sidebar-bg); border-radius: 7px; background: var(--sidebar-bg); color: #fff; font-size: 9px; font-weight: 850; letter-spacing: .04em; cursor: pointer; }
+.attendance-report button:disabled { opacity: .55; cursor: wait; }
 .attendance-guidance { margin: 14px 20px; padding: 11px 13px; border: 1px solid var(--info-border); border-radius: 7px; background: var(--info-bg); display: flex; gap: 12px; align-items: baseline; }
 .attendance-guidance strong { color: var(--info-text); font-size: 9px; letter-spacing: .06em; }
 .attendance-guidance span { color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
@@ -1103,7 +1111,7 @@ button, input, select, textarea,
 .attendance-actions button.danger { border-color: var(--neg-border); background: var(--neg-bg); color: var(--neg-text); }
 .attendance-row > .form-error { grid-column: 1 / -1; margin: 0; color: var(--neg-text); font-size: 10px; }
 @media (max-width: 1450px) { .attendance-row { grid-template-columns: minmax(180px,1fr) minmax(180px,1fr) minmax(420px,2fr); }.attendance-note, .attendance-result, .attendance-actions { grid-row: 2; }.attendance-note { grid-column: 1 / 2; }.attendance-result { grid-column: 2; }.attendance-actions { grid-column: 3; } }
-@media (max-width: 900px) { .attendance-toolbar, .attendance-row { grid-template-columns: 1fr; }.attendance-row fieldset { grid-template-columns: 1fr 1fr; }.attendance-note, .attendance-result, .attendance-actions { grid-row: auto; grid-column: auto; }.attendance-guidance { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 900px) { .attendance-toolbar, .attendance-report, .attendance-row { grid-template-columns: 1fr; }.attendance-row fieldset { grid-template-columns: 1fr 1fr; }.attendance-note, .attendance-result, .attendance-actions { grid-row: auto; grid-column: auto; }.attendance-guidance { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 1100px) { .absence-entry-form > div { grid-template-columns: 1fr 1fr; }.absence-justify-form { grid-template-columns: 1fr 1fr; }.absence-justify-form > button { grid-column: 1 / -1; } }
 @media (max-width: 1100px) { .overtime-entry-form > div { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 700px) { .absence-entry-form > div { grid-template-columns: 1fr; }.absence-card.detailed { grid-template-columns: 1fr; }.absence-state { justify-self: start; }.absence-attachments, .absence-justify-form { grid-column: 1; }.absence-justify-form { grid-template-columns: 1fr; } }

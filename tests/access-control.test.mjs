@@ -23,8 +23,8 @@ const matrix = {
     deniedActions: ["insertInvoices", "approveInvoices", "editWork", "createWorks"],
   },
   diretor_obra: {
-    views: ["overview", "management-map", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "settings"],
-    deniedViews: ["consolidated", "finance", "vehicles", "workforce"],
+    views: ["overview", "management-map", "works", "invoices", "planning", "documents", "subcontractors", "rnc", "rooms", "team", "workforce", "settings"],
+    deniedViews: ["consolidated", "finance", "vehicles"],
     actions: ["approveInvoices", "editWork"],
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
@@ -35,8 +35,8 @@ const matrix = {
     deniedActions: ["insertInvoices", "payInvoices", "createWorks"],
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "team", "settings"],
-    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "rooms", "workforce"],
+    views: ["action-plan", "planning", "documents", "rnc", "team", "workforce", "settings"],
+    deniedViews: ["consolidated", "overview", "meeting", "works", "invoices", "finance", "subcontractors", "vehicles", "rooms"],
     actions: [],
     deniedActions: ["insertInvoices", "approveInvoices", "payInvoices", "editWork", "createWorks"],
   },
