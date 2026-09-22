@@ -38,7 +38,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   diretor_obra: {
-    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "calendar", "team", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "calendar", "workforce", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
@@ -62,7 +62,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   encarregado: {
-    views: ["action-plan", "planning", "documents", "rnc", "calendar", "team", "settings"],
+    views: ["action-plan", "planning", "documents", "rnc", "calendar", "workforce", "team", "settings"],
     insertInvoices: false,
     approveInvoices: false,
     payInvoices: false,

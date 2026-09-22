@@ -3,7 +3,7 @@ import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demo
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
 import { createPlanningModule } from "./planning.js?v=13";
 import { createSubcontractorsModule } from "./subcontractors.js?v=8";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=14";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=15";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
@@ -22,7 +22,7 @@ import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceModule } from "./attendance.js?v=1";
+import { createAttendanceModule } from "./attendance.js?v=2";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 
@@ -852,11 +852,14 @@ function canManageOvertime() {
 }
 
 function canManageWorkforce() {
-  return canManageTeam();
+  return canManageTeam() || ["diretor_obra", "encarregado"].includes(effectiveRole());
 }
 
 function canManageWorkforceWork(workId) {
-  return canManageTeam() && Boolean(workId);
+  if (!workId) return false;
+  if (canManageTeam()) return true;
+  return ["diretor_obra", "encarregado"].includes(effectiveRole())
+    && works.some(work => work.id === workId);
 }
 
 function canOpenTeamTab(tab) {
@@ -2674,35 +2677,38 @@ async function openWorkforceMovements() {
   const anchor = new Date(`${selectedTeamWeek}T12:00:00`);
   const monthStart = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}-01`;
   const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12).toISOString().slice(0, 10);
-  const historyStart = addDaysIso(monthStart, -35);
   $("#workflow-dialog-title").textContent = "MOVIMENTAÇÕES DO MÊS";
   $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><div class="empty-state">A CARREGAR MOVIMENTAÇÕES…</div></div>`;
   $("#workflow-dialog").hidden = false;
   try {
-    let rows = teamData.allocations.filter(item => item.data >= historyStart && item.data <= monthEnd);
+    let rows = [];
     if (isSupabaseConfigured) {
-      const response = await supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,data,periodo,criado_por,criado_em&data=gte.${historyStart}&data=lte.${monthEnd}&order=colaborador_id,data,criado_em`);
+      const response = await supabase(`quadro_pessoal_movimentos?select=id,colaborador_id,data,periodo,acao,obra_origem_id,obra_destino_id,tipo_origem,tipo_destino,descricao_origem,descricao_destino,alterado_por,alterado_em&data=gte.${monthStart}&data=lte.${monthEnd}&order=alterado_em.desc`);
       if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar as movimentações."));
       rows = await response.json();
     }
-    const byPersonDate = new Map();
-    rows.forEach(item => { const key = `${item.colaborador_id}|${item.data}`; if (!byPersonDate.has(key)) byPersonDate.set(key, []); byPersonDate.get(key).push(item); });
-    const movements = [];
-    collaborators.forEach(person => {
-      const snapshots = [...byPersonDate.entries()].filter(([key]) => key.startsWith(`${person.id}|`)).map(([key, items]) => ({ date: key.split("|")[1], items })).sort((a, b) => a.date.localeCompare(b.date));
-      let previous = null;
-      snapshots.forEach(snapshot => {
-        const signature = snapshot.items.map(item => `${item.obra_id || item.tipo_alocacao}:${item.descricao_livre || ""}:${item.periodo}`).sort().join("|");
-        if (previous && signature !== previous.signature && snapshot.date >= monthStart) {
-          const latest = [...snapshot.items].sort((a, b) => String(b.criado_em || "").localeCompare(String(a.criado_em || "")))[0];
-          movements.push({ person, date: snapshot.date, from: workforceMovementPlace(previous.items), to: workforceMovementPlace(snapshot.items), user: teamData.users.find(item => item.id === latest?.criado_por), createdAt: latest?.criado_em });
-        }
-        previous = { ...snapshot, signature };
-      });
-    });
-    movements.sort((a, b) => b.date.localeCompare(a.date) || a.person.nome.localeCompare(b.person.nome, "pt-PT"));
+    const place = (row, side) => {
+      const workId = row[`obra_${side}_id`];
+      if (workId) {
+        const work = works.find(item => item.id === workId);
+        return work ? `Obra ${work.numero} · ${work.nome}` : "Obra sob responsabilidade de outra equipa";
+      }
+      const type = row[`tipo_${side}`];
+      if (!type) return "Sem colocação";
+      if (type === "escritorio") return "Escritório";
+      return `${type === "garantia" ? "Garantia" : "Pontual"} · ${row[`descricao_${side}`] || "Sem designação"}`;
+    };
+    const movements = rows.map(row => ({
+      person: collaborators.find(item => item.id === row.colaborador_id),
+      date: row.data,
+      from: place(row, "origem"),
+      to: place(row, "destino"),
+      user: teamData.users.find(item => item.id === row.alterado_por),
+      createdAt: row.alterado_em,
+      action: row.acao,
+    }));
     const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(anchor);
-    $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><header><div><span>PERÍODO</span><strong>${safeText(monthLabel.toUpperCase())}</strong></div><b>${movements.length} MUDANÇA${movements.length === 1 ? "" : "S"}</b></header>${movements.length ? movements.map(item => `<article><time>${formatOptionalDate(item.date)}</time><div><strong>${safeText(shortPersonName(item.person.nome))}</strong><span>${safeText(item.from)} <b>→</b> ${safeText(item.to)}</span></div><div><span>ALTERADO POR</span><strong>${safeText(item.user?.nome || "Utilizador não identificado")}</strong><small>${item.createdAt ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt)) : "Hora não registada"}</small></div></article>`).join("") : `<div class="empty-state"><strong>SEM MOVIMENTAÇÕES</strong><span>Não foram detetadas mudanças de obra neste mês.</span></div>`}<div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
+    $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><header><div><span>PERÍODO</span><strong>${safeText(monthLabel.toUpperCase())}</strong></div><b>${movements.length} ALTERAÇÃO${movements.length === 1 ? "" : "ÕES"}</b></header>${movements.length ? movements.map(item => `<article><time>${formatOptionalDate(item.date)}</time><div><strong>${safeText(shortPersonName(item.person?.nome || "Colaborador não encontrado"))}</strong><span>${safeText(item.from)} <b>→</b> ${safeText(item.to)}</span><small>${safeText(String(item.action || "alterada").toUpperCase())}${item.periodo ? ` · ${safeText(item.periodo.replaceAll("_", " ").toUpperCase())}` : ""}</small></div><div><span>ALTERADO POR</span><strong>${safeText(item.user?.nome || "Utilizador não identificado")}</strong><small>${item.createdAt ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt)) : "Hora não registada"}</small></div></article>`).join("") : `<div class="empty-state"><strong>SEM MOVIMENTAÇÕES</strong><span>Não foram registadas alterações neste mês.</span></div>`}<div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
   } catch (error) {
     $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><div class="empty-state"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><span>${safeText(error.message)}</span></div><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
   }
