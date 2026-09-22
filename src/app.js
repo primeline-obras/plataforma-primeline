@@ -22,6 +22,7 @@ import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
+import { createAttendanceModule } from "./attendance.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 
@@ -332,6 +333,7 @@ document.querySelector("#root").innerHTML = `
         <nav class="team-tabs">
           <button class="active" data-team-tab="collaborators">COLABORADORES</button>
           <button data-team-tab="vacations">MAPA DE FÉRIAS</button>
+          <button data-team-tab="attendance">PONTO DE OBRA</button>
           <button data-team-tab="absences">AUSÊNCIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
@@ -340,6 +342,10 @@ document.querySelector("#root").innerHTML = `
         <section class="panel team-tab-panel" data-team-panel="vacations" hidden>
           <div class="team-section-head"><div><p class="eyebrow">DISPONIBILIDADE</p><h2>MAPA DE FÉRIAS</h2></div></div>
           <div id="team-vacations"></div>
+        </section>
+        <section class="panel team-tab-panel" data-team-panel="attendance" hidden>
+          <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE EM OBRA</p><h2>PONTO DIÁRIO</h2></div><span>ALOCAÇÃO → REGISTO → VALIDAÇÃO</span></div>
+          <div id="team-attendance"></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
           <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE</p><h2>AUSÊNCIAS</h2></div><span>PENDENTE → JUSTIFICADA</span></div>
@@ -807,6 +813,9 @@ const subcontractorsModule = createSubcontractorsModule({
     renderSelectors();
   },
 });
+const attendanceModule = createAttendanceModule({
+  root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast,
+});
 
 function renderUser() {
   const email = session?.user?.email || "utilizador";
@@ -852,7 +861,7 @@ function canManageWorkforceWork(workId) {
 
 function canOpenTeamTab(tab) {
   if (canManageTeam()) return true;
-  if (effectiveRole() === "encarregado") return ["vacations", "medicine"].includes(tab);
+  if (effectiveRole() === "encarregado") return ["vacations", "attendance", "medicine"].includes(tab);
   return tab === "vacations";
 }
 
@@ -1796,10 +1805,10 @@ function activeHoliday(date) {
 function personFunctionClass(person) {
   const role = String(person?.funcao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   if (role.includes("adjunto")) return "function-adjunct";
-  if (/direcao|gerencia|diretor|dir\. obra/.test(role)) return "function-direction";
+  if (/direcao|gerencia|gerente|diretor|dir\. obra|\bceo\b/.test(role)) return "function-direction";
   if (role.includes("encarregado")) return "function-foreman";
-  if (/administrativo|recursos humanos|\brh\b/.test(role)) return "function-admin";
-  if (/preparador|desenhador/.test(role)) return "function-preparer";
+  if (/administrativ|recursos humanos|\brh\b|aux\.?\s*adm/.test(role)) return "function-admin";
+  if (/preparador|desenhador|designer|projetista|arquiteto/.test(role)) return "function-preparer";
   if (role.includes("orcamentista")) return "function-estimator";
   if (role.includes("compras")) return "function-purchases";
   if (role.includes("armazem")) return "function-warehouse";
@@ -1807,6 +1816,27 @@ function personFunctionClass(person) {
   if (/empregada.*limpeza|limpeza/.test(role)) return "function-cleaning";
   if (role.includes("servente")) return "function-helper";
   return "function-other";
+}
+
+function compareVacationPeople(a, b) {
+  // Hierarquia operacional do mapa de referência. A ordem alfabética aplica-se
+  // apenas dentro da mesma função, para não misturar chefias, equipa técnica e obra.
+  const order = {
+    "function-direction": 0,
+    "function-admin": 1,
+    "function-adjunct": 2,
+    "function-preparer": 3,
+    "function-estimator": 4,
+    "function-foreman": 5,
+    "function-purchases": 6,
+    "function-warehouse": 7,
+    "function-mason": 8,
+    "function-helper": 9,
+    "function-cleaning": 10,
+    "function-other": 11,
+  };
+  const functionDifference = (order[personFunctionClass(a)] ?? 99) - (order[personFunctionClass(b)] ?? 99);
+  return functionDifference || String(a?.nome || "").localeCompare(String(b?.nome || ""), "pt-PT", { sensitivity: "base" });
 }
 
 const functionRowTints = {
@@ -1871,7 +1901,7 @@ function renderVacationMap(people, vacations) {
   const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric", timeZone: "UTC" }).format(monthDate).toUpperCase();
   const vacationKeys = new Set(vacations.filter(item => isVacation(item) && item.data >= start && item.data <= end)
     .map(item => `${item.colaborador_id}|${item.data}`));
-  const ordered = [...people].sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || ""), "pt-PT"));
+  const ordered = [...people].sort(compareVacationPeople);
   const dayHeaders = Array.from({ length: days }, (_, index) => {
     const date = `${selectedVacationMonth}-${String(index + 1).padStart(2, "0")}`;
     const weekday = new Intl.DateTimeFormat("pt-PT", { weekday: "narrow", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
@@ -2077,7 +2107,7 @@ function renderTeam() {
   if ($("#team-kpis")) $("#team-kpis").hidden = vacationOnly;
   if ($("#team-alert-summary")) $("#team-alert-summary").hidden = vacationOnly;
   if ($("#team-page-description")) $("#team-page-description").textContent = vacationOnly
-    ? "Consulta do Mapa de Férias da equipa."
+    ? "Mapa de Férias, ponto diário da equipa em obra e medicina do trabalho."
     : "Colaboradores, frota, documentos, ausências e contratos.";
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
@@ -4103,6 +4133,7 @@ function activateTeamTab(tab, preserveFilter = false) {
 document.querySelectorAll("[data-team-tab]").forEach(button => button.addEventListener("click", () => {
   activateTeamTab(button.dataset.teamTab);
   renderTeam();
+  if (selectedTeamTab === "attendance") attendanceModule.show();
 }));
 $("#team-view").addEventListener("click", async event => {
   const vacationMonthButton = event.target.closest("[data-vacation-month]");
