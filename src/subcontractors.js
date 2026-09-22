@@ -76,6 +76,7 @@ export function createSubcontractorsModule({
   toast,
   canManageSpecialties = () => false,
   onSupplierUpdated = () => {},
+  onSupplierMerged = () => {},
 }) {
   const state = {
     suppliers: [],
@@ -100,6 +101,11 @@ export function createSubcontractorsModule({
     sort: "rating",
     selectedSupplierId: null,
     creatingSupplier: false,
+    mergeSourceId: null,
+    mergeTargetId: "",
+    mergePreview: null,
+    mergeLoading: false,
+    mergeError: "",
     loaded: false,
   };
   let priceSearchTimer = null;
@@ -341,6 +347,37 @@ export function createSubcontractorsModule({
     </section>`;
   }
 
+  function renderSupplierMerge(source) {
+    if (state.mergeSourceId !== source.id) return "";
+    const targets = state.suppliers
+      .filter(item => item.id !== source.id)
+      .slice()
+      .sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || ""), "pt-PT", { sensitivity: "base" }));
+    const preview = state.mergePreview;
+    const conflicts = preview?.conflitos || [];
+    return `<section class="supplier-merge-panel">
+      <div class="supplier-merge-heading"><div><p class="eyebrow">CONSOLIDAÇÃO SEGURA</p>
+        <h3>MESCLAR “${escapeHtml(source.nome)}” NOUTRA EMPRESA</h3>
+        <p>O registo acima será removido. Faturas, subempreitadas, propostas, avaliações e restantes referências passam para a empresa mantida. O nome antigo fica guardado como alias.</p></div>
+        <button type="button" data-cancel-supplier-merge>FECHAR ×</button></div>
+      <label><span>REGISTO CORRETO A MANTER *</span><select data-merge-target>
+        <option value="">Selecione a empresa correta</option>
+        ${targets.map(item => `<option value="${item.id}" ${state.mergeTargetId === item.id ? "selected" : ""}>${escapeHtml(item.nome)}${item.nif ? ` · NIF ${escapeHtml(item.nif)}` : ""}</option>`).join("")}
+      </select></label>
+      <div class="supplier-merge-actions">
+        <button type="button" data-preview-supplier-merge ${!state.mergeTargetId || state.mergeLoading ? "disabled" : ""}>${state.mergeLoading ? "A VERIFICAR…" : "VERIFICAR IMPACTO"}</button>
+        ${preview?.pode_mesclar ? `<button type="button" class="danger-action" data-confirm-supplier-merge ${state.mergeLoading ? "disabled" : ""}>CONFIRMAR MESCLAGEM</button>` : ""}
+      </div>
+      ${preview ? `<div class="supplier-merge-preview ${preview.pode_mesclar ? "safe" : "blocked"}">
+        <strong>${preview.pode_mesclar ? "PRONTO PARA MESCLAR" : "MESCLAGEM BLOQUEADA"}</strong>
+        <span>${Number(preview.total_referencias || 0)} referência(s) de negócio serão transferidas para <b>${escapeHtml(preview.destino?.nome || "o registo correto")}</b>.</span>
+        ${(preview.referencias || []).length ? `<ul>${preview.referencias.map(item => `<li><span>${escapeHtml(item.tabela)}</span><b>${Number(item.registos || 0)}</b></li>`).join("")}</ul>` : `<em>Este duplicado não tem histórico de negócio associado.</em>`}
+        ${conflicts.length ? `<div class="supplier-merge-conflicts">${conflicts.map(item => `<p>${escapeHtml(item.mensagem)} (${Number(item.registos || 0)})</p>`).join("")}</div>` : ""}
+      </div>` : ""}
+      ${state.mergeError ? `<p class="form-error">${escapeHtml(state.mergeError)}</p>` : ""}
+    </section>`;
+  }
+
   function renderDetail() {
     if (state.creatingSupplier) return renderNewSupplier();
     const supplier = state.suppliers.find(item => item.id === state.selectedSupplierId);
@@ -368,10 +405,12 @@ export function createSubcontractorsModule({
             ? "CADASTRO COMPLETO"
             : `POR COMPLETAR: ${escapeHtml(profile.missing.join(" · "))}`}</div></div>
         <div class="supplier-detail-head-actions">
+          ${canManageSpecialties() ? `<button type="button" data-merge-supplier="${supplier.id}">MESCLAR DUPLICADO</button>` : ""}
           ${canManageSpecialties() ? `<button type="button" class="danger-action" data-delete-supplier="${supplier.id}">ELIMINAR DUPLICADO</button>` : ""}
           <button type="button" data-close-supplier-detail>FECHAR ×</button>
         </div>
       </div>
+      ${renderSupplierMerge(supplier)}
       <div class="supplier-detail-kpis">
         <div><span>OBRAS</span><strong>${metrics.workCount}</strong></div>
         <div><span>SUBEMPREITADAS</span><strong>${metrics.history.length}</strong></div>
@@ -634,7 +673,7 @@ export function createSubcontractorsModule({
         tipo_entidade: "subempreiteiro",
         estado_confianca: item.estado_confianca || "nao_avaliado",
       }));
-      state.allSuppliers = getSuppliers();
+      state.allSuppliers = state.suppliers;
       state.subcontracts = typeof getSubcontracts === "function" ? getSubcontracts() : [];
       state.evaluations = [];
       state.specialties = [];
@@ -659,7 +698,7 @@ export function createSubcontractorsModule({
       if (optional.some(result => result.status === "rejected")) {
         toast("O diretório foi carregado, mas alguns dados complementares estão indisponíveis.", "warning");
       }
-      state.allSuppliers = getSuppliers();
+      state.allSuppliers = state.suppliers;
       state.priceRows = [];
       state.priceError = "";
     } catch (error) {
@@ -732,6 +771,12 @@ export function createSubcontractorsModule({
       state.selectedSupplierId = null;
       render();
     }
+    if (event.target.matches("[data-merge-target]")) {
+      state.mergeTargetId = event.target.value;
+      state.mergePreview = null;
+      state.mergeError = "";
+      render();
+    }
   });
 
   content.addEventListener("click", async event => {
@@ -766,7 +811,88 @@ export function createSubcontractorsModule({
     if (event.target.closest("[data-close-supplier-detail]")) {
       state.creatingSupplier = false;
       state.selectedSupplierId = null;
+      state.mergeSourceId = null;
+      state.mergeTargetId = "";
+      state.mergePreview = null;
       render();
+      return;
+    }
+    const mergeButton = event.target.closest("[data-merge-supplier]");
+    if (mergeButton) {
+      state.mergeSourceId = mergeButton.dataset.mergeSupplier;
+      state.mergeTargetId = "";
+      state.mergePreview = null;
+      state.mergeError = "";
+      render();
+      content.querySelector(".supplier-merge-panel")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (event.target.closest("[data-cancel-supplier-merge]")) {
+      state.mergeSourceId = null;
+      state.mergeTargetId = "";
+      state.mergePreview = null;
+      state.mergeError = "";
+      render();
+      return;
+    }
+    if (event.target.closest("[data-preview-supplier-merge]")) {
+      if (!state.mergeSourceId || !state.mergeTargetId) return;
+      state.mergeLoading = true;
+      state.mergeError = "";
+      render();
+      try {
+        state.mergePreview = await query("rpc/fn_previsualizar_mesclagem_fornecedor", {
+          method: "POST",
+          body: JSON.stringify({
+            p_fornecedor_origem_id: state.mergeSourceId,
+            p_fornecedor_destino_id: state.mergeTargetId,
+          }),
+        });
+      } catch (error) {
+        state.mergePreview = null;
+        state.mergeError = error.message;
+      } finally {
+        state.mergeLoading = false;
+        render();
+      }
+      return;
+    }
+    if (event.target.closest("[data-confirm-supplier-merge]")) {
+      const source = state.suppliers.find(item => item.id === state.mergeSourceId);
+      const target = state.suppliers.find(item => item.id === state.mergeTargetId);
+      if (!source || !target || !state.mergePreview?.pode_mesclar) return;
+      const confirmed = window.confirm(
+        `Mesclar “${source.nome}” em “${target.nome}”?\n\n` +
+        `${Number(state.mergePreview.total_referencias || 0)} referência(s) serão transferidas. ` +
+        "A operação é transacional e o nome antigo será preservado como alias."
+      );
+      if (!confirmed) return;
+      state.mergeLoading = true;
+      state.mergeError = "";
+      render();
+      try {
+        const result = await query("rpc/fn_mesclar_fornecedor", {
+          method: "POST",
+          body: JSON.stringify({
+            p_fornecedor_origem_id: source.id,
+            p_fornecedor_destino_id: target.id,
+          }),
+        });
+        state.mergeSourceId = null;
+        state.mergeTargetId = "";
+        state.mergePreview = null;
+        state.selectedSupplierId = null;
+        await load();
+        onSupplierMerged({
+          sourceId: source.id,
+          target: state.suppliers.find(item => item.id === target.id) || target,
+        });
+        toast(`${source.nome} foi mesclado em ${target.nome}. ${Number(result?.total_movidos || 0)} referência(s) transferidas.`);
+      } catch (error) {
+        state.mergeError = error.message;
+        state.mergeLoading = false;
+        render();
+      }
       return;
     }
     const deleteButton = event.target.closest("[data-delete-supplier]");
