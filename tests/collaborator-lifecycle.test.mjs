@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8")
+  + readFileSync(new URL("../src/rh-cadastro.js", import.meta.url), "utf8");
+const unified = readFileSync(new URL("../supabase/rh_cadastro_importacao.sql", import.meta.url), "utf8");
 const sql = readFileSync(new URL("../supabase/colaboradores_crud_alocacao_inicial.sql", import.meta.url), "utf8");
 
 assert.match(app, /id="new-collaborator"/);
-assert.match(app, /fn_criar_colaborador_com_alocacao/);
+assert.match(unified, /fn_criar_colaborador_com_alocacao/);
 assert.match(app, /fn_atualizar_colaborador_ciclo_vida/);
 assert.match(app, /data_saida/);
 assert.match(app, /data_nascimento/);
