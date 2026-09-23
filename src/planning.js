@@ -241,7 +241,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const collapsed = state.collapsedEditorPhases.has(phase.id);
       const progress = phaseProgress(phaseItems);
       return `<section class="planning-editor-phase ${collapsed ? "collapsed" : ""}"><button class="planning-editor-phase-toggle" type="button" data-toggle-editor-phase="${phase.id}" aria-expanded="${!collapsed}"><i>${collapsed ? "+" : "−"}</i><strong>${escapeHtml(phase.codigo || "—")}</strong><span>${escapeHtml(phase.descricao || "FASE")}</span><em>${progress === null ? "—" : `${progress}%`}</em><b>${phaseItems.length} ${phaseItems.length === 1 ? "TAREFA" : "TAREFAS"}</b></button><div class="planning-editor-phase-rows" ${collapsed ? "hidden" : ""}>${phaseItems.map(item => {
-      const cost = state.costs.get(String(item.id)) || item;
+      const cost = state.costs.get(String(item.id));
       const weighted = Number(item.peso_percentual || 0) * Number(item.percentual_executado || 0) / 100;
       const progressValue = Number(item.percentual_executado || 0);
       const status = progressValue >= 100 ? "concluido" : progressValue > 0 ? "em_execucao" : "por_iniciar";
@@ -258,16 +258,24 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <output data-weighted>${weighted.toFixed(2)}%</output>
       <input name="estado" type="hidden" value="${escapeHtml(status)}"><output data-derived-state><span class="planning-state ${escapeHtml(status)}">${stateLabel(status)}</span></output>
       <div class="planning-row-actions ${readOnly() ? "readonly" : ""}"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button>${readOnly() ? "" : `<button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button>`}</div>
-      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id" ${locked}>${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id" ${locked}>${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por" ${locked}><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}" ${locked}></label><label>ESTADO CUSTO<select name="custo_estado" ${locked}>${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id" ${locked}><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00" ${locked}></label><div class="planning-cost-reference"><b>ADJ. ${euro.format(Number(cost.valor_adjudicado || 0))}</b><span>REAL ${euro.format(Number(cost.custo_real || 0))}</span><span>COMP. ${euro.format(Number(cost.compromisso_remanescente || 0))}</span><span>FAT. ${Number(cost.percentual_faturado || 0).toFixed(1)}% · PAGO ${Number(cost.percentual_pago || 0).toFixed(1)}%</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}</div><label class="planning-detail-wide">CAUSA DO ATRASO<textarea name="causa_atraso" rows="2" placeholder="Sem causa registada" ${locked}>${escapeHtml(item.causa_atraso || "")}</textarea></label><label class="planning-detail-wide">IMPACTO<textarea name="impacto" rows="2" placeholder="Sem impacto registado" ${locked}>${escapeHtml(item.impacto || "")}</textarea></label>${renderDependencies(item)}</section>
+      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id" ${locked}>${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id" ${locked}>${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por" ${locked}><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}" ${locked}></label><label>ESTADO CUSTO<select name="custo_estado" ${locked}>${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id" ${locked}><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00" ${locked}></label><div class="planning-cost-reference">${cost ? `<b>ADJ. ${euro.format(cost.valor_adjudicado)}</b><span>REAL ${euro.format(cost.custo_real)}</span><span>COMP. ${euro.format(cost.compromisso_remanescente)}</span><span>FAT. ${cost.percentual_faturado == null ? "—" : `${cost.percentual_faturado.toFixed(1)}%`} · PAGO ${cost.percentual_pago == null ? "—" : `${cost.percentual_pago.toFixed(1)}%`}</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}` : `<span>${state.costSummary ? "SEM COMPONENTES DE CUSTO ASSOCIADOS À TAREFA" : "CUSTOS INDISPONÍVEIS"}</span>`}</div><label class="planning-detail-wide">CAUSA DO ATRASO<textarea name="causa_atraso" rows="2" placeholder="Sem causa registada" ${locked}>${escapeHtml(item.causa_atraso || "")}</textarea></label><label class="planning-detail-wide">IMPACTO<textarea name="impacto" rows="2" placeholder="Sem impacto registado" ${locked}>${escapeHtml(item.impacto || "")}</textarea></label>${renderDependencies(item)}</section>
     </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</div></section>`;
     }).join("")}</div>`;
   }
 
   function renderCostSummary() {
-    const material = state.costSummary.materiais || {};
-    const labor = state.costSummary.mao_obra || {};
-    const subcontract = state.costSummary.subempreitadas || {};
-    return `<div class="planning-cost-summary"><article><span>MATERIAIS · ESTIMADO REMANESCENTE</span><strong>${euro.format(Number(material.estimado_remanescente || 0))}</strong><small>${euro.format(Number(material.realizado || 0))} realizados de ${euro.format(Number(material.orcamento || 0))}</small></article><article><span>MÃO DE OBRA · ESTIMADO REMANESCENTE</span><strong>${euro.format(Number(labor.estimado_remanescente || 0))}</strong><small>${euro.format(Number(labor.realizado || 0))} realizados de ${euro.format(Number(labor.orcamento || 0))}</small></article><article><span>SUBEMPREITADAS · COMPROMISSO</span><strong>${euro.format(Number(subcontract.compromisso_remanescente || 0))}</strong><small>${euro.format(Number(subcontract.custo_real || 0))} já faturados</small></article><article><span>CUSTOS ESTIMADOS</span><strong>${euro.format(Number(state.costSummary.total_estimado_remanescente || 0))}</strong><small>Atualização automática ao nível da obra</small></article></div>`;
+    if (!state.costSummary) return '<div class="planning-cost-summary">CUSTOS INDISPONÍVEIS</div>';
+    const real = state.costSummary.real || {};
+    const remaining = state.costSummary.por_concluir || {};
+    const componentsPayload = state.costSummary.componentes;
+    const components = Array.isArray(componentsPayload) ? componentsPayload : componentsPayload?.pacotes || [];
+    const availableTotal = field => {
+      const rows = components.filter(row => row.fonte === "0_Orçamento" && row[field] != null && Number.isFinite(Number(row[field])));
+      return rows.length ? rows.reduce((total, row) => total + Number(row[field]), 0) : null;
+    };
+    const materials = availableTotal("materiais");
+    const labor = availableTotal("mao_obra");
+    return `<div class="planning-cost-summary"><article><span>CUSTO REAL</span><strong>${euro.format(Number(real.total || 0))}</strong></article><article><span>CUSTOS ESTIMADOS</span><strong>${euro.format(Number(remaining.pl || 0) + Number(remaining.sub_orcamento_aguarda_confirmacao || 0))}</strong></article>${materials === null ? "" : `<article><span>MATERIAIS · ORÇAMENTO</span><strong>${euro.format(materials)}</strong></article>`}${labor === null ? "" : `<article><span>MÃO DE OBRA · ORÇAMENTO</span><strong>${euro.format(labor)}</strong></article>`}<article><span>SUBEMPREITADAS · COMPROMISSO</span><strong>${euro.format(Number(remaining.sub_compromisso_remanescente || 0))}</strong></article><article><span>ESTIMATIVA FINAL</span><strong>${euro.format(Number(state.costSummary.estimativa_terminus_total || 0))}</strong></article></div>`;
   }
 
   function renderImportPanel() {
@@ -637,9 +645,43 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
         state.items = await itemsResponse.json();
         const budgetResponse = await supabase(`itens_orcamento?select=*&fase_id=in.(${ids})`);
         state.budgetItems = budgetResponse.ok ? await budgetResponse.json() : [];
-        const costsResponse = await supabase("rpc/fn_resumo_custos_estimados_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) });
-        state.costSummary = costsResponse.ok ? await costsResponse.json() : {};
-        state.costs = new Map((state.costSummary.pacotes || []).map(row => [String(row.planeamento_item_id), row]));
+        state.costSummary = null;
+        state.costs = new Map();
+        try {
+          const costsResponse = await supabase("rpc/fn_resumo_custos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) });
+          if (!costsResponse.ok) throw new Error("Resumo de custos indisponível");
+          const summary = await costsResponse.json();
+          if (!summary?.real || !summary?.por_concluir || summary.componentes == null) throw new Error("Resumo de custos inválido");
+          const components = Array.isArray(summary.componentes) ? summary.componentes : summary.componentes.pacotes;
+          if (!Array.isArray(components)) throw new Error("Componentes de custo inválidos");
+          const costs = new Map();
+          for (const row of components) {
+            if (!row.planeamento_item_id) continue;
+            const key = String(row.planeamento_item_id);
+            const cost = costs.get(key) || { valor_adjudicado: 0, custo_real: 0, compromisso_remanescente: 0, pago: 0, faturado: 0, faturadoDisponivel: true, confirmacao_pendente: false };
+            const subcontract = row.tipo === "subempreitada";
+            const actual = Number(row.valor_real ?? row.valor_real_pl ?? 0);
+            cost.custo_real += subcontract || row.estado_custo === "concluido" ? actual : 0;
+            cost.compromisso_remanescente += Number(row.compromisso_remanescente || 0);
+            if (subcontract) {
+              const contract = Number(row.total_aprovado ?? row.valor_adjudicado ?? 0);
+              cost.valor_adjudicado += contract;
+              cost.pago += actual;
+              if (row.percentual_faturado == null) cost.faturadoDisponivel = false;
+              else cost.faturado += contract * Number(row.percentual_faturado) / 100;
+            }
+            cost.confirmacao_pendente ||= Boolean(row.pl_confirmacao_pendente || row.sub_confirmacao_pendente || (subcontract && !row.remocao_confirmada && row.estado_custo !== "cancelado"));
+            costs.set(key, cost);
+          }
+          for (const cost of costs.values()) {
+            cost.percentual_pago = cost.valor_adjudicado > 0 ? cost.pago * 100 / cost.valor_adjudicado : null;
+            cost.percentual_faturado = cost.valor_adjudicado > 0 && cost.faturadoDisponivel ? cost.faturado * 100 / cost.valor_adjudicado : null;
+          }
+          state.costSummary = summary;
+          state.costs = costs;
+        } catch {
+          toast("Não foi possível carregar os custos da obra. Os valores estão indisponíveis.", "error");
+        }
         const itemIds = state.items.map(item => item.id);
         if (itemIds.length) {
           const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);

@@ -1192,15 +1192,17 @@ export function createProductionDashboard(options) {
     await showWorkCosts(meetingState.work.id);
   }
 
+  const canManagePhaseBudget = () => ["gestao_plataforma", "diretor_obra"].includes(getAccessContext()?.role || "");
+
   async function completePlPhase(budgetId, defaultValue, button) {
-    if (!meetingState || !canAdjustWorkCosts()) return;
+    if (!meetingState || !canAdjustWorkCosts() || !canManagePhaseBudget()) return;
     const entered = await platformPrompt("O valor do 0_Orçamento é usado por defeito; ajuste apenas se o custo real da fase foi diferente.", number(defaultValue).toFixed(2), { title: "Concluir custo PL da fase", label: "VALOR REAL (€)" });
     if (entered === null) return;
     const value = Number(String(entered).replace(",", "."));
     if (!Number.isFinite(value) || value < 0) return toast("Introduza um valor real válido.", "error");
     button.disabled = true;
     const response = await supabase("rpc/fn_concluir_custo_pl_fase", { method: "POST", body: JSON.stringify({ p_orcamento_fase_id: budgetId, p_valor_real: value }) });
-    if (!response.ok) return toast("Não foi possível concluir o custo PL desta fase.", "error");
+    if (!response.ok) { button.disabled = false; return toast("Não foi possível concluir o custo PL desta fase.", "error"); }
     toast("Fase PL concluída e transferida para Custo Real.");
     await showWorkCosts(meetingState.work.id);
   }
@@ -1216,6 +1218,22 @@ export function createProductionDashboard(options) {
     host.innerHTML = projection.costSummary
       ? renderCostTrace(projection, false)
       : '<div class="overview-warning">Resumo automático indisponível. Confirme se a migração consolidada de custos foi aplicada.</div>';
+    if (canManagePhaseBudget()) {
+      const payload = projection.costSummary?.componentes || [];
+      const components = Array.isArray(payload) ? payload : (payload.pacotes || []);
+      const phases = components.filter(row => row.fonte === "0_Orçamento" && row.tipo === "PL" && !["concluido", "cancelado"].includes(row.estado_custo));
+      host.insertAdjacentHTML("beforeend", `<div class="cost-component-list">${typeof onImportPhaseBudget === "function" ? '<button type="button" class="secondary-button" data-import-phase-budget>IMPORTAR 0_ORÇAMENTO</button>' : ""}${phases.map(row => `<article><strong>${escapeHtml(row.especialidade || row.descricao || "Fase")}</strong><button type="button" class="secondary-button" data-complete-pl-phase="${escapeHtml(row.id)}" data-phase-value="${number(row.valor_orcamentado)}">CONCLUIR CUSTO PL · ${euro.format(number(row.valor_orcamentado))}</button></article>`).join("")}</div>`);
+      const phaseContext = { work, phases: meetingState.data.phases, onComplete: () => showWorkCosts(workId) };
+      host.onclick = async event => {
+        if (!canManagePhaseBudget()) return;
+        if (event.target.closest("[data-import-phase-budget]")) return onImportPhaseBudget?.(phaseContext);
+        const button = event.target.closest("[data-complete-pl-phase]");
+        if (button && !button.disabled) {
+          try { await completePlPhase(button.dataset.completePlPhase, button.dataset.phaseValue, button); }
+          catch { button.disabled = false; toast("Não foi possível concluir o custo PL desta fase.", "error"); }
+        }
+      };
+    } else host.onclick = null;
   }
 
   async function confirmPlCost(form) {
