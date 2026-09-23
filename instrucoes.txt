@@ -1,0 +1,1 @@
+O schema já está aplicado no Supabase — não gerar nem correr migrações SQL, só implementar o frontend.
