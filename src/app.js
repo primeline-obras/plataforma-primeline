@@ -23,6 +23,7 @@ import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceModule } from "./attendance.js?v=2";
+import { createRhCadastro } from "./rh-cadastro.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 
@@ -1509,7 +1510,7 @@ async function loadData() {
 function renderWorkDirectors() {
   const select = $("#work-form")?.diretor_obra_id;
   if (!select) return;
-  select.innerHTML = `<option value="">Não definido</option>${collaborators.map(person => `<option value="${person.id}">${person.nome}${person.funcao ? ` — ${person.funcao}` : ""}</option>`).join("")}`;
+  select.innerHTML = `<option value="">Não definido</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}${person.funcao ? ` — ${safeText(person.funcao)}` : ""}</option>`).join("")}`;
 }
 
 function renderWorkTemplates() {
@@ -1988,45 +1989,18 @@ function activeWorkOptions(selectedId = "") {
     .join("");
 }
 
-function collaboratorFormFields(person = null) {
-  const isNew = !person;
-  return `<form id="collaborator-lifecycle-form" data-collaborator-id="${person?.id || ""}">
-    <div class="form-row"><label>NOME<input name="nome" maxlength="160" value="${safeText(person?.nome || "")}" required></label><label>FUNÇÃO<input name="funcao" maxlength="100" value="${safeText(person?.funcao || "")}" required></label></div>
-    <div class="form-row"><label>NÍVEL<input name="nivel" maxlength="80" list="collaborator-levels" value="${safeText(person?.nivel || "")}" placeholder="Ex.: Nível 1"><datalist id="collaborator-levels"><option value="Nível 1"><option value="Nível 2"><option value="Nível 3"></datalist></label><label>VALOR/HORA (EUR)<input name="valor_hora" type="number" min="0" step="0.01" inputmode="decimal" value="${person?.valor_hora ?? ""}" placeholder="Opcional"></label></div>
-    <div class="form-row"><label>NIF<input name="nif" maxlength="20" inputmode="numeric" value="${safeText(person?.nif || "")}"></label><label>EMAIL<input name="email" type="email" maxlength="160" value="${safeText(person?.email || "")}"></label></div>
-    <div class="form-row"><label>CONTACTO<input name="contacto" type="tel" maxlength="40" value="${safeText(person?.contacto || "")}"></label><label>MORADA<input name="morada" maxlength="240" value="${safeText(person?.morada || "")}"></label></div>
-    <div class="form-row"><label>DATA DE ADMISSÃO<input name="data_admissao" type="date" value="${person?.data_admissao || new Date().toISOString().slice(0, 10)}" required></label><label>DATA DE NASCIMENTO (OPCIONAL)<input name="data_nascimento" type="date" value="${person?.data_nascimento || ""}"></label></div>
-    ${isNew ? `<fieldset class="collaborator-rh-initial"><legend>DADOS RH E CONFORMIDADE</legend>
-      <div class="form-row"><label>CÓDIGO RH<input name="codigo_rh" maxlength="30" inputmode="numeric" placeholder="Número inserido manualmente"></label><label>N.º S.S.<select name="seguranca_social"><option value="false">Não</option><option value="true">Sim</option></select></label></div>
-      <div class="form-row"><label>REGISTO TRABALHADOR<select name="registo_trabalhador"><option value="false">Não</option><option value="true">Sim</option></select></label><label>SEGURO<select name="seguro"><option value="false">Não</option><option value="true">Sim</option></select></label></div>
-      <div class="form-row"><label>EPI · DATA DE ENTREGA<input name="epi_data" type="date"></label><label>MEDICINA DO TRABALHO · DATA DA CONSULTA<input name="medicina_data" type="date"></label></div>
-    </fieldset>` : ""}
-    ${isNew ? `<div class="collaborator-initial-allocation"><p class="eyebrow">ALOCAÇÃO INICIAL OBRIGATÓRIA</p><div class="form-row"><label>LOCAL INICIAL<select name="alocacao_tipo" required><option value="obra">Obra ativa</option><option value="escritorio">Escritório</option></select></label><label data-initial-work>OBRA<select name="obra_id" required><option value="">Selecionar obra</option>${activeWorkOptions()}</select></label></div><small>Esta alocação é operacional. Não altera as responsabilidades como diretor, adjunto ou preparador.</small></div>` : `<label>DATA DE SAÍDA<input name="data_saida" type="date" value="${person?.data_saida || ""}"><small>Preencher esta data marca o colaborador como inativo sem apagar o histórico.</small></label>`}
-    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${isNew ? "CRIAR COLABORADOR" : "GUARDAR ALTERAÇÕES"} <span>→</span></button></div>
-  </form>`;
+function openCollaboratorDialog(person = null) {
+  return rhCadastro().open(person);
 }
 
-function openCollaboratorDialog(person = null) {
-  if (!canManageTeam()) return toast("A gestão de colaboradores está reservada ao Administrativo e à Gerência.", "error");
-  $("#workflow-dialog-title").textContent = person ? `EDITAR · ${person.nome}` : "NOVO COLABORADOR";
-  $("#workflow-dialog-content").innerHTML = collaboratorFormFields(person);
-  $("#workflow-dialog").hidden = false;
-  const lifecycleForm = $("#collaborator-lifecycle-form");
-  const allocationSelect = lifecycleForm.elements.alocacao_tipo;
-  if (allocationSelect) {
-    const toggleInitialWork = () => {
-      const workLabel = lifecycleForm.querySelector("[data-initial-work]");
-      const workSelect = lifecycleForm.elements.obra_id;
-      const isWork = allocationSelect.value === "obra";
-      workLabel.hidden = !isWork;
-      workSelect.required = isWork;
-      if (!isWork) workSelect.value = "";
-    };
-    allocationSelect.addEventListener("change", toggleInitialWork);
-    toggleInitialWork();
-  }
-  lifecycleForm.addEventListener("submit", submitCollaboratorLifecycle);
-  lifecycleForm.elements.nome.focus();
+let rhCadastroInstance;
+function rhCadastro() {
+  return rhCadastroInstance ||= createRhCadastro({
+    api: supabase, canManage: canManageTeam,
+    isManagement: () => effectiveRole() === 'gestao_plataforma',
+    works: () => works, configured: () => isSupabaseConfigured,
+    refresh: async () => { await reloadActiveCollaborators(); await loadTeamData(true); }, toast
+  });
 }
 
 async function reloadActiveCollaborators() {
@@ -2034,54 +2008,6 @@ async function reloadActiveCollaborators() {
   const response = await supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
   if (!response.ok) throw new Error(await response.text());
   collaborators = await response.json();
-}
-
-async function submitCollaboratorLifecycle(event) {
-  event.preventDefault();
-  const lifecycleForm = event.currentTarget;
-  const personId = lifecycleForm.dataset.collaboratorId || "";
-  const fields = Object.fromEntries(new FormData(lifecycleForm));
-  const submitButton = lifecycleForm.querySelector('button[type="submit"]');
-  const errorNode = lifecycleForm.querySelector(".form-error");
-  submitButton.disabled = true;
-  errorNode.textContent = "";
-  try {
-    if (isSupabaseConfigured) {
-      const functionName = personId ? "fn_atualizar_colaborador_ciclo_vida" : "fn_criar_colaborador_com_alocacao";
-      const commonFields = {
-        p_nome: fields.nome.trim(), p_funcao: fields.funcao.trim(), p_data_admissao: fields.data_admissao,
-        p_data_nascimento: fields.data_nascimento || null, p_nivel: fields.nivel.trim() || null,
-        p_valor_hora: fields.valor_hora === "" ? null : Number(fields.valor_hora), p_nif: fields.nif.trim() || null,
-        p_email: fields.email.trim() || null, p_contacto: fields.contacto.trim() || null, p_morada: fields.morada.trim() || null
-      };
-      const payload = personId
-        ? { p_colaborador_id: personId, ...commonFields, p_data_saida: fields.data_saida || null }
-        : { ...commonFields, p_alocacao_tipo: fields.alocacao_tipo, p_obra_id: fields.obra_id || null,
-            p_codigo_rh: fields.codigo_rh.trim() || null, p_seguranca_social: fields.seguranca_social === "true",
-            p_registo_trabalhador: fields.registo_trabalhador === "true", p_seguro: fields.seguro === "true",
-            p_epi_data: fields.epi_data || null, p_medicina_data: fields.medicina_data || null };
-      const response = await supabase(`rpc/${functionName}`, { method: "POST", body: JSON.stringify(payload) });
-      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível guardar o colaborador."));
-      await reloadActiveCollaborators();
-    } else if (personId) {
-      const current = collaborators.find(item => item.id === personId) || teamData.inactiveCollaborators.find(item => item.id === personId);
-      const updated = { ...current, nome: fields.nome.trim(), funcao: fields.funcao.trim(), nivel: fields.nivel.trim() || null, valor_hora: fields.valor_hora === "" ? null : Number(fields.valor_hora), nif: fields.nif.trim() || null, email: fields.email.trim() || null, contacto: fields.contacto.trim() || null, morada: fields.morada.trim() || null, data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null, data_saida: fields.data_saida || null };
-      collaborators = collaborators.filter(item => item.id !== personId);
-      teamData.inactiveCollaborators = teamData.inactiveCollaborators.filter(item => item.id !== personId);
-      (updated.data_saida ? teamData.inactiveCollaborators : collaborators).push(updated);
-    } else {
-      const created = { id: crypto.randomUUID(), nome: fields.nome.trim(), funcao: fields.funcao.trim(), nivel: fields.nivel.trim() || null, valor_hora: fields.valor_hora === "" ? null : Number(fields.valor_hora), nif: fields.nif.trim() || null, email: fields.email.trim() || null, contacto: fields.contacto.trim() || null, morada: fields.morada.trim() || null, data_admissao: fields.data_admissao, data_nascimento: fields.data_nascimento || null };
-      collaborators.push(created);
-      teamData.allocations.push({ id: crypto.randomUUID(), colaborador_id: created.id, obra_id: fields.alocacao_tipo === "obra" ? fields.obra_id : null, tipo_alocacao: fields.alocacao_tipo, descricao_livre: fields.alocacao_tipo === "escritorio" ? "Escritório" : null, semana_inicio: mondayIso(fields.data_admissao), data: fields.data_admissao, periodo: "dia_inteiro" });
-    }
-    closeWorkflowDialog();
-    await loadTeamData(true);
-    toast(personId ? "Colaborador atualizado sem alterar o histórico." : "Colaborador criado e alocado com sucesso.");
-  } catch (error) {
-    errorNode.textContent = error.message || "Não foi possível guardar o colaborador.";
-  } finally {
-    submitButton.disabled = false;
-  }
 }
 
 async function reactivateCollaborator(personId) {
@@ -2104,6 +2030,15 @@ async function reactivateCollaborator(personId) {
 
 function renderTeam() {
   renderWorkforceLineEditor();
+  const lifecycleActions = $("#team-lifecycle-actions");
+  if (lifecycleActions && !$("#rh-import-button")) {
+    const button = document.createElement('button');
+    button.id = 'rh-import-button'; button.type = 'button'; button.className = 'outline-action';
+    button.textContent = 'COMPLETAR CADASTROS · EXCEL';
+    button.addEventListener('click', () => rhCadastro().openImport());
+    lifecycleActions.append(button);
+  }
+  if ($("#rh-import-button")) $("#rh-import-button").hidden = effectiveRole() !== 'gestao_plataforma';
   const vacationOnly = !canManageTeam();
   if ($("#team-lifecycle-actions")) $("#team-lifecycle-actions").hidden = vacationOnly;
   if ($("#team-active-stat")) $("#team-active-stat").hidden = vacationOnly;
@@ -2275,7 +2210,7 @@ function renderTeam() {
     const documentsOpen = selectedTeamEntity?.type === "colaborador" && selectedTeamEntity.id === person.id;
     return `<article class="team-directory-row">
       <span class="team-avatar">${personInitials(person.nome)}</span>
-      <div class="team-person-main"><strong>${person.nome}${birthdayPeople.some(item => item.id === person.id) ? ` <em class="birthday-badge">ANIVERSÁRIO · ${formatOptionalDate(person.data_nascimento).slice(0, 5)}</em>` : ""}</strong><span>${person.funcao || "Função não definida"}${person.nivel ? ` · ${person.nivel}` : ""}</span></div>
+      <div class="team-person-main"><strong>${safeText(person.nome)}${birthdayPeople.some(item => item.id === person.id) ? ` <em class="birthday-badge">ANIVERSÁRIO · ${formatOptionalDate(person.data_nascimento).slice(0, 5)}</em>` : ""}</strong><span>${safeText(person.funcao || "Função não definida")}${person.nivel ? ` · ${safeText(person.nivel)}` : ""}</span></div>
       <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : safeText(allocationLabel)}</strong></div>
       <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
@@ -2306,7 +2241,7 @@ function renderTeam() {
   const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : activeContracts;
   $("#team-contracts").innerHTML = visibleContracts.length ? visibleContracts.map(contract => {
     const person = personById.get(contract.colaborador_id);
-    return `<article class="team-detail-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " ")}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><em>${contract.estado || "ativo"}</em></article>`;
+    return `<article class="team-detail-row"><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${safeText(String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " "))}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><div><em>${safeText(contract.estado || "ativo")}</em>${canManageTeam() && person ? `<button class="collaborator-edit-button" type="button" data-edit-collaborator="${person.id}">EDITAR CADASTRO / CONTRATO</button>` : ""}</div></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM CONTRATOS</strong><span>Não existem contratos ativos registados.</span></div>`;
 
   const manageableWorkIds = canManageTeam()

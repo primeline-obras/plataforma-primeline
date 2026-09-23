@@ -1038,7 +1038,19 @@ button, input, select, textarea,
 .birthday-badge { margin-left: 7px; padding: 4px 7px; border: 1px solid var(--info-border); border-radius: 999px; background: var(--info-bg); color: var(--info-text); font-size: 9px; font-style: normal; font-weight: 800; letter-spacing: .5px; white-space: nowrap; }
 .team-directory-row .text-alert { color: var(--neg-text); }
 .directory-toolbar { justify-content: flex-end; }
-.team-lifecycle-actions { display: flex; gap: 10px; align-items: center; }
+.team-lifecycle-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.rh-field-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.rh-field-grid label { min-width: 0; display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
+.rh-field-grid input, .rh-field-grid select { width: 100%; min-width: 0; }
+.rh-field-grid input, .rh-field-grid select { margin-top: auto; }
+#rh-form textarea { display: block; width: 100%; margin-top: 8px; padding: 10px; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); resize: vertical; }
+#rh-form .dialog-actions { position: sticky; bottom: 0; background: var(--paper); padding: 14px 0; border-top: 1px solid var(--line); z-index: 1; }
+#rh-import { padding: 24px; }
+#rh-import > label { margin-top: 16px; }
+#rh-import .primary-button { min-height: 42px; margin-top: 18px; }
+#rh-import details { padding: 10px 0; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
+#rh-import summary { cursor: pointer; }
+@media(max-width:600px) { .rh-field-grid { grid-template-columns: 1fr; } }
 .collaborator-edit-button, .inactive-collaborators article button { min-height: 34px; padding: 0 13px; border: 1px solid var(--line-strong); border-radius: 9px; background: transparent; color: var(--text); font: 800 10px "Manrope"; letter-spacing: .7px; }
 .collaborator-edit-button:hover, .inactive-collaborators article button:hover { border-color: var(--accent); color: var(--accent); }
 .inactive-collaborators { margin: 18px; border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden; background: var(--card-soft); }
