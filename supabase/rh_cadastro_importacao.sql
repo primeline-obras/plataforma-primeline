@@ -1,5 +1,8 @@
 -- Aplicar antes do frontend. Não preenche nem altera cadastros existentes.
 begin;
+-- Uma data confirmada pode existir sem classificação contratual confirmada.
+-- Não altera tipos existentes nem atribui valores por defeito.
+alter table public.colaboradores_contratos alter column tipo_contrato drop not null;
 create table if not exists public.colaboradores_rh_privado (
   colaborador_id uuid primary key references public.colaboradores(id),
   niss text check (niss is null or niss ~ '^[0-9]{11}$')
@@ -44,16 +47,18 @@ begin
   return v_result;
 end $$;
 
-create or replace function public.fn_rh_guardar(p_dados jsonb,p_simular boolean default false)
+create or replace function public.fn_rh_guardar_interno(p_dados jsonb,p_simular boolean,p_importacao boolean)
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
 declare
-  v_empresa uuid:=public.fn_rh_empresa(); v_id uuid:=nullif(p_dados->>'id','')::uuid;
+  v_empresa uuid:=public.fn_rh_empresa(p_importacao); v_id uuid:=nullif(p_dados->>'id','')::uuid;
   v_antes jsonb; v_patch jsonb:=coalesce(p_dados->'campos','{}'); v_result jsonb;
   v_c public.colaboradores%rowtype; v_ct public.colaboradores_contratos%rowtype;
   v_cp jsonb:=p_dados->'contrato'; v_niss text; v_count integer; v_alterado boolean;
   v_novo boolean:=v_id is null; v_original_ct jsonb;
+  v_avisos jsonb:='[]'; v_pendencia text;
 begin
   perform pg_advisory_xact_lock(hashtextextended('rh:'||v_empresa::text,0));
+  if p_importacao and v_novo then raise exception 'A importação exige ID existente.'; end if;
   if jsonb_typeof(v_patch) is distinct from 'object' then raise exception 'Campos inválidos.'; end if;
   if exists(select 1 from jsonb_object_keys(v_patch) k where k not in
     ('nome','funcao','nivel','valor_hora','nif','email','contacto','morada','data_admissao',
@@ -91,12 +96,32 @@ begin
     select * into v_ct from public.colaboradores_contratos where colaborador_id=v_id and estado='ativo';
     v_original_ct:=to_jsonb(v_ct);
     v_ct:=jsonb_populate_record(v_ct,v_cp);
-    if v_ct.tipo_contrato is null or v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') or v_ct.data_inicio is null then
+    if not p_importacao and (v_ct.tipo_contrato is null or v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') or v_ct.data_inicio is null) then
       raise exception 'Tipo e início do contrato são obrigatórios.';
     end if;
-    if v_ct.tipo_contrato='a_prazo' and v_ct.data_fim_prevista is null then raise exception 'Indique o fim previsto.'; end if;
-    if v_ct.tipo_contrato='tempo_indeterminado' and v_ct.data_fim_prevista is not null then raise exception 'Tempo indeterminado não tem fim previsto.'; end if;
-    if v_ct.data_fim_prevista<v_ct.data_inicio then raise exception 'Fim contratual anterior ao início.'; end if;
+    if v_ct.tipo_contrato is not null and v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') then
+      raise exception 'Tipo de contrato inválido.';
+    end if;
+    if v_ct.data_inicio is null then v_pendencia:='Início do contrato em falta.';
+    elsif v_ct.tipo_contrato='a_prazo' and v_ct.data_fim_prevista is null then v_pendencia:='Indique o fim previsto.';
+    elsif v_ct.data_fim_prevista<v_ct.data_inicio then v_pendencia:='Fim contratual anterior ao início.';
+    end if;
+    if v_pendencia is not null then
+      if not p_importacao then raise exception '%',v_pendencia; end if;
+      v_avisos:=v_avisos||jsonb_build_array('Contrato não alterado: '||v_pendencia||' Os restantes campos podem ser atualizados.');
+      v_cp:=null;
+    elsif v_ct.tipo_contrato='tempo_indeterminado' and v_ct.data_fim_prevista is not null then
+      if not p_importacao then raise exception 'Tempo indeterminado não tem fim previsto.'; end if;
+      -- Na importação parcial, vazio não autoriza apagar uma data anterior.
+      if v_cp ? 'data_fim_prevista' then
+        v_avisos:=v_avisos||jsonb_build_array('Contrato não alterado: tempo indeterminado com fim fornecido. Rever no cadastro individual.');
+        v_cp:=null;
+      else
+        v_avisos:=v_avisos||jsonb_build_array('Fim previsto existente preservado. Rever no cadastro individual o contrato sem termo.');
+      end if;
+    elsif v_ct.tipo_contrato is null then
+      v_avisos:=v_avisos||jsonb_build_array('Data contratual aceite; tipo de contrato por confirmar pelo RH.');
+    end if;
   end if;
   v_alterado:=v_novo or to_jsonb(v_c) is distinct from v_antes->'colaborador'
     or v_niss is distinct from v_antes->>'niss'
@@ -115,7 +140,7 @@ begin
     perform nullif(p_dados->>'epi_data','')::date;
     perform nullif(p_dados->>'medicina_data','')::date;
   end if;
-  if p_simular or not v_alterado then return jsonb_build_object('alterado',v_alterado,'id',v_id); end if;
+  if p_simular or not v_alterado then return jsonb_build_object('alterado',v_alterado,'id',v_id,'avisos',v_avisos); end if;
   if v_novo then
     v_id:=(public.fn_criar_colaborador_com_alocacao(v_c.nome,v_c.funcao,v_c.data_admissao,v_c.data_nascimento,
       p_dados->>'alocacao_tipo',nullif(p_dados->>'obra_id','')::uuid,v_c.nivel,v_c.valor_hora,v_c.nif,v_c.email,v_c.contacto,v_c.morada)
@@ -152,9 +177,16 @@ begin
   end if;
   v_result:=public.fn_rh_consultar(v_id)->0;
   insert into public.rh_cadastro_auditoria(empresa_id,colaborador_id,utilizador_id,origem,antes,depois)
-    values(v_empresa,v_id,public.fn_utilizador_atual_id(),'cadastro',v_antes,v_result);
-  return jsonb_build_object('alterado',true,'id',v_id);
+    values(v_empresa,v_id,public.fn_utilizador_atual_id(),case when p_importacao then 'importacao_excel' else 'cadastro' end,v_antes,v_result);
+  return jsonb_build_object('alterado',true,'id',v_id,'avisos',v_avisos);
 end $$;
+
+-- O modo parcial não fica exposto como parâmetro da RPC de edição manual.
+revoke all on function public.fn_rh_guardar_interno(jsonb,boolean,boolean) from public,anon,authenticated;
+create or replace function public.fn_rh_guardar(p_dados jsonb,p_simular boolean default false)
+returns jsonb language sql security definer set search_path=public,pg_temp as $$
+  select public.fn_rh_guardar_interno(p_dados,p_simular,false);
+$$;
 
 create or replace function public.fn_rh_importar(p_linhas jsonb,p_confirmar boolean default false)
 returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
@@ -175,14 +207,14 @@ begin
       select coalesce(jsonb_object_agg(key,value),'{}') into v_patch from jsonb_each(coalesce(v_row->'campos','{}'))
         where value<>'null'::jsonb and btrim(value#>>'{}')<>'';
       v_row:=v_row||jsonb_build_object('campos',v_patch);
-      if coalesce(v_row->>'niss','')='' then v_row:=v_row-'niss'; end if;
+      if btrim(coalesce(v_row->>'niss',''))='' then v_row:=v_row-'niss'; end if;
       if jsonb_typeof(v_row->'contrato')='object' then
         select coalesce(jsonb_object_agg(key,value),'{}') into v_patch from jsonb_each(v_row->'contrato')
           where value<>'null'::jsonb and btrim(value#>>'{}')<>'';
         v_row:=v_row-'contrato';
         if v_patch<>'{}'::jsonb then v_row:=v_row||jsonb_build_object('contrato',v_patch); end if;
       end if;
-      v_validado:=public.fn_rh_guardar(v_row,not p_confirmar);
+      v_validado:=public.fn_rh_guardar_interno(v_row,not p_confirmar,true);
       v_result:=v_result||jsonb_build_array(v_validado||jsonb_build_object('id',v_id,'ok',true));
     exception when others then
       v_erros:=v_erros+1;
@@ -201,4 +233,7 @@ commit;
 select
   to_regprocedure('public.fn_rh_consultar(uuid)') is not null as consulta_rh_ativa,
   to_regprocedure('public.fn_rh_guardar(jsonb,boolean)') is not null as cadastro_rh_unificado,
-  to_regprocedure('public.fn_rh_importar(jsonb,boolean)') is not null as importacao_rh_ativa;
+  to_regprocedure('public.fn_rh_importar(jsonb,boolean)') is not null as importacao_rh_ativa,
+  to_regprocedure('public.fn_rh_guardar_interno(jsonb,boolean,boolean)') is not null as importacao_parcial_contrato_ativa,
+  exists(select 1 from information_schema.columns where table_schema='public'
+    and table_name='colaboradores_contratos' and column_name='tipo_contrato' and is_nullable='YES') as tipo_por_confirmar_permitido;

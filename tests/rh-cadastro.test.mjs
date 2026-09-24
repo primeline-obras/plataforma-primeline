@@ -108,6 +108,108 @@ test('PostgreSQL: migração, cadastro, permissões e lote atómico',{skip:!deps
     const valid=await patch(person,{observacoes:'Mais recente'});
     assert.equal((await rpc('fn_rh_importar',[[valid,valid],false])).erros,1);
   });
+  await t.test('A: início sem tipo, com e sem contrato existente; reimportação idempotente',async()=>{
+    await db.exec('begin');
+    try {
+      for(const id of [person,person2]){
+        const before=await read(id),tipo=before.contratos[0]?.tipo_contrato??null;
+        const data=await patch(id,{contacto:'912345678'},{contrato:{data_inicio:'2026-07-20',tipo_contrato:''}});
+        const preview=await rpc('fn_rh_importar',[[data],false]);assert.equal(preview.erros,0);
+        assert.deepEqual(await read(id),before);
+        assert.equal((await rpc('fn_rh_importar',[[data],true])).erros,0);
+        const after=await read(id);assert.equal(after.contratos[0].data_inicio,'2026-07-20');
+        assert.equal(after.contratos[0].tipo_contrato,tipo);assert.equal(after.colaborador.contacto,'912345678');
+        assert.equal((await rpc('fn_rh_importar',[[data],true])).linhas[0].alterado,false);
+      }
+    }finally{await db.exec('rollback');}
+  });
+  await t.test('B/E: contrato e campos comuns vazios preservam valores, false e zero são importados',async()=>{
+    await db.exec('begin');
+    try {
+      const before=await read(person);
+      const data=await patch(person,{email:' ',nome:null,nif:'',contacto:'923456789',seguro_ok:false,valor_hora:0},{
+        contrato:{tipo_contrato:'',data_inicio:null,data_fim_prevista:' '}});
+      assert.equal((await rpc('fn_rh_importar',[[data],true])).erros,0);
+      const after=await read(person);assert.deepEqual(after.contratos,before.contratos);
+      for(const key of ['email','nome','nif','data_saida'])assert.equal(after.colaborador[key],before.colaborador[key]);
+      assert.equal(after.colaborador.seguro_ok,false);assert.equal(after.colaborador.valor_hora,0);
+      assert.equal(after.colaborador.contacto,'923456789');
+    }finally{await db.exec('rollback');}
+  });
+  await t.test('C: tempo indeterminado aceite; fim vazio preserva data existente',async()=>{
+    await db.exec('begin');
+    try {
+      for(const id of [person,person2]){
+        const before=await read(id),end=before.contratos[0]?.data_fim_prevista??null;
+        const data=await patch(id,{},{contrato:{tipo_contrato:'tempo_indeterminado',data_inicio:'2026-07-20',data_fim_prevista:''}});
+        const result=await rpc('fn_rh_importar',[[data],true]);assert.equal(result.erros,0);
+        const after=await read(id);assert.equal(after.contratos[0].tipo_contrato,'tempo_indeterminado');
+        assert.equal(after.contratos[0].data_fim_prevista,end);
+        assert.equal(after.contratos[0].data_inicio,'2026-07-20');
+        if(end)assert.ok(result.linhas[0].avisos.length);
+      }
+    }finally{await db.exec('rollback');}
+  });
+  await t.test('D: a prazo completo aceite; incompleto guarda restantes campos e avisa sem criar contrato',async()=>{
+    await db.exec('begin');
+    try {
+      const incomplete=await patch(person2,{contacto:'934567890'},{contrato:{tipo_contrato:'a_prazo',data_inicio:'2026-07-20'}});
+      const p=await rpc('fn_rh_importar',[[incomplete],false]);assert.equal(p.erros,0);assert.match(p.linhas[0].avisos[0],/Contrato não alterado/);
+      const result=await rpc('fn_rh_importar',[[incomplete],true]);assert.equal(result.erros,0);
+      assert.equal((await read(person2)).contratos.length,0);assert.equal((await read(person2)).colaborador.contacto,'934567890');
+      const complete=await patch(person2,{},{contrato:{tipo_contrato:'a_prazo',data_inicio:'2026-07-20',data_fim_prevista:'2027-07-19'}});
+      assert.equal((await rpc('fn_rh_importar',[[complete],true])).erros,0);
+      assert.equal((await read(person2)).contratos[0].data_fim_prevista,'2027-07-19');
+    }finally{await db.exec('rollback');}
+  });
+  await t.test('contrato incoerente preservado; importação não cria pessoas nem altera alocações',async()=>{
+    await db.exec('begin');
+    try {
+      const before=await read(person);
+      const data=await patch(person,{contacto:'945678901'},{contrato:{data_fim_prevista:'2025-01-01'},alocacao_tipo:'escritorio'});
+      const result=await rpc('fn_rh_importar',[[data],true]);assert.equal(result.erros,0);assert.ok(result.linhas[0].avisos.length);
+      assert.deepEqual((await read(person)).contratos,before.contratos);
+      assert.equal((await db.query('select count(*)::int n from quadro_pessoal_alocacao')).rows[0].n,0);
+      for(const id of [null,'39999999-0000-0000-0000-000000000099']){
+        assert.equal((await rpc('fn_rh_importar',[[{id,campos:{nome:'Nunca criar'}}],false])).erros,1);
+      }
+      assert.equal((await db.query('select count(*)::int n from colaboradores')).rows[0].n,2);
+      const stale={...data,campos:{contacto:'956789012'}};assert.equal((await rpc('fn_rh_importar',[[stale],false])).erros,1);
+    }finally{await db.exec('rollback');}
+  });
+  await t.test('modo interno parcial não é RPC acessível diretamente',async()=>{
+    await db.exec('set role authenticated');
+    try{await assert.rejects(rpc('fn_rh_guardar_interno',[{id:person,campos:{}},true,true]),/permission denied/);}
+    finally{await db.exec('reset role');}
+  });
+  await t.test('ficheiro real: 47 linhas, tipo vazio, pré-visualização e reimportação',{skip:!process.env.RH_XLSX},async()=>{
+    await db.exec('begin');
+    try {
+      const X=require(deps+'/xlsx.full.min.js'),book=X.read(fs.readFileSync(process.env.RH_XLSX));
+      const rows=X.utils.sheet_to_json(book.Sheets.Colaboradores,{defval:''});
+      assert.equal(rows.length,47);assert.ok(rows.every(r=>!r.tipo_contrato&&r.data_inicio));
+      const testCompany='10000000-0000-0000-0000-000000000047';
+      await db.query('insert into empresas values($1)',[testCompany]);
+      await db.query('update utilizadores set empresa_id=$1',[testCompany]);
+      for(const row of rows)await db.query('insert into colaboradores(id,empresa_id,nome,funcao,data_admissao) values($1,$2,$3,$4,$5)',
+        [row.id,testCompany,row.nome,row.funcao,parseRhValue(row.data_admissao,'date')]);
+      const before=await rpc('fn_rh_consultar',[]);
+      // Versões só da base sintética; nunca modificar o Excel nem versões em produção.
+      const versions=new Map(before.map(r=>[r.colaborador.id,r.versao]));
+      const prepared=prepareRhRows(rows.map(r=>({...r,versao:versions.get(r.id)})),before);
+      assert.ok(prepared.every(r=>!r.errors.length));
+      const payload=prepared.map(r=>r.payload),preview=await rpc('fn_rh_importar',[payload,false]);
+      assert.equal(preview.erros,0,JSON.stringify(preview.linhas.filter(r=>!r.ok)));
+      assert.deepEqual(await rpc('fn_rh_consultar',[]),before);
+      const applied=await rpc('fn_rh_importar',[payload,true]);assert.equal(applied.erros,0);
+      assert.equal(applied.linhas.filter(r=>r.alterado).length,47);
+      const after=await rpc('fn_rh_consultar',[]);assert.equal(after.length,47);
+      assert.ok(after.every(r=>r.contratos.length===1&&r.contratos[0].tipo_contrato===null));
+      assert.equal((await rpc('fn_rh_importar',[payload,true])).linhas.filter(r=>r.alterado).length,0);
+      assert.equal((await db.query('select count(*)::int n from quadro_pessoal_alocacao')).rows[0].n,0);
+      console.log('RH Excel (base sintética): 47 aceites; 0 erros; repetição 0 alterações; 0 pessoas criadas pela importação.');
+    }finally{await db.exec('rollback');}
+  });
   await t.test('administrativo edita mas não importa; técnico não consulta',async()=>{
     await db.exec("update utilizadores set funcao='administrativo'");
     assert.equal((await read(person)).colaborador.nome,'Pessoa A');
@@ -179,5 +281,44 @@ test('formulário preserva dados ao abrir e guarda uma única vez',{skip:!deps},
     const saves=calls.filter(([p])=>p.includes('guardar'));
     assert.equal(saves.length,1);assert.equal(saves[0][1].p_dados.campos.email,'a@exemplo.pt');
     assert.equal(document.querySelector('#workflow-dialog').hidden,true);
+    record.contratos[0].tipo_contrato=null;record.contratos[0].data_fim_prevista=null;
+    await module.open({id:'a',nome:'Pessoa A'});
+    assert.match(document.querySelector('#workflow-dialog-content').textContent,/Tipo por confirmar/);
+    const pendingForm=document.querySelector('#rh-form');
+    pendingForm.elements.contacto.value='912345678';
+    await pendingForm.onsubmit({preventDefault(){}});
+    const pendingSave=calls.filter(([p])=>p.includes('guardar')).at(-1)[1].p_dados;
+    assert.equal(pendingSave.campos.contacto,'912345678');assert.equal(pendingSave.contrato,undefined);
+    assert.equal(document.querySelector('#workflow-dialog').hidden,true);
   }finally{globalThis.document=previous.document;globalThis.FormData=previous.FormData;dom.window.close();}
+});
+
+test('interface: aviso contratual visível, permite confirmar e não limpa células vazias',{skip:!deps},async()=>{
+  const require=createRequire(deps+'/package.json'),{JSDOM}=require('jsdom'),X=require(deps+'/xlsx.full.min.js');
+  const dom=new JSDOM('<div id="workflow-dialog" hidden><h2 id="workflow-dialog-title"></h2><div id="workflow-dialog-content"></div></div>');
+  const previous={document:globalThis.document,XLSX:globalThis.XLSX};
+  globalThis.document=dom.window.document;globalThis.XLSX=X;
+  const record={versao:'versao-preservada',colaborador:{id:'a',nome:'Pessoa',funcao:'Pedreiro'},contratos:[],niss:null};
+  const calls=[],warning='Contrato não alterado: Indique o fim previsto. Os restantes campos podem ser atualizados.';
+  const module=createRhCadastro({api:async(path,options)=>{
+    const data=JSON.parse(options.body);calls.push([path,data]);
+    return {ok:true,json:async()=>path.includes('consultar')?[record]:{erros:0,linhas:[{ok:true,alterado:true,avisos:[warning]}]}};
+  },canManage:()=>true,isManagement:()=>true,configured:()=>true,works:()=>[],refresh:async()=>{},toast:()=>{}});
+  try{
+    await module.openImport();
+    const headers=['id','versao',...RH_FIELDS.map(([k])=>k)],row={id:'a',versao:record.versao,contacto:'912345678',tipo_contrato:'a_prazo',data_inicio:'2026-07-20'};
+    const book=X.utils.book_new();X.utils.book_append_sheet(book,X.utils.aoa_to_sheet([headers,headers.map(k=>row[k]??'')]),'Colaboradores');
+    const bytes=X.write(book,{type:'buffer',bookType:'xlsx'}),input=document.querySelector('[data-rh-file]');
+    Object.defineProperty(input,'files',{value:[{size:bytes.length,arrayBuffer:async()=>bytes}]});
+    await input.onchange();
+    assert.match(document.querySelector('[data-rh-preview]').textContent,/AVISO/);
+    assert.ok(document.querySelector('[data-rh-preview]').textContent.includes(warning));
+    const confirm=document.querySelector('[data-rh-confirm]');assert.equal(confirm.disabled,false);
+    await confirm.onclick();
+    assert.match(document.querySelector('[data-rh-preview]').textContent,/1 cadastros atualizados/);
+    assert.ok(document.querySelector('[data-rh-preview]').textContent.includes(warning));
+    const payload=calls.filter(([p])=>p.includes('importar')).at(-1)[1].p_linhas[0];
+    assert.equal(payload.versao,record.versao);assert.equal(payload.id,'a');
+    assert.equal(payload.contrato.data_fim_prevista,undefined);assert.equal(payload.campos.nome,undefined);
+  }finally{globalThis.document=previous.document;globalThis.XLSX=previous.XLSX;dom.window.close();}
 });

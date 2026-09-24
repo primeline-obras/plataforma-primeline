@@ -23,7 +23,7 @@ import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceModule } from "./attendance.js?v=2";
-import { createRhCadastro } from "./rh-cadastro.js?v=1";
+import { createRhCadastro } from "./rh-cadastro.js?v=2";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 
@@ -2212,7 +2212,7 @@ function renderTeam() {
       <span class="team-avatar">${personInitials(person.nome)}</span>
       <div class="team-person-main"><strong>${safeText(person.nome)}${birthdayPeople.some(item => item.id === person.id) ? ` <em class="birthday-badge">ANIVERSÁRIO · ${formatOptionalDate(person.data_nascimento).slice(0, 5)}</em>` : ""}</strong><span>${safeText(person.funcao || "Função não definida")}${person.nivel ? ` · ${safeText(person.nivel)}` : ""}</span></div>
       <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : safeText(allocationLabel)}</strong></div>
-      <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : "Não registado"}</strong></div>
+      <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : contract ? "Tipo por confirmar" : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
       <button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="colaborador" data-entity-id="${person.id}">DOCUMENTOS <b>${documents.length}</b></button>
       ${canManageTeam() ? `<button class="collaborator-edit-button" type="button" data-edit-collaborator="${person.id}">EDITAR</button>` : ""}
