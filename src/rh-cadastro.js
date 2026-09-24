@@ -85,7 +85,7 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
           <label>Tipo<select name="tipo_contrato"><option value="">Ainda não registado</option><option value="a_prazo" ${values.tipo_contrato==='a_prazo'?'selected':''}>A prazo</option><option value="tempo_indeterminado" ${values.tipo_contrato==='tempo_indeterminado'?'selected':''}>Tempo indeterminado</option></select></label>
           <div class="form-row">${field('data_inicio','Início','date',values.data_inicio)}${field('data_fim_prevista','Fim previsto','date',values.data_fim_prevista)}</div>
           <small>Corrige os dados do contrato ativo; não regista uma renovação. Os contratos anteriores são preservados. Anexe o PDF em Documentos do colaborador.</small>
-          ${record?`<details><summary>Histórico: ${record.contratos.length} contrato(s)</summary>${record.contratos.map(c=>`<p>${esc(c.tipo_contrato)} · ${esc(c.data_inicio)} — ${esc(c.data_fim_prevista||'Sem termo')} · ${esc(c.estado)}</p>`).join('')}</details>`:''}
+          ${record?`<details><summary>Histórico: ${record.contratos.length} contrato(s)</summary>${record.contratos.map(c=>`<p>${esc(c.tipo_contrato||'Tipo por confirmar')} · ${esc(c.data_inicio)} — ${esc(c.data_fim_prevista||(c.tipo_contrato==='tempo_indeterminado'?'Sem termo':'Fim não informado'))} · ${esc(c.estado)}</p>`).join('')}</details>`:''}
         </fieldset>
         <fieldset class="work-template-fieldset"><legend>CONFORMIDADE E NOTAS</legend><div class="rh-field-grid">${general.filter(([,,t])=>t==='boolean').map(([k,l,t])=>field(k,l,t,values[k])).join('')}</div>${field('observacoes','Observações','text',values.observacoes)}</fieldset>
         ${person?field('data_saida','Data de saída (inativa sem apagar histórico)','date',values.data_saida):`<fieldset class="work-template-fieldset"><legend>ALOCAÇÃO INICIAL</legend><div class="form-row"><label>Local<select name="alocacao_tipo"><option value="obra">Obra</option><option value="escritorio">Escritório</option></select></label><label data-rh-work>Obra<select name="obra_id" required><option value="">Selecionar</option>${works().filter(w=>['preparacao','em_curso'].includes(w.situacao)).map(w=>`<option value="${esc(w.id)}">${esc(w.numero)} · ${esc(w.nome)}</option>`).join('')}</select></label></div><div class="form-row">${field('epi_data','Entrega inicial de EPI','date','')}${field('medicina_data','Consulta inicial de medicina do trabalho','date','')}</div></fieldset>`}
@@ -103,8 +103,11 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
           if(person) payload.campos.data_saida=values.data_saida||null;
           else Object.assign(payload,{alocacao_tipo:values.alocacao_tipo,obra_id:values.obra_id||null,epi_data:values.epi_data||null,medicina_data:values.medicina_data||null});
           if(values.tipo_contrato)payload.contrato={tipo_contrato:values.tipo_contrato,data_inicio:values.data_inicio||null,data_fim_prevista:values.tipo_contrato==='tempo_indeterminado'?null:values.data_fim_prevista||null};
-          else if(record?.contratos.some(c=>c.estado==='ativo')) throw new Error('Não pode apagar o contrato ativo retirando o tipo.');
-          else if(values.data_inicio||values.data_fim_prevista) throw new Error('Selecione o tipo de contrato.');
+          else if(record?.contratos.some(c=>c.estado==='ativo'&&c.tipo_contrato)) throw new Error('Não pode apagar o contrato ativo retirando o tipo.');
+          else {
+            const pending=record?.contratos.find(c=>c.estado==='ativo'&&!c.tipo_contrato);
+            if((values.data_inicio||'')!==(pending?.data_inicio||'')||(values.data_fim_prevista||'')!==(pending?.data_fim_prevista||'')) throw new Error('Selecione o tipo de contrato para alterar os dados contratuais neste formulário.');
+          }
           await rpc('fn_rh_guardar',{p_dados:payload});$('#workflow-dialog').hidden=true;$('#workflow-dialog-content').innerHTML='';
           try { await refresh();toast('Cadastro e contrato guardados.'); } catch {toast('Guardado, mas a lista não atualizou. Atualize a página.','error');}
         }catch(e){form.querySelector('.form-error').textContent=e.message;}finally{button.disabled=false;}
@@ -128,7 +131,8 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
           XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([
             ['Instruções'],['Não altere ID ou versão. Não adicione colaboradores neste ficheiro.'],['Vazios mantêm dados. Para limpar um campo use a edição individual.'],
             ['Datas: AAAA-MM-DD ou DD/MM/AAAA. Tipos: a_prazo / tempo_indeterminado.'],['Seguro/registo/SS: Sim ou Não. NIF e NISS devem ser texto, preservando zeros.'],
-            ['Uma alteração de contrato para tempo indeterminado deve ser feita no formulário individual para limpar o fim previsto.'],
+            ['Início confirmado pode ser importado sem tipo. Campos vazios preservam os dados existentes.'],
+            ['Contrato incompleto: consulte os avisos; os restantes dados podem ser atualizados. Para limpar um fim previsto, use o formulário individual.'],
             ...RH_FIELDS.map(([k,l])=>[k,l])]),'Instruções');
           XLSX.writeFile(book,'cadastro-rh.xlsx');
         }catch(e){error.textContent=e.message;}
@@ -150,10 +154,10 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
           prepared=prepareRhRows(rows,await rpc('fn_rh_consultar',{}));
           if(!prepared.some(r=>r.errors.length)){
             const result=await rpc('fn_rh_importar',{p_linhas:prepared.map(r=>r.payload),p_confirmar:false});
-            result.linhas.forEach((r,i)=>{if(!r.ok)prepared[i].errors.push(r.erro);else prepared[i].alterado=r.alterado;});
+            result.linhas.forEach((r,i)=>{if(!r.ok)prepared[i].errors.push(r.erro);else {prepared[i].alterado=r.alterado;prepared[i].avisos=r.avisos||[];}});
           }
           const errors=prepared.filter(r=>r.errors.length).length,changed=prepared.filter(r=>r.alterado).length;
-          root.querySelector('[data-rh-preview]').innerHTML=`<p>${prepared.length} linhas · ${changed} a atualizar · ${errors} com erro</p>${prepared.map(r=>`<details><summary>Linha ${r.linha} · ${esc(r.nome)} · ${r.errors.length?'ERRO':r.alterado?'Alterações':'Sem alterações'}</summary>${r.errors.map(e=>`<p>${esc(e)}</p>`).join('')}${r.changes.map(c=>`<p><strong>${esc(c.label)}</strong>: ${esc(c.antes??'Vazio')} → ${esc(c.depois)}</p>`).join('')}</details>`).join('')}`;
+          root.querySelector('[data-rh-preview]').innerHTML=`<p>${prepared.length} linhas · ${changed} a atualizar · ${errors} com erro · ${prepared.filter(r=>r.avisos?.length).length} com avisos</p>${prepared.map(r=>`<details><summary>Linha ${r.linha} · ${esc(r.nome)} · ${r.errors.length?'ERRO':r.alterado?'Alterações':'Sem alterações'}${r.avisos?.length?' · AVISO':''}</summary>${r.errors.map(e=>`<p>${esc(e)}</p>`).join('')}${(r.avisos||[]).map(a=>`<p><strong>Aviso:</strong> ${esc(a)}</p>`).join('')}${r.changes.map(c=>`<p><strong>${esc(c.label)}</strong>: ${esc(c.antes??'Vazio')} → ${esc(c.depois)}</p>`).join('')}</details>`).join('')}`;
           confirm.disabled=!!errors||!changed;
         }catch(e){error.textContent=e.message;}finally{input.disabled=false;}
       };
@@ -161,7 +165,7 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
         confirm.disabled=true;input.disabled=true;error.textContent='';
         try {
           const result=await rpc('fn_rh_importar',{p_linhas:prepared.map(r=>r.payload),p_confirmar:true});
-          prepared=[];root.querySelector('[data-rh-preview]').textContent=`Guardado: ${result.linhas.filter(r=>r.alterado).length} cadastros atualizados. Para verificar a reimportação, selecione novamente o mesmo ficheiro.`;
+          prepared=[];root.querySelector('[data-rh-preview]').textContent=`Guardado: ${result.linhas.filter(r=>r.alterado).length} cadastros atualizados. ${result.linhas.flatMap(r=>r.avisos||[]).length} aviso(s). ${[...new Set(result.linhas.flatMap(r=>r.avisos||[]))].join(' ')} Para verificar a reimportação, selecione novamente o mesmo ficheiro.`;
           input.value='';try{await refresh();}catch{toast('Dados guardados. Atualize a página para renovar a lista.','error');}
         }catch(e){error.textContent=e.message+' Volte a selecionar o ficheiro para validar antes de tentar novamente.';}finally{input.disabled=false;}
       };
