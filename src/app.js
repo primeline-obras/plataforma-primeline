@@ -26,6 +26,7 @@ import { createAttendanceModule } from "./attendance.js?v=2";
 import { createRhCadastro } from "./rh-cadastro.js?v=2";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
+import { setupLoginPassword } from "./login-password.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -5315,7 +5316,9 @@ $("#pdf-modal").addEventListener("click", event => {
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !$("#pdf-modal").hidden) closePdfModal();
 });
+const hideLoginPassword = setupLoginPassword($("#login-form"));
 $("#logout").addEventListener("click", async () => {
+  hideLoginPassword();
   await signOut(); session = null;
   applyLoginTheme();
   $("#auth-screen").hidden = false;
@@ -5325,7 +5328,7 @@ $("#logout").addEventListener("click", async () => {
 
 $("#login-form").addEventListener("submit", async event => {
   event.preventDefault();
-  const button = event.currentTarget.querySelector("button");
+  const button = event.currentTarget.querySelector('button[type="submit"]');
   const fields = Object.fromEntries(new FormData(event.currentTarget));
   button.disabled = true; button.firstChild.textContent = "A AUTENTICAR… ";
   $("#auth-error").textContent = "";
@@ -5347,6 +5350,7 @@ $("#login-form").addEventListener("submit", async event => {
 });
 
 $("#show-recovery").addEventListener("click", () => {
+  hideLoginPassword();
   $("#login-form").hidden = true;
   $("#recovery-form").hidden = false;
   $("#auth-error").textContent = "";
