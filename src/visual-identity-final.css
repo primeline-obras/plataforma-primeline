@@ -341,18 +341,23 @@ input:focus, select:focus, textarea:focus, .search-box:focus-within {
 
 /* MGO: repõe a ordem e proporções do ficheiro Excel sem perder os filtros atuais. */
 .management-map-scroll table { min-width: 1570px; table-layout: fixed; }
-.management-map-scroll th:nth-child(1), .management-map-scroll td:nth-child(1) { width: 112px; }
-.management-map-scroll th:nth-child(2), .management-map-scroll td:nth-child(2) { width: 160px; }
-.management-map-scroll th:nth-child(3), .management-map-scroll td:nth-child(3) { width: 245px; }
-.management-map-scroll th:nth-child(4), .management-map-scroll td:nth-child(4) { width: 280px; }
-.management-map-scroll th:nth-child(5), .management-map-scroll td:nth-child(5) { width: 86px; }
-.management-map-scroll th:nth-child(6), .management-map-scroll td:nth-child(6) { width: 96px; }
-.management-map-scroll th:nth-child(7), .management-map-scroll td:nth-child(7),
-.management-map-scroll th:nth-child(8), .management-map-scroll td:nth-child(8) { width: 128px; }
-.management-map-scroll th:nth-child(9), .management-map-scroll td:nth-child(9) { width: 142px; }
-.management-map-scroll th:nth-child(10), .management-map-scroll td:nth-child(10) { width: 150px; }
-.management-map-scroll th:nth-child(11), .management-map-scroll td:nth-child(11) { width: 140px; }
-.management-map-scroll td:nth-child(3), .management-map-scroll td:nth-child(4) { white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+.management-map-scroll th:nth-child(2), .management-map-scroll td:nth-child(2) { width: 112px; }
+.management-map-scroll th:nth-child(3), .management-map-scroll td:nth-child(3) { width: 160px; }
+.management-map-scroll th:nth-child(4), .management-map-scroll td:nth-child(4) { width: 245px; }
+.management-map-scroll th:nth-child(5), .management-map-scroll td:nth-child(5) { width: 280px; }
+.management-map-scroll th:nth-child(6), .management-map-scroll td:nth-child(6) { width: 86px; }
+.management-map-scroll th:nth-child(7), .management-map-scroll td:nth-child(7) { width: 96px; }
+.management-map-scroll th:nth-child(8), .management-map-scroll td:nth-child(8),
+.management-map-scroll th:nth-child(9), .management-map-scroll td:nth-child(9) { width: 128px; }
+.management-map-scroll th:nth-child(10), .management-map-scroll td:nth-child(10) { width: 142px; }
+.management-map-scroll th:nth-child(11), .management-map-scroll td:nth-child(11) { width: 150px; }
+.management-map-scroll th:nth-child(1), .management-map-scroll td:nth-child(1) { width: 140px; }
+.management-map-scroll td:nth-child(4), .management-map-scroll td:nth-child(5) { white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
+.management-map-filters { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.management-map-filters > label { min-width: 0; }
+.management-map-filters input, .management-map-filters select { box-sizing: border-box; max-width: 100%; }
+.management-clear-filters { grid-column: auto; justify-self: end; max-width: 100%; }
+.management-map-scroll .management-document { white-space: normal; overflow-wrap: anywhere; }
 
 @media (max-width: 1180px) {
   .works-list { grid-template-columns: repeat(2,minmax(0,1fr)); }

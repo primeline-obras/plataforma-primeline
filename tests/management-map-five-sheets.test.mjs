@@ -4,7 +4,7 @@ import { normalizeManagementRows } from "../src/management-map.js";
 
 test("mão de obra calcula o total a partir de horas e valor/hora", () => {
   const [row] = normalizeManagementRows("mao_obra", [{ Colaborador: "William Coimbra", Obra: 118, Data: "18/06/2026", Horas: "8,00", "Valor/Hora": "17,30€" }]);
-  assert.deepEqual(row, { categoria: "mao_obra", linha: 2, obra_numero: "118", colaborador: "William Coimbra", data: "2026-06-18", horas: 8, valor_hora: 17.3 });
+  assert.deepEqual(row, { categoria: "mao_obra", linha: 2, obra_numero: "118", colaborador: "William Coimbra", data: "2026-06-18", horas: 8, valor_hora: 17.3, tipo_registo: "diario", mes_referencia: null });
   assert.equal("valor_total" in row, false);
 });
 

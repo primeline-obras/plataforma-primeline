@@ -18,14 +18,15 @@ import { createCalendarModule } from "./calendar.js?v=2";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
-import { createManagementMapModule } from "./management-map.js?v=12";
+import { createManagementMapModule } from "./management-map.js?v=14";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceModule } from "./attendance.js?v=2";
-import { createRhCadastro } from "./rh-cadastro.js?v=2";
+import { createRhCadastro, contractTypeLabel } from "./rh-cadastro.js?v=3";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
+import { setupLoginPassword } from "./login-password.js?v=1";
 
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
@@ -334,7 +335,7 @@ document.querySelector("#root").innerHTML = `
         <nav class="team-tabs">
           <button class="active" data-team-tab="collaborators">COLABORADORES</button>
           <button data-team-tab="vacations">MAPA DE FÉRIAS</button>
-          <button data-team-tab="attendance">PONTO DE OBRA</button>
+          <button data-team-tab="attendance">FOLHA DE PONTO</button>
           <button data-team-tab="absences">AUSÊNCIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
@@ -2212,7 +2213,7 @@ function renderTeam() {
       <span class="team-avatar">${personInitials(person.nome)}</span>
       <div class="team-person-main"><strong>${safeText(person.nome)}${birthdayPeople.some(item => item.id === person.id) ? ` <em class="birthday-badge">ANIVERSÁRIO · ${formatOptionalDate(person.data_nascimento).slice(0, 5)}</em>` : ""}</strong><span>${safeText(person.funcao || "Função não definida")}${person.nivel ? ` · ${safeText(person.nivel)}` : ""}</span></div>
       <div><span>SITUAÇÃO SEMANAL</span><strong class="${absence ? "text-alert" : ""}">${absence ? String(absence.tipo).replace(/_/g, " ") : safeText(allocationLabel)}</strong></div>
-      <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? String(contract.tipo_contrato).replace(/_/g, " ") : contract ? "Tipo por confirmar" : "Não registado"}</strong></div>
+      <div><span>CONTRATO</span><strong>${contract?.tipo_contrato ? contractTypeLabel(contract.tipo_contrato) : contract ? "Tipo por confirmar" : "Não registado"}</strong></div>
       <div><span>HORAS EXTRA</span><strong>${(hoursByPerson.get(person.id) || 0).toLocaleString("pt-PT")} h</strong></div>
       <button class="entity-documents-button ${documentsOpen ? "active" : ""}" type="button" data-open-entity-documents="colaborador" data-entity-id="${person.id}">DOCUMENTOS <b>${documents.length}</b></button>
       ${canManageTeam() ? `<button class="collaborator-edit-button" type="button" data-edit-collaborator="${person.id}">EDITAR</button>` : ""}
@@ -2241,7 +2242,7 @@ function renderTeam() {
   const visibleContracts = teamQuickFilter === "ending_contract" ? endingContracts : activeContracts;
   $("#team-contracts").innerHTML = visibleContracts.length ? visibleContracts.map(contract => {
     const person = personById.get(contract.colaborador_id);
-    return `<article class="team-detail-row"><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${safeText(String(contract.tipo_contrato || "Tipo não definido").replace(/_/g, " "))}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><div><em>${safeText(contract.estado || "ativo")}</em>${canManageTeam() && person ? `<button class="collaborator-edit-button" type="button" data-edit-collaborator="${person.id}">EDITAR CADASTRO / CONTRATO</button>` : ""}</div></article>`;
+    return `<article class="team-detail-row"><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${safeText(contractTypeLabel(contract.tipo_contrato))}</span></div><div><span>INÍCIO</span><strong>${formatOptionalDate(contract.data_inicio)}</strong></div><div><span>FIM PREVISTO</span><strong>${formatOptionalDate(contract.data_fim_prevista)}</strong></div><div><em>${safeText(contract.estado || "ativo")}</em>${canManageTeam() && person ? `<button class="collaborator-edit-button" type="button" data-edit-collaborator="${person.id}">EDITAR CADASTRO / CONTRATO</button>` : ""}</div></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM CONTRATOS</strong><span>Não existem contratos ativos registados.</span></div>`;
 
   const manageableWorkIds = canManageTeam()
@@ -5315,7 +5316,9 @@ $("#pdf-modal").addEventListener("click", event => {
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !$("#pdf-modal").hidden) closePdfModal();
 });
+const hideLoginPassword = setupLoginPassword($("#login-form"));
 $("#logout").addEventListener("click", async () => {
+  hideLoginPassword();
   await signOut(); session = null;
   applyLoginTheme();
   $("#auth-screen").hidden = false;
@@ -5325,7 +5328,7 @@ $("#logout").addEventListener("click", async () => {
 
 $("#login-form").addEventListener("submit", async event => {
   event.preventDefault();
-  const button = event.currentTarget.querySelector("button");
+  const button = event.currentTarget.querySelector('button[type="submit"]');
   const fields = Object.fromEntries(new FormData(event.currentTarget));
   button.disabled = true; button.firstChild.textContent = "A AUTENTICAR… ";
   $("#auth-error").textContent = "";
@@ -5347,6 +5350,7 @@ $("#login-form").addEventListener("submit", async event => {
 });
 
 $("#show-recovery").addEventListener("click", () => {
+  hideLoginPassword();
   $("#login-form").hidden = true;
   $("#recovery-form").hidden = false;
   $("#auth-error").textContent = "";

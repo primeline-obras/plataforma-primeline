@@ -36,6 +36,7 @@ function flattened(record) {
   if(active.length>1) throw new Error(`${record.colaborador.nome}: existem vários contratos ativos. Rever primeiro.`);
   return {...record.colaborador,niss:record.niss,...Object.fromEntries(['tipo_contrato','data_inicio','data_fim_prevista'].map(k=>[k,active[0]?.[k]??null]))};
 }
+export const contractTypeLabel = type => ({a_prazo:'Contrato de Trabalho a Termo Certo',tempo_indeterminado:'Contrato de Trabalho por Tempo Indeterminado'}[type] || 'Tipo por confirmar');
 export function prepareRhRows(rows, records) {
   const byId=new Map(records.map(r=>[r.colaborador.id,r])); const seen=new Set();
   return rows.map((row,index)=>{
@@ -82,10 +83,10 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
         <p>Nome, função e admissão são obrigatórios. Na edição individual, apagar um campo opcional limpa esse valor.</p>
         <fieldset class="work-template-fieldset"><legend>IDENTIFICAÇÃO E CONTACTOS</legend><div class="rh-field-grid">${general.filter(([k,,t])=>t!=='boolean'&&k!=='observacoes').map(([k,l,t])=>field(k,l,t,values[k],['nome','funcao','data_admissao'].includes(k))).join('')}</div></fieldset>
         <fieldset class="work-template-fieldset"><legend>CONTRATO ATIVO</legend>
-          <label>Tipo<select name="tipo_contrato"><option value="">Ainda não registado</option><option value="a_prazo" ${values.tipo_contrato==='a_prazo'?'selected':''}>A prazo</option><option value="tempo_indeterminado" ${values.tipo_contrato==='tempo_indeterminado'?'selected':''}>Tempo indeterminado</option></select></label>
+          <label>Tipo<select name="tipo_contrato"><option value="">Ainda não registado</option><option value="a_prazo" ${values.tipo_contrato==='a_prazo'?'selected':''}>Contrato de Trabalho a Termo Certo</option><option value="tempo_indeterminado" ${values.tipo_contrato==='tempo_indeterminado'?'selected':''}>Contrato de Trabalho por Tempo Indeterminado</option></select></label>
           <div class="form-row">${field('data_inicio','Início','date',values.data_inicio)}${field('data_fim_prevista','Fim previsto','date',values.data_fim_prevista)}</div>
           <small>Corrige os dados do contrato ativo; não regista uma renovação. Os contratos anteriores são preservados. Anexe o PDF em Documentos do colaborador.</small>
-          ${record?`<details><summary>Histórico: ${record.contratos.length} contrato(s)</summary>${record.contratos.map(c=>`<p>${esc(c.tipo_contrato||'Tipo por confirmar')} · ${esc(c.data_inicio)} — ${esc(c.data_fim_prevista||(c.tipo_contrato==='tempo_indeterminado'?'Sem termo':'Fim não informado'))} · ${esc(c.estado)}</p>`).join('')}</details>`:''}
+          ${record?`<details><summary>Histórico: ${record.contratos.length} contrato(s)</summary>${record.contratos.map(c=>`<p>${esc(contractTypeLabel(c.tipo_contrato))} · ${esc(c.data_inicio)} — ${esc(c.data_fim_prevista||(c.tipo_contrato==='tempo_indeterminado'?'Sem termo':'Fim não informado'))} · ${esc(c.estado)}</p>`).join('')}</details>`:''}
         </fieldset>
         <fieldset class="work-template-fieldset"><legend>CONFORMIDADE E NOTAS</legend><div class="rh-field-grid">${general.filter(([,,t])=>t==='boolean').map(([k,l,t])=>field(k,l,t,values[k])).join('')}</div>${field('observacoes','Observações','text',values.observacoes)}</fieldset>
         ${person?field('data_saida','Data de saída (inativa sem apagar histórico)','date',values.data_saida):`<fieldset class="work-template-fieldset"><legend>ALOCAÇÃO INICIAL</legend><div class="form-row"><label>Local<select name="alocacao_tipo"><option value="obra">Obra</option><option value="escritorio">Escritório</option></select></label><label data-rh-work>Obra<select name="obra_id" required><option value="">Selecionar</option>${works().filter(w=>['preparacao','em_curso'].includes(w.situacao)).map(w=>`<option value="${esc(w.id)}">${esc(w.numero)} · ${esc(w.nome)}</option>`).join('')}</select></label></div><div class="form-row">${field('epi_data','Entrega inicial de EPI','date','')}${field('medicina_data','Consulta inicial de medicina do trabalho','date','')}</div></fieldset>`}

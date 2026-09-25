@@ -74,7 +74,12 @@ export function normalizeManagementRows(category, rows, firstDataLine = 2) {
   return rows.map((row, index) => {
     const values = Object.fromEntries(Object.entries(row).map(([header, value]) => [key(header), value]));
     const common = { categoria: category, linha: index + firstDataLine, obra_numero: String(values.obra ?? values.obran ?? values.numeroobra ?? values.nobra ?? "").trim() };
-    if (category === "mao_obra") return { ...common, colaborador: managementEmployeeName(values.colaborador ?? values.nomefuncionario ?? values.funcionario ?? values.nome), data: date(values.data), horas: money(values.horas ?? values.quant ?? values.quantidade), valor_hora: money(values.valorhora ?? values.valorunit ?? values.valorunitario) };
+    if (category === "mao_obra") {
+      const month = String(values.mesreferencia ?? "").trim();
+      return { ...common, colaborador: managementEmployeeName(values.colaborador ?? values.nomefuncionario ?? values.funcionario ?? values.nome), data: date(values.data), horas: money(values.horas ?? values.quant ?? values.quantidade), valor_hora: money(values.valorhora ?? values.valorunit ?? values.valorunitario),
+        tipo_registo: norm(values.tiporegisto) || "diario",
+        mes_referencia: /^\d{4}-\d{2}$/.test(month) ? month + "-01" : date(values.mesreferencia) };
+    }
     if (category === "faturacao") return { ...common, numero_fatura: String(values.nfatura ?? values.numerofatura ?? "").trim(), data_emissao: date(values.dataemissao), valor: money(values.valor), data_recebimento: date(values.datarecebimento), valor_recebido: money(values.valorrecebido), estado: String(values.estado ?? "").trim() };
     const quantidade = money(values.quant ?? values.quantidade), valorUnitario = money(values.valorunit ?? values.valorunitario);
     return { ...common, numero_documento: String(values.ndocumento ?? values.numerodocumento ?? values.ndoc ?? values.n ?? "").trim(), data: date(values.data), fornecedor: String(values.fornecedor ?? "").trim(), colaborador: managementEmployeeName(values.colaborador ?? values.reembolso ?? ""), designacao: String(values.designacao ?? values.descricao ?? "").trim(), unidade: String(values.unmedida ?? values.unidade ?? "").trim(), quantidade, valor_unitario: valorUnitario, valor_total: money(values.valortotal) ?? (quantidade != null && valorUnitario != null ? quantidade * valorUnitario : null), data_pagamento: date(values.datapagamento ?? values.datadepagamento) };
@@ -106,7 +111,26 @@ export function validateManagementImportRows(rows) {
     if (entry.lines.length < 5) entry.lines.push(row.linha);
     blocked.set(work, entry);
   });
-  return [...blocked.entries()].map(([work, entry]) => `Obra ${work} não aceita importação por este caminho — usar Saldo de Abertura. ${entry.count} linha(s) afetada(s)${entry.lines.length ? `; primeiras: ${entry.lines.join(", ")}` : ""}.`);
+  const errors = [...blocked.entries()].map(([work, entry]) => `Obra ${work} não aceita importação por este caminho — usar Saldo de Abertura. ${entry.count} linha(s) afetada(s)${entry.lines.length ? `; primeiras: ${entry.lines.join(", ")}` : ""}.`);
+  const periods = new Map();
+  for (const row of rows.filter(item => item.categoria === "mao_obra")) {
+    const type = row.tipo_registo || "diario";
+    const month = String(row.data || "").slice(0, 7);
+    const prefix = `Linha ${row.linha} · ${row.colaborador} · Obra ${row.obra_numero}: `;
+    if (!["diario", "mensal"].includes(type)) errors.push(prefix + "Tipo de registo deve ser diario ou mensal.");
+    if (type === "diario" && Number(row.horas) > 24) errors.push(prefix + "Mais de 24 horas num registo diário. Se for um total mensal, indique-o explicitamente.");
+    if (type === "diario" && row.mes_referencia) errors.push(prefix + "Registo diário não deve ter mês de referência.");
+    if (type === "mensal" && (!row.data || row.mes_referencia !== month + "-01")) errors.push(prefix + "Mês de referência obrigatório, no primeiro dia do mês da data do lançamento.");
+    const groupKey = JSON.stringify([normalizedWorkNumber(row.obra_numero), norm(row.colaborador), month]);
+    if (!periods.has(groupKey)) periods.set(groupKey, []);
+    periods.get(groupKey).push(row);
+  }
+  for (const group of periods.values()) {
+    if (!group.some(row => row.tipo_registo === "mensal")) continue;
+    const different = new Set(group.map(row => JSON.stringify([row.tipo_registo || "diario", row.data, row.horas, row.valor_hora])));
+    if (different.size > 1) errors.push(`Linhas ${group.map(row => row.linha).join(", ")}: mais de um lançamento ou mistura de diário e mensal para ${group[0].colaborador} na mesma obra/mês. Rever para evitar dupla contagem.`);
+  }
+  return errors;
 }
 
 function managementImportFingerprint(row) {
@@ -202,8 +226,8 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   }
   function filters() { const form = root.querySelector("[data-management-map-filters]"); return form ? Object.fromEntries(new FormData(form)) : {}; }
   function filteredRows(category = "") { const value = filters(); return state.rows.filter(row => managementRowMatches(row, value, { mode: state.mode, category })); }
-  const rowHtml = row => `<tr><td class="management-date">${esc(formatManagementDate(row.data_lancamento))}</td><td class="management-work"><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td class="management-wrap management-entity">${esc(row.entidade_nome || "—")}</td><td class="management-wrap management-description">${esc(row.descricao || "—")}</td><td>${esc(row.unidade_medida || "—")}</td><td class="management-number">${row.quantidade == null ? "—" : esc(row.quantidade)}</td><td class="management-value">${row.valor_unitario == null ? "—" : euro.format(Number(row.valor_unitario))}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td><td class="management-date">${esc(formatManagementDate(row.data_pagamento))}</td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td class="management-document">${esc(row.documento || "—")}</td></tr>`;
-  const table = (rows, empty = "SEM LANÇAMENTOS NESTE FILTRO") => `<div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>UN. MEDIDA</th><th>QUANTIDADE</th><th>VALOR UNITÁRIO</th><th>VALOR TOTAL</th><th>DATA DE PAGAMENTO</th><th>CATEGORIA</th><th>DOCUMENTO</th></tr></thead><tbody>${rows.length ? rows.map(rowHtml).join("") : `<tr><td colspan="11" class="management-map-empty">${empty}</td></tr>`}</tbody></table></div>`;
+  const rowHtml = row => `<tr><td class="management-document">${esc(row.documento || "—")}</td><td class="management-date">${esc(formatManagementDate(row.data_lancamento))}</td><td class="management-work"><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td class="management-wrap management-entity">${esc(row.entidade_nome || "—")}</td><td class="management-wrap management-description">${esc(row.descricao || "—")}</td><td>${esc(row.unidade_medida || "—")}</td><td class="management-number">${row.quantidade == null ? "—" : esc(row.quantidade)}</td><td class="management-value">${row.valor_unitario == null ? "—" : euro.format(Number(row.valor_unitario))}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td><td class="management-date">${esc(formatManagementDate(row.data_pagamento))}</td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td></tr>`;
+  const table = (rows, empty = "SEM LANÇAMENTOS NESTE FILTRO") => `<div class="management-map-scroll"><table><thead><tr><th>N.º FATURA / DOCUMENTO</th><th>DATA</th><th>OBRA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>UN. MEDIDA</th><th>QUANTIDADE</th><th>VALOR UNITÁRIO</th><th>VALOR TOTAL</th><th>DATA DE PAGAMENTO</th><th>CATEGORIA</th></tr></thead><tbody>${rows.length ? rows.map(rowHtml).join("") : `<tr><td colspan="11" class="management-map-empty">${empty}</td></tr>`}</tbody></table></div>`;
   function renderResults() {
     const rows = filteredRows(), total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
     const summary = `<div class="management-map-summary"><span><small>LANÇAMENTOS VISÍVEIS</small><strong>${rows.length}</strong></span><span><small>VALOR VISÍVEL</small><strong>${euro.format(total)}</strong></span></div>`;

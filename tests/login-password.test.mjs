@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(process.env.LOGIN_TEST_DEPS || import.meta.url);
+const { JSDOM } = require('jsdom');
+const source = readFileSync(new URL('../src/login-password.js', import.meta.url), 'utf8');
+const { setupLoginPassword } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+
+test('olhinho preserva valor e submissão; começa oculto e repõe ocultação', () => {
+  const dom = new JSDOM('<form><label>PALAVRA-PASSE<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">ENTRAR</button></form>');
+  globalThis.document = dom.window.document;
+  const form = document.querySelector('form');
+  const input = form.querySelector('input');
+  const hide = setupLoginPassword(form);
+  const button = form.querySelector('.login-password-toggle');
+  input.value = 'exemplo-apenas-para-teste';
+  let submissions = 0;
+  form.addEventListener('submit', event => { event.preventDefault(); submissions++; });
+  assert.equal(input.type, 'password');
+  assert.equal(button.getAttribute('aria-pressed'), 'false');
+  assert.equal(button.type, 'button');
+  button.click();
+  assert.equal(submissions, 0);
+  assert.equal(input.type, 'text');
+  assert.equal(button.getAttribute('aria-label'), 'Ocultar palavra-passe');
+  assert.equal(new dom.window.FormData(form).get('password'), input.value);
+  assert.equal(input.autocomplete, 'current-password');
+  button.click();
+  assert.equal(input.type, 'password');
+  assert.equal(input.value, 'exemplo-apenas-para-teste');
+  button.click();
+  form.querySelector('button[type="submit"]').click();
+  assert.equal(submissions, 1);
+  assert.equal(input.type, 'password');
+  button.click();
+  hide();
+  assert.equal(input.type, 'password');
+  button.click();
+  form.reset();
+  assert.equal(input.type, 'password');
+  dom.window.close();
+  delete globalThis.document;
+});
+
+test('integração não confunde o olhinho com o botão de autenticação', () => {
+  const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  const handler = app.slice(app.indexOf('$("#login-form").addEventListener("submit"'), app.indexOf('$("#show-recovery").addEventListener'));
+  assert.ok(handler.includes('querySelector(\'button[type="submit"]\')'));
+  assert.ok(app.includes('setupLoginPassword($("#login-form"))'));
+});

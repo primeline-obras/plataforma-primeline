@@ -113,7 +113,7 @@ test("lê a estrutura real com título na primeira linha e cabeçalhos na segund
     assert.equal(result.rows.length, 4);
     const labor = result.rows.find(row => row.categoria === "mao_obra");
     const material = result.rows.find(row => row.categoria === "materiais");
-    assert.deepEqual(labor, { categoria: "mao_obra", linha: 3, obra_numero: "118", colaborador: "William Coimbra", data: "2026-09-01", horas: 8, valor_hora: 15.61 });
+    assert.deepEqual(labor, { categoria: "mao_obra", linha: 3, obra_numero: "118", colaborador: "William Coimbra", data: "2026-09-01", horas: 8, valor_hora: 15.61, tipo_registo: "diario", mes_referencia: null });
     assert.equal(material.numero_documento, "FT 01");
     assert.equal(material.valor_total, 7);
     assert.equal(material.data_pagamento, "2026-09-02");
