@@ -72,3 +72,9 @@ As consultas continuam a usar apenas colunas existentes. Como os snapshots não 
 Dashboard, reunião e RSP deixam de somar novamente TEEs aos totais efetivos legados. O mapa distingue TEEs informativos do resultado reconciliado, que permanece vazio. Valores efetivos iguais a zero são preservados; o helper mantém ausência como ausência. Resumo da obra e composição apresentam o aviso de histórico por reconciliar.
 
 Não existe fonte de reconciliação nos snapshots: não se infere esse estado nem se habilita reconciliação local. Contrato original, movimentos de escopo, ajustes financeiros e auditoria de reconciliação precisam de suporte persistente antes de ativar a composição oficial. Nenhum registo histórico foi criado ou alterado, incluindo Obra 120.
+
+## Bloco E — preview TEE e revisões
+
+`tee-index.js` compara números normalizados dentro da obra, produz NOVO/VAI ATUALIZAR/SEM ALTERAÇÃO/BLOQUEADO, preserva células vazias e calcula margem. Importador detalhado usa essa comparação, remove F01 por omissão, deteta duplicados e itens sem cabeçalho, mostra campos alterados e sinaliza aprovados por programar. O formato consolidado autónomo ainda precisa de UI/modelo próprio; o helper comum já está disponível.
+
+Persistência proposta: `fn_importar_tees_revisoes(p_version=1, p_obra_id, p_linhas, p_nome_ficheiro)`. Cada linha contém ID existente, snapshot esperado e mudanças esparsas; itens ausentes preservam os atuais. Exigir autorização por obra, concorrência, snapshot imutável da revisão anterior, histórico com utilizador/data, idempotência e transação única. Só resposta version=1/committed=true confirma sucesso. A RPC não consta dos snapshots e não foi instalada; não há fallback para a importação antiga. Estado operacional precisa de campo próprio, mantendo o mapeamento de aprovação cliente. Não reatribuir IDs de itens medidos nem criar tarefas com datas de envio/resposta.

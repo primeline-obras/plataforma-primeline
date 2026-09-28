@@ -33,6 +33,17 @@ test("Mapa Financeiro reconhece Obra + Jan-Dez e os três grupos fixos", () => {
   assert.equal(rows.length, 2); assert.equal(rows[0].payload.tipo, "obra"); assert.equal(rows[1].payload.categoria, "despesas_sede");
 });
 
+test("TEE existente preserva células vazias e novo TEE não recebe F01", () => {
+  const workbook = { Sheets: { "TEE_Cabeçalho": [teeHeaders, ["TEE 01", 120], ["TEE 02", 120, "", "Novo"]], "TEE_Itens": [teeItemHeaders] } };
+  const rows = __test.parseTees(workbook, { work: { id: "w1", numero: 120 }, phases: [{ id: "f1", codigo: "F01" }], tees: [{ id: "t1", obra_id: "w1", numero: "TEE 01", descricao: "Existente", fase_id: "f1", estado_aprovacao_cliente: "aprovado" }] });
+  assert.equal(rows[0].previewStatus, "SEM ALTERAÇÃO");
+  assert.equal(rows[0].selected, false);
+  assert.equal(rows[0].payload.fase_id, undefined);
+  assert.equal(rows[1].previewStatus, "NOVO");
+  assert.equal(rows[1].payload.fase_id, null);
+  assert.equal(rows[1].payload.itens, undefined);
+});
+
 test("Os três ecrãs expõem o botão e a confirmação explícita", () => {
   const sources = ["src/procurement.js", "src/app.js", "src/financial-map.js", "src/xlsx-operational-import.js"].map(path => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8")).join("\n");
   assert.match(sources, /data-import-subcontracts/); assert.match(sources, /data-import-tees/); assert.match(sources, /data-import-financial-map/); assert.match(sources, /CONFIRMAR IMPORTAÇÃO/);

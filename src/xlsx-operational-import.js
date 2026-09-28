@@ -1,3 +1,4 @@
+import { previewTeeIndex } from "./tee-index.js?v=1";
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -8,7 +9,9 @@ const number = value => {
   const text = String(value ?? "").trim().replace(/\s/g, "");
   if (!text) return null;
   const normalized = text.includes(",") ? text.replace(/\./g, "").replace(",", ".") : text;
-  const parsed = Number(normalized.replace(/[^0-9+-.]/g, ""));
+  const numeric = normalized.replaceAll("€", "");
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(numeric)) return null;
+  const parsed = Number(numeric);
   return Number.isFinite(parsed) ? parsed : null;
 };
 
@@ -95,39 +98,52 @@ function parseTees(workbook, context) {
   const headers = exactSheet(workbook, "TEE_Cabeçalho", TEE_HEADERS);
   const itemRows = exactSheet(workbook, "TEE_Itens", TEE_ITEM_HEADERS);
   const phases = new Map(context.phases.map(item => [normalize(item.codigo), item]));
-  const f01 = phases.get("f01") || context.phases.find(item => normalize(item.descricao).includes("estaleiro"));
-  const validApproval = new Set(["pendente", "aprovado", "recusado", ""]);
+
+  const validApproval = new Set(["em_elaboracao", "aguarda_resposta", "rejeitado", "pendente", "aprovado", "recusado", ""]);
   const itemsByTee = new Map();
   itemRows.forEach((row, index) => {
     const teeNumber = String(row[0] ?? "").trim();
     if (!itemsByTee.has(normalize(teeNumber))) itemsByTee.set(normalize(teeNumber), []);
     itemsByTee.get(normalize(teeNumber)).push({ linha: index + 2, numero_artigo: String(row[1] ?? "").trim(), descricao: String(row[2] ?? "").trim(), unidade: String(row[3] ?? "").trim() || null, quantidade: number(row[4]), preco_unitario: number(row[5]), valor_total: number(row[6]) });
   });
+  const headerNumbers = new Set(headers.map(row => normalize(row[0])));
+  if ([...itemsByTee.keys()].some(key => !headerNumbers.has(key))) throw new Error("Há itens sem cabeçalho TEE correspondente. Reveja o ficheiro completo.");
   const existing = new Set(context.tees.map(item => normalize(item.numero)));
-  return headers.map((row, index) => {
+  const parsed = headers.map((row, index) => {
     const errors = []; const warnings = [];
     const teeNumber = String(row[0] ?? "").trim(); const workNumber = String(row[1] ?? "").trim();
-    const phase = row[2] ? phases.get(normalize(row[2])) : f01;
+    const phase = row[2] ? phases.get(normalize(row[2])) : null;
     const client = normalize(row[10]).replaceAll(" ", "_");
     const items = itemsByTee.get(normalize(teeNumber)) || [];
+    for (const column of [5, 6, 7]) if (String(row[column] ?? "").trim() && number(row[column]) === null) errors.push(`Valor numérico inválido na coluna ${column + 1}.`);
     if (!teeNumber) errors.push("Nº TEE obrigatório.");
-    if (!String(row[3] ?? "").trim()) errors.push("Descrição obrigatória.");
+
     if (!workNumber || Number(workNumber) !== Number(context.work.numero)) errors.push(`A obra tem de ser ${context.work.numero}.`);
-    if (!phase) errors.push(row[2] ? `Fase “${row[2]}” não encontrada.` : "A fase F01 não existe nesta obra.");
+    if (row[2] && !phase) errors.push(`Fase “${row[2]}” não encontrada.`);
     if (!validApproval.has(client)) errors.push(`Estado do cliente inválido: ${row[10]}.`);
     const start = excelDate(row[12]); const end = excelDate(row[13]);
     if (row[12] && !start) errors.push("Data de início inválida.");
     if (row[13] && !end) errors.push("Data de fim inválida.");
-    if ((start && !end) || (!start && end)) errors.push("Datas de execução incompletas.");
+
     if (start && end && end < start) errors.push("A data de fim é anterior à data de início.");
     items.forEach(item => { if (!item.numero_artigo || !item.descricao) errors.push(`Item da linha ${item.linha} sem Nº Artigo ou Descrição.`); });
     if (!items.length) warnings.push("TEE sem itens associados; será importado apenas o cabeçalho.");
     const duplicate = existing.has(normalize(teeNumber));
-    if (duplicate) warnings.push("Nº TEE já existente; por omissão será ignorado.");
+
     return { row: index + 2, label: teeNumber || `Linha ${index + 2}`, errors, warnings, duplicate, selected: !duplicate && !errors.length,
       payload: { obra_id: context.work.id, fase_id: phase?.id || null, numero: teeNumber, descricao: String(row[3] ?? "").trim() || null, especialidade: String(row[4] ?? "").trim() || null,
-        valor: number(row[5]), preco_custo: number(row[6]), dias_prorrogacao: number(row[7]) || 0, data_envio: excelDate(row[8]), data_resposta: excelDate(row[9]), estado_aprovacao_cliente: client || "pendente", revisao: String(row[11] ?? "").trim() || "REV00", data_inicio_execucao: start, data_fim_execucao: end, itens: items },
+        valor: number(row[5]), preco_custo: number(row[6]), dias_prorrogacao: number(row[7]), data_envio: excelDate(row[8]), data_resposta: excelDate(row[9]), estado_operacional: ["em_elaboracao", "aguarda_resposta", "aprovado", "rejeitado"].includes(client) ? client : null, estado_aprovacao_cliente: client || null, revisao: String(row[11] ?? "").trim() || null, data_inicio_execucao: start, data_fim_execucao: end, itens: items },
     };
+  });
+  const previews = previewTeeIndex(parsed.map(row => row.payload), context.tees, context.work.id);
+  return parsed.map((row, index) => {
+    const preview = previews[index];
+    row.errors.push(...preview.errors); row.warnings.push(...preview.warnings);
+    if (preview.previous && Object.keys(preview.changes).length) row.warnings.push(`Nova revisão do TEE existente; campos alterados: ${Object.keys(preview.changes).join(", ")}. O histórico anterior deve ser preservado.`);
+    row.previewStatus = row.errors.length ? "BLOQUEADO" : preview.status;
+    row.selected = !row.errors.length && ["NOVO", "VAI ATUALIZAR"].includes(row.previewStatus);
+    row.payload = { ...preview.changes, id: preview.previous?.id, expected: preview.previous || null, estado_operacional: preview.state?.operational };
+    return row;
   });
 }
 
@@ -211,6 +227,7 @@ function parsePhaseBudget(workbook, context) {
 }
 
 function status(row) {
+  if (row.previewStatus) return [row.errors.length ? "error" : "ready", row.previewStatus];
   if (row.errors.length) return ["error", "COM ERRO"];
   if (row.duplicate) return ["warning", "POSSÍVEL DUPLICADO"];
   if (row.warnings.length) return ["warning", "COM AVISO"];
@@ -260,17 +277,21 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
     dialog.querySelector("[data-xlsx-content]").innerHTML = `${!state.file ? `<div class="xlsx-import-drop"><input type="file" accept=".xlsx" data-xlsx-file><strong>SELECIONAR FICHEIRO .XLSX</strong><span>Nada será gravado antes da pré-visualização e confirmação.</span>${error ? `<p>${esc(error)}</p>` : ""}</div>` : `<div class="xlsx-import-summary"><div><span>FICHEIRO</span><strong>${esc(state.file.name)}</strong></div><div class="ready"><span>PRONTAS</span><strong>${ready}</strong></div><div class="warning"><span>COM AVISO/ERRO</span><strong>${problems}</strong></div><button type="button" data-xlsx-reset>SUBSTITUIR FICHEIRO</button></div><div class="xlsx-import-table-wrap"><table class="xlsx-import-table"><thead><tr><th>IMPORTAR</th><th>LINHA</th><th>REGISTO</th><th>ESTADO</th><th>OBSERVAÇÕES</th></tr></thead><tbody>${state.rows.map((row, index) => { const [kind, label] = status(row); return `<tr class="${kind}"><td><input type="checkbox" data-xlsx-select="${index}" ${row.selected ? "checked" : ""} ${row.errors.length ? "disabled" : ""}></td><td>${row.row}</td><td><strong>${esc(row.label)}</strong></td><td><span>${label}</span></td><td>${[...row.errors, ...row.warnings].map(message => `<p>${esc(message)}</p>`).join("") || "Sem problemas"}</td></tr>`; }).join("")}</tbody></table></div><footer><p><strong>${ready} linhas prontas</strong> · ${state.rows.length - ready} não selecionadas ou bloqueadas</p><button class="primary-button" type="button" data-xlsx-confirm ${!ready || state.busy ? "disabled" : ""}>${state.busy ? "A IMPORTAR…" : "CONFIRMAR IMPORTAÇÃO"} <span>→</span></button></footer>`}`;
   }
   async function confirmImport() {
-    const rows = state.rows.filter(row => row.selected && !row.errors.length).map(row => row.payload);
+    const rows = state.rows.filter(row => row.selected && !row.errors.length && row.previewStatus !== "SEM ALTERAÇÃO").map(row => row.payload);
     if (!rows.length || state.busy) return;
     state.busy = true; render();
     try {
-      const paths = { subempreitadas: "rpc/fn_importar_subempreitadas_xlsx", tees: "rpc/fn_importar_tees_xlsx", mapa_financeiro: "rpc/fn_importar_mapa_financeiro_xlsx", orcamento_fases: "rpc/fn_importar_orcamento_fases" };
-      const body = state.module === "mapa_financeiro"
+      const paths = { subempreitadas: "rpc/fn_importar_subempreitadas_xlsx", tees: "rpc/fn_importar_tees_revisoes", mapa_financeiro: "rpc/fn_importar_mapa_financeiro_xlsx", orcamento_fases: "rpc/fn_importar_orcamento_fases" };
+      const body = state.module === "tees"
+        ? { p_version: 1, p_obra_id: state.context.work.id, p_linhas: rows, p_nome_ficheiro: state.file.name }
+        : state.module === "mapa_financeiro"
         ? { p_ano: state.context.year, p_linhas: rows, p_nome_ficheiro: state.file.name }
         : state.module === "orcamento_fases"
           ? { p_obra_id: state.context.work.id, p_linhas: rows, p_nome_ficheiro: state.file.name }
           : { p_linhas: rows, p_nome_ficheiro: state.file.name };
+      if (state.module === "tees" && !isConfigured) throw new Error("A importação de revisões exige ligação ao serviço transacional.");
       const result = isConfigured ? await api(paths[state.module], { method: "POST", body: JSON.stringify(body) }) : { importadas: rows.length };
+      if (state.module === "tees" && (result?.version !== 1 || result?.committed !== true)) throw new Error("A revisão TEE não foi confirmada pelo serviço transacional.");
       toast(`${result?.importadas ?? rows.length} linha(s) importada(s) com auditoria registada.`); const callback = state.context.onComplete; close(); await callback?.();
     } catch (error) { toast(error.message, "error"); }
     finally { state.busy = false; render(); }
