@@ -1,0 +1,20 @@
+-- Base mínima isolada para testar a migração real (não usar em produção).
+CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE anon NOLOGIN;
+CREATE SCHEMA auth;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('test.uid',true),'')::uuid $$;
+CREATE TABLE public.empresas(id uuid PRIMARY KEY);
+CREATE TABLE public.utilizadores(id uuid PRIMARY KEY,empresa_id uuid,nome text,funcao text,ativo boolean,auth_user_id uuid);
+CREATE TABLE public.colaboradores(id uuid PRIMARY KEY,empresa_id uuid,nome text,funcao text,data_admissao date,data_saida date,permite_multiplas_obras boolean DEFAULT false);
+CREATE TABLE public.obras(id uuid PRIMARY KEY,empresa_id uuid,numero text,nome text,situacao text);
+CREATE TABLE public.obra_responsaveis(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),obra_id uuid,utilizador_id uuid,papel text);
+CREATE TABLE public.ausencias(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),colaborador_id uuid,data date,tipo text,estado text);
+CREATE FUNCTION public.fn_utilizador_atual_id() RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$ SELECT id FROM public.utilizadores WHERE auth_user_id=auth.uid() $$;
+CREATE TABLE public.quadro_pessoal_alocacao(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),colaborador_id uuid NOT NULL REFERENCES public.colaboradores(id),obra_id uuid REFERENCES public.obras(id),data date NOT NULL,semana_inicio date NOT NULL,periodo text NOT NULL CHECK(periodo IN ('dia_inteiro','manha','tarde')),tipo_alocacao text,descricao_livre text,criado_por uuid);
+ALTER TABLE public.quadro_pessoal_alocacao ENABLE ROW LEVEL SECURITY;
+CREATE POLICY leitura ON public.quadro_pessoal_alocacao FOR SELECT TO authenticated USING(true);
+CREATE POLICY escrita_antiga ON public.quadro_pessoal_alocacao FOR INSERT TO authenticated WITH CHECK(true);
+CREATE TABLE public.quadro_pessoal_movimentos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),empresa_id uuid NOT NULL REFERENCES public.empresas(id),alocacao_id uuid,colaborador_id uuid NOT NULL REFERENCES public.colaboradores(id) ON DELETE RESTRICT,data date NOT NULL,periodo text,acao text NOT NULL CHECK(acao IN ('adicionada','alterada','retirada')),obra_origem_id uuid REFERENCES public.obras(id) ON DELETE SET NULL,obra_destino_id uuid REFERENCES public.obras(id) ON DELETE SET NULL,tipo_origem text,tipo_destino text,descricao_origem text,descricao_destino text,alterado_por uuid,alterado_em timestamptz NOT NULL DEFAULT now());
+GRANT USAGE ON SCHEMA public,auth TO authenticated,anon;
+GRANT SELECT ON public.utilizadores,public.colaboradores,public.obras,public.obra_responsaveis TO authenticated;
+GRANT SELECT,INSERT,UPDATE,DELETE ON public.quadro_pessoal_alocacao TO authenticated;

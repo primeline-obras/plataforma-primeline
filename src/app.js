@@ -1,3 +1,4 @@
+import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
@@ -109,6 +110,7 @@ let selectedVehicleEditId = "";
 let showInactiveCollaborators = false;
 const localEntityDocumentFiles = new Map();
 let workforceEditing = false;
+let workforceAction = "adicionar";
 let selectedWorkforcePersonId = "";
 let selectedWorkforceSourceDate = "";
 let selectedWorkforceSourcePeriod = "";
@@ -378,7 +380,7 @@ document.querySelector("#root").innerHTML = `
       <div class="page workforce-view" id="workforce-view" hidden>
         <div class="page-heading">
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
-          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><div class="workforce-heading-buttons"><button class="outline-action" id="workforce-movements" type="button">VER MOVIMENTAÇÕES DO MÊS</button><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div></div>
+          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><div class="workforce-heading-buttons"><button class="outline-action" id="workforce-movements" type="button">HISTÓRICO DE MOVIMENTAÇÕES</button><button class="outline-action" id="workforce-my-work" type="button" hidden>ADICIONAR À MINHA OBRA</button><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div></div>
         </div>
         <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="add-workforce-line" type="button">＋ NOVA LINHA</button><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
         <form class="workforce-new-line" id="workforce-new-line" hidden>
@@ -854,14 +856,15 @@ function canManageOvertime() {
 }
 
 function canManageWorkforce() {
-  return canManageTeam() || ["diretor_obra", "encarregado"].includes(effectiveRole());
+  return canManageGeneralWorkforce(accessContext.profile?.funcao || accessContext.role);
 }
 
-function canManageWorkforceWork(workId) {
-  if (!workId) return false;
-  if (canManageTeam()) return true;
-  return ["diretor_obra", "encarregado"].includes(effectiveRole())
-    && works.some(work => work.id === workId);
+function canManageWorkforceWork() {
+  return canManageWorkforce();
+}
+
+function canConsultWorkforce() {
+  return canManageTeam() || ["diretor_obra", "encarregado"].includes(effectiveRole());
 }
 
 function canOpenTeamTab(tab) {
@@ -973,7 +976,8 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   $("#edit-workforce").hidden = !canManageWorkforce();
-  $("#workforce-movements").hidden = !canManageWorkforce();
+  $("#workforce-movements").hidden = !canReadWorkforceHistory(accessContext.profile?.funcao || accessContext.role);
+  $("#workforce-my-work").hidden = effectiveRole() !== "encarregado";
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
@@ -1649,9 +1653,7 @@ function fixedWorkTeam(work) {
   return fixed;
 }
 
-function isWorkforceForeman(person) {
-  return person?.permite_multiplas_obras === true || workforceRoleClass(person) === "foreman";
-}
+
 
 function workforceAllocationType(allocation) {
   return ["escritorio", "garantia", "pontual"].includes(allocation?.tipo_alocacao) ? allocation.tipo_alocacao : "obra";
@@ -2148,7 +2150,7 @@ function renderTeam() {
       </article>`;
     }).join("");
     $("#team-board").innerHTML = `${boardHead}${rows || `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa.</span></div>`}`;
-    $("#workforce-roster").innerHTML = `<div class="roster-intro"><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div class="roster-magnets">${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div><label class="roster-period">PERÍODO<select data-workforce-period><option value="dia_inteiro" ${selectedWorkforcePeriod === "dia_inteiro" ? "selected" : ""}>Dia inteiro</option><option value="manha" ${selectedWorkforcePeriod === "manha" ? "selected" : ""}>Manhã</option><option value="tarde" ${selectedWorkforcePeriod === "tarde" ? "selected" : ""}>Tarde</option></select></label>${selectedWorkforceSourceDate ? '<button class="roster-remove" type="button" data-remove-workforce>RETIRAR ALOCAÇÃO</button>' : ""}`;
+    $("#workforce-roster").innerHTML = `<div class="roster-intro"><strong>ÍMANES DISPONÍVEIS</strong><span>Selecione uma pessoa e depois o dia/obra.</span></div><div class="roster-magnets">${operationalPeople.map(person => renderWorkforceMagnet(person)).join("")}</div><label class="roster-period">AÇÃO<select data-workforce-action><option value="adicionar" ${workforceAction === "adicionar" ? "selected" : ""}>Adicionar (preserva outras obras)</option><option value="mover" ${workforceAction === "mover" ? "selected" : ""}>Mover alocação selecionada</option></select></label><label class="roster-period">PERÍODO<select data-workforce-period><option value="dia_inteiro" ${selectedWorkforcePeriod === "dia_inteiro" ? "selected" : ""}>Dia inteiro</option><option value="manha" ${selectedWorkforcePeriod === "manha" ? "selected" : ""}>Manhã</option><option value="tarde" ${selectedWorkforcePeriod === "tarde" ? "selected" : ""}>Tarde</option></select></label>${selectedWorkforceSourceDate ? '<button class="roster-remove" type="button" data-remove-workforce>RETIRAR ALOCAÇÃO</button>' : ""}`;
   }
 
   const absenceTypeLabels = {
@@ -2297,7 +2299,7 @@ function renderTeam() {
 
 function setWorkforceEditing(enabled) {
   if (enabled && !canManageWorkforce()) {
-    toast("A edição do quadro está reservada à equipa técnica, ao Administrativo e à Gerência.", "error");
+    toast("A edição do quadro está reservada à Gestão da Plataforma e ao ADM.", "error");
     return;
   }
   workforceEditing = enabled;
@@ -2345,6 +2347,7 @@ function addWorkforceLine(type, workId, description) {
 }
 
 async function renameWorkforceLine(type, oldDescription, newDescription) {
+  if (!canManageWorkforce()) return;
   const oldName = String(oldDescription || "").trim();
   const newName = String(newDescription || "").trim();
   if (!newName) {
@@ -2374,19 +2377,20 @@ async function renameWorkforceLine(type, oldDescription, newDescription) {
     return;
   }
 
-  const response = await supabase(`quadro_pessoal_alocacao?tipo_alocacao=eq.${encodeURIComponent(type)}&descricao_livre=eq.${encodeURIComponent(oldName)}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ descricao_livre: newName }),
-  });
-  if (!response.ok) {
-    toast(`Não foi possível alterar o nome da linha: ${await response.text()}`, "error");
-    pendingWorkforceRows = pendingWorkforceRows.map(row =>
-      row.type === type && row.description === newName ? { ...row, description: oldName } : row);
-    renderTeam();
-    return;
+  const ids = teamData.allocations.filter(item => workforceAllocationType(item) === type && String(item.descricao_livre || "").trim() === oldName);
+  if (!await platformConfirm(`Corrigir a descrição de ${ids.length} alocação(ões) carregadas? O histórico anterior não será renomeado.`, { title: "Corrigir descrição", confirmLabel: "CORRIGIR" })) {
+    pendingWorkforceRows = pendingWorkforceRows.map(row => row.type === type && row.description === newName ? { ...row, description: oldName } : row);
+    renderTeam(); return;
   }
-  await loadTeamData(true);
+  try {
+    for (const row of ids) {
+      const payload = { id: row.id, data: row.data, periodo: row.periodo, obra_id: row.obra_id, tipo_alocacao: type, descricao_livre: newName };
+      const preview = await workforceRequest(supabase, "corrigir", payload);
+      await workforceRequest(supabase, "corrigir", payload, true, preview.versao);
+    }
+  } catch (error) { toast(error.message, "error"); await loadTeamData(true, true); return; }
+
+  await loadTeamData(true, true);
   toast("Nome da linha atualizado.");
 }
 
@@ -2397,7 +2401,7 @@ async function saveWorkforceAllocation(personId, date, target) {
   const workId = type === "obra" ? target?.workId || null : null;
   const description = type === "obra" ? null : type === "escritorio" ? "Escritório" : String(target?.description || "").trim();
   if (!canManageWorkforceWork(workId)) {
-    toast(type === "obra" ? "Só pode alterar o quadro das obras pelas quais é responsável." : "As linhas de Escritório, garantia e trabalhos pontuais são geridas pelo Administrativo ou pela Gerência.", "error");
+    toast("O Quadro Geral só pode ser alterado pela Gestão da Plataforma ou pelo ADM.", "error");
     return;
   }
   const targetKey = workforceRowKey({ obra_id: workId, tipo_alocacao: type, descricao_livre: description });
@@ -2418,84 +2422,85 @@ async function saveWorkforceAllocation(personId, date, target) {
     toast("O colaborador já se encontra nessa posição.");
     return;
   }
-  const allowsMultipleWorks = isWorkforceForeman(person);
-  if (!allowsMultipleWorks && period !== "dia_inteiro" && dayAllocations.some(item => item.periodo === "dia_inteiro")) {
-    toast("Retire primeiro a alocação de dia inteiro antes de dividir o dia.", "error");
+  const moving = workforceAction === "mover";
+  if (moving && selectedWorkforceSourceIds.length !== 1) {
+    toast("Para mover, selecione uma única alocação existente.", "error");
     return;
   }
-  const currentUser = teamData.users.find(user => user.auth_user_id === session?.user?.id);
-  $("#workforce-edit-message").textContent = `A guardar ${shortPersonName(person.nome)}…`;
-  let response = null;
-  let removedDay = false;
-  if (!allowsMultipleWorks && period === "dia_inteiro" && dayAllocations.length) {
-    response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}`, { method: "DELETE" });
-    if (!response.ok) {
-      toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
-      return;
-    }
-    removedDay = true;
-  } else if (!allowsMultipleWorks && conflicting.length) {
-    response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}&periodo=eq.${period}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ obra_id: workId, tipo_alocacao: type, descricao_livre: description, criado_por: currentUser?.id || null }),
-    });
-    if (response.ok) {
-      const updatedRows = await returnedAllocationRows(response);
-      replaceLocalAllocations(item => item.colaborador_id === personId && item.data === date && item.periodo === period, updatedRows);
-      selectedWorkforceSourceDate = "";
-      selectedWorkforceSourcePeriod = "";
-      selectedWorkforceSourceRowKey = "";
-      selectedWorkforceSourceIds = [];
-      renderTeamPreservingScroll();
-      $("#remove-workforce-allocation").hidden = true;
-      $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
-      toast("Alocação adicionada. O íman continua selecionado.");
-      return;
-    }
-  }
-  if (!response || response.ok) {
-    response = await supabase("quadro_pessoal_alocacao", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, tipo_alocacao: type, descricao_livre: description, semana_inicio: mondayIso(date), data: date, periodo: period, criado_por: currentUser?.id || null }),
-    });
-  }
-  if (!response.ok) {
-    toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
-    $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões e tente novamente.";
-    return;
-  }
-  const insertedRows = await returnedAllocationRows(response);
-  replaceLocalAllocations(item => removedDay && item.colaborador_id === personId && item.data === date, insertedRows);
-  selectedWorkforceSourceDate = "";
-  selectedWorkforceSourcePeriod = "";
-  selectedWorkforceSourceRowKey = "";
-  selectedWorkforceSourceIds = [];
-  renderTeamPreservingScroll();
-  $("#remove-workforce-allocation").hidden = true;
-  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
-  toast("Alocação adicionada. O íman continua selecionado.");
-}
-
-async function removeWorkforceAllocation() {
-  if (!selectedWorkforcePersonId || !selectedWorkforceSourceDate || !selectedWorkforceSourcePeriod) return;
-  const sourceIds = selectedWorkforceSourceIds.filter(Boolean);
-  const query = sourceIds.length
-    ? `quadro_pessoal_alocacao?id=in.(${sourceIds.map(encodeURIComponent).join(",")})`
-    : `quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(selectedWorkforcePersonId)}&data=eq.${selectedWorkforceSourceDate}&periodo=eq.${selectedWorkforceSourcePeriod}`;
-  const response = await supabase(query, { method: "DELETE" });
-  if (!response.ok) {
-    toast(`Não foi possível retirar a alocação: ${await response.text()}`, "error");
-  } else {
+  const payload = { colaborador_id: personId, data: date, periodo: period, obra_id: workId,
+    tipo_alocacao: type, descricao_livre: description };
+  if (moving) payload.id = selectedWorkforceSourceIds[0];
+  try {
+    const action = moving ? "mover" : "adicionar";
+    const preview = await workforceRequest(supabase, action, payload);
+    if (!await platformConfirm(`${action === "mover" ? "Mover a alocação selecionada" : "Adicionar sem remover outras alocações"}?\n${person.nome} · ${date} · ${period}`, { title: "Confirmar alocação", confirmLabel: "CONFIRMAR" })) return;
+    await workforceRequest(supabase, action, payload, true, preview.versao);
+    selectedWorkforceSourceIds = [];
     selectedWorkforceSourceDate = "";
     selectedWorkforceSourcePeriod = "";
     selectedWorkforceSourceRowKey = "";
-    selectedWorkforceSourceIds = [];
-    $("#remove-workforce-allocation").hidden = true;
-    await loadTeamData(true);
-    toast("Alocação retirada.");
+    await loadTeamData(true, true);
+    toast("Alocação guardada com histórico.");
+  } catch (error) { toast(error.message, "error"); }
+}
+
+async function removeWorkforceAllocation() {
+  if (!canManageWorkforce() || selectedWorkforceSourceIds.length !== 1) {
+    toast("Selecione uma única alocação identificada para remover.", "error"); return;
   }
+  try {
+    const payload = { id: selectedWorkforceSourceIds[0] };
+    const preview = await workforceRequest(supabase, "remover", payload);
+    if (!await platformConfirm(`Remover apenas esta alocação de ${preview.colaborador} em ${preview.data}?`, { title: "Remover alocação", confirmLabel: "REMOVER" })) return;
+    await workforceRequest(supabase, "remover", payload, true, preview.versao);
+    selectedWorkforceSourceIds = [];
+    selectedWorkforceSourceDate = "";
+    await loadTeamData(true, true);
+    toast("Alocação removida; histórico preservado.");
+  } catch (error) { toast(error.message, "error"); }
+}
+
+async function openWorkforceMyWork() {
+  if (effectiveRole() !== "encarregado") return;
+  try {
+    const response = await supabase("rpc/fn_quadro_obras_destino", { method: "POST", body: "{}" });
+    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível consultar as obras autorizadas."));
+    const destinations = await response.json();
+    if (!destinations.length) throw new Error("Não tem uma obra associada como Encarregado. Contacte o ADM.");
+    $("#workflow-dialog-title").textContent = "ADICIONAR À MINHA OBRA";
+    $("#workflow-dialog-content").innerHTML = `<form id="workforce-my-form" class="workforce-action-form">
+      <label>Obra autorizada<select name="obra_id" required>${destinations.map(w => `<option value="${safeText(w.id)}">${safeText(w.numero)} · ${safeText(w.nome)}</option>`).join("")}</select></label>
+      <label>Colaborador<select name="colaborador_id" required>${collaborators.filter(c => !c.data_saida).map(c => `<option value="${safeText(c.id)}">${safeText(c.nome)}</option>`).join("")}</select></label>
+      <label>Data<input name="data" type="date" value="${selectedTeamWeek}" required></label>
+      <label>Período<select name="periodo"><option value="dia_inteiro">Dia inteiro</option><option value="manha">Manhã</option><option value="tarde">Tarde</option></select></label>
+      <p>Uma data e período de cada vez. Várias origens ou sobreposições parciais requerem ADM/Gestão.</p>
+      <p class="form-error" role="alert"></p><div data-move-preview role="status"></div>
+      <div class="dialog-actions"><button type="button" class="outline-action" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">PRÉ-VISUALIZAR</button></div></form>`;
+    $("#workflow-dialog").hidden = false;
+    const form = $("#workforce-my-form");
+    let preview = null;
+    form.addEventListener("change", () => { preview = null; form.querySelector("[data-move-preview]").textContent = ""; form.querySelector('[type="submit"]').textContent = "PRÉ-VISUALIZAR"; });
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = form.querySelector('[type="submit"]'); button.disabled = true;
+      const errorBox = form.querySelector(".form-error"); errorBox.textContent = "";
+      const payload = Object.fromEntries(new FormData(form));
+      try {
+        if (!preview) {
+          preview = await workforceRequest(supabase, "minha_obra", payload);
+          const origin = works.find(w => w.id === preview.obra_origem_id);
+          form.querySelector("[data-move-preview]").textContent = `${preview.colaborador} · ${preview.data} · ${preview.periodo}: ${preview.acao === "mover" ? `mover da obra ${origin?.numero || preview.obra_origem_id || "sem número"}` : "criar nova alocação"} para ${destinations.find(w => w.id === payload.obra_id)?.nome}. Outras datas são preservadas.`;
+          button.textContent = "CONFIRMAR MOVIMENTAÇÃO";
+        } else {
+          await workforceRequest(supabase, "minha_obra", payload, true, preview.versao);
+          $("#workflow-dialog").hidden = true;
+          await loadTeamData(true, true); toast("Movimentação concluída e registada no histórico.");
+        }
+      } catch (error) {
+        preview = null; errorBox.textContent = error.message; button.textContent = "PRÉ-VISUALIZAR";
+      } finally { button.disabled = false; }
+    });
+  } catch (error) { toast(error.message, "error"); }
 }
 
 function openVacationDaysDialog(personId, week) {
@@ -2561,7 +2566,7 @@ async function saveVacationDays(event) {
   }
 }
 
-async function loadTeamData(force = false) {
+async function loadTeamData(force = false, preserveScroll = false) {
   if (!force && teamData.loadedWeek === selectedTeamWeek) return renderTeam();
   teamData = { allocations: [], absences: [], vacations: [], holidays: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
@@ -2570,7 +2575,7 @@ async function loadTeamData(force = false) {
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
-    canManageWorkforce() ? supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`) : Promise.resolve(new Response("[]", { status: 200 })),
+    canConsultWorkforce() ? supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`) : Promise.resolve(new Response("[]", { status: 200 })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     canManageAbsences() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
@@ -2595,7 +2600,8 @@ async function loadTeamData(force = false) {
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
   const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
-  renderTeam();
+  if (preserveScroll) renderTeamPreservingScroll();
+  else renderTeam();
 }
 
 function workforceMovementPlace(rows) {
@@ -2613,15 +2619,19 @@ async function openWorkforceMovements() {
   const anchor = new Date(`${selectedTeamWeek}T12:00:00`);
   const monthStart = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}-01`;
   const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12).toISOString().slice(0, 10);
-  $("#workflow-dialog-title").textContent = "MOVIMENTAÇÕES DO MÊS";
+  if (!canReadWorkforceHistory(accessContext.profile?.funcao || accessContext.role)) return;
+  $("#workflow-dialog-title").textContent = "HISTÓRICO DE MOVIMENTAÇÕES";
   $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><div class="empty-state">A CARREGAR MOVIMENTAÇÕES…</div></div>`;
   $("#workflow-dialog").hidden = false;
   try {
     let rows = [];
     if (isSupabaseConfigured) {
-      const response = await supabase(`quadro_pessoal_movimentos?select=id,colaborador_id,data,periodo,acao,obra_origem_id,obra_destino_id,tipo_origem,tipo_destino,descricao_origem,descricao_destino,alterado_por,alterado_em&data=gte.${monthStart}&data=lte.${monthEnd}&order=alterado_em.desc`);
-      if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar as movimentações."));
-      rows = await response.json();
+      for (let offset = 0; ; offset += 500) {
+        const response = await supabase(`quadro_pessoal_movimentos?select=*&data=gte.${monthStart}&data=lte.${monthEnd}&order=alterado_em.desc,id.desc&limit=500&offset=${offset}`);
+        if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar as movimentações."));
+        const page = await response.json(); rows.push(...page);
+        if (page.length < 500) break;
+      }
     }
     const place = (row, side) => {
       const workId = row[`obra_${side}_id`];
@@ -2635,16 +2645,20 @@ async function openWorkforceMovements() {
       return `${type === "garantia" ? "Garantia" : "Pontual"} · ${row[`descricao_${side}`] || "Sem designação"}`;
     };
     const movements = rows.map(row => ({
-      person: collaborators.find(item => item.id === row.colaborador_id),
+      person: { nome: row.nome_colaborador || collaborators.find(item => item.id === row.colaborador_id)?.nome },
       date: row.data,
       from: place(row, "origem"),
       to: place(row, "destino"),
-      user: teamData.users.find(item => item.id === row.alterado_por),
+      user: { nome: row.nome_autor || teamData.users.find(item => item.id === row.alterado_por)?.nome },
+      periodo: row.periodo,
+      perfil: row.perfil_autor,
+      origemId: row.alocacao_origem_id,
+      destinoId: row.alocacao_destino_id,
       createdAt: row.alterado_em,
-      action: row.acao,
+      action: row.tipo_acao || row.acao,
     }));
     const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(anchor);
-    $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><header><div><span>PERÍODO</span><strong>${safeText(monthLabel.toUpperCase())}</strong></div><b>${movements.length} ALTERAÇÃO${movements.length === 1 ? "" : "ÕES"}</b></header>${movements.length ? movements.map(item => `<article><time>${formatOptionalDate(item.date)}</time><div><strong>${safeText(shortPersonName(item.person?.nome || "Colaborador não encontrado"))}</strong><span>${safeText(item.from)} <b>→</b> ${safeText(item.to)}</span><small>${safeText(String(item.action || "alterada").toUpperCase())}${item.periodo ? ` · ${safeText(item.periodo.replaceAll("_", " ").toUpperCase())}` : ""}</small></div><div><span>ALTERADO POR</span><strong>${safeText(item.user?.nome || "Utilizador não identificado")}</strong><small>${item.createdAt ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt)) : "Hora não registada"}</small></div></article>`).join("") : `<div class="empty-state"><strong>SEM MOVIMENTAÇÕES</strong><span>Não foram registadas alterações neste mês.</span></div>`}<div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
+    $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><header><div><span>PERÍODO</span><strong>${safeText(monthLabel.toUpperCase())}</strong></div><b>${movements.length} ALTERAÇÃO${movements.length === 1 ? "" : "ÕES"}</b></header>${movements.length ? movements.map(item => `<article><time>${formatOptionalDate(item.date)}</time><div><strong>${safeText(shortPersonName(item.person?.nome || "Colaborador não encontrado"))}</strong><span>${safeText(item.from)} <b>→</b> ${safeText(item.to)}</span><small>${safeText(String(item.action || "alterada").toUpperCase())}${item.periodo ? ` · ${safeText(item.periodo.replaceAll("_", " ").toUpperCase())}` : ""}</small><details><summary>Identificadores das alocações</summary><small>Origem: ${safeText(item.origemId || "—")}<br>Destino: ${safeText(item.destinoId || "—")}</small></details></div><div><span>ALTERADO POR</span><strong>${safeText(item.user?.nome || "Utilizador não identificado")}</strong><small>${safeText(item.perfil || "Perfil histórico não registado")}</small><small>${item.createdAt ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.createdAt)) : "Hora não registada"}</small></div></article>`).join("") : `<div class="empty-state"><strong>SEM MOVIMENTAÇÕES</strong><span>Não foram registadas alterações neste mês.</span></div>`}<div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
   } catch (error) {
     $("#workflow-dialog-content").innerHTML = `<div class="workforce-movements"><div class="empty-state"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><span>${safeText(error.message)}</span></div><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>FECHAR</button></div></div>`;
   }
@@ -3961,6 +3975,7 @@ $("#toggle-inactive-collaborators").addEventListener("click", () => {
 });
 $("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
 $("#workforce-movements").addEventListener("click", openWorkforceMovements);
+$("#workforce-my-work").addEventListener("click", openWorkforceMyWork);
 $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
 $("#remove-workforce-allocation").addEventListener("click", removeWorkforceAllocation);
 $("#add-workforce-line").addEventListener("click", () => toggleWorkforceLineForm($("#workforce-new-line").hidden));
@@ -4041,6 +4056,7 @@ $("#team-board").addEventListener("click", async event => {
     workId: cell.dataset.workId,
     description: decodeURIComponent(cell.dataset.description || ""),
   });
+  cell.classList.remove("saving");
 });
 $("#workforce-roster").addEventListener("click", event => {
   if (!workforceEditing) return;
@@ -4061,6 +4077,8 @@ $("#workforce-roster").addEventListener("click", event => {
   renderTeam();
 });
 $("#workforce-roster").addEventListener("change", event => {
+  const action = event.target.closest("[data-workforce-action]");
+  if (action) workforceAction = action.value;
   const select = event.target.closest("[data-workforce-period]");
   if (select) selectedWorkforcePeriod = select.value;
 });

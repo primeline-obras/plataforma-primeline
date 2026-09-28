@@ -1,0 +1,9 @@
+{
+  "name": "primeline-quadro-test-runtime",
+  "private": true,
+  "description": "Dependências exclusivas dos testes locais do Quadro de Pessoal; não usadas pela aplicação.",
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
+    "jsdom": "26.1.0"
+  }
+}

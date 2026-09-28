@@ -1,0 +1,8 @@
+.workforce-action-form { display: grid; gap: 16px; }
+.workforce-action-form label { display: grid; gap: 6px; min-width: 0; }
+.workforce-action-form select, .workforce-action-form input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px; }
+.workforce-action-form [data-move-preview]:not(:empty) { padding: 12px; border: 1px solid currentColor; border-radius: 4px; line-height: 1.5; }
+.workforce-action-form p { margin: 0; line-height: 1.5; }
+.workforce-heading-buttons { flex-wrap: wrap; }
+.workforce-movements details { margin-top: 6px; overflow-wrap: anywhere; }
+.workforce-movements summary { cursor: pointer; }

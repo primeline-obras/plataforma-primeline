@@ -46,9 +46,9 @@ test("diretório da Equipa calcula as alocações da semana antes de as consulta
 });
 
 test("frontend consulta alocações apenas para papéis com acesso ao Quadro", () => {
-  assert.match(app, /canManageWorkforce\(\) \? supabase\(`quadro_pessoal_alocacao/);
+  assert.match(app, /canConsultWorkforce\(\) \? supabase\(`quadro_pessoal_alocacao/);
   assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/);
-  assert.match(app, /function canManageWorkforce\(\) \{\s*return canManageTeam\(\) \|\| \["diretor_obra", "encarregado"\]/);
+  assert.match(app, /function canManageWorkforce\(\) \{\s*return canManageGeneralWorkforce/);
 });
 
 test("RLS remove políticas antigas e limita escrita à obra responsável", () => {
