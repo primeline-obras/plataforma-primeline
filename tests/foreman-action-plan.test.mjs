@@ -50,10 +50,11 @@ test("Plano de Ação do encarregado é integralmente de leitura", () => {
 
 test("encarregado vê as áreas autorizadas e a consulta de ausências", () => {
   const foremanAccess = access.match(/encarregado:\s*\{[\s\S]*?\n\s*\},/i)?.[0] || "";
-  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"team",\s*"settings"\]/i);
+  assert.match(foremanAccess, /views:\s*\["action-plan",\s*"planning",\s*"documents",\s*"rnc",\s*"calendar",\s*"workforce",\s*"team",\s*"settings"\]/i);
   assert.doesNotMatch(foremanAccess, /"rooms"/i);
   assert.doesNotMatch(foremanAccess, /"overview"|"meeting"|"works"/i);
   assert.match(app, /function defaultViewForCurrentUser\(\)/i);
+  assert.match(app, /if \(effectiveRole\(\) === "encarregado"\) return "workforce"/);
   assert.match(app, /permitted\.includes\("action-plan"\)/i);
 });
 

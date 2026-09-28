@@ -36,7 +36,7 @@ test("Equipa Técnica vê só o Mapa de Férias, sem indicadores de RH", () => {
   assert.match(app, /\$\("#team-active-stat"\)\.hidden = vacationOnly/);
   assert.match(app, /\$\("#team-kpis"\)\.hidden = vacationOnly/);
   assert.match(app, /\$\("#team-alert-summary"\)\.hidden = vacationOnly/);
-  assert.match(app, /Mapa de Férias, ponto diário da equipa em obra e medicina do trabalho\./);
+  assert.match(app, /Mapa de Férias, folha de ponto da equipa em obra e medicina do trabalho\./);
   assert.match(app, /\$\("#team-kpis"\)\.innerHTML = vacationOnly \? ""/);
   assert.match(app, /\$\("#team-alert-summary"\)\.innerHTML = vacationOnly \? ""/);
 });
@@ -46,9 +46,9 @@ test("diretório da Equipa calcula as alocações da semana antes de as consulta
 });
 
 test("frontend consulta alocações apenas para papéis com acesso ao Quadro", () => {
-  assert.match(app, /canManageWorkforce\(\) \? supabase\(`quadro_pessoal_alocacao/);
+  assert.match(app, /canConsultWorkforce\(\) \? supabase\(`quadro_pessoal_alocacao/);
   assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/);
-  assert.match(app, /function canManageWorkforce\(\) \{\s*return canManageTeam\(\) \|\| \["diretor_obra", "encarregado"\]/);
+  assert.match(app, /function canManageWorkforce\(\) \{\s*return canManageGeneralWorkforce/);
 });
 
 test("RLS remove políticas antigas e limita escrita à obra responsável", () => {

@@ -1,20 +1,15 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-
 const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-const migration = await readFile(new URL("../supabase/quadro_pessoal_encarregados_multiplas_obras.sql", import.meta.url), "utf8");
-
-assert.match(app, /role\.includes\("encarregado"\)/, "O frontend deve reconhecer encarregados pela função.");
-assert.match(app, /const allowsMultipleWorks = isWorkforceForeman\(person\)/, "A gravação deve permitir várias obras aos encarregados.");
-assert.match(app, /permite_multiplas_obras === true/, "A exceção deve poder ser configurada explicitamente por colaborador.");
-assert.match(app, /if \(!allowsMultipleWorks && conflicting\.length\)/, "A substituição automática deve ficar limitada aos restantes colaboradores.");
-assert.match(app, /data-source-ids=/, "Cada íman persistido deve guardar os ids das suas próprias alocações.");
-assert.match(app, /quadro_pessoal_alocacao\?id=in\.\(/, "A remoção deve atingir apenas a colocação selecionada.");
-
-assert.match(migration, /drop index if exists public\.quadro_pessoal_alocacao_colaborador_data_periodo_key/i);
-assert.match(migration, /add column if not exists permite_multiplas_obras boolean not null default false/i);
-assert.match(migration, /v_permite_multiplas_obras or v_funcao like '%encarregado%'/i, "O trigger deve reconhecer a configuração explícita e a função de encarregado.");
-assert.match(migration, /O colaborador já está colocado nessa linha, data e período/i, "O trigger deve bloquear duplicados exatos.");
-assert.match(migration, /O colaborador já tem uma alocação incompatível/i, "O trigger deve manter o conflito para os restantes papéis.");
-
-console.log("workforce foremen multiple works tests passed");
+const migration = await readFile(new URL("../supabase/quadro_pessoal_20260925/00_regras_movimentacoes.sql", import.meta.url), "utf8");
+assert(!app.includes("allowsMultipleWorks"));
+assert(!app.includes("isWorkforceForeman"));
+assert(app.includes("data-source-ids="));
+assert(app.includes("selectedWorkforceSourceIds.length !== 1"));
+assert(app.includes('workforceRequest(supabase, "remover", payload'));
+const validator = migration.slice(migration.indexOf('FUNCTION public.fn_validar_conflito_quadro_pessoal'), migration.indexOf('ALTER TABLE public.quadro_pessoal_alocacao DROP'));
+assert(!validator.includes('permite_multiplas_obras'));
+assert(!validator.includes('funcao'));
+assert(migration.includes('NULLS NOT DISTINCT'));
+assert(migration.includes('Alocação idêntica já existente.'));
+console.log("Múltiplas obras universais e remoção por ID validadas.");
