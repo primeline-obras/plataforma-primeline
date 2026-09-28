@@ -45,3 +45,11 @@ export function previewTeeIndex(incoming, existing, workId) {
       errors, warnings, previous, changes, state, unprogrammed, margin, marginPercent: margin !== null && sale ? margin / sale * 100 : null };
   });
 }
+
+export async function requestTeeRevisionImport(api, payload) {
+  const response = await api('rpc/fn_importar_tees_revisoes', { method: 'POST', body: JSON.stringify(payload) });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(response.status === 404 || result?.code === 'PGRST202' ? 'A importação de revisões aguarda suporte transacional. O preview foi preservado.' : result?.message || 'A revisão TEE não foi confirmada.');
+  if (result?.version !== 1 || result.committed !== true || !Number.isInteger(result.importadas) || result.importadas < 0) throw new Error('A revisão TEE não foi confirmada pelo serviço transacional.');
+  return result;
+}

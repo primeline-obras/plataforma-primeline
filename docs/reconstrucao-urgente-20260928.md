@@ -84,3 +84,20 @@ Persistência proposta: `fn_importar_tees_revisoes(p_version=1, p_obra_id, p_lin
 O diálogo de recebimentos passa a pedir o valor da parcela, limitado pelo saldo conhecido, e deixa de substituir o acumulado/marcar integralmente pago. Usa exclusivamente `fn_registar_recebimento_parcial` (version=1, ID faturação, data, valor, request ID idempotente, acumulado esperado); exige committed=true e faturação atualizada com saldo coerente. Sem RPC mantém o formulário e os dados anteriores.
 
 Backend necessário: movimentos com faturacao_id, data, valor, autor e timestamp; soma oficial por documento, controlo concorrente, autorização e idempotência. Não converter agregados antigos em movimentos fictícios. A integração dos pagamentos parciais a fornecedores e a edição independente de vencimentos/previsões permanecem pendentes das respetivas fontes persistentes; `pagamentos_subempreitada` não contém ligação a fatura e não serve como substituto.
+
+## Blocos G–J — frontend mensal
+
+- G: cinco estados explícitos, proteção de real/fechado e rejeição de reabertura no fluxo normal. Retirada a inferência “mês passado = fechado” do dashboard.
+- H: motor puro em cêntimos, seis estágios mutuamente exclusivos, parcelas reais, saldo pendente, remanescente económico, calendário prioritário e parcelas mensais iguais. Validação de identidades, datas, montantes e competência protegida. Vencidos não deslocam a previsão.
+- I: quatro adaptadores RPC mensais, validação de fonte/snapshot/obra/ano, recálculo restrito às competências abertas e verificação da declaração de preservação. Lote de planeamento confirmado invalida o mapa; resumo ausente nunca provoca repetição automática do lote nem anúncio de recálculo concluído.
+- J: mapa por obra/ano, seis linhas, totais, saldo/acumulado, indicadores, estados, notas e detalhe de origens carregado a pedido (50 linhas). Permissões administrativas/financeiras conservadas. RPC ausente mostra indisponibilidade, sem totals legados como fallback. O módulo antigo `financial-map.js` deixa de ser importado pelo app; importação/ajustes legados não são oferecidos no novo mapa. Não se somam fontes antigas e novas.
+
+Contratos exatos, respostas, conflitos e pontos de chamada: [rpcs-frontend-mensal-v1.md](rpcs-frontend-mensal-v1.md). Testes de navegador inteiramente offline; captura em outputs/monthly-map-offline.png (ignorada pelo Git).
+
+Validação desta continuação: 59 testes Node aprovados, cenários offline `monthly-browser.mjs` e `planning-browser.mjs` aprovados, verificação sintática do app/mapa e `git diff --check` sem erros. O teste de acesso financeiro lê regras existentes como texto; não executa nem valida RLS na BD. Inspeção visual confirmou a correção da sobreposição dos controlos mensais.
+
+### Pendências reais
+
+Implementar as sete RPCs documentadas e as fontes persistentes no backend, coordenar triggers legados, validar permissões/RLS e transações em ambiente autorizado. O cliente não comprova essas garantias com mocks. A fonte mensal deve ter alocações económicas exclusivas e histórico auditável antes de devolver source=traceable_v1. Não fazer reconciliação/backfill automático da Obra 120.
+
+Fora do escopo G–J desta continuação: edição persistente de datas contratuais/reconciliação, UI de pagamentos parciais a fornecedores e de datas previstas por fatura, importador consolidado TEE autónomo. Permanecem limitações dos blocos C–F. Os dashboards económicos legados ainda têm outros indicadores/consultas próprios; não são usados como fonte do novo mapa mensal. As garantias de não regeneração no servidor permanecem por validar.

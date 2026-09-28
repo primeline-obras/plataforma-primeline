@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { previewTeeIndex, teeState } from '../src/tee-index.js';
+import { previewTeeIndex, teeState, requestTeeRevisionImport } from '../src/tee-index.js';
 const prior = { id: 'tee', obra_id: 'work', numero: ' TEE 01 ', descricao: 'Existente', fase_id: 'phase', data_inicio_execucao: '2026-10-01', data_fim_execucao: '2026-10-31', valor: 100, preco_custo: 70, estado_aprovacao_cliente: 'aprovado', rfi_id: 'rfi' };
 const run = row => previewTeeIndex([{ obra_id: 'work', numero: 'tee 01', ...row }], [prior], 'work')[0];
 
@@ -38,4 +38,13 @@ test('estados operacionais mapeiam aprovação sem usar envio como execução', 
   assert.equal(teeState('rejeitado').client, 'recusado');
   assert.equal(teeState('aprovado').client, 'aprovado');
   assert.throws(() => teeState('desconhecido'));
+});
+test('RPC de revisões exige confirmação sem fallback e preserva preview', async () => {
+  const payload = { p_version: 1, p_obra_id: 'work', p_linhas: [{ id: 'tee', valor: 100, expected: prior }], p_nome_ficheiro: 'teste.xlsx' }, before = structuredClone(payload), calls = [];
+  const api = async (path, options) => { calls.push({ path, body: JSON.parse(options.body) }); return Response.json({ code: 'PGRST202' }, { status: 404 }); };
+  await assert.rejects(requestTeeRevisionImport(api, payload), /suporte transacional/);
+  assert.deepEqual(calls, [{ path: 'rpc/fn_importar_tees_revisoes', body: payload }]);
+  assert.deepEqual(payload, before);
+  await assert.rejects(requestTeeRevisionImport(async () => Response.json({ version: 1, committed: false }), payload));
+  assert.equal((await requestTeeRevisionImport(async () => Response.json({ version: 1, committed: true, importadas: 1 }), payload)).importadas, 1);
 });

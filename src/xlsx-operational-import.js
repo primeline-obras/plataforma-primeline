@@ -1,4 +1,4 @@
-import { previewTeeIndex } from "./tee-index.js?v=1";
+import { previewTeeIndex, requestTeeRevisionImport } from "./tee-index.js?v=1";
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -290,7 +290,7 @@ export function createOperationalXlsxImport({ supabase, isConfigured, getProfile
           ? { p_obra_id: state.context.work.id, p_linhas: rows, p_nome_ficheiro: state.file.name }
           : { p_linhas: rows, p_nome_ficheiro: state.file.name };
       if (state.module === "tees" && !isConfigured) throw new Error("A importação de revisões exige ligação ao serviço transacional.");
-      const result = isConfigured ? await api(paths[state.module], { method: "POST", body: JSON.stringify(body) }) : { importadas: rows.length };
+      const result = state.module === "tees" ? await requestTeeRevisionImport(supabase, body) : isConfigured ? await api(paths[state.module], { method: "POST", body: JSON.stringify(body) }) : { importadas: rows.length };
       if (state.module === "tees" && (result?.version !== 1 || result?.committed !== true)) throw new Error("A revisão TEE não foi confirmada pelo serviço transacional.");
       toast(`${result?.importadas ?? rows.length} linha(s) importada(s) com auditoria registada.`); const callback = state.context.onComplete; close(); await callback?.();
     } catch (error) { toast(error.message, "error"); }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { projectSource, monthlyEngine, equalMonthly } from '../src/monthly-engine.js';
+import { projectSource, monthlyEngine, equalMonthly, contractualDueDate } from '../src/monthly-engine.js';
 const source = { id: 'contract', origin_type: 'contract_scope', direction: 'income', amount: 10000, competence_month: '2026-10', active_months: ['2026-10', '2026-11'], documents: [{ id: 'invoice', amount: 6000, due_date: '2026-11-15', movements: [{ id: 'receipt', amount: 2000, date: '2026-11-20' }] }] };
 const model = entries => ({ version: 1, source: 'traceable_v1', entries, states: ['10', '11', '12'].map(month => ({ month: `2026-${month}`, state: 'aberto', revision: 'r1' })), from: '2026-10', to: '2026-12', today: '2026-12-01' });
 test('cada euro passa de futuro a faturado e recebido sem duplicação', () => {
@@ -44,4 +44,14 @@ test('identidades repetidas, valores inconsistentes e legado são recusados', ()
   assert.throws(() => monthlyEngine({ ...model(entries), source: 'legacy' }));
   assert.throws(() => projectSource({ ...source, amount: 100 }));
   assert.throws(() => projectSource({ ...source, documents: [], active_months: [] }));
+});
+test('vencimento contratual e previsão manual são independentes', () => {
+  assert.equal(contractualDueDate('2026-10-31', 30), '2026-11-30');
+  const changed = structuredClone(source);
+  changed.documents[0].forecast_date = '2026-12-10';
+  const result = monthlyEngine(model(projectSource(changed)));
+  assert.equal(result.rows[2].receivable, 4000);
+  assert.equal(result.overdue, 4000);
+  assert.equal(changed.documents[0].due_date, '2026-11-15');
+  assert.throws(() => projectSource({ ...source, origin_type: 'tee' }), /aprovados/);
 });
