@@ -692,7 +692,7 @@ export function createProductionDashboard(options) {
     const values = months.map(month => {
       const actual = actuals.get(month) || {};
       const forecast = forecastByMonth.get(month) || {};
-      const closed = forecast.fechado === true || month < todayMonth;
+      const closed = forecast.fechado === true || forecast.tipo === "real";
       return {
         month,
         incoming: closed ? number(actual.incoming) : 0,
@@ -727,7 +727,7 @@ export function createProductionDashboard(options) {
               : `<div><dt>Entradas previstas</dt><dd class="forecast">${euro.format(row.forecastIncoming)}</dd></div><div><dt>Saídas previstas</dt><dd class="forecast">${euro.format(row.forecastOutgoing)}</dd></div>`}
             <div><dt>Saldo acumulado</dt><dd>${euro.format(row.balance)}</dd></div>
           </dl>
-          <small class="cash-state">${row.closed ? "✓ REAL" : row.current ? "● MÊS EM ABERTO · PREVISÃO" : "PREVISÃO"}</small>
+          <small class="cash-state">${row.closed ? "REGISTO LEGADO · REAL/FECHADO" : "REGISTO LEGADO · ESTADO NÃO CONFIGURADO"}</small>
         </article>`).join("")}</div>`;
   }
 
