@@ -1,3 +1,4 @@
+import { legacyContractValues } from "./contract-composition.js?v=1";
 import { workDates } from "./planning-operational.js?v=1";
 import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
@@ -2971,7 +2972,7 @@ function renderWorkSummary(work) {
   const subcontractTotal = subcontractRows.reduce((sum, item) => sum + Number(item.valor_adjudicado || 0), 0);
   const measuredTotal = totalClientBilling(contract, workDetails.measurements);
   const progress = workProgress(work);
-  const sale = Number(contract?.venda_contratual_efetiva || contract?.venda_contratual_inicial || 0);
+  const sale = legacyContractValues(contract || {}).sale;
   const investmentMode = work.modalidade === "investimento_proprio";
   const investment = workDetails.investment || {};
   const initialBudget = Number(investment.orcamento_inicial_sem_iva || 0);
@@ -3022,7 +3023,7 @@ function renderWorkSummary(work) {
       <div><span>FIM CONTRATUAL ATUAL</span><strong>${formatOptionalDate(work.data_fim_contratual_atual)}</strong></div><div><span>FIM OPERACIONAL PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
     </div>
     <div class="work-detail-grid">
-      <section><div class="detail-section-title"><span>CONTRATO</span></div>
+      <section><div class="detail-section-title"><span>CONTRATO</span></div><p class="work-warning">COMPOSIÇÃO HISTÓRICA POR RECONCILIAR</p>
         <dl>
           <div><dt>Venda inicial</dt><dd>${contract?.venda_contratual_inicial != null ? euro.format(Number(contract.venda_contratual_inicial)) : "—"}</dd></div>
           <div><dt>Venda efetiva</dt><dd>${contract?.venda_contratual_efetiva != null ? euro.format(Number(contract.venda_contratual_efetiva)) : "—"}</dd></div>

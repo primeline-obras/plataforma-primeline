@@ -1,3 +1,5 @@
+import { clientFinancialComposition, legacyContractValues } from "./contract-composition.js?v=1";
+export { clientFinancialComposition } from "./contract-composition.js?v=1";
 import { workDates } from "./planning-operational.js?v=1";
 import { directDebitOccurrences } from "./direct-debits.js?v=1";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
@@ -34,22 +36,6 @@ export const investmentFinancialValues = (investment = {}, actualCost = 0) => {
   const initialBudget = number(investment.orcamento_inicial_sem_iva);
   const revisedBudget = number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva);
   return { initialBudget, revisedBudget, actualCost: number(actualCost), deviation: number(actualCost) - revisedBudget };
-};
-export const clientFinancialComposition = (contract = {}, approvedTees = [], fallbackEffectiveCost = 0) => {
-  const initialSale = number(contract.venda_contratual_inicial);
-  const effectiveSale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial);
-  const teeSale = sum(approvedTees, "valor");
-  const initialCost = number(contract.custo_direto_inicial);
-  const effectiveCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial) || number(fallbackEffectiveCost);
-  const teeCost = sum(approvedTees, "preco_custo");
-  const sale = [initialSale, effectiveSale, teeSale, effectiveSale + teeSale];
-  const cost = [initialCost, effectiveCost, teeCost, effectiveCost + teeCost];
-  return {
-    sale,
-    cost,
-    margin: sale.map((value, index) => value - cost[index]),
-    fixedCosts: cost.map(value => Math.round(value * 0.085 * 100) / 100),
-  };
 };
 export const materialInvoiceValue = (invoice, items = []) => {
   const invoiceItems = items.filter(item => item.fatura_id === invoice.id);
@@ -358,17 +344,16 @@ export function createProductionDashboard(options) {
     const contract = selectCurrentContract(overviewState.contracts.filter(row => row.obra_id === workId));
     const approvedTees = overviewState.tees.filter(row => row.obra_id === workId && isApprovedTee(row));
     const pendingTees = overviewState.tees.filter(row => row.obra_id === workId && isPendingTee(row));
-    const sale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial);
+    const sale = number(legacyContractValues(contract).sale);
     const approvedTeeSale = sum(approvedTees, "valor");
     const approvedTeeCost = sum(approvedTees, "preco_custo");
     const phaseIds = new Set(overviewState.phases.filter(phase => phase.obra_id === workId).map(phase => phase.id));
     const workBudget = overviewState.budget.filter(item => phaseIds.has(item.fase_id));
-    const directCost = number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
-      || effectiveDirectCost(workBudget, sale);
+    const directCost = number(legacyContractValues(contract).cost);
     const composition = clientFinancialComposition(contract, approvedTees, directCost);
     const billed = totalClientBilling(contract, overviewState.measurements.filter(row => row.obra_id === workId));
-    const totalSale = sale + approvedTeeSale;
-    const updatedDirectCost = directCost + approvedTeeCost;
+    const totalSale = sale;
+    const updatedDirectCost = directCost;
     return {
       mode: "client",
       sale: totalSale, directCost: updatedDirectCost, margin: totalSale - updatedDirectCost,
@@ -396,9 +381,9 @@ export function createProductionDashboard(options) {
       ["CUSTOS FIXOS (TOTAL C.D. × 8,5%)", summary.composition.fixedCosts, "fixed"],
     ];
     return `<article class="overview-composition-work">
-      <header><div><span>OBRA ${escapeHtml(work.numero || "—")}</span><h3>${escapeHtml(work.nome || "Obra sem designação")}</h3></div><em>CLIENTE EXTERNO</em></header>
-      <div class="overview-composition-scroll"><table><thead><tr><th>INDICADOR</th><th>CONTRATUAL INICIAL</th><th>CONTRATUAL EFETIVO</th><th>TEEs / AJUSTES</th><th>TOTAL ATUALIZADO</th></tr></thead>
-        <tbody>${rows.map(([label, values, className]) => `<tr class="${className}"><th>${label}</th>${values.map(value => `<td>${euro.format(value)}</td>`).join("")}</tr>`).join("")}</tbody>
+      <header><div><span>OBRA ${escapeHtml(work.numero || "—")}</span><h3>${escapeHtml(work.nome || "Obra sem designação")}</h3></div><em>CLIENTE EXTERNO</em></header><p class="overview-warning">COMPOSIÇÃO HISTÓRICA POR RECONCILIAR</p>
+      <div class="overview-composition-scroll"><table><thead><tr><th>INDICADOR</th><th>CONTRATUAL INICIAL</th><th>CONTRATUAL EFETIVO</th><th>TEEs APROVADOS (INFORMATIVO)</th><th>RESULTADO RECONCILIADO</th></tr></thead>
+        <tbody>${rows.map(([label, values, className]) => `<tr class="${className}"><th>${label}</th>${values.map(value => `<td>${value === null ? "—" : euro.format(value)}</td>`).join("")}</tr>`).join("")}</tbody>
       </table></div>
     </article>`;
   }
@@ -992,14 +977,13 @@ export function createProductionDashboard(options) {
     const approvedTeeSale = sum(approvedTees, "valor");
     const approvedTeeCost = sum(approvedTees, "preco_custo");
     const pendingTeeSale = sum(pendingTees, "valor");
-    const sale = number(contract.venda_contratual_efetiva || contract.venda_contratual_inicial);
+    const sale = number(legacyContractValues(contract).sale);
     const initialBudget = number(investment.orcamento_inicial_sem_iva);
     const revisedBudget = number(investment.orcamento_revisto_sem_iva || investment.orcamento_inicial_sem_iva);
-    const directCost = investmentMode ? revisedBudget : number(contract.custo_direto_efetivo || contract.custo_direto_inicial)
-      || effectiveDirectCost(data.budget, sale);
-    const expectedMargin = sale + approvedTeeSale - directCost - approvedTeeCost;
+    const directCost = investmentMode ? revisedBudget : number(legacyContractValues(contract).cost);
+    const expectedMargin = sale - directCost;
     const billed = investmentMode ? 0 : totalClientBilling(contract, data.measurements);
-    const totalSale = investmentMode ? 0 : sale + approvedTeeSale;
+    const totalSale = investmentMode ? 0 : sale;
     const billingPercent = totalSale ? clampPercent(billed / totalSale * 100) : 0;
     const execution = workExecution(work.id, data.phases, data.planning, data.budget);
     const deadline = deadlinePercent(work);
@@ -1009,7 +993,7 @@ export function createProductionDashboard(options) {
     const subcontractPhaseIds = new Set(data.subcontracts.map(row => row.fase_id).filter(Boolean));
     const budgetPhaseIds = new Set(data.budget.map(row => row.fase_id));
     const notConsulted = data.phases.filter(phase => budgetPhaseIds.has(phase.id) && !consultationPhaseIds.has(phase.id) && !subcontractPhaseIds.has(phase.id));
-    const projection = financialProjection(work, data, totalSale, directCost + approvedTeeCost, execution, investmentMode);
+    const projection = financialProjection(work, data, totalSale, directCost, execution, investmentMode);
     const actualCost = projection.actualCost;
     const investmentDeviation = actualCost - revisedBudget;
     return {
@@ -1030,15 +1014,16 @@ export function createProductionDashboard(options) {
 
     document.querySelector("#meeting-view").innerHTML = `
       <div class="meeting-heading"><button id="meeting-back">← ${meetingReturnView === "works" ? "OBRA" : meetingReturnView === "rsp" ? "RSP" : "VISÃO GERAL"}</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · OBRA ${escapeHtml(work.numero)}</p><h1>${escapeHtml(work.nome)}</h1><span>${escapeHtml(work.cliente || "")}</span></div><em class="work-status ${escapeHtml(work.situacao)}">${escapeHtml(String(work.situacao || "").replace(/_/g, " "))}</em></div>
+      ${!investmentMode ? '<p class="overview-warning">COMPOSIÇÃO HISTÓRICA POR RECONCILIAR</p>' : ""}
       ${warnings.length ? `<div class="overview-warning">Dados parciais: ${escapeHtml(warnings.join(" · "))}</div>` : ""}
       <section class="meeting-kpis">${investmentMode ? `
         <article><span>ORÇAMENTO INICIAL</span><strong>${euro.format(initialBudget)}</strong><small>sem IVA</small></article>
         <article><span>ORÇAMENTO REVISTO</span><strong>${euro.format(revisedBudget)}</strong><small>sem IVA</small></article>
         <article><span>CUSTO REALIZADO</span><strong>${euro.format(actualCost)}</strong><small>custos reais registados</small></article>
         <article><span>DESVIO</span><strong class="${investmentDeviation > 0 ? "negative" : "positive"}">${euro.format(investmentDeviation)}</strong><small>${investmentDeviation > 0 ? "acima do orçamento" : "dentro do orçamento"}</small></article>` : `
-        <article><span>VENDA ATUALIZADA</span><strong>${euro.format(totalSale)}</strong><small>venda efetiva + TEEs aprovados</small></article>
-        <article><span>CUSTO DIRETO ATUALIZADO</span><strong>${directCost ? euro.format(directCost + approvedTeeCost) : "—"}</strong><small>contratual + TEEs aprovados</small></article>
-        <article><span>MARGEM PREVISTA</span><strong>${directCost ? euro.format(expectedMargin) : "—"}</strong><small>inclui TEEs aprovados</small></article>
+        <article><span>VENDA ATUALIZADA</span><strong>${euro.format(totalSale)}</strong><small>valor legado preservado</small></article>
+        <article><span>CUSTO DIRETO ATUALIZADO</span><strong>${directCost ? euro.format(directCost) : "—"}</strong><small>valor legado preservado</small></article>
+        <article><span>MARGEM PREVISTA</span><strong>${directCost ? euro.format(expectedMargin) : "—"}</strong><small>estimativa sobre valores legados</small></article>
         <article><span>POR FATURAR</span><strong>${euro.format(totalSale - billed)}</strong><small>${Math.round(billingPercent)}% faturado</small></article>`}
       </section>
       <section class="meeting-two">
@@ -1307,7 +1292,7 @@ export function createProductionDashboard(options) {
             <div><span>CUSTO REALIZADO</span><strong>${euro.format(actualCost)}</strong></div>
             <div><span>DESVIO</span><strong class="${investmentDeviation > 0 ? "negative" : "positive"}">${euro.format(investmentDeviation)}</strong></div>` : `
             <div><span>VENDA ATUALIZADA</span><strong>${euro.format(totalSale)}</strong></div>
-            <div><span>CUSTO DIRETO</span><strong>${directCost ? euro.format(directCost + approvedTeeCost) : "—"}</strong></div>
+            <div><span>CUSTO DIRETO</span><strong>${directCost ? euro.format(directCost) : "—"}</strong></div>
             <div><span>MARGEM PREVISTA</span><strong>${directCost ? euro.format(expectedMargin) : "—"}</strong></div>
             <div><span>FATURADO</span><strong>${euro.format(billed)}</strong><small>${Math.round(billingPercent)}%</small></div>`}
         </div>

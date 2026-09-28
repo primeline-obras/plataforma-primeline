@@ -27,10 +27,10 @@ const composition = clientFinancialComposition({
   custo_direto_inicial: 700,
   custo_direto_efetivo: 800,
 }, [{ valor: -100, preco_custo: -60 }, { valor: 300, preco_custo: 150 }]);
-assert.deepEqual(composition.sale, [1000, 1200, 200, 1400]);
-assert.deepEqual(composition.cost, [700, 800, 90, 890]);
-assert.deepEqual(composition.margin, [300, 400, 110, 510]);
-assert.deepEqual(composition.fixedCosts, [59.5, 68, 7.65, 75.65]);
+assert.deepEqual(composition.sale, [1000, 1200, 200, null]);
+assert.deepEqual(composition.cost, [700, 800, 90, null]);
+assert.deepEqual(composition.margin, [300, 400, 110, null]);
+assert.deepEqual(composition.fixedCosts, [59.5, 68, 7.65, null]);
 
 assert.doesNotMatch(source, /INCIDENTES ESTE MÊS/);
 assert.doesNotMatch(source, /EPIs A VENCER · 30 DIAS/);

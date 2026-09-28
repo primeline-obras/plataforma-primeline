@@ -66,3 +66,9 @@ O frontend recusa RPC ausente, resposta incompleta ou cascata diferente. Não af
 Painel recolhível com início, finais contratuais inicial/atual, final operacional, execução ponderada, prazo consumido e desvios. Resumo da obra e dashboard deixam de usar a previsão operacional como prazo contratual. Prazo desconhecido aparece sem percentagem; prazo ultrapassado mantém valor superior a 100% (a barra é limitada visualmente).
 
 As consultas continuam a usar apenas colunas existentes. Como os snapshots não têm as datas contratuais, estas ficam não configuradas. Edição e persistência dessas datas dependem de extensão do backend; não foram simuladas com campos de baseline nem com a previsão operacional. Pesos globais em falta mostram aviso e execução indeterminada.
+
+## Bloco D — proteção da composição legada
+
+Dashboard, reunião e RSP deixam de somar novamente TEEs aos totais efetivos legados. O mapa distingue TEEs informativos do resultado reconciliado, que permanece vazio. Valores efetivos iguais a zero são preservados; o helper mantém ausência como ausência. Resumo da obra e composição apresentam o aviso de histórico por reconciliar.
+
+Não existe fonte de reconciliação nos snapshots: não se infere esse estado nem se habilita reconciliação local. Contrato original, movimentos de escopo, ajustes financeiros e auditoria de reconciliação precisam de suporte persistente antes de ativar a composição oficial. Nenhum registo histórico foi criado ou alterado, incluindo Obra 120.
