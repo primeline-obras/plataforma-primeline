@@ -2,6 +2,7 @@ import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from
 import { platformConfirm } from "./platform-dialogs.js?v=1";
 import { activeTask, phaseProgress, workProgress, workDates, weightSummary, redistributeWeights } from "./planning-operational.js?v=1";
 import { planningChanges, batchPreview, requestPlanningBatch } from "./planning-batch.js?v=1";
+import { planningFinancialSummary } from "./monthly-api.js?v=1";
 
 const DAY_MS = 86400000;
 
@@ -75,7 +76,7 @@ function isPastDay(date, today = new Date()) {
   return Boolean(date && date < currentDay);
 }
 
-export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast }) {
+export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast, onCommitted = () => {} }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
     expanded: new Set(), expandedTasks: new Set(), collapsedEditorPhases: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
@@ -598,11 +599,14 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       if (!Array.isArray(server.conflicts) || server.conflicts.length) throw new Error("O servidor detetou conflitos ou devolveu um preview incompleto.");
       if (JSON.stringify(server.approved_cascade) !== JSON.stringify(payload.approved_cascade)) throw new Error("A cascata do servidor difere do preview. Reveja as consequências antes de guardar.");
       if (!await platformConfirm("Confirmar todas as alterações e a cascata apresentada?", { title: "Guardar lote", confirmLabel: "GUARDAR ALTERAÇÕES" })) return;
-      await requestPlanningBatch(supabase, payload, server.confirmation_token);
+      const committed = await requestPlanningBatch(supabase, payload, server.confirmation_token);
+      let financialSummary = null;
+      try { financialSummary = planningFinancialSummary(committed, state.workId); } catch { /* A committed batch must never be retried merely because its summary is missing. */ }
       state.original = structuredClone(state.items); state.originalDependencies = structuredClone(state.dependencies);
       state.preview = null;
+      onCommitted({ workId: state.workId, financialSummary });
       await load(state.workId);
-      toast("Lote guardado e resumos recalculados.");
+      toast(financialSummary ? "Lote guardado e resumo financeiro atualizado." : "Lote confirmado; recálculo financeiro por confirmar no mapa mensal.", financialSummary ? "success" : "warning");
     } catch (error) { toast(error.message, "error"); }
     finally { state.batchSaving = false; render(); }
   }
