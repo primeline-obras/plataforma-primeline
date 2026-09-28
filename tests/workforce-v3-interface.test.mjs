@@ -16,7 +16,7 @@ test('pedido de pré-visualização e confirmação usa a mesma RPC/versionament
  await assert.rejects(()=>workforceRequest(async()=>new Response(JSON.stringify({message:'bloqueado'}),{status:403}),'adicionar',{}),/bloqueado/);
 });
 test('interface ligada: ação limitada, consulta separada, sem substituição automática',()=>{
- assert(app.includes('id="workforce-my-work"')); assert(app.includes('openWorkforceMyWork'));
+ assert(app.includes('id="foreman-team"')); assert(app.includes('foremanTeam.show(context)'));
  assert(app.includes('canConsultWorkforce() ? supabase(`quadro_pessoal_alocacao?'));
  assert(!app.includes('allowsMultipleWorks')); assert(!app.includes('isWorkforceForeman'));
  const save=app.slice(app.indexOf('async function saveWorkforceAllocation'),app.indexOf('function openVacationDaysDialog'));

@@ -1,0 +1,43 @@
+/* Apenas apresentação. Não altera acessos nem regras de validação. */
+.foreman-team { max-width: 1000px; margin: auto; min-width: 0; }
+.foreman-team h1 { font-size: clamp(24px, 5vw, 36px); }
+.foreman-toolbar, .attendance-report { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.foreman-team label { display: grid; gap: 8px; min-width: 0; }
+.foreman-team button, .foreman-team input, .foreman-team select { min-height: 48px; font-size: 16px; max-width: 100%; box-sizing: border-box; }
+.foreman-team button { padding: 12px; white-space: normal; border: 1px solid var(--card-border, #bbb); border-radius: 7px; background: var(--card, #fff); color: var(--text-primary, #252a2d); cursor: pointer; }
+.foreman-team input, .foreman-team select { padding: 10px; border: 1px solid var(--card-border, #bbb); border-radius: 7px; background: var(--card, #fff); color: var(--text-primary, #252a2d); }
+.foreman-team .foreman-add, .foreman-team [data-team-preview-button] { background: var(--sidebar-bg, #252a2d); color: white; }
+.foreman-add { width: 100%; margin: 12px 0; }
+.foreman-list, .foreman-team [data-candidates] { display: grid; gap: 12px; }
+.foreman-list article, .foreman-team [data-candidate] { display: grid; gap: 8px; padding: 16px; text-align: left; border: 1px solid #bbb; border-radius: 8px; overflow-wrap: anywhere; }
+.foreman-team [aria-pressed="true"] { outline: 3px solid #49728a; }
+.foreman-team button:disabled { opacity: .55; cursor: not-allowed; }
+.foreman-add-panel { border: 1px solid #bbb; padding: 16px; border-radius: 8px; display: grid; gap: 16px; margin-top: 16px; }
+.foreman-summary, .foreman-team [role="alert"] { line-height: 1.7; }
+.foreman-team [data-candidates] { max-height: 45vh; overflow-y: auto; padding: 4px; }
+.attendance-report > label { min-width: 0; max-width: 100%; }
+.attendance-report select { max-width: 100%; }
+@media (max-width: 600px) {
+  .foreman-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .attendance-report { flex-direction: column; align-items: stretch; }
+}
+.attendance-touch .attendance-row,
+.attendance-touch .attendance-row.attendance-locked { grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 16px; }
+.attendance-touch .attendance-row > * { grid-column: auto; grid-row: auto; min-width: 0; }
+.attendance-touch .attendance-row fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.attendance-touch .attendance-person strong { font-size: 18px; }
+.attendance-touch .attendance-person span,
+.attendance-touch .attendance-row label > span { font-size: 13px; }
+.attendance-touch .attendance-row input,
+.attendance-touch .attendance-row select,
+.attendance-touch .attendance-toolbar input,
+.attendance-touch .attendance-toolbar select,
+.attendance-touch button { min-height: 48px; font-size: 16px; box-sizing: border-box; max-width: 100%; }
+.attendance-touch .attendance-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.attendance-touch .attendance-toolbar > * { min-width: 0; }
+.attendance-touch .attendance-actions button { flex: 1 1 160px; }
+.attendance-touch .attendance-guidance { display: grid; }
+@media (max-width: 600px) {
+  .attendance-touch .attendance-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .attendance-touch .attendance-list { padding: 12px; }
+}

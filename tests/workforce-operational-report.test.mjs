@@ -27,7 +27,8 @@ test("Administrativo escolhe o mês e descarrega horas por colaborador e obra", 
   assert.match(sql, /fn_relatorio_mensal_ponto\(p_mes date\)/);
   assert.match(sql, /order by lower\(c\.nome\)/);
   assert.match(attendance, /data-attendance-report-month/);
-  assert.match(attendance, /fn_relatorio_mensal_ponto/);
-  assert.match(attendance, /XLSX\.writeFile/);
-  assert.match(attendance, /Horas/);
+  assert.match(attendance, /fn_folha_ponto_mensal/);
+  assert.match(attendance, /exportAttendanceExcel/);
+  assert.match(attendance, /data-attendance-report-work/);
+  assert.match(attendance, /exportAttendancePdf/);
 });

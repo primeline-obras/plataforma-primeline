@@ -1,12 +1,13 @@
+import { prepareAttendanceReport, exportAttendanceExcel, exportAttendancePdf } from "./attendance-report.js?v=1";
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
 
 const timeValue = value => value ? String(value).slice(0, 5) : "";
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
-export function createAttendanceModule({ root, supabase, isConfigured, toast }) {
-  const state = { date: today(), reportMonth: today().slice(0, 7), workId: "", works: [], rows: [], canValidate: false, loading: false, error: "", loaded: false };
+export function createAttendanceModule({ root, supabase, isConfigured, toast, getRole = () => "" }) {
+  const state = { date: today(), reportMonth: today().slice(0, 7), reportWorkId: "", workId: "", works: [], rows: [], canValidate: false, loading: false, error: "", loaded: false };
 
   async function rpc(name, body) {
     const response = await supabase(`rpc/${name}`, { method: "POST", body: JSON.stringify(body) });
@@ -28,13 +29,14 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast }) 
 
   function rowForm(row) {
     const point = row.ponto || {};
-    const periods = row.periodos || [];
+    const periods = (row.periodos || []).includes("dia_inteiro") ? ["manha", "tarde"] : (row.periodos || []);
     const officialAbsence = row.ausencia;
     if (officialAbsence && (officialAbsence.tipo === "ferias" || ["confirmada", "justificada"].includes(officialAbsence.estado))) {
       const label = officialAbsence.tipo === "ferias" ? "FÉRIAS CONFIRMADAS" : String(officialAbsence.tipo || "AUSÊNCIA CONFIRMADA").replaceAll("_", " ").toUpperCase();
       return `<article class="attendance-row attendance-locked"><div class="attendance-person"><strong>${esc(row.nome)}</strong><span>${esc(row.funcao || "Função não indicada")}</span><em>${periods.map(period => period === "manha" ? "MANHÃ" : "TARDE").join(" + ")}</em></div><div class="attendance-official-absence"><strong>${esc(label)}</strong><span>${esc(officialAbsence.comentario || "Registo oficial de ausência; o ponto não pode substituí-lo.")}</span></div></article>`;
     }
-    const defaults = defaultTimes(periods);
+    // Horários padrão apenas para novos registos; horários vazios já guardados são preservados.
+    const defaults = row.ponto ? defaultTimes([]) : defaultTimes(periods);
     const status = point.estado || "presente";
     const absent = status !== "presente";
     const hours = Number(point.horas ?? (periods.length * 4));
@@ -55,7 +57,7 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast }) 
       <div class="attendance-result"><span>TOTAL</span><strong data-attendance-total>${absent ? "0" : hours.toLocaleString("pt-PT")} h</strong>
         ${point.justificacao_estado === "pendente" ? `<em>PENDENTE DE VALIDAÇÃO</em>` : point.justificacao_estado === "validada" ? `<em class="validated">JUSTIFICAÇÃO VALIDADA</em>` : point.justificacao_estado === "rejeitada" ? `<em class="rejected">JUSTIFICAÇÃO REJEITADA</em>` : ""}
       </div>
-      <div class="attendance-actions"><button type="submit">${point.id ? "ATUALIZAR" : "GUARDAR PONTO"}</button>
+      <div class="attendance-actions"><button type="submit">GUARDAR REGISTO</button>
         ${state.canValidate && point.id && point.justificacao_estado === "pendente" ? `<button type="button" data-attendance-decision="validada" data-point-id="${point.id}">VALIDAR</button><button type="button" class="danger" data-attendance-decision="rejeitada" data-point-id="${point.id}">REJEITAR</button>` : ""}
       </div><p class="form-error"></p>
     </form>`;
@@ -63,39 +65,55 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast }) 
 
   function render() {
     if (!root) return;
+    root.classList.toggle("attendance-touch", getRole() === "encarregado");
     root.innerHTML = `<section class="attendance-toolbar">
       <label><span>DATA</span><input type="date" data-attendance-date value="${state.date}"></label>
-      <label><span>OBRA</span><select data-attendance-work><option value="">Selecionar obra</option>${state.works.map(work => `<option value="${work.id}" ${state.workId === work.id ? "selected" : ""}>Obra ${esc(work.numero || "—")} · ${esc(work.nome)}</option>`).join("")}</select></label>
+      <label ${getRole() === "encarregado" && state.works.length === 1 ? "hidden" : ""}><span>OBRA</span><select data-attendance-work><option value="">Selecionar obra</option>${state.works.map(work => `<option value="${work.id}" ${state.workId === work.id ? "selected" : ""}>Obra ${esc(work.numero || "—")} · ${esc(work.nome)}</option>`).join("")}</select></label>
       <button type="button" data-attendance-refresh>ATUALIZAR</button>
     </section>
-    ${state.canValidate ? `<section class="attendance-report">
-      <div><strong>RELATÓRIO MENSAL DE HORAS</strong><span>Consolidado por colaborador e por obra, ordenado alfabeticamente.</span></div>
+    ${["gestao_plataforma", "administrativo"].includes(getRole()) ? `<section class="attendance-report">
+      <div><strong>FOLHA DE PONTO MENSAL</strong><span>Consolidado por colaborador e por obra, ordenado alfabeticamente.</span></div>
       <label><span>MÊS DE REFERÊNCIA</span><input type="month" data-attendance-report-month value="${state.reportMonth}"></label>
-      <button type="button" data-attendance-download>DESCARREGAR EXCEL</button>
+      <label><span>OBRA DO RELATÓRIO</span><select data-attendance-report-work required><option value="">Selecionar obra</option>${state.works.map(w=>`<option value="${esc(w.id)}" ${w.id===state.reportWorkId?'selected':''}>${esc(w.numero)} · ${esc(w.nome)}</option>`).join('')}</select></label>
+      <button type="button" data-attendance-download="excel">DESCARREGAR EXCEL</button>
+      <button type="button" data-attendance-download="pdf">DESCARREGAR PDF</button>
     </section>` : ""}
-    <div class="attendance-guidance"><strong>PONTO DIÁRIO</strong><span>Os horários padrão são 08:00–12:00 e 13:00–17:00. Ajuste apenas quando o horário real for diferente. As justificações apresentadas ficam pendentes de validação administrativa.</span></div>
-    ${state.loading ? `<div class="empty-state"><strong>A CARREGAR PONTO…</strong></div>` : state.error ? `<div class="work-warning"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><span>${esc(state.error)}</span></div>` : !state.workId ? `<div class="empty-state"><strong>SELECIONE UMA OBRA</strong><span>Serão apresentados apenas os colaboradores alocados nessa data.</span></div>` : state.rows.length ? `<div class="attendance-list">${state.rows.map(rowForm).join("")}</div>` : `<div class="empty-state"><strong>SEM PESSOAL ALOCADO</strong><span>O Administrativo deve primeiro colocar a equipa nesta obra no Quadro de Pessoal.</span></div>`}`;
+    <div class="attendance-guidance"><strong>FOLHA DE PONTO${state.workId ? ` · OBRA ${esc(state.works.find(w=>w.id===state.workId)?.numero || '')}` : ''}</strong><span>Os horários padrão são 08:00–12:00 e 13:00–17:00. Ajuste apenas quando o horário real for diferente. As justificações apresentadas ficam pendentes de validação administrativa.</span></div>
+    ${state.loading ? `<div class="empty-state"><strong>A CARREGAR FOLHA DE PONTO…</strong></div>` : state.error ? `<div class="work-warning"><strong>NÃO FOI POSSÍVEL CARREGAR</strong><span>${esc(state.error)}</span></div>` : !state.workId ? `<div class="empty-state"><strong>SELECIONE UMA OBRA</strong><span>Serão apresentados apenas os colaboradores alocados nessa data.</span></div>` : state.rows.length ? `<div class="attendance-list">${state.rows.map(rowForm).join("")}</div>` : `<div class="empty-state"><strong>SEM PESSOAL ALOCADO</strong><span>O Administrativo deve primeiro colocar a equipa nesta obra no Quadro de Pessoal.</span></div>`}`;
   }
 
+  let loadVersion = 0;
   async function load() {
-    if (!isConfigured) { state.error = "O ponto necessita de ligação à base de dados."; render(); return; }
+    if (!isConfigured) { state.error = "A folha de ponto necessita de ligação à base de dados."; render(); return; }
+    const version = ++loadVersion;
+    const date = state.date, role = getRole();
+    let workId = state.workId;
     state.loading = true; state.error = ""; render();
     try {
-      const payload = await rpc("fn_listar_ponto_obra", { p_data: state.date, p_obra_id: state.workId || null });
-      state.works = payload.obras || [];
-      if (!state.workId && state.works.length === 1) {
-        state.workId = state.works[0].id;
-        const selected = await rpc("fn_listar_ponto_obra", { p_data: state.date, p_obra_id: state.workId });
-        state.rows = selected.linhas || [];
-        state.canValidate = Boolean(selected.pode_validar);
+      let works, payload, members;
+      if (role === "encarregado") {
+        const team = await rpc("fn_equipa_obra_encarregado", { p_data: date, p_obra_id: workId || null });
+        works = team.obras || [];
+        workId = team.obra_id;
+        if (workId && !works.some(w=>w.id===workId)) throw new Error("Obra não autorizada.");
+        members = new Set((team.equipa || []).map(c=>c.colaborador_id));
+        payload = workId ? await rpc("fn_listar_ponto_obra", { p_data: date, p_obra_id: workId }) : {linhas:[]};
       } else {
-        if (state.workId && !state.works.some(work => work.id === state.workId)) state.workId = "";
-        state.rows = payload.linhas || [];
-        state.canValidate = Boolean(payload.pode_validar);
+        payload = await rpc("fn_listar_ponto_obra", { p_data: date, p_obra_id: workId || null });
+        works = payload.obras || [];
+        if (workId && !works.some(w=>w.id===workId)) workId = "";
+        if (!workId && works.length === 1) {
+          workId = works[0].id;
+          payload = await rpc("fn_listar_ponto_obra", { p_data: date, p_obra_id: workId });
+        }
       }
+      if (version !== loadVersion || role !== getRole()) return;
+      state.works = works; state.workId = workId;
+      state.rows = workId ? (payload.linhas || []).filter(r=>!members || members.has(r.colaborador_id)) : [];
+      state.canValidate = Boolean(payload.pode_validar);
       state.loaded = true;
-    } catch (error) { state.error = error.message; state.rows = []; }
-    finally { state.loading = false; render(); }
+    } catch (error) { if(version===loadVersion) {state.error=error.message;state.rows=[];} }
+    finally { if(version===loadVersion) {state.loading=false;render();} }
   }
 
   function calculate(form) {
@@ -107,53 +125,25 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast }) 
   }
 
   async function downloadMonthlyReport(button) {
-    if (!state.reportMonth) return toast("Selecione o mês de referência.", "error");
+    if (!["gestao_plataforma", "administrativo"].includes(getRole())) return;
+    const work = state.works.find(w=>w.id===state.reportWorkId);
+    const month = state.reportMonth;
+    if (!work || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return toast("Selecione a obra e o mês de referência.", "error");
     button.disabled = true;
-    const originalLabel = button.textContent;
-    button.textContent = "A PREPARAR…";
     try {
-      const rows = await rpc("fn_relatorio_mensal_ponto", { p_mes: `${state.reportMonth}-01` });
-      if (!Array.isArray(rows) || !rows.length) {
-        toast("Não existem registos de ponto no mês selecionado.", "error");
-        return;
-      }
-      const data = rows.map(row => ({
-        "Colaborador": row.colaborador,
-        "Função": row.funcao || "",
-        "Obra": row.obra_numero ? `${row.obra_numero} · ${row.obra_nome}` : row.obra_nome,
-        "Horas": Number(row.horas || 0),
-        "Dias com ponto": Number(row.dias_com_ponto || 0),
-        "Faltas com justificação": Number(row.faltas_com_justificacao || 0),
-        "Faltas sem justificação": Number(row.faltas_sem_justificacao || 0),
-      }));
-      const filename = `relatorio-horas-${state.reportMonth}.xlsx`;
-      if (window.XLSX?.utils) {
-        const sheet = window.XLSX.utils.json_to_sheet(data);
-        sheet["!cols"] = [{ wch: 32 }, { wch: 24 }, { wch: 48 }, { wch: 12 }, { wch: 17 }, { wch: 25 }, { wch: 25 }];
-        sheet["!autofilter"] = { ref: sheet["!ref"] };
-        const book = window.XLSX.utils.book_new();
-        window.XLSX.utils.book_append_sheet(book, sheet, "Horas por obra");
-        window.XLSX.writeFile(book, filename);
-      } else {
-        const columns = Object.keys(data[0]);
-        const quote = value => `"${String(value ?? "").replaceAll('"', '""')}"`;
-        const csv = `\ufeff${[columns, ...data.map(row => columns.map(column => row[column]))].map(line => line.map(quote).join(";")).join("\r\n")}`;
-        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-        const link = document.createElement("a"); link.href = url; link.download = filename.replace(".xlsx", ".csv"); link.click();
-        URL.revokeObjectURL(url);
-      }
-      toast(`Relatório de ${state.reportMonth} descarregado.`);
-    } catch (error) {
-      toast(error.message, "error");
-    } finally {
-      button.disabled = false;
-      button.textContent = originalLabel;
-    }
+      const rows = await rpc("fn_folha_ponto_mensal", { p_mes: `${month}-01`, p_obra_id: work.id });
+      const report = prepareAttendanceReport(rows, work, month);
+      if(button.dataset.attendanceDownload === "pdf") exportAttendancePdf(report, window.jspdf?.jsPDF);
+      else exportAttendanceExcel(report, window.XLSX);
+      toast(`Relatório da Obra ${work.numero} · ${month} descarregado.`);
+    } catch(error) { toast(error.message, "error"); }
+    finally { button.disabled = false; }
   }
 
   root?.addEventListener("change", async event => {
     if (event.target.matches("[data-attendance-date]")) { state.date = event.target.value; await load(); return; }
     if (event.target.matches("[data-attendance-work]")) { state.workId = event.target.value; await load(); return; }
+    if (event.target.matches("[data-attendance-report-work]")) { state.reportWorkId = event.target.value; return; }
     if (event.target.matches("[data-attendance-report-month]")) { state.reportMonth = event.target.value; return; }
     const form = event.target.closest("[data-attendance-row]");
     if (!form) return;
@@ -205,10 +195,10 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast }) 
         p_saida_tarde: form.elements.saida_tarde.value || null,
         p_observacao: form.elements.observacao.value.trim() || null,
       });
-      toast("Ponto guardado.");
+      toast("REGISTO GUARDADO");
       await load();
     } catch (failure) { error.textContent = failure.message; button.disabled = false; }
   });
 
-  return { show: load, refresh: load };
+  return { show: (context = {}) => { if (context.workId) state.workId = context.workId; if (context.date) state.date = context.date; return load(); }, refresh: load };
 }

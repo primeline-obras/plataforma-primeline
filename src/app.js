@@ -1,7 +1,7 @@
 import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=24";
+import { createProductionDashboard } from "./production-dashboard.js?v=25";
 import { createPlanningModule } from "./planning.js?v=13";
 import { createSubcontractorsModule } from "./subcontractors.js?v=8";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=15";
@@ -23,7 +23,8 @@ import { createManagementMapModule } from "./management-map.js?v=14";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceModule } from "./attendance.js?v=2";
+import { createAttendanceModule } from "./attendance.js?v=4";
+import { createForemanTeam } from "./foreman-team.js?v=1";
 import { createRhCadastro, contractTypeLabel } from "./rh-cadastro.js?v=3";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
@@ -348,7 +349,7 @@ document.querySelector("#root").innerHTML = `
           <div id="team-vacations"></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="attendance" hidden>
-          <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE EM OBRA</p><h2>PONTO DIÁRIO</h2></div><span>ALOCAÇÃO → REGISTO → VALIDAÇÃO</span></div>
+          <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE EM OBRA</p><h2>FOLHA DE PONTO</h2></div><span>ALOCAÇÃO → REGISTO → VALIDAÇÃO</span></div>
           <div id="team-attendance"></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
@@ -378,9 +379,11 @@ document.querySelector("#root").innerHTML = `
         </section>
       </div>
       <div class="page workforce-view" id="workforce-view" hidden>
+        <div id="foreman-team" hidden></div>
+        <div id="workforce-general">
         <div class="page-heading">
           <div><p class="eyebrow">PLANEAMENTO SEMANAL</p><h1>QUADRO DE PESSOAL</h1><p>Distribuição das equipas operacionais pelas obras.</p></div>
-          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><div class="workforce-heading-buttons"><button class="outline-action" id="workforce-movements" type="button">HISTÓRICO DE MOVIMENTAÇÕES</button><button class="outline-action" id="workforce-my-work" type="button" hidden>ADICIONAR À MINHA OBRA</button><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div></div>
+          <div class="workforce-heading-actions"><div class="workforce-legend"><span><i class="foreman"></i>ENCARREGADO</span><span><i class="mason"></i>PEDREIRO</span><span><i class="helper"></i>SERVENTE</span></div><div class="workforce-heading-buttons"><button class="outline-action" id="workforce-movements" type="button">HISTÓRICO DE MOVIMENTAÇÕES</button><button class="outline-action" id="edit-workforce" type="button">EDITAR QUADRO</button></div></div>
         </div>
         <div class="workforce-edit-banner" id="workforce-edit-banner" hidden><strong>MODO DE EDIÇÃO</strong><span id="workforce-edit-message">Selecione um íman e depois clique no dia e obra de destino.</span><button id="add-workforce-line" type="button">＋ NOVA LINHA</button><button id="remove-workforce-allocation" type="button" hidden>RETIRAR</button><button id="finish-workforce-edit" type="button">TERMINAR</button></div>
         <form class="workforce-new-line" id="workforce-new-line" hidden>
@@ -403,6 +406,7 @@ document.querySelector("#root").innerHTML = `
           <div class="team-section-head"><div><p class="eyebrow">SEMANA SELECIONADA</p><h2>DISTRIBUIÇÃO POR OBRA</h2></div><span id="team-week-label"></span></div>
           <div id="team-board"></div>
         </section>
+      </div>
       </div>
       <div class="page settings-view" id="settings-view" hidden></div>
       <div class="page company-documents-view" id="company-documents-view" hidden></div>
@@ -819,6 +823,14 @@ const subcontractorsModule = createSubcontractorsModule({
 });
 const attendanceModule = createAttendanceModule({
   root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast,
+  getRole: () => accessContext.profile?.funcao || accessContext.role,
+});
+
+const foremanTeam = createForemanTeam({
+  root: $("#foreman-team"), supabase, toast,
+  getRole: () => accessContext.profile?.funcao || accessContext.role,
+  onAttendance: context => switchView("team", { ...context, teamTab: "attendance" }),
+  onHistory: context => openWorkforceMovements(context),
 });
 
 function renderUser() {
@@ -941,6 +953,7 @@ function allowedViews() {
 }
 
 function defaultViewForCurrentUser() {
+  if (effectiveRole() === "encarregado") return "workforce";
   const permitted = accessFor(accessContext).views;
   if (permitted.includes("action-plan")) return "action-plan";
   if (permitted.includes("overview")) return "overview";
@@ -977,7 +990,11 @@ function applyAccessVisibility() {
   $("#new-work").hidden = !hasFullAccess();
   $("#edit-workforce").hidden = !canManageWorkforce();
   $("#workforce-movements").hidden = !canReadWorkforceHistory(accessContext.profile?.funcao || accessContext.role);
-  $("#workforce-my-work").hidden = effectiveRole() !== "encarregado";
+  const foreman = effectiveRole() === "encarregado";
+  $("#workforce-general").hidden = foreman;
+  $("#foreman-team").hidden = !foreman;
+  $(".sidebar [data-view=workforce] span").textContent = foreman ? "Equipa da obra" : "Quadro de pessoal";
+  $(".sidebar [data-view=team] span").textContent = foreman ? "Folha de Ponto / Equipa" : "Equipa";
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
@@ -2048,7 +2065,7 @@ function renderTeam() {
   if ($("#team-kpis")) $("#team-kpis").hidden = vacationOnly;
   if ($("#team-alert-summary")) $("#team-alert-summary").hidden = vacationOnly;
   if ($("#team-page-description")) $("#team-page-description").textContent = vacationOnly
-    ? "Mapa de Férias, ponto diário da equipa em obra e medicina do trabalho."
+    ? "Mapa de Férias, folha de ponto da equipa em obra e medicina do trabalho."
     : "Colaboradores, frota, documentos, ausências e contratos.";
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
@@ -2460,49 +2477,6 @@ async function removeWorkforceAllocation() {
   } catch (error) { toast(error.message, "error"); }
 }
 
-async function openWorkforceMyWork() {
-  if (effectiveRole() !== "encarregado") return;
-  try {
-    const response = await supabase("rpc/fn_quadro_obras_destino", { method: "POST", body: "{}" });
-    if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível consultar as obras autorizadas."));
-    const destinations = await response.json();
-    if (!destinations.length) throw new Error("Não tem uma obra associada como Encarregado. Contacte o ADM.");
-    $("#workflow-dialog-title").textContent = "ADICIONAR À MINHA OBRA";
-    $("#workflow-dialog-content").innerHTML = `<form id="workforce-my-form" class="workforce-action-form">
-      <label>Obra autorizada<select name="obra_id" required>${destinations.map(w => `<option value="${safeText(w.id)}">${safeText(w.numero)} · ${safeText(w.nome)}</option>`).join("")}</select></label>
-      <label>Colaborador<select name="colaborador_id" required>${collaborators.filter(c => !c.data_saida).map(c => `<option value="${safeText(c.id)}">${safeText(c.nome)}</option>`).join("")}</select></label>
-      <label>Data<input name="data" type="date" value="${selectedTeamWeek}" required></label>
-      <label>Período<select name="periodo"><option value="dia_inteiro">Dia inteiro</option><option value="manha">Manhã</option><option value="tarde">Tarde</option></select></label>
-      <p>Uma data e período de cada vez. Várias origens ou sobreposições parciais requerem ADM/Gestão.</p>
-      <p class="form-error" role="alert"></p><div data-move-preview role="status"></div>
-      <div class="dialog-actions"><button type="button" class="outline-action" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">PRÉ-VISUALIZAR</button></div></form>`;
-    $("#workflow-dialog").hidden = false;
-    const form = $("#workforce-my-form");
-    let preview = null;
-    form.addEventListener("change", () => { preview = null; form.querySelector("[data-move-preview]").textContent = ""; form.querySelector('[type="submit"]').textContent = "PRÉ-VISUALIZAR"; });
-    form.addEventListener("submit", async event => {
-      event.preventDefault();
-      const button = form.querySelector('[type="submit"]'); button.disabled = true;
-      const errorBox = form.querySelector(".form-error"); errorBox.textContent = "";
-      const payload = Object.fromEntries(new FormData(form));
-      try {
-        if (!preview) {
-          preview = await workforceRequest(supabase, "minha_obra", payload);
-          const origin = works.find(w => w.id === preview.obra_origem_id);
-          form.querySelector("[data-move-preview]").textContent = `${preview.colaborador} · ${preview.data} · ${preview.periodo}: ${preview.acao === "mover" ? `mover da obra ${origin?.numero || preview.obra_origem_id || "sem número"}` : "criar nova alocação"} para ${destinations.find(w => w.id === payload.obra_id)?.nome}. Outras datas são preservadas.`;
-          button.textContent = "CONFIRMAR MOVIMENTAÇÃO";
-        } else {
-          await workforceRequest(supabase, "minha_obra", payload, true, preview.versao);
-          $("#workflow-dialog").hidden = true;
-          await loadTeamData(true, true); toast("Movimentação concluída e registada no histórico.");
-        }
-      } catch (error) {
-        preview = null; errorBox.textContent = error.message; button.textContent = "PRÉ-VISUALIZAR";
-      } finally { button.disabled = false; }
-    });
-  } catch (error) { toast(error.message, "error"); }
-}
-
 function openVacationDaysDialog(personId, week) {
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
@@ -2615,8 +2589,8 @@ function workforceMovementPlace(rows) {
   }))].join(" / ") || "Sem colocação";
 }
 
-async function openWorkforceMovements() {
-  const anchor = new Date(`${selectedTeamWeek}T12:00:00`);
+async function openWorkforceMovements(context = {}) {
+  const anchor = new Date(`${context.date || selectedTeamWeek}T12:00:00`);
   const monthStart = `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, "0")}-01`;
   const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12).toISOString().slice(0, 10);
   if (!canReadWorkforceHistory(accessContext.profile?.funcao || accessContext.role)) return;
@@ -3908,9 +3882,12 @@ function switchView(view, context = {}) {
   if (view === "properties") propertiesModule.show();
   if (view === "budget-requests") budgetRequestsModule.show();
   if (view === "subcontractors") subcontractorsModule.show();
-  if (view === "team" && !canManageTeam()) activateTeamTab("vacations");
-  else if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);
-  if (view === "team" || view === "workforce") loadTeamData();
+  if (view === "team" && context.teamTab) activateTeamTab(context.teamTab);
+  else if (view === "team" && effectiveRole() === "encarregado") activateTeamTab("attendance");
+  else if (view === "team" && !canManageTeam()) activateTeamTab("vacations");
+  if (view === "team" && selectedTeamTab === "attendance") attendanceModule.show(context);
+  if (view === "workforce" && effectiveRole() === "encarregado") foremanTeam.show(context);
+  else if (view === "team" || view === "workforce") loadTeamData();
   if (view === "settings") settingsModule?.load();
   if (view === "company-documents") companyDocumentsModule.show();
   if (view === "overview") productionDashboard.refreshOverview();
@@ -3975,7 +3952,6 @@ $("#toggle-inactive-collaborators").addEventListener("click", () => {
 });
 $("#edit-workforce").addEventListener("click", () => setWorkforceEditing(!workforceEditing));
 $("#workforce-movements").addEventListener("click", openWorkforceMovements);
-$("#workforce-my-work").addEventListener("click", openWorkforceMyWork);
 $("#finish-workforce-edit").addEventListener("click", () => setWorkforceEditing(false));
 $("#remove-workforce-allocation").addEventListener("click", removeWorkforceAllocation);
 $("#add-workforce-line").addEventListener("click", () => toggleWorkforceLineForm($("#workforce-new-line").hidden));

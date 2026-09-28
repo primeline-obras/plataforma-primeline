@@ -11,8 +11,8 @@ test("encarregado consulta quadro/férias e só dispõe da ação limitada", () 
   assert.match(access, /encarregado:[\s\S]*?views:[^\n]*"workforce"/);
   assert(app.includes('["vacations", "attendance", "medicine"]'));
   assert(app.includes('$("#edit-workforce").hidden = !canManageWorkforce()'));
-  assert(app.includes('id="workforce-my-work"'));
-  assert(app.includes('rpc/fn_quadro_obras_destino'));
+  assert(app.includes('id="foreman-team"'));
+  assert(app.includes('createForemanTeam'));
 });
 
 test("leitura global expõe apenas os dados operacionais necessários", () => {

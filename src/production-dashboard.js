@@ -233,17 +233,24 @@ export function invoiceDueDate(invoice = {}) {
 }
 
 export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = new Set(), currentUserId = "") {
-  const personalMeeting = alert => isMeetingInformation(alert) && alert.destinatario_utilizador_id === currentUserId;
-  if (["gerencia", "administrativo"].includes(role)) return sortAlertsByPriority(alerts.filter(alert => !isMeetingInformation(alert) || personalMeeting(alert)));
-  if (role === "financeiro") return sortAlertsByPriority(alerts.filter(alert => personalMeeting(alert) || FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`)));
-  if (["diretor_obra", "adjunto", "preparador"].includes(role)) {
-    return sortAlertsByPriority(alerts.filter(alert =>
-      personalMeeting(alert)
-      || (alert.obra_id && responsibleWorkIds.has(alert.obra_id))
-      || (TECHNICAL_RECURRING_TYPES.has(alert.tipo) && (!alert.entidade_id || alert.entidade_id === currentUserId))
-    ));
-  }
-  return sortAlertsByPriority(alerts.filter(personalMeeting));
+  return sortAlertsByPriority(alerts.filter(alert => {
+    // Destinatário explícito tem precedência sobre perfil, obra e categoria.
+    if (alert.destinatario_utilizador_id) {
+      return Boolean(currentUserId) && alert.destinatario_utilizador_id === currentUserId;
+    }
+    if (isMeetingInformation(alert)) return false;
+    if (["gerencia", "administrativo"].includes(role)) return true;
+    if (role === "financeiro") return FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`);
+    if (["diretor_obra", "adjunto", "preparador"].includes(role)) {
+      return (alert.obra_id && responsibleWorkIds.has(alert.obra_id))
+        || (TECHNICAL_RECURRING_TYPES.has(alert.tipo) && (!alert.entidade_id || alert.entidade_id === currentUserId));
+    }
+    return false;
+  }));
+}
+
+export function workforceAlertDestination(alert) {
+  return alert.tipo === "movimentacao_equipa" ? { view: "workforce", workId: alert.obra_id || undefined } : null;
 }
 
 export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date()) {
@@ -529,6 +536,8 @@ export function createProductionDashboard(options) {
   }
 
   function alertDestination(alert) {
+    const workforce = workforceAlertDestination(alert);
+    if (workforce) return workforce;
     if (alert.tipo === "compromisso_agenda") return { view: "calendar" };
     if (alert.tipo === "reserva_sala") return { view: "rooms" };
     if (["consulta_medicina", "primeira_consulta_medicina"].includes(alert.tipo)) return { view: "team", teamTab: "medicine" };
@@ -570,7 +579,7 @@ export function createProductionDashboard(options) {
         <div><time>${alert.data_gatilho ? prettyDate.format(safeDate(alert.data_gatilho)) : "SEM DATA"}</time><span><em>${escapeHtml(alert.tipo || "GERAL").replace(/_/g, " ")}</em><em class="notification-channel">${alert.enviar_email ? "PLATAFORMA + EMAIL" : "PLATAFORMA"}</em></span></div>
         <strong>${escapeHtml(alert.titulo || alert.tipo || "Alerta")}</strong>
         <p>${escapeHtml(alert.descricao || "")}</p>
-        ${isMeetingInformation(alert) ? "" : `<footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>`}
+        ${isMeetingInformation(alert) ? "" : `<footer><button type="button" data-notification-view="${destination.view}" data-notification-tab="${destination.teamTab || ""}" data-notification-work="${escapeHtml(destination.workId || "")}">VER ÁREA</button><button type="button" data-resolve-alert="${alert.id}">MARCAR COMO RESOLVIDO</button></footer>`}
       </article>`;
       }).join("")}</section>`).join("") : `<div class="notification-drawer-empty"><strong>TUDO EM DIA</strong><span>Não existem alertas pendentes.</span></div>`;
   }
@@ -1339,7 +1348,7 @@ export function createProductionDashboard(options) {
       const viewButton = event.target.closest("[data-notification-view]");
       if (viewButton) {
         closeNotificationDrawer();
-        showView(viewButton.dataset.notificationView, { teamTab: viewButton.dataset.notificationTab || undefined });
+        showView(viewButton.dataset.notificationView, { teamTab: viewButton.dataset.notificationTab || undefined, workId: viewButton.dataset.notificationWork || undefined });
         return;
       }
       const resolveButton = event.target.closest("[data-resolve-alert]");
