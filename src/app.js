@@ -4,8 +4,8 @@ import { workDates } from "./planning-operational.js?v=1";
 import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=25";
-import { createPlanningModule } from "./planning.js?v=13";
+import { createProductionDashboard } from "./production-dashboard.js?v=26";
+import { createPlanningModule } from "./planning.js?v=14";
 import { createSubcontractorsModule } from "./subcontractors.js?v=8";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=15";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
@@ -21,10 +21,10 @@ import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
 import { createCalendarModule } from "./calendar.js?v=2";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
-import { createFinancialMapModule } from "./financial-map.js?v=1";
+import { createFinancialMapModule } from "./monthly-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
-import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
+import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=4";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceModule } from "./attendance.js?v=4";
 import { createForemanTeam } from "./foreman-team.js?v=1";
@@ -720,6 +720,7 @@ const planningModule = createPlanningModule({
   getWorks: () => works,
   getRole: effectiveRole,
   toast,
+  onCommitted: event => financialMapModule.invalidate(event),
 });
 const actionPlanModule = createActionPlanModule({
   root: $("#action-plan-view"),
@@ -775,8 +776,8 @@ const budgetRequestsModule = createBudgetRequestsModule({
 });
 const financialMapModule = createFinancialMapModule({
   root: $("#financial-map-content"), supabase, isConfigured: isSupabaseConfigured,
-  getWorks: () => works, getProfile: () => accessContext.profile, euro, toast,
-  onImportExcel: context => operationalXlsxImportModule?.openFinancial(context),
+  getWorks: () => works, euro, toast,
+  canManage: () => hasFullAccess() || isFinancial(),
 });
 const managementMapModule = createManagementMapModule({
   root: $("#management-map-content"), supabase, isConfigured: isSupabaseConfigured,

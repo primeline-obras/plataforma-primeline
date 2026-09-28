@@ -2668,3 +2668,17 @@ button, input, select, textarea,
 .planning-work-data dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .planning-work-data dt { font-size: 12px; opacity: .75; }
 .planning-work-data dd { margin: 4px 0 0; font-weight: 600; }
+.monthly-controls, .monthly-indicators { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; }
+.monthly-controls label, .monthly-indicators > div { display: flex; flex-direction: column; gap: 5px; }
+.monthly-controls { align-items: end; }
+.monthly-controls button, [data-monthly-cell], [data-monthly-save-state], [data-monthly-more], [data-monthly-close-detail] { padding: 8px 12px; border: 1px solid var(--card-border, #dce2e8); border-radius: 6px; background: var(--card, white); color: var(--text-primary, #282d30); font-family: inherit; }
+.monthly-controls input, .monthly-controls select { min-height: 36px; max-width: 320px; }
+.monthly-indicators > div { padding: 12px; border: 1px solid var(--border, #dce2e8); border-radius: 6px; }
+.monthly-indicators span { font-size: 12px; }
+.monthly-detail { padding: 20px; border-top: 1px solid var(--border, #dce2e8); overflow-wrap: anywhere; }
+.monthly-detail li { padding: 10px 0; }
+.financial-map-table caption { padding: 12px; text-align: left; }
+.financial-map-table td:has([data-monthly-state]) { min-width: 185px; white-space: normal; }
+.financial-map-table [data-monthly-state], .financial-map-table [data-monthly-save-state] { display: block; position: static; width: 100%; min-width: 0; max-width: 185px; margin: 5px 0; box-sizing: border-box; }
+.financial-map-table:has([data-monthly-cell]) tbody th { position: sticky; left: 0; background: var(--card); z-index: 2; white-space: normal; min-width: 220px; text-align: left; }
+.financial-map-table:has([data-monthly-cell]) td { max-width: 240px; white-space: normal; overflow-wrap: anywhere; }
