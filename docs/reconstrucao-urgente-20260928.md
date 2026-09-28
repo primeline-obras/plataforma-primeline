@@ -38,3 +38,25 @@ Estratégia: manter itens importados/revisões separados dos itens medidos; futu
 ## Dependências de backend
 
 Persistência de arquivo, lote atómico, revisões e parcelas exige evolução do backend. Não substituir atomicidade por vários PATCHs nem simular sucesso quando a RPC faltar. A validação em PostgreSQL permanece não executada por instrução do utilizador. O novo motor não pode somar agregados legados às mesmas origens.
+
+## Estado dos blocos A e B
+
+A: helpers implementados e 12 testes aprovados. Commit `e0cecde`, sincronizado na branch urgente.
+
+B: frontend de lote, preview, arquivo local com motivo, redistribuição explícita, dependências locais, proteção de saída e importação para o lote implementados. Não há DELETE/PATCH de tarefa neste fluxo. 25 testes unitários/regressão e um cenário de navegador offline aprovados. A atomicidade real permanece pendente do backend.
+
+### Protocolo proposto: fn_guardar_planeamento_lote
+
+O cliente envia `p_lote` (version=1, obra_id, changes com apenas campos alterados, expected_items, dependencies, expected_dependencies, archive_reason e approved_cascade). `p_confirmacao=null` pede preview sem mutações. Resposta: version=1, confirmation_token, conflicts e approved_cascade. A confirmação envia exatamente o mesmo lote e o token; só `committed=true` é sucesso.
+
+Requisitos do servidor antes de ativar:
+
+- Autenticação, autorização por obra e validação de todas as referências; nunca confiar nos campos derivados enviados.
+- Token vinculado ao utilizador, obra, conteúdo e versões lidas, com expiração; comparação/locks para rejeitar concorrência. Repetição idempotente.
+- Validar pesos, datas, ciclos, arquivo e cascata sobre o estado final inteiro; proteger datas manuais. Uma só transação mesmo com processamento interno de 200–500 linhas.
+- Arquivo com autor/data/motivo, sem apagar custos ou histórico. Preservar baseline e relações financeiras.
+- Coordenar o trigger existente de cascata para não aplicar efeitos fora do preview. Conclusão de custos e atualização de resumos dentro da mesma transação.
+- Recalcular períodos afetados e apenas previsão aberta/futura; preservar autos aprovados, meses fechados e movimentos reais. Devolver resumo atualizado.
+- Leitura de arquivo deve ser exposta pelo mesmo contrato de backend antes da ativação. O snapshot atual não tem esse campo.
+
+O frontend recusa RPC ausente, resposta incompleta ou cascata diferente. Não afirmar que este protocolo já existe na BD.

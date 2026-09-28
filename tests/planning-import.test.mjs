@@ -58,7 +58,8 @@ test("o planeamento oferece pré-visualização, criação, atualização e depe
   assert.match(planning, /data-confirm-import/);
   assert.match(planning, /A CRIAR/);
   assert.match(planning, /A ATUALIZAR/);
-  assert.match(planning, /method:\s*item\._new\s*\?\s*"POST"\s*:\s*"PATCH"/);
+  assert.match(planning, /requestPlanningBatch\(supabase, payload/);
+  assert.doesNotMatch(planning, /method:\s*"(?:PATCH|DELETE)"/);
   assert.match(planning, /percentual_ponderado:\s*weight === null \? null : weight \* progress \/ 100/);
   assert.match(planning, /data-remove-task/);
   assert.match(planning, /planeamento_itens_dependencias/);

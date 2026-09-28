@@ -3832,7 +3832,8 @@ async function removeInvoiceRelatedFile(button) {
   toast(`${isGuide ? "Guia" : "Anexo"} apagado.`);
 }
 
-function switchView(view, context = {}) {
+async function switchView(view, context = {}) {
+  if (view !== "planning" && !document.querySelector("#planning-view")?.hidden && !await planningModule.canLeave()) return;
   if (!allowedViews().has(view)) {
     toast("Não tem permissão para aceder a esta área.", "error");
     view = defaultViewForCurrentUser();

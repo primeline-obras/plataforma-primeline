@@ -2653,3 +2653,13 @@ button, input, select, textarea,
 .agenda-form-actions button { flex: 1; }
 @media (max-width: 1100px) { .agenda-layout { grid-template-columns: 1fr; } .agenda-form { position: static; } }
 @media (max-width: 700px) { .agenda-calendar, .agenda-day-list, .agenda-form { padding: 14px; } .agenda-calendar { overflow-x: auto; } .agenda-calendar > header, .agenda-weekdays, .agenda-month-grid { min-width: 620px; } .agenda-form-grid, .agenda-participants > div { grid-template-columns: 1fr; } .calendar-event { grid-template-columns: 1fr; } .calendar-event > div:last-child { justify-content: end; } }
+/* Operational batch: local changes stay visible until atomic confirmation. */
+.planning-editor-row.dirty { box-shadow: inset 4px 0 #b77d26; background: #fff9e9; }
+.planning-editor-row.archiving { background: #fff0ed; border-left: 4px solid #b94b3e; }
+.planning-editor-row.archiving > input, .planning-editor-row.archiving > textarea { opacity: .65; }
+.planning-weights, .planning-batch-preview { padding: 16px; margin: 12px 0; border: 1px solid #cbd4de; border-radius: 8px; }
+.planning-weights > div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 0; }
+.planning-weights button { margin-left: auto; }
+.planning-batch-preview { background: #f5f8fc; }
+.planning-batch-preview ul { max-height: 200px; overflow: auto; }
+.planning-batch-preview input { display: block; width: 100%; margin: 8px 0; }
