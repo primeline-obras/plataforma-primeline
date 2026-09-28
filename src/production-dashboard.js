@@ -1,3 +1,4 @@
+import { workDates } from "./planning-operational.js?v=1";
 import { directDebitOccurrences } from "./direct-debits.js?v=1";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
 
@@ -328,10 +329,7 @@ export function createProductionDashboard(options) {
   }
 
   function deadlinePercent(work) {
-    const start = safeDate(work.data_inicio)?.getTime();
-    const end = safeDate(work.data_fim_prevista)?.getTime();
-    if (!start || !end || end <= start) return 0;
-    return clampPercent(((Date.now() - start) / (end - start)) * 100);
+    return workDates(work, null, new Date().toLocaleDateString("en-CA")).consumed;
   }
 
   function actualCostForWork(workId, data = overviewState) {
@@ -462,7 +460,7 @@ export function createProductionDashboard(options) {
       </div>
       <div class="overview-work-status">
         <div><span>OBRA EXECUTADA <b>${Math.round(progress)}%</b></span><i><em style="width:${progress}%"></em></i></div>
-        <div><span>PRAZO CONSUMIDO <b>${Math.round(deadline)}%</b></span><i><em style="width:${deadline}%"></em></i></div>
+        <div><span>PRAZO CONSUMIDO <b>${deadline === null ? "—" : `${Math.round(deadline)}%`}</b></span><i><em style="width:${Math.min(100, deadline ?? 0)}%"></em></i></div>
       </div>
       <div class="overview-work-columns">
         <section><h3>A MINHA FILA <b>${workInvoices.length}</b></h3><div class="overview-actions compact">${invoiceRows || '<div class="overview-empty">SEM FATURAS PENDENTES</div>'}</div></section>
@@ -1055,7 +1053,7 @@ export function createProductionDashboard(options) {
         <article class="panel meeting-card"><div class="meeting-title"><span>${investmentMode ? "CUSTO E PROGRESSO" : "FATURAÇÃO E PROGRESSO"}</span></div>
           ${investmentMode ? `<div class="meeting-progress"><span>ORÇAMENTO CONSUMIDO <b>${revisedBudget ? Math.round(clampPercent(actualCost / revisedBudget * 100)) : 0}%</b></span><div><i style="width:${revisedBudget ? clampPercent(actualCost / revisedBudget * 100) : 0}%"></i></div><small>${euro.format(actualCost)} de ${euro.format(revisedBudget)}</small></div>` : `<div class="meeting-progress"><span>FATURADO <b>${Math.round(billingPercent)}%</b></span><div><i style="width:${billingPercent}%"></i></div><small>${euro.format(billed)} de ${euro.format(totalSale)}</small></div>`}
           <div class="meeting-progress"><span>OBRA EXECUTADA <b>${Math.round(execution)}%</b></span><div><i style="width:${execution}%"></i></div><small>ponderação financeira das fases</small></div>
-          <div class="meeting-progress deadline"><span>PRAZO CONSUMIDO <b>${Math.round(deadline)}%</b></span><div><i style="width:${deadline}%"></i></div><small>${work.data_inicio ? prettyDate.format(safeDate(work.data_inicio)) : "—"} → ${work.data_fim_prevista ? prettyDate.format(safeDate(work.data_fim_prevista)) : "—"}</small></div>
+          <div class="meeting-progress deadline"><span>PRAZO CONSUMIDO <b>${deadline === null ? "—" : `${Math.round(deadline)}%`}</b></span><div><i style="width:${Math.min(100, deadline ?? 0)}%"></i></div><small>${work.data_inicio ? prettyDate.format(safeDate(work.data_inicio)) : "—"} → ${work.data_fim_contratual_atual ? prettyDate.format(safeDate(work.data_fim_contratual_atual)) : "Prazo contratual não configurado"}</small></div>
         </article>
       </section>
       ${renderFinancialForecast(work, projection)}
@@ -1315,7 +1313,7 @@ export function createProductionDashboard(options) {
         </div>
         <div class="rsp-progress-grid">
           <div class="meeting-progress"><span>OBRA EXECUTADA <b>${Math.round(execution)}%</b></span><div><i style="width:${execution}%"></i></div></div>
-          <div class="meeting-progress deadline"><span>PRAZO CONSUMIDO <b>${Math.round(deadline)}%</b></span><div><i style="width:${deadline}%"></i></div></div>
+          <div class="meeting-progress deadline"><span>PRAZO CONSUMIDO <b>${deadline === null ? "—" : `${Math.round(deadline)}%`}</b></span><div><i style="width:${Math.min(100, deadline ?? 0)}%"></i></div></div>
         </div>
         <div class="rsp-operational-grid">
           <div><span>${investmentMode ? "IMPACTOS" : "TEEs APROVADOS"}</span><strong>${investmentMode ? impacts.length : approvedTees.length}</strong><small>${investmentMode ? euro.format(sum(impacts, "valor_sem_iva")) : euro.format(sum(approvedTees, "valor"))}</small></div>

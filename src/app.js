@@ -1,3 +1,4 @@
+import { workDates } from "./planning-operational.js?v=1";
 import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
@@ -2743,11 +2744,8 @@ function totalClientBilling(contract, measurements = []) {
 }
 
 function workProgress(work) {
-  if (!work.data_inicio || !work.data_fim_prevista) return null;
-  const start = new Date(`${work.data_inicio}T12:00:00`).getTime();
-  const end = new Date(`${work.data_fim_prevista}T12:00:00`).getTime();
-  if (end <= start) return null;
-  return Math.max(0, Math.min(100, Math.round(((Date.now() - start) / (end - start)) * 100)));
+  const value = workDates(work, null, new Date().toLocaleDateString("en-CA")).consumed;
+  return value === null ? null : Math.round(value);
 }
 
 async function loadWorkDetails(workId) {
@@ -2993,8 +2991,8 @@ function renderWorkSummary(work) {
     </div>
     <div class="work-timeline">
       <div><span>INÍCIO</span><strong>${formatOptionalDate(work.data_inicio)}</strong></div>
-      <div class="timeline-progress"><span>PRAZO DECORRIDO</span><div><i style="width:${progress ?? 0}%"></i></div><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
-      <div><span>FIM PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
+      <div class="timeline-progress"><span>PRAZO DECORRIDO</span><div><i style="width:${Math.min(100, progress ?? 0)}%"></i></div><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
+      <div><span>FIM CONTRATUAL ATUAL</span><strong>${formatOptionalDate(work.data_fim_contratual_atual)}</strong></div><div><span>FIM OPERACIONAL PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
     </div>
     <div class="work-detail-grid">
       <section><div class="detail-section-title"><span>INVESTIMENTO</span></div>
@@ -3020,8 +3018,8 @@ function renderWorkSummary(work) {
     </div>
     <div class="work-timeline">
       <div><span>INÍCIO</span><strong>${formatOptionalDate(work.data_inicio)}</strong></div>
-      <div class="timeline-progress"><span>PRAZO DECORRIDO</span><div><i style="width:${progress ?? 0}%"></i></div><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
-      <div><span>FIM PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
+      <div class="timeline-progress"><span>PRAZO DECORRIDO</span><div><i style="width:${Math.min(100, progress ?? 0)}%"></i></div><strong>${progress === null ? "—" : `${progress}%`}</strong></div>
+      <div><span>FIM CONTRATUAL ATUAL</span><strong>${formatOptionalDate(work.data_fim_contratual_atual)}</strong></div><div><span>FIM OPERACIONAL PREVISTO</span><strong>${formatOptionalDate(work.data_fim_prevista)}</strong></div>
     </div>
     <div class="work-detail-grid">
       <section><div class="detail-section-title"><span>CONTRATO</span></div>

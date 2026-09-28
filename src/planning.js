@@ -1,6 +1,6 @@
 import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from "./planning-import.js?v=1";
 import { platformConfirm } from "./platform-dialogs.js?v=1";
-import { activeTask, phaseProgress, weightSummary, redistributeWeights } from "./planning-operational.js?v=1";
+import { activeTask, phaseProgress, workProgress, workDates, weightSummary, redistributeWeights } from "./planning-operational.js?v=1";
 import { planningChanges, batchPreview, requestPlanningBatch } from "./planning-batch.js?v=1";
 
 const DAY_MS = 86400000;
@@ -430,6 +430,23 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       </section>`;
   }
 
+  function renderWorkData() {
+    const work = state.work || {};
+    const dates = workDates(work, workProgress(state.phases, state.items), new Date().toLocaleDateString("en-CA"));
+    const percent = value => value === null ? "—" : `${value.toFixed(1)}%`;
+    return `<details class="planning-work-data"><summary>DADOS DA OBRA</summary><dl>
+      <div><dt>Início da obra</dt><dd>${displayDate(work.data_inicio)}</dd></div>
+      <div><dt>Fim contratual inicial</dt><dd>${displayDate(work.data_fim_contratual_inicial)}</dd></div>
+      <div><dt>Fim contratual atual</dt><dd>${displayDate(dates.contractualEnd)}</dd></div>
+      <div><dt>Fim operacional previsto</dt><dd>${displayDate(dates.operationalEnd)}</dd></div>
+      <div><dt>Execução física ponderada</dt><dd>${percent(dates.progress)}</dd></div>
+      <div><dt>Prazo contratual consumido</dt><dd>${percent(dates.consumed)}</dd></div>
+      <div><dt>Execução − prazo</dt><dd>${dates.difference === null ? "—" : `${dates.difference.toFixed(1)} p.p.`}</dd></div>
+      <div><dt>Desvio do fim operacional face ao contrato</dt><dd>${dates.delayDays === null ? "—" : `${dates.delayDays} dias`}</dd></div>
+      </dl>${!weightSummary(state.phases).valid ? '<p>PESOS GLOBAIS DAS FASES NÃO CONFIGURADOS</p>' : ""}
+      ${!dates.contractualEnd ? '<p>Prazo contratual não configurado. A previsão operacional é apresentada separadamente.</p>' : ""}</details>`;
+  }
+
   function viewMeta() {
     return {
       baseline: ["PLANEAMENTO INICIAL", "Baseline contratual apenas para consulta"],
@@ -596,10 +613,10 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       return;
     }
     if (!state.phases.length) {
-      content.innerHTML = `<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não possui fases configuradas.</span></div>`;
+      content.innerHTML = `${renderWorkData()}<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não possui fases configuradas.</span></div>`;
       return;
     }
-    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Planeamento detalhado da execução</h2></div><span class="planning-sheet-note">Estrutura operacional por fase</span></header>${renderUnifiedPlanning()}</section></div>`;
+    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Planeamento detalhado da execução</h2></div><span class="planning-sheet-note">Estrutura operacional por fase</span></header>${renderWorkData()}${renderUnifiedPlanning()}</section></div>`;
 
     // Bind the primary import action directly too. This keeps it reliable in
     // embedded browsers where a delegated toolbar click may be swallowed.

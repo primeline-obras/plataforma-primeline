@@ -2663,3 +2663,8 @@ button, input, select, textarea,
 .planning-batch-preview { background: #f5f8fc; }
 .planning-batch-preview ul { max-height: 200px; overflow: auto; }
 .planning-batch-preview input { display: block; width: 100%; margin: 8px 0; }
+.planning-work-data { margin: 16px 0; padding: 16px; border: 1px solid var(--border, #dce2e8); border-radius: 8px; }
+.planning-work-data summary { cursor: pointer; font-weight: 700; }
+.planning-work-data dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.planning-work-data dt { font-size: 12px; opacity: .75; }
+.planning-work-data dd { margin: 4px 0 0; font-weight: 600; }

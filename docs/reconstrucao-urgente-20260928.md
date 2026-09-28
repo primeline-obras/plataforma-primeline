@@ -60,3 +60,9 @@ Requisitos do servidor antes de ativar:
 - Leitura de arquivo deve ser exposta pelo mesmo contrato de backend antes da ativação. O snapshot atual não tem esse campo.
 
 O frontend recusa RPC ausente, resposta incompleta ou cascata diferente. Não afirmar que este protocolo já existe na BD.
+
+## Bloco C — apresentação dos dados da obra
+
+Painel recolhível com início, finais contratuais inicial/atual, final operacional, execução ponderada, prazo consumido e desvios. Resumo da obra e dashboard deixam de usar a previsão operacional como prazo contratual. Prazo desconhecido aparece sem percentagem; prazo ultrapassado mantém valor superior a 100% (a barra é limitada visualmente).
+
+As consultas continuam a usar apenas colunas existentes. Como os snapshots não têm as datas contratuais, estas ficam não configuradas. Edição e persistência dessas datas dependem de extensão do backend; não foram simuladas com campos de baseline nem com a previsão operacional. Pesos globais em falta mostram aviso e execução indeterminada.

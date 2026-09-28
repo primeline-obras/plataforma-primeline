@@ -33,6 +33,9 @@ try {
       </script>` });
   });
   await page.goto('http://planning.test/');
+  await page.locator('.planning-work-data summary').click();
+  assert.match(await page.locator('.planning-work-data').innerText(), /Prazo contratual não configurado/);
+  assert.match(await page.locator('.planning-work-data').innerText(), /Fim operacional previsto/);
   const description = page.locator('[data-edit-item="a"] [name="descricao"]');
   await description.fill('Alteração local');
   await page.locator('[data-toggle-editor-phase]').click();
