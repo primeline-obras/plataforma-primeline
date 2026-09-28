@@ -11,7 +11,7 @@ test('ADM exige obra e mês; RPC usa ambos e exporta Excel e PDF',async()=>{
  globalThis.window={XLSX:{utils:{book_new:()=>({}),aoa_to_sheet:()=>({}),book_append_sheet:()=>{}},writeFile:(b,f)=>files.push(f)},jspdf:{jsPDF:class{setFontSize(){}text(){}splitTextToSize(s){return [s];}addPage(){}save(f){files.push(f);}}}};
  try {
  const api=async(path,opt)=>{const body=JSON.parse(opt.body);calls.push({path,body});return new Response(JSON.stringify(path.endsWith('fn_folha_ponto_mensal')?[{obra_id:'120',data:'2026-09-01',colaborador_id:'p',colaborador:'Pessoa',horas:8,estado:'presente'}]:{obras:[work],linhas:[],pode_validar:true}));};
- await createAttendanceModule({root,supabase:api,isConfigured:true,toast:m=>messages.push(m),getRole:()=> 'administrativo'}).show();
+ await createAttendanceModule({root,supabase:api,isConfigured:true,toast:m=>messages.push(m),getRole:()=> 'administrativo',getWorks:()=>[work]}).show();
  const change=(selector,value)=>{root.querySelector(selector).value=value;root.querySelector(selector).dispatchEvent(new dom.window.Event('change',{bubbles:true}));};
  root.querySelector('[data-attendance-download="excel"]').click();await tick();assert(!calls.some(c=>c.path.endsWith('fn_folha_ponto_mensal')));assert.match(messages.at(-1),/Selecione/);
  change('[data-attendance-report-work]','120');change('[data-attendance-report-month]','2026-09');
@@ -22,8 +22,29 @@ test('ADM exige obra e mês; RPC usa ambos e exporta Excel e PDF',async()=>{
 test('relatório não aparece para Diretor, Adjunto ou Encarregado mesmo com pode_validar',async()=>{
  for(const role of ['diretor_obra','adjunto','encarregado']) {
  const dom=new JSDOM('<div id="root"></div>'),root=dom.window.document.querySelector('#root');
- await createAttendanceModule({root,supabase:async()=>new Response(JSON.stringify({obra_id:'120',obras:[work],equipa:[],linhas:[],pode_validar:true})),isConfigured:true,toast:()=>{},getRole:()=>role}).show();
+ await createAttendanceModule({root,supabase:async()=>new Response(JSON.stringify({obra_id:'120',obras:[work],equipa:[],linhas:[],pode_validar:true})),isConfigured:true,toast:()=>{},getRole:()=>role,getWorks:()=>[work,{id:'closed',numero:'79',nome:'Obra fechada',situacao:'fechada'}]}).show();
  assert(!root.querySelector('[data-attendance-download]'));dom.window.close();
+ }
+});
+test('ADM e Gestão exportam obra fechada ausente da lista diária; ordenação numérica não altera coleção global',async()=>{
+ for(const role of ['administrativo','gestao_plataforma']) {
+  const dom=new JSDOM('<div id="root"></div>'),root=dom.window.document.querySelector('#root'),calls=[],files=[],messages=[];
+  const closed={id:'closed',numero:'79',nome:'Obra histórica',situacao:'fechada'};
+  const globalWorks=[work,closed,{id:'small',numero:'9',nome:'Outra obra'}];
+  const originalIds=globalWorks.map(w=>w.id),savedWindow=globalThis.window;
+  globalThis.window={XLSX:{utils:{book_new:()=>({}),aoa_to_sheet:()=>({}),book_append_sheet:()=>{}},writeFile:(b,f)=>files.push(f)},jspdf:{jsPDF:class{setFontSize(){}text(){}splitTextToSize(s){return [s];}addPage(){}save(f){files.push(f);}}}};
+  try {
+   const api=async(path,opt)=>{const body=JSON.parse(opt.body);calls.push({path,body});return new Response(JSON.stringify(path.endsWith('fn_folha_ponto_mensal')?[{obra_id:closed.id,data:'2026-09-01',colaborador_id:'p',colaborador:'Pessoa',horas:8,estado:'presente'}]:{obras:[work],linhas:[],pode_validar:true}));};
+   await createAttendanceModule({root,supabase:api,isConfigured:true,toast:m=>messages.push(m),getRole:()=>role,getWorks:()=>globalWorks}).show();
+   assert.deepEqual([...root.querySelector('[data-attendance-work]').options].map(o=>o.value),['','120']);
+   assert.deepEqual([...root.querySelector('[data-attendance-report-work]').options].map(o=>o.value),['','small','closed','120']);
+   assert.deepEqual(globalWorks.map(w=>w.id),originalIds);
+   for(const [selector,value] of [['[data-attendance-report-work]','closed'],['[data-attendance-report-month]','2026-09']]) {const input=root.querySelector(selector);input.value=value;input.dispatchEvent(new dom.window.Event('change',{bubbles:true}));}
+   for(const format of ['excel','pdf']) {root.querySelector(`[data-attendance-download="${format}"]`).click();await tick();assert.deepEqual(calls.at(-1).body,{p_mes:'2026-09-01',p_obra_id:'closed'});}
+   assert.deepEqual(files,['folha-ponto-obra-79-2026-09.xlsx','folha-ponto-obra-79-2026-09.pdf']);
+   assert.equal(root.querySelector('[data-attendance-work]').value,'120');
+   assert(!messages.some(m=>m.includes('Selecione')));
+  } finally {globalThis.window=savedWindow;dom.window.close();}
  }
 });
 test('Folha de Ponto não apresenta pessoas fora da equipa e preserva tempos vazios guardados',async()=>{

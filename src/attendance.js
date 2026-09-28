@@ -6,8 +6,9 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
 const timeValue = value => value ? String(value).slice(0, 5) : "";
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
-export function createAttendanceModule({ root, supabase, isConfigured, toast, getRole = () => "" }) {
+export function createAttendanceModule({ root, supabase, isConfigured, toast, getRole = () => "", getWorks = () => [] }) {
   const state = { date: today(), reportMonth: today().slice(0, 7), reportWorkId: "", workId: "", works: [], rows: [], canValidate: false, loading: false, error: "", loaded: false };
+  const reportWorks = () => [...getWorks()].sort((a, b) => String(a.numero ?? "").localeCompare(String(b.numero ?? ""), "pt-PT", { numeric: true }));
 
   async function rpc(name, body) {
     const response = await supabase(`rpc/${name}`, { method: "POST", body: JSON.stringify(body) });
@@ -74,7 +75,7 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast, ge
     ${["gestao_plataforma", "administrativo"].includes(getRole()) ? `<section class="attendance-report">
       <div><strong>FOLHA DE PONTO MENSAL</strong><span>Consolidado por colaborador e por obra, ordenado alfabeticamente.</span></div>
       <label><span>MÊS DE REFERÊNCIA</span><input type="month" data-attendance-report-month value="${state.reportMonth}"></label>
-      <label><span>OBRA DO RELATÓRIO</span><select data-attendance-report-work required><option value="">Selecionar obra</option>${state.works.map(w=>`<option value="${esc(w.id)}" ${w.id===state.reportWorkId?'selected':''}>${esc(w.numero)} · ${esc(w.nome)}</option>`).join('')}</select></label>
+      <label><span>OBRA DO RELATÓRIO</span><select data-attendance-report-work required><option value="">Selecionar obra</option>${reportWorks().map(w=>`<option value="${esc(w.id)}" ${w.id===state.reportWorkId?'selected':''}>${esc(w.numero)} · ${esc(w.nome)}</option>`).join('')}</select></label>
       <button type="button" data-attendance-download="excel">DESCARREGAR EXCEL</button>
       <button type="button" data-attendance-download="pdf">DESCARREGAR PDF</button>
     </section>` : ""}
@@ -126,7 +127,7 @@ export function createAttendanceModule({ root, supabase, isConfigured, toast, ge
 
   async function downloadMonthlyReport(button) {
     if (!["gestao_plataforma", "administrativo"].includes(getRole())) return;
-    const work = state.works.find(w=>w.id===state.reportWorkId);
+    const work = reportWorks().find(w=>w.id===state.reportWorkId);
     const month = state.reportMonth;
     if (!work || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return toast("Selecione a obra e o mês de referência.", "error");
     button.disabled = true;

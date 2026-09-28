@@ -824,6 +824,7 @@ const subcontractorsModule = createSubcontractorsModule({
 const attendanceModule = createAttendanceModule({
   root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast,
   getRole: () => accessContext.profile?.funcao || accessContext.role,
+  getWorks: () => works,
 });
 
 const foremanTeam = createForemanTeam({
