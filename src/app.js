@@ -1,4 +1,5 @@
 import { legacyContractValues } from "./contract-composition.js?v=1";
+import { recordReceipt } from "./financial-movements.js?v=1";
 import { workDates } from "./planning-operational.js?v=1";
 import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
@@ -4623,10 +4624,14 @@ async function submitBilling(event) {
 
 function openPaymentDialog(billingId) {
   const billing = workDetails.billings.find(item => item.id === billingId);
-  $("#workflow-dialog-title").textContent = "REGISTAR PAGAMENTO";
+  if (!billing) return;
+  const requestId = crypto.randomUUID();
+  const outstanding = Math.max(0, Number(billing.valor) - Number(billing.valor_recebido || 0));
+  $("#workflow-dialog-title").textContent = "REGISTAR RECEBIMENTO PARCIAL";
   $("#workflow-dialog-content").innerHTML = `<form id="payment-form">
     <p class="dialog-copy">Fatura <strong>${billing.numero_fatura}</strong> · ${euro.format(Number(billing.valor))}</p>
-    <div class="form-row"><label>DATA DE RECEBIMENTO<input name="data_recebimento" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label><label>VALOR RECEBIDO<input name="valor_recebido" type="number" min="0.01" step="0.01" required value="${Number(billing.valor).toFixed(2)}"></label></div>
+    <p class="dialog-copy">Por receber: ${euro.format(outstanding)}</p>
+    <div class="form-row"><label>DATA DE RECEBIMENTO<input name="data_recebimento" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label><label>VALOR DESTA PARCELA<input name="valor_recebido" type="number" min="0.01" max="${outstanding.toFixed(2)}" step="0.01" required value="${outstanding.toFixed(2)}"></label></div>
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">CONFIRMAR PAGAMENTO <span>→</span></button></div>
   </form>`;
   $("#workflow-dialog").hidden = false;
@@ -4637,12 +4642,10 @@ function openPaymentDialog(billingId) {
     const button = formElement.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
-      if (isSupabaseConfigured) {
-        const response = await supabase("rpc/fn_marcar_faturacao_auto_paga", { method: "POST", body: JSON.stringify({ p_faturacao_id: billingId, p_data_pagamento: data.data_recebimento, p_valor_pago: Number(data.valor_recebido) }) });
-        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível registar o pagamento.");
-      }
-      billing.data_recebimento = data.data_recebimento; billing.data_pagamento = data.data_recebimento; billing.valor_recebido = Number(data.valor_recebido); billing.estado_pagamento = "pago";
-      closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId)); toast("Pagamento registado.");
+      if (!isSupabaseConfigured) throw new Error("O registo de parcelas exige ligação ao serviço transacional.");
+      const updated = await recordReceipt(supabase, billing, { data: data.data_recebimento, valor: Number(data.valor_recebido), requestId });
+      Object.assign(billing, updated);
+      closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId)); toast("Recebimento e saldo confirmados.");
     } catch (error) { formElement.querySelector(".form-error").textContent = error.message; }
     finally { button.disabled = false; }
   });
