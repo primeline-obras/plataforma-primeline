@@ -3607,8 +3607,8 @@ function openTeeDialog(teeId = "") {
     <div class="form-row"><label>NÚMERO<input name="numero" required maxlength="40" value="${safeText(tee?.numero || nextTeeNumber())}"></label><label>REVISÃO<input name="revisao" maxlength="20" value="${safeText(tee?.revisao || "REV00")}"></label></div>
     <label>DESCRIÇÃO<textarea name="descricao" required rows="3" maxlength="500">${safeText(tee?.descricao || "")}</textarea></label>
     <div class="form-row"><label>ESPECIALIDADE<input name="especialidade" maxlength="120" value="${safeText(tee?.especialidade || "")}"></label><label>PDE / RFI ASSOCIADO<div class="select-wrap"><select name="rfi_id"><option value="">Sem associação</option>${rfiOptions}</select><b>⌄</b></div></label></div>
-    <label>FASE<div class="select-wrap"><select name="fase_id" required><option value="">Selecionar fase</option>${teeFormOptions(tee?.fase_id)}</select><b>⌄</b></div></label>
-    <label class="tee-cross-phase"><input name="sem_fase_especifica" type="checkbox"><span><strong>ESTE TEE NÃO PERTENCE A UMA FASE ESPECÍFICA</strong><small>Será associado automaticamente à fase F01 · Estaleiro.</small></span></label>
+    <label>FASE<div class="select-wrap"><select name="fase_id" ${tee?.fase_id ? "required" : ""}><option value="">Sem fase específica</option>${teeFormOptions(tee?.fase_id)}</select><b>⌄</b></div></label>
+    <label class="tee-cross-phase"><input name="sem_fase_especifica" type="checkbox" ${!tee?.fase_id ? "checked" : ""}><span><strong>ESTE TEE NÃO PERTENCE A UMA FASE ESPECÍFICA</strong><small>O TEE ficará sem associação a uma fase.</small></span></label>
     <div class="form-row"><label>VALOR DE VENDA (€)<input name="valor" type="number" step="0.01" value="${tee?.valor ?? ""}"></label><label>PREÇO DE CUSTO (€)<input name="preco_custo" type="number" step="0.01" value="${tee?.preco_custo ?? ""}"></label></div>
     <div class="form-row"><label>DIAS DE PRORROGAÇÃO<input name="dias_prorrogacao" type="number" step="1" value="${tee?.dias_prorrogacao ?? 0}"></label><label>DATA DE ENVIO<input name="data_envio" type="date" value="${tee?.data_envio || ""}"></label></div>
     <label>ESTADO OPERACIONAL<div class="select-wrap"><select name="estado_operacional"><option value="em_elaboracao" ${operationalState === "em_elaboracao" ? "selected" : ""}>Em elaboração</option><option value="aguarda_resposta" ${operationalState === "aguarda_resposta" ? "selected" : ""}>Aguarda resposta</option><option value="aprovado" ${operationalState === "aprovado" ? "selected" : ""}>Aprovado</option><option value="rejeitado" ${operationalState === "rejeitado" ? "selected" : ""}>Rejeitado</option></select><b>⌄</b></div></label>
@@ -3632,15 +3632,13 @@ function openTeeDialog(teeId = "") {
     }
   });
   formElement.sem_fase_especifica.addEventListener("change", () => {
-    if (!formElement.sem_fase_especifica.checked) return;
-    const sitePhase = workDetails.phases.find(phase => String(phase.codigo || "").toUpperCase() === "F01")
-      || workDetails.phases.find(phase => String(phase.descricao || "").toLocaleLowerCase("pt-PT").includes("estaleiro"));
-    if (!sitePhase) {
-      formElement.sem_fase_especifica.checked = false;
-      formElement.querySelector(".form-error").textContent = "Não foi encontrada a fase F01 · Estaleiro nesta obra.";
-      return;
-    }
-    formElement.fase_id.value = sitePhase.id;
+    const withoutPhase = formElement.sem_fase_especifica.checked;
+    if (withoutPhase) formElement.fase_id.value = "";
+    formElement.fase_id.required = !withoutPhase;
+  });
+  formElement.fase_id.addEventListener("change", () => {
+    formElement.sem_fase_especifica.checked = !formElement.fase_id.value;
+    formElement.fase_id.required = Boolean(formElement.fase_id.value);
   });
   formElement.addEventListener("submit", submitTee);
 }
@@ -3669,14 +3667,9 @@ async function submitTee(event) {
     return;
   }
   const crossPhase = data.get("sem_fase_especifica") === "on";
-  const sitePhase = crossPhase
-    ? workDetails.phases.find(phase => String(phase.codigo || "").toUpperCase() === "F01")
-      || workDetails.phases.find(phase => String(phase.descricao || "").toLocaleLowerCase("pt-PT").includes("estaleiro"))
-    : null;
-  if (crossPhase && !sitePhase) { errorElement.textContent = "Não foi encontrada a fase F01 · Estaleiro nesta obra."; return; }
   const payload = {
     obra_id: selectedWorkId,
-    fase_id: sitePhase?.id || String(data.get("fase_id") || "") || null,
+    fase_id: crossPhase ? null : String(data.get("fase_id") || "") || null,
     rfi_id: String(data.get("rfi_id") || "") || null,
     numero,
     revisao: String(data.get("revisao") || "REV00").trim() || "REV00",
@@ -3695,7 +3688,7 @@ async function submitTee(event) {
   };
   if (existing) {
     for (const field of Object.keys(payload)) {
-      if (field === "estado_operacional") continue;
+      if (field === "estado_operacional" || (field === "fase_id" && crossPhase && existing.fase_id != null)) continue;
       if (!data.has(field) || data.get(field) === formElement.teeInitialValues?.[field]) delete payload[field];
     }
   }

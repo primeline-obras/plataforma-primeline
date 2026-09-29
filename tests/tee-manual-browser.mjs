@@ -146,7 +146,58 @@ try {
   assert.equal(created.body.estado_operacional, 'rejeitado');
   assert.equal(created.body.estado_aprovacao_cliente, 'recusado');
   assert.equal(created.body.obra_id, 'work');
+
+  // Existing NULL phase is displayed without any write or automatic association.
+  const phaseSelect = page.locator('[name="fase_id"]');
+  const noPhase = page.locator('[name="sem_fase_especifica"]');
+  const unassigned = { ...pending, fase_id: null, estado_operacional: 'aguarda_resposta' };
+  const beforeOpen = await page.evaluate(() => calls.length);
+  await open(unassigned);
+  assert.equal(await noPhase.isChecked(), true);
+  assert.equal(await phaseSelect.inputValue(), '');
+  assert.deepEqual(await page.evaluate(() => getTee()), unassigned);
+  assert.equal(await page.evaluate(() => calls.length), beforeOpen);
+  await page.locator('[name="descricao"]').fill('Editado sem fase');
+  await submit();
+  await page.locator('#workflow-dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => getTee().fase_id), null);
+  assert.equal(await page.evaluate(() => Object.hasOwn(calls.at(-1).body, 'fase_id')), false);
+
+  // Explicitly removing an existing phase sends NULL, never F01.
+  await open({ ...pending, estado_operacional: 'aguarda_resposta' });
+  assert.equal(await noPhase.isChecked(), false);
+  await noPhase.check();
+  assert.equal(await phaseSelect.inputValue(), '');
+  await submit();
+  await page.locator('#workflow-dialog').waitFor({ state: 'hidden' });
+  assert.deepEqual(await page.evaluate(() => calls.at(-1).body), { fase_id: null, estado_operacional: 'aguarda_resposta' });
+  assert.equal(await page.evaluate(() => getTee().fase_id), null);
+
+  // A new TEE can be created without a phase even when F01 exists.
+  await open(null);
+  await page.locator('[name="descricao"]').fill('Novo sem fase');
+  await phaseSelect.selectOption('phase');
+  assert.equal(await noPhase.isChecked(), false);
+  await noPhase.check();
+  await submit();
+  await page.locator('#workflow-dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => calls.at(-1).method), 'POST');
+  assert.equal(await page.evaluate(() => calls.at(-1).body.fase_id), null);
+
+  // Choosing a phase later is explicit, and clearing the selector is also NULL.
+  await open(unassigned);
+  await phaseSelect.selectOption('phase');
+  assert.equal(await noPhase.isChecked(), false);
+  await submit();
+  await page.locator('#workflow-dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => calls.at(-1).body.fase_id), 'phase');
+  await open({ ...unassigned, fase_id: 'phase' });
+  await phaseSelect.selectOption('');
+  assert.equal(await noPhase.isChecked(), true);
+  await submit();
+  await page.locator('#workflow-dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.evaluate(() => calls.at(-1).body.fase_id), null);
   assert.ok(await page.evaluate(() => calls.every(call => call.path.startsWith('alteracoes_tee?'))));
   assert.deepEqual(errors, []);
-  console.log('PASS: description layout at 320–1440px; manual TEE states, NULL UI defaults, compatible selections, sparse PATCH, preserved fields, errors, POST and no contractual-date writes.');
+  console.log('PASS: NULL phase creation/editing without F01 fallback; description layout at 320–1440px; manual TEE states, NULL UI defaults, compatible selections, sparse PATCH, preserved fields, errors, POST and no contractual-date writes.');
 } finally { await browser.close(); }

@@ -19,7 +19,10 @@ assert.match(app, /name="numero"[\s\S]*name="revisao"[\s\S]*name="descricao"/);
 assert.match(app, /name="valor"[\s\S]*name="preco_custo"/);
 assert.match(app, /name="data_inicio_execucao"[\s\S]*name="data_fim_execucao"/);
 assert.match(app, /ESTE TEE NÃO PERTENCE A UMA FASE ESPECÍFICA/);
-assert.match(app, /String\(phase\.codigo \|\| ""\)\.toUpperCase\(\) === "F01"/);
+const manualTee = app.slice(app.indexOf("function openTeeDialog("), app.indexOf("function phasePlanningRecord("));
+assert.doesNotMatch(manualTee, /F01|sitePhase|includes\("estaleiro"\)/);
+assert.match(manualTee, /fase_id: crossPhase \? null/);
+assert.match(manualTee, /O TEE ficará sem associação a uma fase/);
 assert.match(app, /method: teeId \? "PATCH" : "POST"/);
 assert.doesNotMatch(app, /name="estado_aprovacao_gerencia"/);
 assert.doesNotMatch(app, /payload\.estado_aprovacao_gerencia/);
@@ -33,4 +36,4 @@ assert.doesNotMatch(app, /o planeamento e a previsão financeira são atualizado
 assert.match(styles, /\.tees-workspace/);
 assert.match(styles, /\.tee-card/);
 
-console.log("Formulário de TEEs, regra F01 e edição protegida validados.");
+console.log("Formulário de TEEs, fase opcional sem associação automática e edição protegida validados.");
