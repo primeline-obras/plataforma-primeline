@@ -525,7 +525,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const rows = state.phases.map(phase => {
       const weights = weightSummary(state.items.filter(item => item.fase_id === phase.id));
       if (weights.count === 0) return "";
-      return `<div><strong>${escapeHtml(phase.codigo)}</strong> · PESO ATRIBUÍDO ${weights.assigned.toFixed(2)}% · FALTA DISTRIBUIR ${weights.missing.toFixed(2)}%${weights.excess ? ` · EXCESSO ${weights.excess.toFixed(2)}%` : ""}${readOnly() ? "" : `<button type="button" data-redistribute="${phase.id}" ${state.batchSaving ? "disabled" : ""}>REDISTRIBUIR PROPORCIONALMENTE</button>`}</div>`;
+      return `<div><strong>${escapeHtml(phase.codigo)}</strong> · PESO ATRIBUÍDO ${weights.assigned.toFixed(2)}% · FALTA DISTRIBUIR ${weights.missing.toFixed(2)}%${weights.excess ? ` · EXCESSO ${weights.excess.toFixed(2)}%` : ""}${readOnly() || weights.valid ? "" : `<button type="button" data-redistribute="${phase.id}" ${state.batchSaving ? "disabled" : ""}>REDISTRIBUIR PROPORCIONALMENTE</button>`}</div>`;
     }).join("");
     return rows ? `<div class="planning-weights">${rows}</div>` : "";
   }
