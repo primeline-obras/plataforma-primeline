@@ -1,3 +1,4 @@
+import { VALIDITY_COLUMNS, renewalExpiry, validityPayload, saveVehicleValidity } from "./vehicle-validity.js?v=1";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -6,7 +7,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
 
 const today = () => new Date().toISOString().slice(0, 10);
 const EVENT_LABELS = {
-  revisao: "Revisão", inspecao: "Inspeção", pneus: "Pneus",
+  seguro: "Seguro", revisao: "Revisão", inspecao: "Inspeção", pneus: "Pneus",
   bateria: "Bateria", reparacao: "Reparação", outro: "Outro",
 };
 const CLAIM_LABELS = { aberto: "Aberto", em_seguradora: "Em seguradora", fechado: "Fechado" };
@@ -83,9 +84,83 @@ export function createVehiclesModule({
     }
   }
 
-  function deadline(label, value, threshold = 30) {
+  function deadline(label, value, threshold = 30, type = "") {
     const status = deadlineState(value, threshold);
-    return `<article class="fleet-deadline ${status.className}"><span>${label}</span><strong>${formatDate(value)}</strong><small>${status.label}</small></article>`;
+    return `<article class="fleet-deadline ${status.className}"><span>${label}</span><strong>${formatDate(value)}</strong><small>${status.label}</small>${type ? `<div class="fleet-validity-actions"><button type="button" class="outline-action" data-fleet-validity="${type}" data-operation="editar_data">EDITAR DATA</button><button type="button" class="outline-action" data-fleet-validity="${type}" data-operation="renovar">RENOVAR</button></div>` : ""}</article>`;
+  }
+
+  function openValidityDialog(type, operation) {
+    const item = vehicle();
+    if (!item || !Object.hasOwn(VALIDITY_COLUMNS, type)) return;
+    const snapshot = { ...item }, editing = operation === "editar_data";
+    const dialog = document.createElement("dialog");
+    dialog.className = "fleet-validity-dialog";
+    dialog.setAttribute("aria-label", `${editing ? "Editar data" : "Renovar"} · ${EVENT_LABELS[type]}`);
+    dialog.innerHTML = `<header class="panel-title"><span>${editing ? "EDITAR DATA" : "RENOVAR"} · ${EVENT_LABELS[type].toLocaleUpperCase("pt-PT")}</span><button type="button" data-validity-close aria-label="Fechar">×</button></header>
+      <form><p>${esc(vehicleName(item))}</p><p>Vencimento atual: <strong>${formatDate(snapshot[VALIDITY_COLUMNS[type]])}</strong></p>
+      ${editing ? "" : `<div class="form-row"><label>DATA DA RENOVAÇÃO<input type="date" name="data_base" required value="${today()}"></label><label>VALIDADE<select name="validade_opcao"><option value="1_ano">1 ano</option><option value="2_anos">2 anos</option><option value="outra">Outra</option></select></label></div>`}
+      <label data-validity-custom ${editing ? "" : "hidden"}>NOVO VENCIMENTO<input type="date" name="nova_data" ${editing ? "required" : "disabled"}></label>
+      <p class="fleet-validity-preview" aria-live="polite">Novo vencimento: <strong data-validity-preview>—</strong></p>
+      <label>MOTIVO${editing ? " (OBRIGATÓRIO)" : " (OPCIONAL)"}<textarea name="motivo" rows="3" ${editing ? "required" : ""}></textarea></label>
+      <p class="form-error" role="alert"></p><div class="dialog-actions"><button type="button" class="outline-action" data-validity-close>CANCELAR</button><button type="submit" class="primary-button">CONFIRMAR</button></div></form>`;
+    document.body.append(dialog);
+    const form = dialog.querySelector("form"), errorNode = form.querySelector(".form-error");
+    let busy = false, requestId = crypto.randomUUID(), lastContent = null;
+    const close = () => { if (!busy) { dialog.close(); dialog.remove(); } };
+    dialog.addEventListener("cancel", event => { event.preventDefault(); close(); });
+    dialog.querySelectorAll("[data-validity-close]").forEach(button => button.addEventListener("click", close));
+    const preview = () => {
+      const fields = Object.fromEntries(new FormData(form));
+      const custom = editing || fields.validade_opcao === "outra";
+      form.querySelector("[data-validity-custom]").hidden = !custom;
+      form.elements.nova_data.disabled = !custom;
+      form.elements.nova_data.required = custom;
+      try {
+        const date = editing ? fields.nova_data : renewalExpiry(fields.data_base, fields.validade_opcao, fields.nova_data);
+        form.querySelector("[data-validity-preview]").textContent = formatDate(date);
+      } catch { form.querySelector("[data-validity-preview]").textContent = "Indique datas válidas"; }
+    };
+    form.addEventListener("input", preview);
+    form.addEventListener("change", preview);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (busy) return;
+      errorNode.textContent = "";
+      let result;
+      try {
+        if (!isConfigured) throw new Error("É necessária ligação ao serviço para guardar a validade.");
+        const fields = Object.fromEntries(new FormData(form));
+        const content = JSON.stringify(fields);
+        if (lastContent !== null && lastContent !== content) requestId = crypto.randomUUID();
+        lastContent = content;
+        const payload = validityPayload(snapshot, type, operation, fields, requestId);
+        busy = true;
+        dialog.querySelectorAll("button, input, select, textarea").forEach(control => { control.disabled = true; });
+        result = await saveVehicleValidity(supabase, payload);
+      } catch (error) {
+        errorNode.textContent = error.message;
+      } finally {
+        busy = false;
+        dialog.querySelectorAll("button, input, select, textarea").forEach(control => { control.disabled = false; });
+        preview();
+      }
+      if (!result) return;
+      Object.assign(item, result.vehicle);
+      if (result.event?.id) state.events = [result.event, ...state.events.filter(row => row.id !== result.event.id)];
+      close();
+      render();
+      toast("Validade guardada.");
+      try {
+        const events = await api(`viaturas_eventos?select=*&viatura_id=eq.${encodeURIComponent(item.id)}&order=data.desc,criado_em.desc`);
+        if (!Array.isArray(events)) throw new Error("Histórico inválido");
+        state.events = [...state.events.filter(row => row.viatura_id !== item.id), ...events];
+        render();
+      } catch {
+        toast("Validade guardada; não foi possível atualizar o histórico. Atualize a página para o consultar.", "warning");
+      }
+    });
+    preview();
+    dialog.showModal();
   }
 
   function renderVehicleList() {
@@ -120,7 +195,7 @@ export function createVehiclesModule({
         <label>DESCRIÇÃO<textarea name="descricao" rows="2"></textarea></label>
         <label class="fleet-next-date-toggle"><input name="atualizar_data" type="checkbox"> Atualizar a próxima data da viatura</label>
         <label data-fleet-next-date>NOVA DATA PREVISTA<input name="nova_data" type="date" disabled></label>
-        <p class="fleet-form-help">Disponível para Revisão e Inspeção. O evento fica sempre guardado no histórico.</p>
+        <p class="fleet-form-help">Atualização de data disponível apenas para Revisão. Para renovar ou corrigir a validade de Seguro e Inspeção, use os respetivos cards.</p>
         <button class="primary-button" type="submit">GUARDAR EVENTO <span>→</span></button><p class="form-error"></p>
       </form>
     </details>`;
@@ -145,7 +220,7 @@ export function createVehiclesModule({
     const rows = state.events.filter(row => row.viatura_id === item.id);
     return `<section class="fleet-section"><header><div><p class="eyebrow">HISTÓRICO ÚNICO</p><h3>EVENTOS DA VIATURA</h3></div><span>${rows.length}</span></header>
       <div class="fleet-timeline">${rows.length ? rows.map(row => `<article>
-        <time>${formatDate(row.data)}</time><i class="${row.tipo}"></i><div><strong>${esc(EVENT_LABELS[row.tipo] || row.tipo)}</strong><p>${esc(row.descricao || "Sem descrição")}</p><small>${esc(supplierName(row.fornecedor_id))}</small></div><b>${row.custo == null ? "—" : euro.format(Number(row.custo))}</b><div><button type="button" data-fleet-edit-event="${row.id}">EDITAR</button><button type="button" class="danger-action" data-fleet-delete-event="${row.id}">APAGAR</button></div>
+        <time>${formatDate(row.data)}</time><i class="${row.tipo}"></i><div><strong>${esc(EVENT_LABELS[row.tipo] || row.tipo)}${row.validade_operacao ? ` · ${row.validade_operacao === "renovacao" ? "Renovação" : "Correção de data"}` : ""}</strong><p>${esc(row.descricao || "Sem descrição")}</p>${row.validade_operacao ? `<p>Validade: ${formatDate(row.validade_anterior)} → ${formatDate(row.validade_nova)}</p>${row.validade_opcao ? `<p>Prazo: ${esc(({ "1_ano": "1 ano", "2_anos": "2 anos", outra: "Outra" })[row.validade_opcao] || row.validade_opcao)}</p>` : ""}${row.motivo ? `<p>Motivo: ${esc(row.motivo)}</p>` : ""}` : ""}<small>${esc(supplierName(row.fornecedor_id))}</small></div><b>${row.custo == null ? "—" : euro.format(Number(row.custo))}</b>${row.validade_operacao ? "" : `<div><button type="button" data-fleet-edit-event="${row.id}">EDITAR</button><button type="button" class="danger-action" data-fleet-delete-event="${row.id}">APAGAR</button></div>`}
       </article>`).join("") : `<div class="fleet-empty">AINDA SEM EVENTOS</div>`}</div>
     </section>`;
   }
@@ -170,7 +245,7 @@ export function createVehiclesModule({
     const assigned = collaborators().find(person => person.id === item.colaborador_atribuido_id);
     return `<section class="fleet-detail">
       <header class="fleet-detail-head"><div><p class="eyebrow">FICHA DA VIATURA</p><h2>${esc(item.marca_modelo || "Sem modelo")}</h2><span>${esc(item.matricula || "Sem matrícula")} · ${esc(item.numero_interno ? `N.º interno ${item.numero_interno}` : "Sem número interno")}</span></div><div><span>ATRIBUÍDA A</span><strong>${esc(assigned?.nome || "Sem atribuição")}</strong></div></header>
-      <div class="fleet-deadlines">${deadline("SEGURO", item.seguro_data, 15)}${deadline("INSPEÇÃO", item.data_inspecao_proxima, 15)}${deadline("PRÓXIMA REVISÃO", item.data_proxima_revisao, 30)}</div>
+      <div class="fleet-deadlines">${deadline("SEGURO", item.seguro_data, 15, "seguro")}${deadline("INSPEÇÃO", item.data_inspecao_proxima, 15, "inspecao")}${deadline("PRÓXIMA REVISÃO", item.data_proxima_revisao, 30)}</div>
       <div class="fleet-form-actions">${renderEventForm(item)}${renderClaimForm(item)}</div>
       ${renderTimeline(item)}${renderClaims(item)}
     </section>`;
@@ -234,6 +309,8 @@ export function createVehiclesModule({
   });
 
   root.addEventListener("click", async event => {
+    const validityButton = event.target.closest("[data-fleet-validity]");
+    if (validityButton) { openValidityDialog(validityButton.dataset.fleetValidity, validityButton.dataset.operation); return; }
     const selectButton = event.target.closest("[data-fleet-vehicle]");
     if (selectButton) { state.selectedVehicleId = selectButton.dataset.fleetVehicle; render(); return; }
     const mutationButton = event.target.closest("[data-fleet-edit-event],[data-fleet-delete-event],[data-fleet-edit-claim],[data-fleet-delete-claim],[data-fleet-edit-fine],[data-fleet-delete-fine]");
@@ -241,6 +318,9 @@ export function createVehiclesModule({
       const entries = [["fleetEditEvent","viaturas_eventos","editar"],["fleetDeleteEvent","viaturas_eventos","apagar"],["fleetEditClaim","viaturas_sinistros","editar"],["fleetDeleteClaim","viaturas_sinistros","apagar"],["fleetEditFine","multas","editar"],["fleetDeleteFine","multas","apagar"]];
       const match = entries.find(([key]) => mutationButton.dataset[key]);
       const [key, table, action] = match; const id = mutationButton.dataset[key];
+      if (table === "viaturas_eventos" && state.events.find(row => row.id === id)?.validade_operacao) {
+        toast("Os eventos de validade são protegidos. Use os cards para registar uma nova operação.", "error"); return;
+      }
       let dados = {};
       if (action === "apagar" && !await platformConfirm("Apagar este registo e os anexos associados? A ação fica registada na auditoria.", { title: "Apagar registo", danger: true, confirmLabel: "APAGAR" })) return;
       if (action === "editar") { const collection = table === "viaturas_eventos" ? state.events : table === "viaturas_sinistros" ? state.claims : state.fines; const row = collection.find(item => item.id === id); const description = await platformPrompt("Edite a descrição do registo.", row?.descricao || "", { title: "Editar registo", label: "DESCRIÇÃO" }); if (description === null) return; dados = { descricao: description.trim() || null }; }
@@ -266,7 +346,7 @@ export function createVehiclesModule({
     if (status) { status.disabled = true; api("rpc/fn_gerir_registo_frota", { method: "POST", body: JSON.stringify({ p_tabela: "viaturas_sinistros", p_registo_id: status.dataset.fleetClaimStatus, p_acao: "editar", p_dados: { estado: status.value } }) }).then(() => { const row = state.claims.find(item => item.id === status.dataset.fleetClaimStatus); if (row) row.estado = status.value; toast("Estado do sinistro atualizado."); render(); }).catch(error => { toast(error.message, "error"); status.disabled = false; }); return; }
     const form = event.target.closest("[data-fleet-event-form]");
     if (!form) return;
-    const eligible = ["revisao", "inspecao"].includes(form.elements.tipo.value);
+    const eligible = form.elements.tipo.value === "revisao";
     form.elements.atualizar_data.disabled = !eligible;
     if (!eligible) form.elements.atualizar_data.checked = false;
     form.elements.nova_data.disabled = !eligible || !form.elements.atualizar_data.checked;
@@ -285,12 +365,13 @@ export function createVehiclesModule({
     try {
       if (eventForm) {
         const fields = Object.fromEntries(new FormData(form));
+        if (fields.atualizar_data === "on" && fields.tipo !== "revisao") throw new Error("Use o card Seguro ou Inspeção para alterar a validade.");
         const payload = { viatura_id: form.dataset.vehicleId, tipo: fields.tipo, data: fields.data, descricao: fields.descricao?.trim() || null, custo: fields.custo ? Number(fields.custo) : null, fornecedor_id: fields.fornecedor_id || null };
         let saved = { id: crypto.randomUUID(), criado_em: new Date().toISOString(), ...payload };
         if (isConfigured) [saved] = await api("viaturas_eventos?select=*", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(payload) });
         state.events.unshift(saved);
-        if (fields.atualizar_data === "on" && fields.nova_data) {
-          const column = fields.tipo === "revisao" ? "data_proxima_revisao" : "data_inspecao_proxima";
+        if (fields.tipo === "revisao" && fields.atualizar_data === "on" && fields.nova_data) {
+          const column = "data_proxima_revisao";
           if (isConfigured) await api(`viaturas?id=eq.${encodeURIComponent(payload.viatura_id)}&select=*`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ [column]: fields.nova_data }) });
           Object.assign(state.vehicles.find(row => row.id === payload.viatura_id), { [column]: fields.nova_data });
         }

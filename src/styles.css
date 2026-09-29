@@ -2696,3 +2696,18 @@ button, input, select, textarea,
 .financial-map-table [data-monthly-state], .financial-map-table [data-monthly-save-state] { display: block; position: static; width: 100%; min-width: 0; max-width: 185px; margin: 5px 0; box-sizing: border-box; }
 .financial-map-table:has([data-monthly-cell]) tbody th { position: sticky; left: 0; background: var(--card); z-index: 2; white-space: normal; min-width: 220px; text-align: left; }
 .financial-map-table:has([data-monthly-cell]) td { max-width: 240px; white-space: normal; overflow-wrap: anywhere; }
+
+/* Seguro e inspeção: ações e diálogo de validade. */
+.fleet-validity-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.fleet-validity-actions .outline-action { min-height:30px; padding:6px 9px; font-size:10px; }
+.fleet-validity-dialog { width:min(560px,calc(100vw - 24px)); max-height:calc(100dvh - 32px); padding:0; border:1px solid var(--card-border); border-radius:12px; background:var(--card); color:var(--text-primary); overflow:auto; }
+.fleet-validity-dialog::backdrop { background:rgba(10,12,15,.6); }
+.fleet-validity-dialog .panel-title { height:auto; min-height:57px; gap:12px; }
+.fleet-validity-dialog .panel-title button { border:0; background:transparent; color:inherit; font-size:24px; }
+.fleet-validity-dialog form { padding:20px; }
+.fleet-validity-dialog label { min-width:0; }
+.fleet-validity-dialog input, .fleet-validity-dialog select { min-width:0; }
+.fleet-validity-dialog textarea { display:block; box-sizing:border-box; width:100%; min-height:80px; margin-top:8px; padding:10px 12px; font:inherit; resize:vertical; }
+.fleet-validity-preview { padding:12px; background:var(--bg); border:1px solid var(--card-border); border-radius:4px; }
+.fleet-validity-dialog .form-error { white-space:normal; overflow-wrap:anywhere; }
+@media (max-width:600px) { .fleet-validity-dialog .form-row { grid-template-columns:minmax(0,1fr); } .fleet-validity-dialog .dialog-actions { flex-wrap:wrap; } }

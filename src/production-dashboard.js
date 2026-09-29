@@ -221,6 +221,10 @@ export function invoiceDueDate(invoice = {}) {
 
 export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = new Set(), currentUserId = "") {
   return sortAlertsByPriority(alerts.filter(alert => {
+    if (["seguro_viatura", "inspecao_viatura"].includes(alert.tipo)) {
+      return ["gerencia", "administrativo"].includes(role)
+        || (Boolean(currentUserId) && alert.destinatario_utilizador_id === currentUserId);
+    }
     // Destinatário explícito tem precedência sobre perfil, obra e categoria.
     if (alert.destinatario_utilizador_id) {
       return Boolean(currentUserId) && alert.destinatario_utilizador_id === currentUserId;
