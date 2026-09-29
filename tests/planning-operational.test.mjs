@@ -99,3 +99,15 @@ test('prazo contratual separado da previsão operacional e sem datas inventadas'
   assert.equal(workDates({ ...work, data_fim_contratual_atual: null }, 60, '2026-10-06').consumed, null);
   assert.equal(workDates(work, null, '2026-10-06').difference, null);
 });
+
+test('fases vazias e só com arquivos não exigem pesos; tarefas ativas exigem 100%', () => {
+  for (const items of [[], [task('a', 50, { arquivado_em: '2026-09-28' })], [task('a', 50, { _archive: true })]]) {
+    assert.equal(weightSummary(items).count, 0);
+    assert.equal(weightSummary(items).valid, false);
+    assert.equal(phaseProgress(items), null);
+    assert.equal(preview({ items }).valid, true);
+  }
+  assert.equal(preview({ items: [task('a', 50)] }).valid, false);
+  assert.equal(preview({ items: [task('a', 100)] }).valid, true);
+  assert.equal(preview({ items: [task('a', 50)], changes: [{ id: 'a', _archive: true }] }).valid, true);
+});

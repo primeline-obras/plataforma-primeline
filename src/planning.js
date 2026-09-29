@@ -515,10 +515,12 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderWeights() {
-    return `<div class="planning-weights">${state.phases.map(phase => {
+    const rows = state.phases.map(phase => {
       const weights = weightSummary(state.items.filter(item => item.fase_id === phase.id));
+      if (weights.count === 0) return "";
       return `<div><strong>${escapeHtml(phase.codigo)}</strong> · PESO ATRIBUÍDO ${weights.assigned.toFixed(2)}% · FALTA DISTRIBUIR ${weights.missing.toFixed(2)}%${weights.excess ? ` · EXCESSO ${weights.excess.toFixed(2)}%` : ""}${readOnly() ? "" : `<button type="button" data-redistribute="${phase.id}" ${state.batchSaving ? "disabled" : ""}>REDISTRIBUIR PROPORCIONALMENTE</button>`}</div>`;
-    }).join("")}</div>`;
+    }).join("");
+    return rows ? `<div class="planning-weights">${rows}</div>` : "";
   }
 
   function captureInput(input) {
@@ -531,6 +533,10 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     if (input.name === "percentual_executado") item.estado = item.percentual_executado >= 100 ? "concluido" : item.percentual_executado > 0 ? "em_execucao" : "por_iniciar";
     state.preview = null;
     content.querySelector(".planning-batch-preview")?.remove();
+    if (input.name === "peso_percentual") {
+      const panel = content.querySelector(".planning-weights");
+      if (panel) panel.outerHTML = renderWeights();
+    }
     row.classList.toggle("dirty", planningChanges(state.original, [item]).length > 0);
     const button = content.querySelector("[data-save-batch]");
     if (button) { button.textContent = `GUARDAR ALTERAÇÕES · ${dirtyCount()}`; button.disabled = !dirtyCount() || !state.dependenciesLoaded; }

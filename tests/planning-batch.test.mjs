@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planningChanges, requestPlanningBatch } from '../src/planning-batch.js';
+import { planningChanges, requestPlanningBatch, batchPreview } from '../src/planning-batch.js';
 
 test('lote só envia campos alterados, preservando datas sem edição manual', () => {
   const original = [{ id: 'a', descricao: 'A', data_inicio_prevista: '2026-10-01', peso_percentual: 100 }];
@@ -29,4 +29,15 @@ test('preview e confirmação usam um pedido cada e token de confirmação', asy
 test('resposta incompleta nunca é tratada como confirmação atómica', async () => {
   await assert.rejects(requestPlanningBatch(async () => Response.json({}), {}), /inválida/);
   await assert.rejects(requestPlanningBatch(async () => Response.json({ version: 1, committed: false }), {}, 'token'), /inválida/);
+});
+
+test('lote com fases vazias e apenas arquivadas permanece válido', () => {
+  const phases = [{ id: 'active' }, { id: 'empty' }, { id: 'archived' }];
+  const original = [
+    { id: 'a', fase_id: 'active', descricao: 'A', peso_percentual: 100, percentual_executado: 0 },
+    { id: 'b', fase_id: 'archived', peso_percentual: 50, arquivado_em: '2026-09-28' },
+  ];
+  const current = original.map(row => row.id === 'a' ? { ...row, descricao: 'Alterada' } : row);
+  assert.equal(batchPreview(original, current, phases, []).valid, true);
+  assert.equal(batchPreview(original, [{ ...current[0], peso_percentual: 50 }, current[1]], phases, []).valid, false);
 });
