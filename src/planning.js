@@ -78,7 +78,7 @@ function isPastDay(date, today = new Date()) {
 
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast, onCommitted = () => {} }) {
   const state = {
-    workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
+    workId: "", work: null, phases: [], items: [], dependencies: [], dependenciesLoaded: false, specialties: [],
     expanded: new Set(), expandedTasks: new Set(), collapsedEditorPhases: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
     original: [], originalDependencies: [], batchSaving: false, preview: null, workDataOpen: false,
@@ -86,6 +86,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   const workSelect = document.querySelector("#planning-work");
   const content = document.querySelector("#planning-content");
+  const dependencyError = "As dependências não foram carregadas. Pode consultar e editar localmente, mas o preview e a gravação estão bloqueados até recarregar com sucesso.";
   const readOnly = () => getRole() === "encarregado";
 
   function renderWorkOptions() {
@@ -194,11 +195,12 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function dependencyOptions(item) {
     const linked = new Set(state.dependencies.filter(row => row.item_id === item.id).map(row => row.depende_de_item_id));
-    return state.items.filter(candidate => candidate.id !== item.id && !linked.has(candidate.id) && !String(candidate.id).startsWith("draft-"))
+    return state.items.filter(candidate => activeTask(candidate) && candidate.id !== item.id && !linked.has(candidate.id) && !String(candidate.id).startsWith("draft-"))
       .map(candidate => `<option value="${candidate.id}">${escapeHtml(candidate.codigo || "—")} · ${escapeHtml(candidate.descricao)}</option>`).join("");
   }
 
   function renderDependencies(item) {
+    if (!state.dependenciesLoaded) return `<div class="planning-dependency-editor"><small>DEPENDÊNCIAS NÃO CARREGADAS</small></div>`;
     const rows = state.dependencies.filter(row => row.item_id === item.id);
     return `<div class="planning-dependency-editor"><div>${rows.map(row => {
       const predecessor = state.items.find(candidate => candidate.id === row.depende_de_item_id);
@@ -292,7 +294,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       result[dependency.item_id] = (result[dependency.item_id] || 0) + 1;
       return result;
     }, {});
-    return `<div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></div>
+    return `<div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>${state.items.filter(item => !item._new && activeTask(item)).length} TAREFAS</span></div>
     ${renderCostSummary()}${renderImportPanel()}${renderEditor()}
     <div class="planning-gantt-title"><div><strong>GANTT EFETIVO</strong><span>Atualizado a partir da grelha acima</span></div></div>
     <div class="planning-grid planning-grid-head">
@@ -425,8 +427,9 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderUnifiedPlanning() {
-    return `<section class="planning-unified-detail"><header><div><p class="eyebrow">PLANEAMENTO DA OBRA</p><h3>Tarefas organizadas por fase</h3></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></header>
-        <div class="planning-effective-toolbar">${readOnly() ? `<span>CONSULTA · O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS</span>` : `<div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><button type="button" data-save-batch ${!dirtyCount() || state.batchSaving ? "disabled" : ""}>GUARDAR ALTERAÇÕES · ${dirtyCount()}</button>`}</div>
+    return `<section class="planning-unified-detail"><header><div><p class="eyebrow">PLANEAMENTO DA OBRA</p><h3>Tarefas organizadas por fase</h3></div><span>${state.items.filter(item => !item._new && activeTask(item)).length} TAREFAS</span></header>
+        <div class="planning-effective-toolbar">${readOnly() ? `<span>CONSULTA · O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS</span>` : `<div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><button type="button" data-save-batch ${!dirtyCount() || state.batchSaving || !state.dependenciesLoaded ? "disabled" : ""}>GUARDAR ALTERAÇÕES · ${dirtyCount()}</button>`}</div>
+        ${!state.dependenciesLoaded ? `<p class="form-error" role="alert">${dependencyError}</p>` : ""}
         ${renderBatchPreview()}${renderWeights()}${renderImportPanel()}${renderEditor()}
       </section>`;
   }
@@ -530,7 +533,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     content.querySelector(".planning-batch-preview")?.remove();
     row.classList.toggle("dirty", planningChanges(state.original, [item]).length > 0);
     const button = content.querySelector("[data-save-batch]");
-    if (button) { button.textContent = `GUARDAR ALTERAÇÕES · ${dirtyCount()}`; button.disabled = !dirtyCount(); }
+    if (button) { button.textContent = `GUARDAR ALTERAÇÕES · ${dirtyCount()}`; button.disabled = !dirtyCount() || !state.dependenciesLoaded; }
   }
 
   function removeTask(itemId) {
@@ -571,7 +574,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderBatchPreview() {
-    if (!state.preview) return "";
+    if (!state.preview || !state.dependenciesLoaded) return "";
     const preview = state.preview;
     const list = (label, ids) => `<div><strong>${label} · ${ids.length}</strong><ul>${ids.map(id => {
       const item = state.items.find(row => row.id === id);
@@ -586,6 +589,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   async function confirmBatch() {
+    if (!state.dependenciesLoaded) return toast(dependencyError, "error");
     const preview = batchPreview(state.original, state.items, state.phases, state.dependencies);
     if (!preview.valid) { state.preview = preview; render(); return; }
     const reason = content.querySelector("[data-archive-reason]")?.value.trim() || null;
@@ -661,6 +665,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     if (!state.workId) { state.loaded = true; state.phases = []; render(); return; }
     workSelect.value = state.workId;
     state.loaded = false;
+    state.dependenciesLoaded = false;
     render();
     if (!isSupabaseConfigured) {
       state.phases = []; state.items = []; state.dependencies = []; state.loaded = true; render(); return;
@@ -727,10 +732,19 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
           toast("Não foi possível carregar os custos da obra. Os valores estão indisponíveis.", "error");
         }
         const itemIds = state.items.map(item => item.id);
+        state.dependencies = [];
         if (itemIds.length) {
-          const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);
-          state.dependencies = dependencyResponse.ok ? await dependencyResponse.json() : [];
-        } else state.dependencies = [];
+          try {
+            const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);
+            if (!dependencyResponse.ok) throw new Error(dependencyError);
+            const dependencies = await dependencyResponse.json();
+            if (!Array.isArray(dependencies)) throw new Error(dependencyError);
+            state.dependencies = dependencies;
+            state.dependenciesLoaded = true;
+          } catch {
+            toast(dependencyError, "error");
+          }
+        } else state.dependenciesLoaded = true;
       }
     }
     state.original = structuredClone(state.items);
@@ -770,7 +784,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       render();
       return;
     }
-    if (event.target.closest("[data-save-batch]")) { state.preview = batchPreview(state.original, state.items, state.phases, state.dependencies); render(); return; }
+    if (event.target.closest("[data-save-batch]")) { if (!state.dependenciesLoaded) return toast(dependencyError, "error"); state.preview = batchPreview(state.original, state.items, state.phases, state.dependencies); render(); return; }
     if (event.target.closest("[data-confirm-batch]")) { confirmBatch(); return; }
     const redistribute = event.target.closest("[data-redistribute]");
     if (redistribute) {
