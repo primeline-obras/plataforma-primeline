@@ -5,6 +5,7 @@ import { planningChanges, batchPreview, requestPlanningBatch } from "./planning-
 import { planningFinancialSummary } from "./monthly-api.js?v=1";
 
 const DAY_MS = 86400000;
+const PLANNING_WORK_KEY = "primeline_planning_work_id";
 
 export function isoDate(value) {
   if (value instanceof Date) {
@@ -89,13 +90,19 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   const dependencyError = "As dependências não foram carregadas. Pode consultar e editar localmente, mas o preview e a gravação estão bloqueados até recarregar com sucesso.";
   const readOnly = () => getRole() === "encarregado";
 
-  function renderWorkOptions() {
+  function renderWorkOptions(workId = state.workId) {
     const works = getWorks().slice().sort((a, b) =>
       String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
     workSelect.innerHTML = works.map(work =>
       `<option value="${work.id}">OBRA ${escapeHtml(work.numero || "—")} · ${escapeHtml(work.nome || "Sem designação")}</option>`
     ).join("");
-    if (!state.workId && works[0]) state.workId = works[0].id;
+    let savedWorkId = null;
+    try { savedWorkId = localStorage.getItem(PLANNING_WORK_KEY); } catch { /* Storage may be unavailable. */ }
+    state.workId = [workId, state.workId, savedWorkId].find(id => works.some(work => work.id === id)) || works[0]?.id || "";
+    try {
+      if (state.workId) localStorage.setItem(PLANNING_WORK_KEY, state.workId);
+      else localStorage.removeItem(PLANNING_WORK_KEY);
+    } catch { /* Keep selection usable without storage. */ }
     workSelect.value = state.workId;
     state.work = works.find(work => work.id === state.workId) || null;
   }
@@ -665,9 +672,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   async function load(workId = state.workId) {
     if (dirtyCount() && !await platformConfirm("Existem alterações locais por guardar. Descartar e carregar os dados?", { title: "Alterações por guardar", confirmLabel: "DESCARTAR" })) { workSelect.value = state.workId; return; }
     state.preview = null;
-    renderWorkOptions();
-    state.workId = workId || workSelect.value;
-    state.work = getWorks().find(work => work.id === state.workId) || null;
+    renderWorkOptions(workId);
     if (!state.workId) { state.loaded = true; state.phases = []; render(); return; }
     workSelect.value = state.workId;
     state.loaded = false;
@@ -854,7 +859,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const targetWorkId = options.workId || state.workId;
       if (dirtyCount() && targetWorkId === state.workId) { render(); return; }
       if (["baseline", "effective", "summary", "control"].includes(options.view)) state.view = options.view;
-      load(targetWorkId || workSelect.value);
+      load(targetWorkId);
     },
     refresh: load,
   };
