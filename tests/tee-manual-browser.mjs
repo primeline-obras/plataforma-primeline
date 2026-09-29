@@ -5,6 +5,8 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLANNING_PLAYWRIGHT || 'playwright');
 const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const stylesheets = [...index.matchAll(/<link[^>]+rel="stylesheet"[^>]*>/g)].map(match => match[0]).join('');
 const manual = app.slice(app.indexOf('function teeApprovalLabel('), app.indexOf('function phasePlanningRecord('));
 const browser = await chromium.launch({ channel: process.env.PLANNING_BROWSER || 'msedge', headless: true });
 try {
@@ -13,9 +15,12 @@ try {
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
     if (/^\/src\/[\w-]+\.js$/.test(url.pathname)) return route.fulfill({ contentType: 'text/javascript; charset=utf-8', body: await readFile(new URL('..' + url.pathname, import.meta.url), 'utf8') });
+    if (/^\/src\/[\w-]+\.css$/.test(url.pathname)) return route.fulfill({ contentType: 'text/css; charset=utf-8', body: await readFile(new URL('..' + url.pathname, import.meta.url), 'utf8') });
     if (url.pathname !== '/') return route.abort();
     await route.fulfill({ contentType: 'text/html; charset=utf-8', body: `
-      <div id="workflow-dialog" hidden><h2 id="workflow-dialog-title"></h2><div id="workflow-dialog-content"></div></div>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      ${stylesheets}
+      <div class="dialog-backdrop" id="workflow-dialog" hidden><section class="work-dialog-card workflow-dialog-card" role="dialog" aria-modal="true"><div class="panel-title"><span id="workflow-dialog-title"></span><button type="button">×</button></div><div id="workflow-dialog-content"></div></section></div>
       <script type="module">
         import { teeState } from '/src/tee-index.js';
         const $ = selector => document.querySelector(selector);
@@ -75,6 +80,30 @@ try {
 
   // A legacy NULL is saved only on explicit submission; unchanged values are omitted.
   const pending = { ...prior, estado_aprovacao_cliente: 'pendente', data_envio: '2026-09-01' };
+  // Actual modal styles: full-width multiline description, aligned and contained.
+  for (const width of [1440, 1366, 1024, 768, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await open(pending);
+    await page.locator('[name="descricao"]').fill('Descrição multilinha do TEE.\nSegunda linha para verificar a altura e o alinhamento.\n' + 'Texto longo '.repeat(30));
+    await page.locator('.workflow-dialog-card').evaluate(card => { card.scrollTop = 0; });
+    const geometry = await page.locator('[name="descricao"]').evaluate(field => {
+      const rect = element => { const r = element.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }; };
+      const label = field.closest('label'), form = field.form;
+      return { field: rect(field), label: rect(label), first: rect(form.elements.numero), next: rect(label.nextElementSibling), style: { resize: getComputedStyle(field).resize, display: getComputedStyle(field).display }, viewport: innerWidth };
+    });
+    assert.ok(Math.abs(geometry.field.width - geometry.label.width) < 1, JSON.stringify(geometry));
+    assert.ok(Math.abs(geometry.field.x - geometry.first.x) < 1);
+    assert.ok(geometry.field.height >= 104);
+    assert.ok(geometry.field.y > geometry.label.y);
+    assert.ok(geometry.field.bottom <= geometry.next.y);
+    assert.ok(geometry.field.x >= 0 && geometry.field.right <= geometry.viewport);
+    assert.deepEqual(geometry.style, { resize: 'vertical', display: 'block' });
+    if (process.env.TEE_SCREENSHOT_DIR && [1366, 390].includes(width)) {
+      await page.screenshot({ path: process.env.TEE_SCREENSHOT_DIR + '/tee-description-' + width + '.png' });
+    }
+  }
+  await page.setViewportSize({ width: 1366, height: 900 });
+
   await open(pending);
   await submit();
   await page.locator('#workflow-dialog').waitFor({ state: 'hidden' });
@@ -119,5 +148,5 @@ try {
   assert.equal(created.body.obra_id, 'work');
   assert.ok(await page.evaluate(() => calls.every(call => call.path.startsWith('alteracoes_tee?'))));
   assert.deepEqual(errors, []);
-  console.log('PASS: manual TEE states, NULL UI defaults, compatible selections, sparse PATCH, preserved fields, errors, POST and no contractual-date writes.');
+  console.log('PASS: description layout at 320–1440px; manual TEE states, NULL UI defaults, compatible selections, sparse PATCH, preserved fields, errors, POST and no contractual-date writes.');
 } finally { await browser.close(); }
