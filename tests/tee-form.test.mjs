@@ -27,7 +27,9 @@ assert.doesNotMatch(app, /APROVAÇÃO DA GERÊNCIA/);
 assert.match(app, /<span>CLIENTE<\/span>[\s\S]*estado_aprovacao_cliente/);
 assert.doesNotMatch(importer, /estado_aprovacao_gerencia/);
 assert.doesNotMatch(importSql.match(/insert into public\.alteracoes_tee[\s\S]*?returning \* into v_tee;/i)?.[0] || "", /estado_aprovacao_gerencia/);
-assert.match(app, /Quando o TEE estiver aprovado pelo cliente[\s\S]*planeamento e a previsão financeira/);
+assert.match(app, /name="estado_operacional"/);
+assert.match(app, /A atualização do mapa financeiro mensal depende do respetivo serviço, ainda não disponível/);
+assert.doesNotMatch(app, /o planeamento e a previsão financeira são atualizados automaticamente/);
 assert.match(styles, /\.tees-workspace/);
 assert.match(styles, /\.tee-card/);
 

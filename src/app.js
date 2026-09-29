@@ -1,3 +1,4 @@
+import { teeState } from "./tee-index.js?v=1";
 import { legacyContractValues } from "./contract-composition.js?v=1";
 import { recordReceipt } from "./financial-movements.js?v=1";
 import { workDates } from "./planning-operational.js?v=1";
@@ -3599,6 +3600,7 @@ function nextTeeNumber(tees = workDetails.tees) {
 function openTeeDialog(teeId = "") {
   if (!canEditWork()) return toast("Não tem permissão para alterar TEEs nesta obra.", "error");
   const tee = workDetails.tees.find(item => item.id === teeId) || null;
+  const operationalState = tee?.estado_operacional ?? teeState(tee?.estado_aprovacao_cliente, tee?.data_envio).operational;
   const rfiOptions = workDetails.rfis.map(rfi => `<option value="${rfi.id}" ${rfi.id === tee?.rfi_id ? "selected" : ""}>${safeText(rfi.numero || rfi.assunto || "PDE")}</option>`).join("");
   $("#workflow-dialog-title").textContent = tee ? `EDITAR ${tee.numero || "TEE"}` : "NOVO TEE";
   $("#workflow-dialog-content").innerHTML = `<form id="tee-form" data-tee-id="${tee?.id || ""}">
@@ -3609,13 +3611,26 @@ function openTeeDialog(teeId = "") {
     <label class="tee-cross-phase"><input name="sem_fase_especifica" type="checkbox"><span><strong>ESTE TEE NÃO PERTENCE A UMA FASE ESPECÍFICA</strong><small>Será associado automaticamente à fase F01 · Estaleiro.</small></span></label>
     <div class="form-row"><label>VALOR DE VENDA (€)<input name="valor" type="number" step="0.01" value="${tee?.valor ?? ""}"></label><label>PREÇO DE CUSTO (€)<input name="preco_custo" type="number" step="0.01" value="${tee?.preco_custo ?? ""}"></label></div>
     <div class="form-row"><label>DIAS DE PRORROGAÇÃO<input name="dias_prorrogacao" type="number" step="1" value="${tee?.dias_prorrogacao ?? 0}"></label><label>DATA DE ENVIO<input name="data_envio" type="date" value="${tee?.data_envio || ""}"></label></div>
+    <label>ESTADO OPERACIONAL<div class="select-wrap"><select name="estado_operacional"><option value="em_elaboracao" ${operationalState === "em_elaboracao" ? "selected" : ""}>Em elaboração</option><option value="aguarda_resposta" ${operationalState === "aguarda_resposta" ? "selected" : ""}>Aguarda resposta</option><option value="aprovado" ${operationalState === "aprovado" ? "selected" : ""}>Aprovado</option><option value="rejeitado" ${operationalState === "rejeitado" ? "selected" : ""}>Rejeitado</option></select><b>⌄</b></div></label>
     <div class="form-row"><label>ESTADO DO CLIENTE<div class="select-wrap"><select name="estado_aprovacao_cliente"><option value="pendente" ${tee?.estado_aprovacao_cliente !== "aprovado" && tee?.estado_aprovacao_cliente !== "recusado" ? "selected" : ""}>Pendente</option><option value="aprovado" ${tee?.estado_aprovacao_cliente === "aprovado" ? "selected" : ""}>Aprovado</option><option value="recusado" ${tee?.estado_aprovacao_cliente === "recusado" ? "selected" : ""}>Recusado</option></select><b>⌄</b></div></label><label>DATA DA RESPOSTA<input name="data_resposta" type="date" value="${tee?.data_resposta || ""}"></label></div>
     <label>DATA DE APROVAÇÃO DO CLIENTE<input name="data_aprovacao_cliente" type="date" value="${tee?.data_aprovacao_cliente || ""}"></label>
-    <fieldset class="tee-execution"><legend>EXECUÇÃO PREVISTA</legend><div class="form-row"><label>INÍCIO<input name="data_inicio_execucao" type="date" value="${tee?.data_inicio_execucao || ""}"></label><label>FIM<input name="data_fim_execucao" type="date" value="${tee?.data_fim_execucao || ""}"></label></div><small>Quando o TEE estiver aprovado pelo cliente e estas datas estiverem preenchidas, o planeamento e a previsão financeira são atualizados automaticamente.</small></fieldset>
+    <fieldset class="tee-execution"><legend>EXECUÇÃO PREVISTA</legend><div class="form-row"><label>INÍCIO<input name="data_inicio_execucao" type="date" value="${tee?.data_inicio_execucao || ""}"></label><label>FIM<input name="data_fim_execucao" type="date" value="${tee?.data_fim_execucao || ""}"></label></div><small>Estas datas registam a execução prevista do TEE. A atualização do mapa financeiro mensal depende do respetivo serviço, ainda não disponível.</small></fieldset>
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">${tee ? "GUARDAR ALTERAÇÕES" : "CRIAR TEE"} <span>→</span></button></div>
   </form>`;
   $("#workflow-dialog").hidden = false;
   const formElement = $("#tee-form");
+  // Compare against the displayed values so an untouched blank or unavailable
+  // select option never clears an existing database value.
+  formElement.teeInitialValues = Object.fromEntries(new FormData(formElement));
+  formElement.elements.estado_operacional.addEventListener("change", () => {
+    formElement.elements.estado_aprovacao_cliente.value = teeState(formElement.elements.estado_operacional.value).client;
+  });
+  formElement.elements.estado_aprovacao_cliente.addEventListener("change", () => {
+    const client = formElement.elements.estado_aprovacao_cliente.value;
+    if (teeState(formElement.elements.estado_operacional.value).client !== client) {
+      formElement.elements.estado_operacional.value = teeState(client, formElement.elements.data_envio.value).operational;
+    }
+  });
   formElement.sem_fase_especifica.addEventListener("change", () => {
     if (!formElement.sem_fase_especifica.checked) return;
     const sitePhase = workDetails.phases.find(phase => String(phase.codigo || "").toUpperCase() === "F01")
@@ -3647,6 +3662,12 @@ async function submitTee(event) {
   if ((start && !end) || (!start && end)) { errorElement.textContent = "Preencha as duas datas de execução, ou deixe ambas vazias."; return; }
   if (start && end < start) { errorElement.textContent = "A data de fim da execução não pode ser anterior à data de início."; return; }
   const clientState = String(data.get("estado_aprovacao_cliente") || "pendente");
+  const operationalState = String(data.get("estado_operacional") || "");
+  if (!["em_elaboracao", "aguarda_resposta", "aprovado", "rejeitado"].includes(operationalState)
+      || teeState(operationalState).client !== clientState) {
+    errorElement.textContent = "O Estado Operacional e o Estado do Cliente são incompatíveis.";
+    return;
+  }
   const crossPhase = data.get("sem_fase_especifica") === "on";
   const sitePhase = crossPhase
     ? workDetails.phases.find(phase => String(phase.codigo || "").toUpperCase() === "F01")
@@ -3665,12 +3686,23 @@ async function submitTee(event) {
     preco_custo: data.get("preco_custo") === "" ? null : Number(data.get("preco_custo")),
     dias_prorrogacao: Number(data.get("dias_prorrogacao") || 0),
     data_envio: String(data.get("data_envio") || "") || null,
+    estado_operacional: operationalState,
     estado_aprovacao_cliente: clientState,
     data_resposta: String(data.get("data_resposta") || "") || null,
-    data_aprovacao_cliente: clientState === "aprovado" ? (String(data.get("data_aprovacao_cliente") || "") || new Date().toISOString().slice(0, 10)) : null,
+    data_aprovacao_cliente: String(data.get("data_aprovacao_cliente") || "") || null,
     data_inicio_execucao: start || null,
     data_fim_execucao: end || null,
   };
+  if (existing) {
+    for (const field of Object.keys(payload)) {
+      if (field === "estado_operacional") continue;
+      if (!data.has(field) || data.get(field) === formElement.teeInitialValues?.[field]) delete payload[field];
+    }
+  }
+  if (clientState === "aprovado" && existing?.estado_aprovacao_cliente !== "aprovado"
+      && !data.get("data_aprovacao_cliente") && !existing?.data_aprovacao_cliente) {
+    payload.data_aprovacao_cliente = new Date().toISOString().slice(0, 10);
+  }
   button.disabled = true;
   errorElement.textContent = "";
   try {
@@ -3682,7 +3714,11 @@ async function submitTee(event) {
         const detail = await response.json().catch(() => ({}));
         throw new Error(detail.message || detail.details || "Não foi possível guardar o TEE.");
       }
-      saved = (await response.json())[0] || saved;
+      const rows = await response.json();
+      if (!Array.isArray(rows) || !rows[0]?.id || (teeId && rows[0].id !== teeId)) {
+        throw new Error("O serviço não confirmou o TEE. Atualize os dados antes de repetir.");
+      }
+      saved = rows[0];
     }
     if (existing) Object.assign(existing, saved);
     else workDetails.tees.unshift(saved);
