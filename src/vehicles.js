@@ -118,7 +118,7 @@ export function createVehiclesModule({
       try {
         const date = editing ? fields.nova_data : renewalExpiry(fields.data_base, fields.validade_opcao, fields.nova_data);
         form.querySelector("[data-validity-preview]").textContent = formatDate(date);
-      } catch { form.querySelector("[data-validity-preview]").textContent = "Indique datas válidas"; }
+      } catch { form.querySelector("[data-validity-preview]").textContent = "Indique uma data válida"; }
     };
     form.addEventListener("input", preview);
     form.addEventListener("change", preview);
