@@ -233,17 +233,24 @@ export function invoiceDueDate(invoice = {}) {
 }
 
 export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = new Set(), currentUserId = "") {
+  const vehicleTypes = new Set(["seguro_viatura", "inspecao_viatura"]);
+  const vehicleAlerts = alerts.filter(alert => vehicleTypes.has(alert.tipo) && (
+    ["gerencia", "administrativo"].includes(role)
+    || (Boolean(currentUserId) && alert.destinatario_utilizador_id === currentUserId)
+  ));
+  alerts = alerts.filter(alert => !vehicleTypes.has(alert.tipo));
+  const withVehicleAlerts = rows => sortAlertsByPriority([...rows, ...vehicleAlerts]);
   const personalMeeting = alert => isMeetingInformation(alert) && alert.destinatario_utilizador_id === currentUserId;
-  if (["gerencia", "administrativo"].includes(role)) return sortAlertsByPriority(alerts.filter(alert => !isMeetingInformation(alert) || personalMeeting(alert)));
-  if (role === "financeiro") return sortAlertsByPriority(alerts.filter(alert => personalMeeting(alert) || FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`)));
+  if (["gerencia", "administrativo"].includes(role)) return withVehicleAlerts(alerts.filter(alert => !isMeetingInformation(alert) || personalMeeting(alert)));
+  if (role === "financeiro") return withVehicleAlerts(alerts.filter(alert => personalMeeting(alert) || FINANCIAL_ALERT_PATTERN.test(`${alert.tipo || ""} ${alert.entidade_tipo || ""} ${alert.titulo || ""}`)));
   if (["diretor_obra", "adjunto", "preparador"].includes(role)) {
-    return sortAlertsByPriority(alerts.filter(alert =>
+    return withVehicleAlerts(alerts.filter(alert =>
       personalMeeting(alert)
       || (alert.obra_id && responsibleWorkIds.has(alert.obra_id))
       || (TECHNICAL_RECURRING_TYPES.has(alert.tipo) && (!alert.entidade_id || alert.entidade_id === currentUserId))
     ));
   }
-  return sortAlertsByPriority(alerts.filter(personalMeeting));
+  return withVehicleAlerts(alerts.filter(personalMeeting));
 }
 
 export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date()) {
