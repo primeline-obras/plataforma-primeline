@@ -22,11 +22,21 @@ export function previewTeeIndex(incoming, existing, workId) {
     for (const field of fields) if (present(row[field]) && row[field] !== previous?.[field]) changes[field] = row[field];
     let state;
     try {
-      state = teeState(row.estado_operacional || row.estado_aprovacao_cliente || previous?.estado_aprovacao_cliente, row.data_envio || previous?.data_envio);
-      if (!previous || present(row.estado_operacional) || present(row.estado_aprovacao_cliente)) {
-        if (state.client !== previous?.estado_aprovacao_cliente) changes.estado_aprovacao_cliente = state.client;
+      const operational = present(row.estado_operacional) ? teeIdentity(row.estado_operacional).replaceAll(" ", "_") : null;
+      const client = present(row.estado_aprovacao_cliente) ? teeIdentity(row.estado_aprovacao_cliente).replaceAll(" ", "_") : null;
+      if (operational && !["em_elaboracao", "aguarda_resposta", "aprovado", "rejeitado"].includes(operational)) throw new Error("Estado operacional TEE inválido.");
+      if (client && !["pendente", "aprovado", "recusado"].includes(client)) throw new Error("Estado do cliente TEE inválido.");
+      if (client && client !== previous?.estado_aprovacao_cliente) changes.estado_aprovacao_cliente = client;
+      if (operational && operational !== previous?.estado_operacional) changes.estado_operacional = operational;
+      if (!previous) {
+        changes.estado_aprovacao_cliente = client || "pendente";
+        changes.estado_operacional = operational || teeState(changes.estado_aprovacao_cliente, row.data_envio).operational;
       }
-      if (present(row.estado_operacional) && state.operational !== previous?.estado_operacional) changes.estado_operacional = state.operational;
+      state = {
+        operational: changes.estado_operacional ?? previous?.estado_operacional,
+        client: changes.estado_aprovacao_cliente ?? previous?.estado_aprovacao_cliente,
+        suggested: !previous && !operational,
+      };
     } catch (error) { errors.push(error.message); }
     if (!previous) Object.assign(changes, { obra_id: workId, numero: String(row.numero || "").trim(), fase_id: row.fase_id || null });
     const merged = { ...previous, ...changes };

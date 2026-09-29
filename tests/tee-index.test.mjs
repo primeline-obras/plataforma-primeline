@@ -48,3 +48,44 @@ test('RPC de revisões exige confirmação sem fallback e preserva preview', asy
   await assert.rejects(requestTeeRevisionImport(async () => Response.json({ version: 1, committed: false }), payload));
   assert.equal((await requestTeeRevisionImport(async () => Response.json({ version: 1, committed: true, importadas: 1 }), payload)).importadas, 1);
 });
+
+test('revisão preserva o estado operacional quando só muda outro campo', () => {
+  const existing = { ...prior, estado_operacional: 'em_elaboracao', estado_aprovacao_cliente: 'pendente', data_envio: '2026-09-01' };
+  const [result] = previewTeeIndex([{ obra_id: 'work', numero: 'TEE 01', revisao: 'REV03', estado_operacional: ' ', estado_aprovacao_cliente: '' }], [existing], 'work');
+  assert.deepEqual(result.changes, { revisao: 'REV03' });
+  assert.equal(result.state.operational, 'em_elaboracao');
+});
+
+test('os estados do cliente e operacional são independentes nas revisões', () => {
+  const existing = { ...prior, estado_operacional: 'aguarda_resposta', estado_aprovacao_cliente: 'pendente' };
+  const runState = fields => previewTeeIndex([{ obra_id: 'work', numero: 'TEE 01', ...fields }], [existing], 'work')[0];
+  assert.deepEqual(runState({ estado_aprovacao_cliente: 'recusado' }).changes, { estado_aprovacao_cliente: 'recusado' });
+  assert.deepEqual(runState({ estado_operacional: 'rejeitado' }).changes, { estado_operacional: 'rejeitado' });
+  assert.equal(runState({ estado_aprovacao_cliente: 'rejeitado' }).status, 'BLOQUEADO');
+  assert.equal(runState({ estado_operacional: 'recusado' }).status, 'BLOQUEADO');
+  for (const state of ['em_elaboracao', 'aguarda_resposta', 'aprovado', 'rejeitado']) {
+    assert.notEqual(runState({ estado_operacional: state }).status, 'BLOQUEADO');
+  }
+});
+
+test('número normalizado não duplica TEE e ambiguidade existente bloqueia', () => {
+  assert.equal(run({ numero: '  TEE   01  ', revisao: 'R2' }).previous.id, prior.id);
+  const rows = [{ obra_id: 'work', numero: 'TEE 01' }];
+  assert.equal(previewTeeIndex(rows, [prior, { ...prior, id: 'other' }], 'work')[0].status, 'BLOQUEADO');
+  assert.equal(previewTeeIndex([{ ...rows[0], descricao: 'Novo' }], [{ ...prior, obra_id: 'other' }], 'work')[0].status, 'NOVO');
+});
+
+test('RPC rejeita stale revision e respostas inválidas sem mutar o pedido ou tentar fallback', async () => {
+  const payload = { p_version: 1, p_obra_id: 'work', p_linhas: [{ id: prior.id, expected: prior, revisao: 'R2' }], p_nome_ficheiro: 'revisao.xlsx' };
+  const before = structuredClone(payload), calls = [];
+  await assert.rejects(requestTeeRevisionImport(async (path, options) => {
+    calls.push({ path, method: options.method, body: JSON.parse(options.body) });
+    return Response.json({ code: 'STALE_REVISION', message: 'Revisão desatualizada.' }, { status: 409 });
+  }, payload), /Revisão desatualizada/);
+  assert.deepEqual(calls, [{ path: 'rpc/fn_importar_tees_revisoes', method: 'POST', body: payload }]);
+  assert.deepEqual(payload, before);
+  for (const result of [null, {}, { version: 2, committed: true, importadas: 1 }, { version: 1, committed: true }, { version: 1, committed: true, importadas: -1 }, { version: 1, committed: true, importadas: 1.5 }, { version: 1, committed: true, importadas: '1' }]) {
+    await assert.rejects(requestTeeRevisionImport(async () => Response.json(result), payload));
+  }
+  assert.equal((await requestTeeRevisionImport(async () => Response.json({ version: 1, committed: true, importadas: 0 }), payload)).importadas, 0);
+});

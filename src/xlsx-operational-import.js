@@ -1,4 +1,4 @@
-import { previewTeeIndex, requestTeeRevisionImport } from "./tee-index.js?v=1";
+import { previewTeeIndex, requestTeeRevisionImport, teeIdentity } from "./tee-index.js?v=1";
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -99,40 +99,49 @@ function parseTees(workbook, context) {
   const itemRows = exactSheet(workbook, "TEE_Itens", TEE_ITEM_HEADERS);
   const phases = new Map(context.phases.map(item => [normalize(item.codigo), item]));
 
-  const validApproval = new Set(["em_elaboracao", "aguarda_resposta", "rejeitado", "pendente", "aprovado", "recusado", ""]);
+  // Older workbooks remain valid; the independent operational state is optional.
+  const operationalColumn = rowsOf(workbook, "TEE_Cabeçalho")[0].findIndex(value => normalize(value) === "estado operacional");
+  const validApproval = new Set(["pendente", "aprovado", "recusado", ""]);
+  const itemErrors = new Map();
   const itemsByTee = new Map();
   itemRows.forEach((row, index) => {
     const teeNumber = String(row[0] ?? "").trim();
-    if (!itemsByTee.has(normalize(teeNumber))) itemsByTee.set(normalize(teeNumber), []);
-    itemsByTee.get(normalize(teeNumber)).push({ linha: index + 2, numero_artigo: String(row[1] ?? "").trim(), descricao: String(row[2] ?? "").trim(), unidade: String(row[3] ?? "").trim() || null, quantidade: number(row[4]), preco_unitario: number(row[5]), valor_total: number(row[6]) });
+    const key = teeIdentity(teeNumber);
+    if (!itemErrors.has(key)) itemErrors.set(key, []);
+    for (const column of [4, 5, 6]) {
+      if (String(row[column] ?? "").trim() && number(row[column]) === null) itemErrors.get(key).push(`Valor numérico inválido no item da linha ${index + 2}, coluna ${column + 1}.`);
+    }
+    if (!itemsByTee.has(key)) itemsByTee.set(key, []);
+    itemsByTee.get(key).push({ linha: index + 2, numero_artigo: String(row[1] ?? "").trim(), descricao: String(row[2] ?? "").trim(), unidade: String(row[3] ?? "").trim() || null, quantidade: number(row[4]), preco_unitario: number(row[5]), valor_total: number(row[6]) });
   });
-  const headerNumbers = new Set(headers.map(row => normalize(row[0])));
+  const headerNumbers = new Set(headers.map(row => teeIdentity(row[0])));
   if ([...itemsByTee.keys()].some(key => !headerNumbers.has(key))) throw new Error("Há itens sem cabeçalho TEE correspondente. Reveja o ficheiro completo.");
-  const existing = new Set(context.tees.map(item => normalize(item.numero)));
+  const existing = new Set(context.tees.map(item => teeIdentity(item.numero)));
   const parsed = headers.map((row, index) => {
     const errors = []; const warnings = [];
     const teeNumber = String(row[0] ?? "").trim(); const workNumber = String(row[1] ?? "").trim();
-    const phase = row[2] ? phases.get(normalize(row[2])) : null;
+    const phaseCode = String(row[2] ?? "").trim();
+    const phase = phaseCode ? phases.get(normalize(phaseCode)) : null;
     const client = normalize(row[10]).replaceAll(" ", "_");
-    const items = itemsByTee.get(normalize(teeNumber)) || [];
+    const items = itemsByTee.get(teeIdentity(teeNumber)) || [];
+    errors.push(...(itemErrors.get(teeIdentity(teeNumber)) || []));
     for (const column of [5, 6, 7]) if (String(row[column] ?? "").trim() && number(row[column]) === null) errors.push(`Valor numérico inválido na coluna ${column + 1}.`);
     if (!teeNumber) errors.push("Nº TEE obrigatório.");
 
     if (!workNumber || Number(workNumber) !== Number(context.work.numero)) errors.push(`A obra tem de ser ${context.work.numero}.`);
-    if (row[2] && !phase) errors.push(`Fase “${row[2]}” não encontrada.`);
+    if (phaseCode && !phase) errors.push(`Fase “${row[2]}” não encontrada.`);
     if (!validApproval.has(client)) errors.push(`Estado do cliente inválido: ${row[10]}.`);
+    for (const column of [8, 9, 12, 13]) if (String(row[column] ?? "").trim() && !excelDate(row[column])) errors.push(`Data inválida na coluna ${column + 1}.`);
     const start = excelDate(row[12]); const end = excelDate(row[13]);
-    if (row[12] && !start) errors.push("Data de início inválida.");
-    if (row[13] && !end) errors.push("Data de fim inválida.");
 
     if (start && end && end < start) errors.push("A data de fim é anterior à data de início.");
     items.forEach(item => { if (!item.numero_artigo || !item.descricao) errors.push(`Item da linha ${item.linha} sem Nº Artigo ou Descrição.`); });
-    if (!items.length) warnings.push("TEE sem itens associados; será importado apenas o cabeçalho.");
-    const duplicate = existing.has(normalize(teeNumber));
+    if (!items.length) warnings.push("Sem itens no ficheiro; serão preservados os existentes, se houver.");
+    const duplicate = existing.has(teeIdentity(teeNumber));
 
     return { row: index + 2, label: teeNumber || `Linha ${index + 2}`, errors, warnings, duplicate, selected: !duplicate && !errors.length,
       payload: { obra_id: context.work.id, fase_id: phase?.id || null, numero: teeNumber, descricao: String(row[3] ?? "").trim() || null, especialidade: String(row[4] ?? "").trim() || null,
-        valor: number(row[5]), preco_custo: number(row[6]), dias_prorrogacao: number(row[7]), data_envio: excelDate(row[8]), data_resposta: excelDate(row[9]), estado_operacional: ["em_elaboracao", "aguarda_resposta", "aprovado", "rejeitado"].includes(client) ? client : null, estado_aprovacao_cliente: client || null, revisao: String(row[11] ?? "").trim() || null, data_inicio_execucao: start, data_fim_execucao: end, itens: items },
+        valor: number(row[5]), preco_custo: number(row[6]), dias_prorrogacao: number(row[7]), data_envio: excelDate(row[8]), data_resposta: excelDate(row[9]), estado_operacional: operationalColumn >= 0 ? String(row[operationalColumn] ?? "").trim() || null : null, estado_aprovacao_cliente: client || null, revisao: String(row[11] ?? "").trim() || null, data_inicio_execucao: start, data_fim_execucao: end, itens: items },
     };
   });
   const previews = previewTeeIndex(parsed.map(row => row.payload), context.tees, context.work.id);
@@ -142,7 +151,7 @@ function parseTees(workbook, context) {
     if (preview.previous && Object.keys(preview.changes).length) row.warnings.push(`Nova revisão do TEE existente; campos alterados: ${Object.keys(preview.changes).join(", ")}. O histórico anterior deve ser preservado.`);
     row.previewStatus = row.errors.length ? "BLOQUEADO" : preview.status;
     row.selected = !row.errors.length && ["NOVO", "VAI ATUALIZAR"].includes(row.previewStatus);
-    row.payload = { ...preview.changes, id: preview.previous?.id, expected: preview.previous || null, estado_operacional: preview.state?.operational };
+    row.payload = { ...preview.changes, id: preview.previous?.id, expected: preview.previous || null };
     return row;
   });
 }
