@@ -65,5 +65,6 @@ test('o mesmo alerta de viatura é visível ao Administrativo, Gerência e desti
     }
     assert.equal(alertsForOverviewRole([{ tipo }], 'encarregado').length, 0);
   }
-  assert.equal(alertsForOverviewRole([{ tipo: 'compromisso_agenda', destinatario_utilizador_id: 'other' }], 'administrativo', new Set(), 'admin').length, 0);
+  // Preserve main's existing rules for alerts outside vehicle validity.
+  assert.equal(alertsForOverviewRole([{ tipo: 'compromisso_agenda', destinatario_utilizador_id: 'other' }], 'administrativo', new Set(), 'admin').length, 1);
 });

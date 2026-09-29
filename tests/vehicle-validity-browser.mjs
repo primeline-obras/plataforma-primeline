@@ -152,16 +152,18 @@ try {
   // Inspection's legacy form cannot write a due date, even with tampered controls.
   const legacy=page.locator('[data-fleet-event-form]');
   await page.locator('.fleet-form-card').first().locator('summary').click();
-  await legacy.locator('[name="tipo"]').selectOption('inspecao');
-  assert.equal(await legacy.locator('[name="atualizar_data"]').isDisabled(),true);
-  const beforeLegacy=await page.evaluate(()=>calls.length);
-  await legacy.evaluate(form=>{
-    form.elements.atualizar_data.disabled=false;form.elements.atualizar_data.checked=true;
-    form.elements.nova_data.disabled=false;form.elements.nova_data.value='2035-01-01';
-    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
-  });
-  assert.match(await legacy.locator('.form-error').innerText(),/card Seguro ou Inspeção/);
-  assert.equal(await page.evaluate(()=>calls.length),beforeLegacy);
+  for (const type of ['seguro', 'inspecao']) {
+    await legacy.locator('[name="tipo"]').selectOption(type);
+    assert.equal(await legacy.locator('[name="atualizar_data"]').isDisabled(),true);
+    const beforeLegacy=await page.evaluate(()=>calls.length);
+    await legacy.evaluate(form=>{
+      form.elements.atualizar_data.disabled=false;form.elements.atualizar_data.checked=true;
+      form.elements.nova_data.disabled=false;form.elements.nova_data.value='2035-01-01';
+      form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+    });
+    assert.match(await legacy.locator('.form-error').innerText(),/card Seguro ou Inspeção/);
+    assert.equal(await page.evaluate(()=>calls.length),beforeLegacy);
+  }
   // Revision retains the existing independent next-date behavior.
   await legacy.locator('[name="tipo"]').selectOption('revisao');
   await legacy.locator('[name="atualizar_data"]').check();
