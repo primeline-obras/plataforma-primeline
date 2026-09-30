@@ -12,7 +12,7 @@ BEGIN
    AND attnum>0 AND NOT attisdropped AND attacl IS NOT NULL) THEN
   RAISE EXCEPTION 'PRECHECK: grants por coluna exigem revisão.';
  END IF;
- IF (SELECT count(*) FROM public.medicina_trabalho)<>34 THEN RAISE EXCEPTION 'PRECHECK: contagem diferente de 34.'; END IF;
+ IF (SELECT count(*) FROM public.medicina_trabalho)<>35 THEN RAISE EXCEPTION 'PRECHECK: contagem diferente de 35.'; END IF;
  IF EXISTS(SELECT 1 FROM public.medicina_trabalho WHERE data_ultima_consulta IS NULL
  OR data_proxima_consulta<data_ultima_consulta) THEN RAISE EXCEPTION 'PRECHECK: datas antigas precisam revisão.'; END IF;
  IF to_regclass('public.medicina_operacoes') IS NOT NULL OR EXISTS(

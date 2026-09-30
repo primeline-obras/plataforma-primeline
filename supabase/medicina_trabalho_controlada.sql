@@ -33,8 +33,8 @@ BEGIN
  IF to_regclass('public.medicina_operacoes') IS NOT NULL THEN
   RAISE EXCEPTION 'PRECONDITION_FAILED: backend já instalado.';
  END IF;
- IF (SELECT count(*) FROM public.medicina_trabalho) <> 34 THEN
-  RAISE EXCEPTION 'PRECONDITION_FAILED: esperados 34 registos; repetir preflight.';
+ IF (SELECT count(*) FROM public.medicina_trabalho) <> 35 THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: esperados 35 registos; repetir preflight.';
  END IF;
  IF to_regclass('primeline_backup.medicina_20260930') IS NULL
  OR to_regclass('primeline_backup.medicina_alertas_20260930') IS NULL THEN

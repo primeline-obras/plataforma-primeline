@@ -42,6 +42,9 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  for(const [n,r,c] of [[10,'administrativo',1],[11,'gerencia',1],[12,'gestao_plataforma',1],[13,'encarregado',1],[14,'financeiro',1],[15,'administrativo',2]])await q('INSERT INTO utilizadores VALUES($1,$2,$3,true)',[id(n),id(c),r]);
  for(let n=20;n<60;n++)await q('INSERT INTO colaboradores VALUES($1,$2,$3,current_date-90,NULL)',[id(n),id(n===59?2:1),n===20?'Visível ao Encarregado':'Pessoa sintética '+n]);
  for(let n=20;n<54;n++)await q('INSERT INTO medicina_trabalho(id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta) VALUES($1,$2,current_date+$3::integer,$4,current_date+365)',[id(100+n),id(n),n===53?10:-30,'Texto antigo livre']);
+ // Snapshot de produção atualizado: preservar os 34 cenários e acrescentar consulta sem próxima data.
+ await q('INSERT INTO colaboradores VALUES($1,$2,$3,current_date-90,NULL)',[id(60),id(1),'Novo legado sintético']);
+ await q('INSERT INTO medicina_trabalho(id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta) VALUES($1,$2,current_date,$3,NULL)',[id(160),id(60),'Consulta sem próxima data']);
  await q("INSERT INTO parametros_operacionais VALUES('antecedencia_alerta_medicina','30')");
  const old=(await q('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows;
  await q(await read('../supabase/medicina_trabalho_precheck.sql'));
@@ -63,7 +66,9 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  const corr=(c,consult,rev,req,motive='Correção explícita',result='Corrigido')=>c.query('SELECT fn_medicina_corrigir_consulta(1,$1,current_date-1,$2,current_date+365,$3,$4,$5) result',[consult,result,rev,id(req),motive]);
  const reject=async(c,fn,pattern)=>{await c.query('SAVEPOINT expected');try{await assert.rejects(fn,e=>pattern.test(e.message));}finally{await c.query('ROLLBACK TO expected; RELEASE expected');}};
  const unit=(name,fn)=>t.test(name,async()=>{await a.query('BEGIN');await actor(a);try{await fn();}finally{await a.query('ROLLBACK');await a.query('RESET ROLE');}});
- await unit('instalação preserva 34 linhas; autoria/request antigos NULL e revisão zero',async()=>{
+ await unit('instalação preserva 35 linhas; autoria/request antigos NULL e revisão zero',async()=>{
+ assert.equal(old.length,35);
+ assert.equal((await q('SELECT data_proxima_consulta FROM medicina_trabalho WHERE id=$1',[id(160)])).rows[0].data_proxima_consulta,null);
  assert.deepEqual((await q("SELECT to_jsonb(m)-ARRAY['registado_por','request_id','revisao','anulado_em','anulado_por'] row FROM medicina_trabalho m ORDER BY id")).rows,old);
  assert.equal((await q('SELECT count(*)::int n FROM medicina_operacoes')).rows[0].n,0);
  assert.equal((await q('SELECT count(*)::int n FROM medicina_trabalho WHERE registado_por IS NOT NULL OR request_id IS NOT NULL OR revisao<>0')).rows[0].n,0);
@@ -291,7 +296,7 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  let fixture=await read('./fixtures/medicina-base.sql');fixture=fixture.replace('CREATE ROLE anon NOLOGIN;','').replace('CREATE ROLE authenticated NOLOGIN;','').replace('CREATE ROLE service_role NOLOGIN BYPASSRLS;','');
  await clean.query(fixture);for(const d of defs)await clean.query(d.definition);
  await clean.query('INSERT INTO empresas VALUES($1)',[id(1)]);await clean.query('INSERT INTO colaboradores VALUES($1,$2,$3,current_date-90,NULL)',[id(20),id(1),'Legado']);
- for(let n=0;n<34;n++)await clean.query('INSERT INTO medicina_trabalho(colaborador_id,data_ultima_consulta,resultado) VALUES($1,current_date-30,$2)',[id(20),'Legado '+n]);
+ for(let n=0;n<35;n++)await clean.query('INSERT INTO medicina_trabalho(colaborador_id,data_ultima_consulta,resultado) VALUES($1,current_date-30,$2)',[id(20),'Legado '+n]);
  await t.test('rollback completo sem operações restaura linhas/funções/grants',async()=>{
  const before=(await clean.query('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows;
  const policyBefore=(await clean.query("SELECT * FROM pg_policies WHERE tablename='medicina_trabalho' ORDER BY policyname")).rows;
