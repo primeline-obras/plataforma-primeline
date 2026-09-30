@@ -14,7 +14,7 @@ BEGIN
  OR has_table_privilege('service_role','public.medicina_operacoes','TRUNCATE') THEN
   RAISE EXCEPTION 'POSTCHECK: fotografia ou escrita técnica exposta.';
  END IF;
- IF (SELECT count(*) FROM public.medicina_trabalho)<>34
+ IF (SELECT count(*) FROM public.medicina_trabalho)<>35
  OR (SELECT jsonb_agg(to_jsonb(m)-ARRAY['registado_por','request_id','revisao','anulado_em','anulado_por'] ORDER BY id)
  FROM public.medicina_trabalho m) IS DISTINCT FROM (SELECT linhas FROM public.medicina_instalacao_snapshot) THEN
  RAISE EXCEPTION 'POSTCHECK: linhas antigas divergentes.'; END IF;

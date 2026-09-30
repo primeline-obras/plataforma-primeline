@@ -70,7 +70,7 @@ o mesmo request_id em READ COMMITTED. Revisão obsoleta exige recarregar os dado
 
 - Nova consulta cria nova linha; correção incrementa revisão e guarda motivo,
   antes/depois e autor. Anulação preserva a linha e impede novas correções.
-- Os 34 registos legados mantêm valores/IDs. Autoria/request anteriores ficam NULL,
+- Os 35 registos legados mantêm valores/IDs. Autoria/request anteriores ficam NULL,
   revisão começa em zero; não se atribui autoria fictícia.
 - Consulta corrente: não anulada, data realizada não futura e intervalo coerente;
   ordenação por data da consulta, criado_em e UUID, todos descendentes.
@@ -103,7 +103,7 @@ O executor da migration deve ser o proprietário do cadastro RH existente.
 
 ## Scripts completos e ordem futura
 
-1. `supabase/medicina_trabalho_precheck.sql`: somente leitura. Rever contagem 34,
+1. `supabase/medicina_trabalho_precheck.sql`: somente leitura. Rever contagem 35,
    datas, funções/hashes, policies, grants, triggers e índice de ocorrências de alertas.
 2. `supabase/medicina_trabalho_backup.sql`: após autorização, copia consultas,
    alertas, definições/ACL de funções, policies e estrutura para schema privado.
@@ -113,7 +113,7 @@ O executor da migration deve ser o proprietário do cadastro RH existente.
    verificação das seis definições instaladas, RLS, policies, ausência de grants
    por coluna e igualdade com o backup. Qualquer divergência exige novo preflight.
 4. `supabase/medicina_trabalho_postcheck.sql`: somente leitura, antes de operar.
-   Confirma mesmas 34 linhas/alertas, metadados neutros, históricos vazios,
+   Confirma mesmas 35 linhas/alertas, metadados neutros, históricos vazios,
    RLS, privilégios e triggers. Sem chamar rotinas que criem alertas para testar.
 5. `supabase/medicina_trabalho_controlada_rollback.sql`: só antes de existirem
    operações ou alterações posteriores. Obtém locks, verifica os snapshots,
@@ -176,3 +176,12 @@ das funções relevantes são reais. Os testes não certificam integrações ext
 cron real, a navegação atual nem um ficheiro de dados pessoais não fornecido.
 A integração futura da UI com as novas RPCs e o tratamento de revisão/request_id
 continua tarefa separada. Não existe fallback para PATCH/DELETE de consultas.
+
+## Atualização da fotografia de produção — 30/09/2026
+
+Contagem esperada atualizada para 35, conforme confirmação manual fornecida pelo
+utilizador: novo registo criado em 30/09/2026 17:38:45+00, sem duplicação.
+Esta atualização não resulta de nova consulta à BD real. A próxima consulta NULL
+é permitida pelas regras existentes; o teste integrado preserva os 34 cenários
+anteriores e acrescenta uma consulta sintética com essa condição. O cenário de
+rollback acompanha a contagem esperada pelos scripts de produção.

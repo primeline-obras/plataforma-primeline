@@ -4,7 +4,7 @@ BEGIN;
 SET LOCAL lock_timeout = '10s';
 LOCK TABLE public.colaboradores,public.medicina_trabalho,public.alertas IN SHARE MODE;
 DO $$ BEGIN
- IF (SELECT count(*) FROM public.medicina_trabalho)<>34 THEN RAISE EXCEPTION 'BACKUP: fotografia divergente.'; END IF;
+ IF (SELECT count(*) FROM public.medicina_trabalho)<>35 THEN RAISE EXCEPTION 'BACKUP: fotografia divergente.'; END IF;
 END $$;
 CREATE SCHEMA IF NOT EXISTS primeline_backup;
 REVOKE ALL ON SCHEMA primeline_backup FROM PUBLIC,anon,authenticated;
