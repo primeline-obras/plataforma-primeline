@@ -1,5 +1,8 @@
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
+GRANT USAGE ON SCHEMA public TO anon,authenticated,service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated,service_role;
 CREATE TABLE empresas(id uuid PRIMARY KEY);
 CREATE TABLE utilizadores(id uuid PRIMARY KEY,empresa_id uuid REFERENCES empresas,funcao text,ativo boolean DEFAULT true);
 CREATE TABLE colaboradores(id uuid PRIMARY KEY,empresa_id uuid REFERENCES empresas,nome text,data_admissao date,data_saida date);
