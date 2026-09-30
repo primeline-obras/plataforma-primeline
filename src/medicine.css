@@ -1,0 +1,17 @@
+.medicine-card { margin-top: 24px; padding: 20px; border: 1px solid var(--card-border, #ddd); border-radius: 8px; }
+.medicine-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
+.medicine-summary span, .medicine-summary strong { display: block; overflow-wrap: anywhere; }
+.medicine-summary span { font-size: 12px; margin-bottom: 6px; }
+.medicine-actions, .medicine-documents { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.medicine-card button { white-space: normal; }
+.medicine-card label { display: grid; gap: 6px; }
+.medicine-card input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px; }
+.medicine-form { padding: 16px; border: 1px solid var(--card-border, #ddd); margin: 16px 0; }
+.medicine-history article { display: flex; justify-content: space-between; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--card-border, #ddd); }
+.medicine-history p, .medicine-card details p { overflow-wrap: anywhere; }
+.medicine-cancelled { border-left: 3px solid #91502e; padding-left: 12px !important; }
+.medicine-state.expired { color: #a03225; }
+.medicine-state.warning { color: #835800; }
+.medicine-state.valid { color: #28734b; }
+.medicine-notice { font-weight: bold; }
+@media (max-width: 700px) { .medicine-summary { grid-template-columns: 1fr; } .medicine-history article { flex-direction: column; } .medicine-card { padding: 12px; } }

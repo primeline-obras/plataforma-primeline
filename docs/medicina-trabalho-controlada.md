@@ -1,6 +1,49 @@
 # Medicina do Trabalho — backend controlado
 
-Estado: concluído e testado localmente; **não aplicado no Supabase**.
+Estado: backend do commit `ba7f6d8d20dbe614dd9ceb881d16ef7d4c0a86b7`
+aplicado em produção em 30/09/2026, com pós-check aprovado: 35 consultas,
+IDs/valores legados e alertas preservados. **Não reaplicar os scripts.**
+
+## Integração na ficha do colaborador
+
+A branch de frontend parte de `5e02e5fd50adeec827efb84f5a267cdc5f8e889e`
+e inclui os três commits autorizados do backend por cherry-pick. Os ficheiros
+SQL mantêm exatamente o conteúdo do commit instalado; nenhum SQL foi executado
+durante o desenvolvimento desta integração.
+
+- Equipa → Colaboradores → Editar inclui Medicina após o formulário de cadastro.
+  As operações médicas têm formulário próprio e não submetem o cadastro/contrato.
+- A ficha e o painel global usam `fn_medicina_consultar_colaborador`. O campo
+  `atual` é escolhido pelo backend; consultas futuras/anuladas não o substituem
+  no frontend. O painel consulta até quatro pessoas em paralelo.
+- Administrativo, Gerência e Gestão só recebem ações quando a RPC confirma
+  `can_write=true`. Encarregado consulta apenas o resultado permitido pela RPC,
+  sem acesso adicional a cadastro, documentos ou histórico privado.
+- Nova consulta, correção e anulação usam exclusivamente as respetivas RPCs.
+  Cada operação recebe um UUID; repetir uma resposta incerta conserva o mesmo
+  payload/UUID e bloqueia a edição dos campos. Conflito recarrega os dados, sem
+  repetir automaticamente a escrita.
+- Inativos têm acesso à ficha sem reativação. Anulados permanecem visíveis.
+- Documentos são lidos de `documentos`, filtrados pelo colaborador; fichas do
+  tipo `ficha_aptidao` são destacadas. Downloads usam o acesso privado existente.
+  Não foi criada relação consulta/documento nem novos campos clínicos.
+- O estado visual mantém a janela existente de 30 dias para «a vencer».
+  A RPC não devolve o parâmetro configurável de antecedência dos alertas; uma
+  alteração desse parâmetro pode divergir do estado visual. A data corrente
+  usada pelo browser é a de Europe/Lisbon; a BD continua a validar as datas.
+- RPC ausente, permissão recusada ou erro de leitura são mostrados como
+  indisponibilidade; não são convertidos em ausência de consulta ou sucesso.
+
+### Validação do frontend
+
+`node --test tests/medicine-client.test.mjs` e
+`node tests/medicine-browser.mjs` (Playwright via `PLANNING_PLAYWRIGHT`).
+O browser executa a aplicação real num servidor local com API simulada, incluindo
+resposta perdida/replay, revisão obsoleta, histórico, anulação, inativos,
+permissões e screenshots desktop/tablet/mobile. Não executa SQL nem usa sessão
+de produção. `tests/rh-frontend-browser.mjs` verifica as regressões RH anteriores.
+
+As secções abaixo registam a preparação e os testes anteriores do backend.
 
 ## Retoma e revisão
 

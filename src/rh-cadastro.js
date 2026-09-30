@@ -58,7 +58,7 @@ export function prepareRhRows(rows, records) {
     return {linha:index+2,nome:record?.colaborador.nome||row.nome||'',payload,changes,errors};
   });
 }
-export function createRhCadastro({api,canManage,isManagement,works,refresh,toast,configured}) {
+export function createRhCadastro({api,canManage,isManagement,works,refresh,toast,configured,mountMedicineSection}) {
   const $=s=>document.querySelector(s);
   const rpc=async(name,body)=>{
     if(!configured()) throw new Error('Esta operação exige ligação à plataforma.');
@@ -89,7 +89,7 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
         </fieldset>
         <fieldset class="work-template-fieldset"><legend>CONFORMIDADE E NOTAS</legend><div class="rh-field-grid">${general.filter(([,,t])=>t==='boolean').map(([k,l,t])=>field(k,l,t,values[k])).join('')}</div>${field('observacoes','Observações','text',values.observacoes)}</fieldset>
         ${person?field('data_saida','Data de saída (inativa sem apagar histórico)','date',values.data_saida):`<fieldset class="work-template-fieldset"><legend>ALOCAÇÃO INICIAL</legend><div class="form-row"><label>Local<select name="alocacao_tipo"><option value="obra">Obra</option><option value="escritorio">Escritório</option></select></label><label data-rh-work>Obra<select name="obra_id" required><option value="">Selecionar</option>${works().filter(w=>['preparacao','em_curso'].includes(w.situacao)).map(w=>`<option value="${esc(w.id)}">${esc(w.numero)} · ${esc(w.nome)}</option>`).join('')}</select></label></div><div class="form-row">${field('epi_data','Entrega inicial de EPI','date','')}${field('medicina_data','Consulta inicial de medicina do trabalho','date','')}</div></fieldset>`}
-        <p class="form-error" role="alert"></p><div class="dialog-actions"><button type="button" class="outline-action" data-close-workflow>CANCELAR</button><button type="submit" class="primary-button">GUARDAR</button></div></form>`);
+        <p class="form-error" role="alert"></p><div class="dialog-actions"><button type="button" class="outline-action" data-close-workflow>CANCELAR</button><button type="submit" class="primary-button">GUARDAR</button></div></form>${person && mountMedicineSection ? '<div data-rh-medicine></div>' : ''}`);
       const form=$('#rh-form');
       form.elements.nome.focus({preventScroll:true});
       const updateContract=()=>{const type=form.elements.tipo_contrato.value;form.elements.data_inicio.required=!!type;form.elements.data_fim_prevista.required=type==='a_prazo';form.elements.data_fim_prevista.disabled=type==='tempo_indeterminado';};
@@ -112,6 +112,7 @@ export function createRhCadastro({api,canManage,isManagement,works,refresh,toast
           try { await refresh();toast('Cadastro e contrato guardados.'); } catch {toast('Guardado, mas a lista não atualizou. Atualize a página.','error');}
         }catch(e){form.querySelector('.form-error').textContent=e.message;}finally{button.disabled=false;}
       };
+      if(person && mountMedicineSection) await mountMedicineSection($('#workflow-dialog-content [data-rh-medicine]'), record.colaborador);
     }catch(e){toast(e.message,'error');}
   }
   async function openImport(){

@@ -23,7 +23,8 @@ import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceModule } from "./attendance.js?v=2";
-import { createRhCadastro } from "./rh-cadastro.js?v=2";
+import { createRhCadastro } from "./rh-cadastro.js?v=3";
+import { createMedicineClient, mountMedicine, medicineStatus } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 import { setupLoginPassword } from "./login-password.js?v=1";
@@ -1997,12 +1998,30 @@ function openCollaboratorDialog(person = null) {
 }
 
 let rhCadastroInstance;
+const medicineClient = createMedicineClient(supabase);
+async function mountCollaboratorMedicine(root, person) {
+  return mountMedicine({root,person,client:medicineClient,canManage:canManageTeam,
+    onChanged:()=>loadTeamData(true),
+    documents:async id=>{
+      const response=await supabase(`documentos?select=id,tipo_documento,nome_arquivo,url_arquivo&entidade_tipo=eq.colaborador&entidade_id=eq.${encodeURIComponent(id)}&order=criado_em.desc`);
+      if(!response.ok) throw new Error('Documentos indisponíveis.');
+      return response.json();
+    },
+    download:async doc=>{
+      if(!doc?.url_arquivo) throw new Error('Este documento não tem ficheiro associado.');
+      const url=URL.createObjectURL(await downloadWorkDocument(doc.url_arquivo));
+      const link=document.createElement('a');link.href=url;link.download=doc.nome_arquivo||'documento';
+      document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }
+  }).ready;
+}
 function rhCadastro() {
   return rhCadastroInstance ||= createRhCadastro({
     api: supabase, canManage: canManageTeam,
     isManagement: () => effectiveRole() === 'gestao_plataforma',
     works: () => works, configured: () => isSupabaseConfigured,
-    refresh: async () => { await reloadActiveCollaborators(); await loadTeamData(true); }, toast
+    refresh: async () => { await reloadActiveCollaborators(); await loadTeamData(true); }, toast,
+    mountMedicineSection:mountCollaboratorMedicine
   });
 }
 
@@ -2226,7 +2245,7 @@ function renderTeam() {
   const inactivePeople = teamData.inactiveCollaborators || [];
   if (inactivePanel) {
     inactivePanel.hidden = !canManageTeam() || !showInactiveCollaborators;
-    inactivePanel.innerHTML = `<header><div><p class="eyebrow">HISTÓRICO</p><h3>COLABORADORES INATIVOS</h3></div><span>${inactivePeople.length} REGISTO${inactivePeople.length === 1 ? "" : "S"}</span></header>${inactivePeople.length ? inactivePeople.map(person => `<article><span class="team-avatar">${personInitials(person.nome)}</span><div><strong>${safeText(person.nome)}</strong><small>${safeText(person.funcao || "Função não definida")} · saída em ${formatOptionalDate(person.data_saida)}</small></div><button type="button" data-reactivate-collaborator="${person.id}">REATIVAR</button></article>`).join("") : `<div class="empty-state"><strong>SEM INATIVOS</strong><span>Não existem colaboradores inativos.</span></div>`}`;
+    inactivePanel.innerHTML = `<header><div><p class="eyebrow">HISTÓRICO</p><h3>COLABORADORES INATIVOS</h3></div><span>${inactivePeople.length} REGISTO${inactivePeople.length === 1 ? "" : "S"}</span></header>${inactivePeople.length ? inactivePeople.map(person => `<article><span class="team-avatar">${personInitials(person.nome)}</span><div><strong>${safeText(person.nome)}</strong><small>${safeText(person.funcao || "Função não definida")} · saída em ${formatOptionalDate(person.data_saida)}</small></div><button type="button" data-edit-collaborator="${person.id}">CONSULTAR FICHA</button><button type="button" data-reactivate-collaborator="${person.id}">REATIVAR</button></article>`).join("") : `<div class="empty-state"><strong>SEM INATIVOS</strong><span>Não existem colaboradores inativos.</span></div>`}`;
   }
   if ($("#toggle-inactive-collaborators")) $("#toggle-inactive-collaborators").textContent = showInactiveCollaborators ? "OCULTAR INATIVOS" : `VER INATIVOS (${inactivePeople.length})`;
 
@@ -2272,9 +2291,9 @@ function renderTeam() {
   const visibleMedicine = teamQuickFilter === "medicine_due" ? medicineDue : activeMedicine;
   $("#team-medicine").innerHTML = visibleMedicine.length ? visibleMedicine.map(item => {
     const person = personById.get(item.colaborador_id);
-    const validity = documentValidity({ data_validade: item.data_proxima_consulta });
+    const validity = item.error ? {state:'missing',label:'Indisponível'} : medicineStatus(item.current);
     return `<article class="team-detail-row medicine-row">
-      <div><strong>${safeText(person?.nome || "Colaborador não encontrado")}</strong><span>${safeText(item.resultado || "Resultado não indicado")}</span></div>
+      <div><button type="button" class="outline-action" data-open-medicine="${safeText(item.colaborador_id)}">${safeText(person?.nome || "Colaborador não encontrado")}</button><span>${safeText(item.error || item.resultado || "Resultado não indicado")}</span></div>
       <div><span>ÚLTIMA CONSULTA</span><strong>${formatOptionalDate(item.data_ultima_consulta)}</strong></div>
       <div><span>PRÓXIMA CONSULTA</span><strong>${formatOptionalDate(item.data_proxima_consulta)}</strong></div>
       <em class="${validity.state}">${validity.label}</em>
@@ -2580,7 +2599,7 @@ async function loadTeamData(force = false) {
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id,ativo&ativo=eq.true"),
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
-    (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
+    (canManageTeam() || effectiveRole() === "encarregado") ? medicineClient.list(collaborators).then(rows=>Response.json(rows)) : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome", { includeInactiveCollaborators: true }) : Promise.resolve(new Response("[]", { status: 200 })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
@@ -4088,8 +4107,21 @@ $("#team-view").addEventListener("click", async event => {
   }
   const editCollaboratorButton = event.target.closest("[data-edit-collaborator]");
   if (editCollaboratorButton) {
-    const person = collaborators.find(item => item.id === editCollaboratorButton.dataset.editCollaborator);
+    const person = [...collaborators,...teamData.inactiveCollaborators].find(item => item.id === editCollaboratorButton.dataset.editCollaborator);
     if (person) openCollaboratorDialog(person);
+    return;
+  }
+  const medicineButton = event.target.closest("[data-open-medicine]");
+  if (medicineButton) {
+    const person=collaborators.find(p=>p.id===medicineButton.dataset.openMedicine);
+    if(!person) return;
+    if(canManageTeam()) await openCollaboratorDialog(person);
+    else if(effectiveRole()==='encarregado') {
+      $('#workflow-dialog-title').textContent=`MEDICINA · ${person.nome}`;
+      $('#workflow-dialog-content').innerHTML='<div data-rh-medicine></div>';
+      $('#workflow-dialog').hidden=false;
+      await mountCollaboratorMedicine($('#workflow-dialog-content [data-rh-medicine]'),person);
+    }
     return;
   }
   const reactivateButton = event.target.closest("[data-reactivate-collaborator]");
