@@ -5,7 +5,7 @@ const sql = fs.readFileSync(new URL("../supabase/quadro_pessoal_operacional_rela
 assert(app.includes('id="workforce-movements"'));
 assert(app.includes("openWorkforceMovements"));
 assert(app.includes("canManageWorkforce()"));
-assert(app.includes("canManageWorkforceWork(workId)"));
+assert(app.includes("canManageWorkforceWork(workId, type)"));
 for (const action of ["select", "insert", "update", "delete"]) assert(sql.includes(`create policy quadro_pessoal_operacional_${action}`));
 assert(sql.includes("public.fn_e_administrativo()"));
 assert(sql.includes("criado_por = public.fn_utilizador_atual_id()"));

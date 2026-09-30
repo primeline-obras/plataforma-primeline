@@ -858,7 +858,9 @@ function canManageWorkforce() {
   return canManageTeam() || ["diretor_obra", "encarregado"].includes(effectiveRole());
 }
 
-function canManageWorkforceWork(workId) {
+function canManageWorkforceWork(workId, destinationType = "obra") {
+  if (destinationType === "escritorio") return !workId && canManageTeam();
+  if (destinationType !== "obra") return false;
   if (!workId) return false;
   if (canManageTeam()) return true;
   return ["diretor_obra", "encarregado"].includes(effectiveRole())
@@ -1713,7 +1715,7 @@ function renderWorkforceMagnet(person, allocation = null) {
     && (!allocation || (selectedWorkforceSourceDate === allocation.data
       && selectedWorkforceSourcePeriod === period
       && selectedWorkforceSourceRowKey === (allocation.row_key || "")));
-  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${personFunctionClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" data-source-row-key="${safeText(allocation?.row_key || "")}" data-source-ids="${safeText((allocation?.ids || []).join(","))}" title="${shortPersonName(person.nome)} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${workforceInitials(person.nome)}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
+  return `<button type="button" class="workforce-magnet ${workforceRoleClass(person)} ${personFunctionClass(person)} ${samePerson && allocation ? "selected-position" : ""} ${selected ? "selected" : ""}" data-workforce-person="${person.id}" data-source-date="${allocation?.data || ""}" data-source-period="${period}" data-source-row-key="${safeText(allocation?.row_key || "")}" data-source-ids="${safeText((allocation?.ids || []).join(","))}" title="${safeText(shortPersonName(person.nome))} · ${period ? period.replace("_", " ") : "Disponível"}"><b>${safeText(workforceInitials(person.nome))}</b>${periodLabel ? `<em>${periodLabel}</em>` : ""}</button>`;
 }
 
 function effectiveWorkforceForDate(events, date, personById) {
@@ -1943,10 +1945,9 @@ function renderVehicleDeadline(label, date) {
 }
 
 function renderVehicleEditForm(vehicle) {
-  const peopleOptions = collaborators.map(person => `<option value="${person.id}" ${person.id === vehicle.colaborador_atribuido_id ? "selected" : ""}>${safeText(person.nome)}</option>`).join("");
   return `<form class="vehicle-edit-form" data-vehicle-edit-form data-vehicle-id="${vehicle.id}">
     <div class="vehicle-edit-title"><span>ATUALIZAR FROTA</span><strong>${safeText(vehicle.marca_modelo)} · ${safeText(vehicle.matricula)}</strong></div>
-    <label>ATRIBUÍDA A<select name="colaborador_atribuido_id"><option value="">Sem atribuição</option>${peopleOptions}</select></label>
+    <button type="button" data-manage-vehicle-assignment>GERIR RESPONSÁVEL EM VIATURAS</button>
     <label>SEGURO ATÉ<input name="seguro_data" type="date" value="${vehicle.seguro_data || ""}"></label>
     <label>PRÓXIMA INSPEÇÃO<input name="data_inspecao_proxima" type="date" value="${vehicle.data_inspecao_proxima || ""}"></label>
     <label>ÚLTIMA REVISÃO<input name="data_revisao" type="date" value="${vehicle.data_revisao || ""}"></label>
@@ -2264,7 +2265,7 @@ function renderTeam() {
     const person = personById.get(item.colaborador_id);
     const work = workById.get(item.obra_id);
     const authorizer = teamData.users.find(user => user.id === item.autorizado_por);
-    return `<article class="team-detail-row overtime-row"><div><strong>${person?.nome || "Colaborador"}</strong><span>${work ? `Obra ${work.numero} · ${work.nome}` : "Sem obra associada"}${item.motivo ? ` · ${safeText(item.motivo)}` : ""}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><div><span>AUTORIZADO POR</span><strong>${safeText(authorizer?.nome || "Não indicado")}</strong></div><em>POR PAGAR</em></article>`;
+    return `<article class="team-detail-row overtime-row"><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${work ? `Obra ${safeText(work.numero)} · ${safeText(work.nome)}` : "Sem obra associada"}${item.motivo ? ` · ${safeText(item.motivo)}` : ""}</span></div><div><span>DATA</span><strong>${formatOptionalDate(item.data)}</strong></div><div><span>HORAS</span><strong>${Number(item.horas || 0).toLocaleString("pt-PT")} h</strong></div><div><span>AUTORIZADO POR</span><strong>${safeText(authorizer?.nome || "Não indicado")}</strong></div><em>POR PAGAR</em></article>`;
   }).join("") : `<div class="empty-state"><strong>SEM HORAS PENDENTES</strong><span>Não existem horas extraordinárias por pagar.</span></div>`);
 
   $("#team-medicine-count").textContent = teamQuickFilter === "medicine_due" ? `${medicineDue.length} A EXIGIR ATENÇÃO · ${activeMedicine.length} REGISTOS` : `${activeMedicine.length} REGISTO${activeMedicine.length === 1 ? "" : "S"}`;
@@ -2397,7 +2398,7 @@ async function saveWorkforceAllocation(personId, date, target) {
   const type = ["escritorio", "garantia", "pontual"].includes(target?.type) ? target.type : "obra";
   const workId = type === "obra" ? target?.workId || null : null;
   const description = type === "obra" ? null : type === "escritorio" ? "Escritório" : String(target?.description || "").trim();
-  if (!canManageWorkforceWork(workId)) {
+  if (!canManageWorkforceWork(workId, type)) {
     toast(type === "obra" ? "Só pode alterar o quadro das obras pelas quais é responsável." : "As linhas de Escritório, garantia e trabalhos pontuais são geridas pelo Administrativo ou pela Gerência.", "error");
     return;
   }
@@ -2581,7 +2582,7 @@ async function loadTeamData(force = false) {
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
     (canManageTeam() || effectiveRole() === "encarregado") ? supabase("medicina_trabalho?select=id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em&order=data_proxima_consulta.asc.nullslast") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
-    canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome") : Promise.resolve(new Response("[]", { status: 200 })),
+    canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome", { includeInactiveCollaborators: true }) : Promise.resolve(new Response("[]", { status: 200 })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
     supabase(`feriados_empresa?select=id,data,nome,ambito,municipio,folga&folga=eq.true&data=gte.${boardStart < vacationBounds.start ? boardStart : vacationBounds.start}&data=lte.${boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end}&order=data`),
   ]);
@@ -4128,6 +4129,10 @@ $("#team-view").addEventListener("click", async event => {
     document.querySelector(`[data-team-panel="${selectedTeamTab}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
+  if (event.target.closest("[data-manage-vehicle-assignment]")) {
+    if (canManageTeam()) switchView("vehicles");
+    return;
+  }
   const editVehicleButton = event.target.closest("[data-edit-vehicle]");
   if (editVehicleButton) {
     if (!canManageTeam()) return toast("A edição da frota está reservada ao Administrativo e à Gerência.", "error");
@@ -4270,7 +4275,6 @@ $("#team-view").addEventListener("submit", async event => {
     submitButton.disabled = true;
     errorNode.textContent = "";
     const payload = {
-      colaborador_atribuido_id: vehicleForm.elements.colaborador_atribuido_id.value || null,
       seguro_data: vehicleForm.elements.seguro_data.value || null,
       data_inspecao_proxima: vehicleForm.elements.data_inspecao_proxima.value || null,
       data_revisao: vehicleForm.elements.data_revisao.value || null,

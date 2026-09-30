@@ -1,15 +1,18 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { accessFor } from "../src/access-control.js";
 
 const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
-const access = readFileSync(new URL("../src/access-control.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/encarregado_quadro_ferias_global.sql", import.meta.url), "utf8");
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
-test("encarregado mantém Mapa de Férias, mas perde o Quadro de Pessoal", () => {
-  assert.match(access, /encarregado:[\s\S]*views:\s*\["action-plan", "planning", "documents", "rnc", "team", "settings"\]/i);
-  assert.match(app, /effectiveRole\(\) === "encarregado"[\s\S]*return \["vacations", "medicine"\]/i);
+test("encarregado mantém férias, ponto e o Quadro operacional restaurado", () => {
+  // Decisão 96ad5f8: quadro_pessoal_operacional_relatorio.sql restaura este acesso.
+  for (const role of ["encarregado", "diretor_obra"]) {
+    assert.ok(accessFor({ role }).views.includes("workforce"));
+  }
+  assert.match(app, /effectiveRole\(\) === "encarregado"[\s\S]*return \["vacations", "attendance", "medicine"\]/i);
   assert.match(app, /#edit-workforce"\)\.hidden = !canManageWorkforce\(\)/i);
   assert.match(app, /CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO/i);
 });

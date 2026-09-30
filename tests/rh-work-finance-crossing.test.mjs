@@ -12,7 +12,8 @@ const foreman = accessFor({ role: "encarregado" });
 for (const view of ["action-plan", "planning", "documents", "rnc", "team", "settings"]) {
   assert.ok(foreman.views.includes(view), `O encarregado deve manter acesso a ${view}.`);
 }
-assert.ok(!foreman.views.includes("workforce"), "O encarregado não deve receber acesso ao Quadro de Pessoal.");
+// Acesso operacional restaurado em 96ad5f8, sem acesso financeiro adicional.
+assert.ok(foreman.views.includes("workforce"), "O encarregado mantém acesso ao Quadro de Pessoal.");
 for (const view of ["finance", "invoices", "works", "overview"]) {
   assert.ok(!foreman.views.includes(view), `O encarregado não deve receber acesso a ${view}.`);
 }
@@ -20,7 +21,7 @@ for (const view of ["finance", "invoices", "works", "overview"]) {
 assert.match(app, /data-finance-tab="tracking"/);
 assert.match(app, /rpc\/fn_listar_rastreio_faturas/);
 assert.match(app, /invoiceJourneyState/);
-assert.match(app, /effectiveRole\(\) === "encarregado"\) return \["vacations", "medicine"\]/);
+assert.match(app, /effectiveRole\(\) === "encarregado"\) return \["vacations", "attendance", "medicine"\]/);
 assert.match(app, /allowedViews\(\)\.has\("team"\)/);
 assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/);
 assert.match(app, /#workforce-movements/);
