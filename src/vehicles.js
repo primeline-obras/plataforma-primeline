@@ -1,3 +1,4 @@
+import { createVehicleAssignment } from "./vehicle-assignment.js?v=2";
 import { VALIDITY_COLUMNS, renewalExpiry, validityPayload, saveVehicleValidity } from "./vehicle-validity.js?v=1";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
 
@@ -26,7 +27,7 @@ function deadlineState(value, threshold = 30) {
 }
 
 export function createVehiclesModule({
-  root, supabase, isConfigured, getCollaborators, getSuppliers,
+  root, supabase, isConfigured, getCollaborators, getSuppliers, canManageAssignment = () => false,
   uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, euro, prettyDate, toast,
 }) {
   const state = {
@@ -42,6 +43,15 @@ export function createVehiclesModule({
     }
     return response.status === 204 ? [] : response.json();
   }
+
+  const assignment = createVehicleAssignment({api, supabase, canManage: canManageAssignment, render, toast,
+    refreshVehicle: async id => {
+      const [fresh] = await api(`viaturas?select=*&id=eq.${encodeURIComponent(id)}`);
+      if (!fresh || fresh.id !== id) throw new Error("Viatura indisponível.");
+      state.vehicles = state.vehicles.map(row => row.id === id ? fresh : row);
+      return fresh;
+    },
+  });
 
   const collaborators = () => getCollaborators().slice().sort((a, b) =>
     String(a.nome || "").localeCompare(String(b.nome || ""), "pt-PT"));
@@ -72,10 +82,12 @@ export function createVehiclesModule({
         api("multas?select=*&order=data.desc,criado_em.desc"),
         api("multas_anexos?select=*&order=criado_em.desc"),
       ]);
+      await assignment.loadCurrent(vehicles);
       Object.assign(state, { vehicles, events, claims, claimFiles, fines, fineFiles, loaded: true });
       if (!state.selectedVehicleId || !vehicles.some(item => item.id === state.selectedVehicleId)) {
         state.selectedVehicleId = vehicles[0]?.id || "";
       }
+      await assignment.loadHistory(vehicle());
     } catch (error) {
       state.error = `${error.message} Confirme se executou supabase/bloco_06_viaturas.sql.`;
     } finally {
@@ -176,7 +188,7 @@ export function createVehiclesModule({
         return `<button type="button" class="fleet-directory-row ${item.id === vehicle()?.id ? "active" : ""}" data-fleet-vehicle="${item.id}">
           <span>${esc(item.numero_interno ? `VIATURA ${item.numero_interno}` : "VIATURA")}</span>
           <strong>${esc(item.marca_modelo || "Sem modelo")}</strong><small>${esc(item.matricula || "Sem matrícula")}</small>
-          <em>${esc(people.get(item.colaborador_atribuido_id) || "Sem atribuição")}</em>
+          <em>${esc(assignment.current(item))}</em>
           <i class="${insurance.className}" title="Seguro: ${insurance.label}"></i><i class="${inspection.className}" title="Inspeção: ${inspection.label}"></i>
         </button>`;
       }).join("") : `<div class="fleet-empty">SEM RESULTADOS</div>`}</div>
@@ -242,12 +254,11 @@ export function createVehiclesModule({
   function renderVehicleDetail() {
     const item = vehicle();
     if (!item) return `<section class="fleet-detail"><div class="fleet-empty large">NÃO EXISTEM VIATURAS REGISTADAS</div></section>`;
-    const assigned = collaborators().find(person => person.id === item.colaborador_atribuido_id);
     return `<section class="fleet-detail">
-      <header class="fleet-detail-head"><div><p class="eyebrow">FICHA DA VIATURA</p><h2>${esc(item.marca_modelo || "Sem modelo")}</h2><span>${esc(item.matricula || "Sem matrícula")} · ${esc(item.numero_interno ? `N.º interno ${item.numero_interno}` : "Sem número interno")}</span></div><div><span>ATRIBUÍDA A</span><strong>${esc(assigned?.nome || "Sem atribuição")}</strong></div></header>
+      <header class="fleet-detail-head"><div><p class="eyebrow">FICHA DA VIATURA</p><h2>${esc(item.marca_modelo || "Sem modelo")}</h2><span>${esc(item.matricula || "Sem matrícula")} · ${esc(item.numero_interno ? `N.º interno ${item.numero_interno}` : "Sem número interno")}</span></div><div><span>ATRIBUÍDA A</span><strong>${esc(assignment.current(item))}</strong>${canManageAssignment() ? `<button type="button" class="outline-action fleet-assignment-action" data-fleet-assignment>ALTERAR RESPONSÁVEL</button>` : ""}</div></header>
       <div class="fleet-deadlines">${deadline("SEGURO", item.seguro_data, 15, "seguro")}${deadline("INSPEÇÃO", item.data_inspecao_proxima, 15, "inspecao")}${deadline("PRÓXIMA REVISÃO", item.data_proxima_revisao, 30)}</div>
       <div class="fleet-form-actions">${renderEventForm(item)}${renderClaimForm(item)}</div>
-      ${renderTimeline(item)}${renderClaims(item)}
+      ${assignment.history(item)}${renderTimeline(item)}${renderClaims(item)}
     </section>`;
   }
 
@@ -309,10 +320,11 @@ export function createVehiclesModule({
   });
 
   root.addEventListener("click", async event => {
+    if (event.target.closest("[data-fleet-assignment]")) { await assignment.open(vehicle()); return; }
     const validityButton = event.target.closest("[data-fleet-validity]");
     if (validityButton) { openValidityDialog(validityButton.dataset.fleetValidity, validityButton.dataset.operation); return; }
     const selectButton = event.target.closest("[data-fleet-vehicle]");
-    if (selectButton) { state.selectedVehicleId = selectButton.dataset.fleetVehicle; render(); return; }
+    if (selectButton) { state.selectedVehicleId = selectButton.dataset.fleetVehicle; const pending = assignment.loadHistory(vehicle()); render(); await pending; render(); return; }
     const mutationButton = event.target.closest("[data-fleet-edit-event],[data-fleet-delete-event],[data-fleet-edit-claim],[data-fleet-delete-claim],[data-fleet-edit-fine],[data-fleet-delete-fine]");
     if (mutationButton) {
       const entries = [["fleetEditEvent","viaturas_eventos","editar"],["fleetDeleteEvent","viaturas_eventos","apagar"],["fleetEditClaim","viaturas_sinistros","editar"],["fleetDeleteClaim","viaturas_sinistros","apagar"],["fleetEditFine","multas","editar"],["fleetDeleteFine","multas","apagar"]];

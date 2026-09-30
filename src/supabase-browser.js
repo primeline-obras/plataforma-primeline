@@ -368,18 +368,22 @@ function enforceActiveCollaborators(path) {
 }
 
 export const supabase = async (path, options = {}) => {
-  const filteredPath = enforceActiveCollaborators(path);
+  // Opt-out explícito apenas para leituras; nunca inferido dos parâmetros da URL.
+  const { includeInactiveCollaborators = false, ...requestOptions } = options;
+  const includeInactive = includeInactiveCollaborators === true
+    && String(requestOptions.method || "GET").toUpperCase() === "GET";
+  const filteredPath = includeInactive ? path : enforceActiveCollaborators(path);
   let tokenUsed = "";
   const request = () => {
     const session = getSession();
     tokenUsed = session?.access_token || anonKey;
     return fetch(`${url}/rest/v1/${filteredPath}`, {
-      ...options,
+      ...requestOptions,
       headers: {
         apikey: anonKey,
         Authorization: `Bearer ${tokenUsed}`,
         "Content-Type": "application/json",
-        ...options.headers,
+        ...requestOptions.headers,
       },
     });
   };
