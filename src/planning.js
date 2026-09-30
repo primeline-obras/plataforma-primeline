@@ -1,7 +1,10 @@
 import { csvRows, normalizedHeader, parsedDate, parsedNumber, parsedState } from "./planning-import.js?v=1";
 import { platformConfirm } from "./platform-dialogs.js?v=1";
+import { activeTask, phaseProgress, workProgress, workDates, weightSummary, redistributeWeights } from "./planning-operational.js?v=1";
+import { planningChanges, batchPreview, requestPlanningBatch } from "./planning-batch.js?v=1";
 
 const DAY_MS = 86400000;
+const PLANNING_WORK_KEY = "primeline_planning_work_id";
 
 export function isoDate(value) {
   if (value instanceof Date) {
@@ -73,24 +76,32 @@ function isPastDay(date, today = new Date()) {
   return Boolean(date && date < currentDay);
 }
 
-export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast }) {
+export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast, onCommitted = () => {} }) {
   const state = {
-    workId: "", work: null, phases: [], items: [], dependencies: [], specialties: [],
+    workId: "", work: null, phases: [], items: [], dependencies: [], dependenciesLoaded: false, specialties: [],
     expanded: new Set(), expandedTasks: new Set(), collapsedEditorPhases: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
+    original: [], originalDependencies: [], batchSaving: false, preview: null, workDataOpen: false,
   };
 
   const workSelect = document.querySelector("#planning-work");
   const content = document.querySelector("#planning-content");
+  const dependencyError = "As dependências não foram carregadas. Pode consultar e editar localmente, mas o preview e a gravação estão bloqueados até recarregar com sucesso.";
   const readOnly = () => getRole() === "encarregado";
 
-  function renderWorkOptions() {
+  function renderWorkOptions(workId = state.workId) {
     const works = getWorks().slice().sort((a, b) =>
       String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true }));
     workSelect.innerHTML = works.map(work =>
       `<option value="${work.id}">OBRA ${escapeHtml(work.numero || "—")} · ${escapeHtml(work.nome || "Sem designação")}</option>`
     ).join("");
-    if (!state.workId && works[0]) state.workId = works[0].id;
+    let savedWorkId = null;
+    try { savedWorkId = localStorage.getItem(PLANNING_WORK_KEY); } catch { /* Storage may be unavailable. */ }
+    state.workId = [workId, state.workId, savedWorkId].find(id => works.some(work => work.id === id)) || works[0]?.id || "";
+    try {
+      if (state.workId) localStorage.setItem(PLANNING_WORK_KEY, state.workId);
+      else localStorage.removeItem(PLANNING_WORK_KEY);
+    } catch { /* Keep selection usable without storage. */ }
     workSelect.value = state.workId;
     state.work = works.find(work => work.id === state.workId) || null;
   }
@@ -139,17 +150,8 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     return { left, width: Math.min(rawWidth, Math.max(0, 100 - left)) };
   }
 
-  function phaseProgress(items) {
-    if (!items.length) return null;
-    const weighted = items.filter(item => item.peso_percentual !== null && item.peso_percentual !== "" && Number.isFinite(Number(item.peso_percentual)));
-    const totalWeight = weighted.reduce((sum, item) => sum + Number(item.peso_percentual), 0);
-    if (weighted.length === items.length && totalWeight > 0) {
-      return Math.round(weighted.reduce((sum, item) => sum + Number(item.peso_percentual) * Number(item.percentual_executado || 0), 0) / totalWeight);
-    }
-    return Math.round(items.reduce((sum, item) => sum + Number(item.percentual_executado || 0), 0) / items.length);
-  }
-
   function windowFor(items, dateGetter) {
+    items = items.filter(activeTask);
     const starts = items.map(item => dateValue(dateGetter(item, "start"))).filter(Boolean);
     const ends = items.map(item => dateValue(dateGetter(item, "end"))).filter(Boolean);
     return starts.length && ends.length
@@ -199,11 +201,12 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
 
   function dependencyOptions(item) {
     const linked = new Set(state.dependencies.filter(row => row.item_id === item.id).map(row => row.depende_de_item_id));
-    return state.items.filter(candidate => candidate.id !== item.id && !linked.has(candidate.id) && !String(candidate.id).startsWith("draft-"))
+    return state.items.filter(candidate => activeTask(candidate) && candidate.id !== item.id && !linked.has(candidate.id) && !String(candidate.id).startsWith("draft-"))
       .map(candidate => `<option value="${candidate.id}">${escapeHtml(candidate.codigo || "—")} · ${escapeHtml(candidate.descricao)}</option>`).join("");
   }
 
   function renderDependencies(item) {
+    if (!state.dependenciesLoaded) return `<div class="planning-dependency-editor"><small>DEPENDÊNCIAS NÃO CARREGADAS</small></div>`;
     const rows = state.dependencies.filter(row => row.item_id === item.id);
     return `<div class="planning-dependency-editor"><div>${rows.map(row => {
       const predecessor = state.items.find(candidate => candidate.id === row.depende_de_item_id);
@@ -233,11 +236,11 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderEditor() {
-    const locked = readOnly() ? "disabled" : "";
+    const locked = readOnly() || state.batchSaving ? "disabled" : "";
     return `<div class="planning-editor-wrap"><div class="planning-editor-head">
       <span>CÓDIGO</span><span>DESCRIÇÃO / TRABALHOS</span><span>RESPONSÁVEL</span><span>DATA INÍCIO</span><span>FIM PREV.</span><span>FIM REAL</span><span>PESO %</span><span>EXEC. %</span><span>% PONDERADA</span><span>ESTADO</span><span>AÇÕES</span>
     </div>${state.phases.map(phase => {
-      const phaseItems = state.items.filter(item => item.fase_id === phase.id);
+      const phaseItems = state.items.filter(item => item.fase_id === phase.id && !item.arquivado_em);
       const collapsed = state.collapsedEditorPhases.has(phase.id);
       const progress = phaseProgress(phaseItems);
       return `<section class="planning-editor-phase ${collapsed ? "collapsed" : ""}"><button class="planning-editor-phase-toggle" type="button" data-toggle-editor-phase="${phase.id}" aria-expanded="${!collapsed}"><i>${collapsed ? "+" : "−"}</i><strong>${escapeHtml(phase.codigo || "—")}</strong><span>${escapeHtml(phase.descricao || "FASE")}</span><em>${progress === null ? "—" : `${progress}%`}</em><b>${phaseItems.length} ${phaseItems.length === 1 ? "TAREFA" : "TAREFAS"}</b></button><div class="planning-editor-phase-rows" ${collapsed ? "hidden" : ""}>${phaseItems.map(item => {
@@ -246,7 +249,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const progressValue = Number(item.percentual_executado || 0);
       const status = progressValue >= 100 ? "concluido" : progressValue > 0 ? "em_execucao" : "por_iniciar";
       const detailsOpen = state.expandedTasks.has(item.id);
-      return `<article class="planning-editor-row ${item._new ? "new" : ""} ${detailsOpen ? "details-open" : ""}" data-edit-item="${item.id}">
+      return `<article class="planning-editor-row ${item._new ? "new" : ""} ${planningChanges(state.original, [item]).length ? "dirty" : ""} ${item._archive ? "archiving" : ""} ${detailsOpen ? "details-open" : ""}" data-edit-item="${item.id}">
       <input name="codigo" value="${escapeHtml(item.codigo || "")}" placeholder="F01.1" ${locked}>
       <textarea name="descricao" rows="2" placeholder="Descrição da tarefa" ${locked}>${escapeHtml(item.descricao || "")}</textarea>
       <input name="responsavel" value="${escapeHtml(item.responsavel || "")}" placeholder="Responsável" ${locked}>
@@ -257,7 +260,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <input name="percentual_executado" type="number" min="0" max="100" step="1" value="${item.percentual_executado ?? 0}" ${locked}>
       <output data-weighted>${weighted.toFixed(2)}%</output>
       <input name="estado" type="hidden" value="${escapeHtml(status)}"><output data-derived-state><span class="planning-state ${escapeHtml(status)}">${stateLabel(status)}</span></output>
-      <div class="planning-row-actions ${readOnly() ? "readonly" : ""}"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button>${readOnly() ? "" : `<button type="button" data-save-task="${item.id}" ${state.saving.has(item.id) ? "disabled" : ""}>${state.saving.has(item.id) ? "A GUARDAR…" : "GUARDAR"}</button><button type="button" class="remove" data-remove-task="${item.id}">${item._new ? "CANCELAR" : "REMOVER"}</button>`}</div>
+      <div class="planning-row-actions ${readOnly() ? "readonly" : ""}"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button>${readOnly() ? "" : `<button type="button" class="remove" data-remove-task="${item.id}" ${state.batchSaving ? "disabled" : ""}>${item._new ? "CANCELAR" : item._archive ? "DESFAZER RETIRADA" : "RETIRAR"}</button>${item._archive ? "<strong>A REMOVER</strong>" : ""}`}</div>
       <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id" ${locked}>${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id" ${locked}>${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por" ${locked}><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}" ${locked}></label><label>ESTADO CUSTO<select name="custo_estado" ${locked}>${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id" ${locked}><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00" ${locked}></label><div class="planning-cost-reference">${cost ? `<b>ADJ. ${euro.format(cost.valor_adjudicado)}</b><span>REAL ${euro.format(cost.custo_real)}</span><span>COMP. ${euro.format(cost.compromisso_remanescente)}</span><span>FAT. ${cost.percentual_faturado == null ? "—" : `${cost.percentual_faturado.toFixed(1)}%`} · PAGO ${cost.percentual_pago == null ? "—" : `${cost.percentual_pago.toFixed(1)}%`}</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}` : `<span>${state.costSummary ? "SEM COMPONENTES DE CUSTO ASSOCIADOS À TAREFA" : "CUSTOS INDISPONÍVEIS"}</span>`}</div><label class="planning-detail-wide">CAUSA DO ATRASO<textarea name="causa_atraso" rows="2" placeholder="Sem causa registada" ${locked}>${escapeHtml(item.causa_atraso || "")}</textarea></label><label class="planning-detail-wide">IMPACTO<textarea name="impacto" rows="2" placeholder="Sem impacto registado" ${locked}>${escapeHtml(item.impacto || "")}</textarea></label>${renderDependencies(item)}</section>
     </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</div></section>`;
     }).join("")}</div>`;
@@ -297,7 +300,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       result[dependency.item_id] = (result[dependency.item_id] || 0) + 1;
       return result;
     }, {});
-    return `<div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></div>
+    return `<div class="planning-effective-toolbar"><div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>${state.items.filter(item => !item._new && activeTask(item)).length} TAREFAS</span></div>
     ${renderCostSummary()}${renderImportPanel()}${renderEditor()}
     <div class="planning-gantt-title"><div><strong>GANTT EFETIVO</strong><span>Atualizado a partir da grelha acima</span></div></div>
     <div class="planning-grid planning-grid-head">
@@ -430,10 +433,28 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   }
 
   function renderUnifiedPlanning() {
-    return `<section class="planning-unified-detail"><header><div><p class="eyebrow">PLANEAMENTO DA OBRA</p><h3>Tarefas organizadas por fase</h3></div><span>${state.items.filter(item => !item._new).length} TAREFAS</span></header>
-        <div class="planning-effective-toolbar">${readOnly() ? `<span>CONSULTA · O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS</span>` : `<div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><span>EDIÇÃO DIRETA NA GRELHA</span>`}</div>
-        ${renderImportPanel()}${renderEditor()}
+    return `<section class="planning-unified-detail"><header><div><p class="eyebrow">PLANEAMENTO DA OBRA</p><h3>Tarefas organizadas por fase</h3></div><span>${state.items.filter(item => !item._new && activeTask(item)).length} TAREFAS</span></header>
+        <div class="planning-effective-toolbar">${readOnly() ? `<span>CONSULTA · O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS</span>` : `<div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><button type="button" data-save-batch ${!dirtyCount() || state.batchSaving || !state.dependenciesLoaded ? "disabled" : ""}>GUARDAR ALTERAÇÕES · ${dirtyCount()}</button>`}</div>
+        ${!state.dependenciesLoaded ? `<p class="form-error" role="alert">${dependencyError}</p>` : ""}
+        ${renderBatchPreview()}${renderWeights()}${renderImportPanel()}${renderEditor()}
       </section>`;
+  }
+
+  function renderWorkData() {
+    const work = state.work || {};
+    const dates = workDates(work, workProgress(state.phases, state.items), new Date().toLocaleDateString("en-CA"));
+    const percent = value => value === null ? "—" : `${value.toFixed(1)}%`;
+    return `<details class="planning-work-data"><summary>DADOS DA OBRA</summary><dl>
+      <div><dt>Início da obra</dt><dd>${displayDate(work.data_inicio)}</dd></div>
+      <div><dt>Fim contratual inicial</dt><dd>${displayDate(work.data_fim_contratual_inicial)}</dd></div>
+      <div><dt>Fim contratual atual</dt><dd>${displayDate(dates.contractualEnd)}</dd></div>
+      <div><dt>Fim operacional previsto</dt><dd>${displayDate(dates.operationalEnd)}</dd></div>
+      <div><dt>Execução física ponderada</dt><dd>${percent(dates.progress)}</dd></div>
+      <div><dt>Prazo contratual consumido</dt><dd>${percent(dates.consumed)}</dd></div>
+      <div><dt>Execução − prazo</dt><dd>${dates.difference === null ? "—" : `${dates.difference.toFixed(1)} p.p.`}</dd></div>
+      <div><dt>Desvio do fim operacional face ao contrato</dt><dd>${dates.delayDays === null ? "—" : `${dates.delayDays} dias`}</dd></div>
+      </dl>${!weightSummary(state.phases).valid ? '<p>PESOS GLOBAIS DAS FASES NÃO CONFIGURADOS</p>' : ""}
+      ${!dates.contractualEnd ? '<p>Prazo contratual não configurado. A previsão operacional é apresentada separadamente.</p>' : ""}</details>`;
   }
 
   function viewMeta() {
@@ -470,7 +491,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       const codigo = String(get("codigo") || "").trim();
       const descricao = String(get("descricao") || "").trim();
       const phase = phaseForCode(codigo, get("fase"));
-      const progress = Math.max(0, Math.min(100, parsedNumber(get("percentual_executado"), 0)));
+      const progress = parsedNumber(get("percentual_executado"), 0);
       const weight = parsedNumber(get("peso_percentual"));
       const item = {
         fase_id: phase?.id, codigo, descricao, responsavel: String(get("responsavel") || "").trim() || null,
@@ -494,80 +515,114 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     state.importRows = rows; state.importErrors = errors; render();
   }
 
-  async function saveTask(itemId) {
-    const row = content.querySelector(`[data-edit-item="${itemId}"]`);
-    const item = state.items.find(candidate => candidate.id === itemId);
-    if (!row || !item) return;
-    const value = name => row.querySelector(`[name="${name}"]`)?.value ?? "";
-    const weight = parsedNumber(value("peso_percentual"));
-    const progress = parsedNumber(value("percentual_executado"), 0);
-    const payload = {
-      fase_id: value("fase_id"), codigo: value("codigo").trim() || null, descricao: value("descricao").trim(),
-      responsavel: value("responsavel").trim() || null, especialidade_id: value("especialidade_id") || null,
-      executado_por: value("executado_por") || null, data_inicio_prevista: value("data_inicio_prevista") || null,
-      data_fim_prevista: value("data_fim_prevista") || null, data_inicio_real: value("data_inicio_real") || null, data_fim_real: value("data_fim_real") || null,
-      peso_percentual: weight, percentual_executado: progress,
-      percentual_ponderado: weight === null ? null : weight * progress / 100,
-      estado: value("estado"), custo_estado: value("custo_estado") || "orcamentado", item_orcamento_id: value("item_orcamento_id") || null,
-      valor_orca_pl: parsedNumber(value("valor_orca_pl")), valor_estimado: parsedNumber(value("valor_orca_pl")), causa_atraso: value("causa_atraso").trim() || null,
-      impacto: value("impacto").trim() || null,
-    };
-    if (!payload.descricao) return toast("A descrição da tarefa é obrigatória.", "error");
-    if (payload.data_inicio_prevista && payload.data_fim_prevista && payload.data_fim_prevista < payload.data_inicio_prevista) return toast("O fim previsto não pode ser anterior ao início.", "error");
-    state.saving.add(itemId); render();
-    const response = await supabase(item._new ? "planeamento_itens?select=*" : `planeamento_itens?id=eq.${encodeURIComponent(item.id)}&select=*`, {
-      method: item._new ? "POST" : "PATCH", body: JSON.stringify(payload),
-    });
-    state.saving.delete(itemId);
-    if (!response.ok) { render(); return toast(`Não foi possível guardar a tarefa: ${await response.text()}`, "error"); }
-    const [savedTask] = await response.json();
-    if (payload.estado === "concluido" && item.estado !== "concluido") {
-      const completion = await supabase("rpc/fn_concluir_custos_pl_tarefa", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: savedTask?.id || item.id }) });
-      if (!completion.ok) toast("A tarefa foi concluída, mas não foi possível transferir automaticamente o custo PL para Custo Real.", "error");
-    }
-    toast(item._new ? "Tarefa criada." : "Tarefa atualizada.");
-    await load(state.workId);
+  function dirtyCount() {
+    return planningChanges(state.original, state.items).length
+      + (JSON.stringify(state.dependencies) !== JSON.stringify(state.originalDependencies) ? 1 : 0);
   }
 
-  async function removeTask(itemId) {
+  function renderWeights() {
+    const rows = state.phases.map(phase => {
+      const weights = weightSummary(state.items.filter(item => item.fase_id === phase.id));
+      if (weights.count === 0) return "";
+      return `<div><strong>${escapeHtml(phase.codigo)}</strong> · PESO ATRIBUÍDO ${weights.assigned.toFixed(2)}% · FALTA DISTRIBUIR ${weights.missing.toFixed(2)}%${weights.excess ? ` · EXCESSO ${weights.excess.toFixed(2)}%` : ""}${readOnly() || weights.valid ? "" : `<button type="button" data-redistribute="${phase.id}" ${state.batchSaving ? "disabled" : ""}>REDISTRIBUIR PROPORCIONALMENTE</button>`}</div>`;
+    }).join("");
+    return rows ? `<div class="planning-weights">${rows}</div>` : "";
+  }
+
+  function captureInput(input) {
+    const row = input.closest("[data-edit-item]");
+    const item = state.items.find(candidate => candidate.id === row?.dataset.editItem);
+    if (!item || !input.name || readOnly() || state.batchSaving) return;
+    const numeric = ["peso_percentual", "percentual_executado", "valor_orca_pl"];
+    item[input.name] = numeric.includes(input.name) ? (input.value === "" ? null : Number(input.value)) : input.value || null;
+    if (input.name === "valor_orca_pl") item.valor_estimado = item.valor_orca_pl;
+    if (input.name === "percentual_executado") item.estado = item.percentual_executado >= 100 ? "concluido" : item.percentual_executado > 0 ? "em_execucao" : "por_iniciar";
+    state.preview = null;
+    content.querySelector(".planning-batch-preview")?.remove();
+    if (input.name === "peso_percentual") {
+      const panel = content.querySelector(".planning-weights");
+      if (panel) panel.outerHTML = renderWeights();
+    }
+    row.classList.toggle("dirty", planningChanges(state.original, [item]).length > 0);
+    const button = content.querySelector("[data-save-batch]");
+    if (button) { button.textContent = `GUARDAR ALTERAÇÕES · ${dirtyCount()}`; button.disabled = !dirtyCount() || !state.dependenciesLoaded; }
+  }
+
+  function removeTask(itemId) {
     const item = state.items.find(candidate => candidate.id === itemId);
     if (!item) return;
-    if (item._new) { state.items = state.items.filter(candidate => candidate.id !== itemId); render(); return; }
-    if (!await platformConfirm(`Remover a tarefa ${item.codigo || item.descricao}? As dependências associadas também serão removidas.`, { title: "Remover tarefa", danger: true, confirmLabel: "REMOVER" })) return;
-    const response = await supabase(`planeamento_itens?id=eq.${encodeURIComponent(itemId)}`, { method: "DELETE" });
-    if (!response.ok) return toast(`Não foi possível remover a tarefa: ${await response.text()}`, "error");
-    toast("Tarefa removida."); await load(state.workId);
+    if (item._new) {
+      state.items = state.items.filter(candidate => candidate.id !== itemId);
+      state.dependencies = state.dependencies.filter(row => row.item_id !== itemId && row.depende_de_item_id !== itemId);
+    } else { item._archive = !item._archive; }
+    state.preview = null; render();
   }
 
-  async function addDependency(itemId, select) {
+  function addDependency(itemId, select) {
     if (!select?.value) return toast("Escolha a tarefa predecessora.", "error");
-    const response = await supabase("planeamento_itens_dependencias", { method: "POST", body: JSON.stringify({ item_id: itemId, depende_de_item_id: select.value, tipo: "fim_inicio", atraso_dias: 0 }) });
-    if (!response.ok) return toast(`Não foi possível criar a dependência: ${await response.text()}`, "error");
-    toast("Dependência criada."); await load(state.workId);
+    state.dependencies.push({ id: crypto.randomUUID(), item_id: itemId, depende_de_item_id: select.value, tipo: "fim_inicio", atraso_dias: 0 });
+    state.preview = null; render();
   }
 
-  async function removeDependency(dependencyId) {
-    if (!await platformConfirm("Remover esta dependência?", { title: "Remover dependência", danger: true, confirmLabel: "REMOVER" })) return;
-    const response = await supabase(`planeamento_itens_dependencias?id=eq.${encodeURIComponent(dependencyId)}`, { method: "DELETE" });
-    if (!response.ok) return toast(`Não foi possível remover a dependência: ${await response.text()}`, "error");
-    toast("Dependência removida."); await load(state.workId);
+  function removeDependency(dependencyId) {
+    state.dependencies = state.dependencies.filter(row => row.id !== dependencyId);
+    state.preview = null; render();
   }
 
-  async function confirmImport(button) {
-    const valid = state.importRows.filter(row => !row._error);
-    button.disabled = true; button.textContent = "A IMPORTAR…";
-    const creates = valid.filter(row => !row._existing).map(({ _existing, _error, ...row }) => row);
-    if (creates.length) {
-      const response = await supabase("planeamento_itens", { method: "POST", body: JSON.stringify(creates) });
-      if (!response.ok) { button.disabled = false; return toast(`A importação foi interrompida: ${await response.text()}`, "error"); }
-    }
-    for (const row of valid.filter(item => item._existing)) {
+  function confirmImport() {
+    if (state.importErrors.length) return;
+    for (const row of state.importRows) {
       const { _existing, _error, ...payload } = row;
-      const response = await supabase(`planeamento_itens?id=eq.${encodeURIComponent(_existing.id)}`, { method: "PATCH", body: JSON.stringify(payload) });
-      if (!response.ok) { button.disabled = false; return toast(`A atualização de ${row.codigo} falhou: ${await response.text()}`, "error"); }
+      if (_existing) Object.assign(state.items.find(item => item.id === _existing.id), payload);
+      else state.items.push({ ...payload, id: crypto.randomUUID(), _new: true });
     }
-    toast(`${creates.length} tarefas criadas e ${valid.length - creates.length} atualizadas.`);
-    state.importOpen = false; state.importRows = []; state.importErrors = []; await load(state.workId);
+    state.importOpen = false; state.importRows = []; state.importErrors = []; state.preview = null;
+    render(); toast("Importação adicionada ao lote local. Reveja e guarde as alterações.");
+  }
+
+  function conflictText(conflict) {
+    const labels = { phase_weights: "Os pesos ativos da fase têm de totalizar 100%.", manual_date_collision: "A cascata colide com uma data editada manualmente.", archived_dependency: "Uma tarefa ativa depende de uma tarefa a retirar.", dependency_cycle: "Existem dependências circulares.", description: "Descrição obrigatória.", progress: "Percentagem executada inválida.", date: "Data inválida.", date_order: "Fim anterior ao início.", phase: "Fase inválida.", missing_dependency: "Dependência sem tarefa.", unsupported_dependency: "Dependência não suportada.", duplicate_id: "Identificador repetido.", missing_task: "Tarefa inexistente." };
+    return `${conflict.id || ""} · ${labels[conflict.type] || conflict.type}`;
+  }
+
+  function renderBatchPreview() {
+    if (!state.preview || !state.dependenciesLoaded) return "";
+    const preview = state.preview;
+    const list = (label, ids) => `<div><strong>${label} · ${ids.length}</strong><ul>${ids.map(id => {
+      const item = state.items.find(row => row.id === id);
+      return `<li>${escapeHtml(item?.codigo || id)} · ${escapeHtml(item?.descricao || "")}</li>`;
+    }).join("")}</ul></div>`;
+    return `<section class="planning-batch-preview"><h3>REVER ALTERAÇÕES</h3>
+      ${list("EDITADAS", preview.edited)}${list("NOVAS", preview.created)}${list("A REMOVER", preview.archived)}
+      <div><strong>AFETADAS AUTOMATICAMENTE · ${preview.automatic.length}</strong><ul>${preview.automatic.map(row => `<li>${escapeHtml(row.after.codigo || row.id)} · ${escapeHtml(row.before?.data_inicio_prevista || "—")} → ${escapeHtml(row.after.data_inicio_prevista)} / fim ${escapeHtml(row.after.data_fim_prevista)}</li>`).join("")}</ul></div>
+      <ul class="form-error">${preview.conflicts.map(row => `<li>${escapeHtml(conflictText(row))}</li>`).join("")}</ul>
+      ${preview.archived.length ? '<label>MOTIVO DA RETIRADA<input data-archive-reason required maxlength="1000"></label>' : ""}
+      <button type="button" data-confirm-batch ${!preview.valid || state.batchSaving ? "disabled" : ""}>CONFIRMAR LOTE</button></section>`;
+  }
+
+  async function confirmBatch() {
+    if (!state.dependenciesLoaded) return toast(dependencyError, "error");
+    const preview = batchPreview(state.original, state.items, state.phases, state.dependencies);
+    if (!preview.valid) { state.preview = preview; render(); return; }
+    const reason = content.querySelector("[data-archive-reason]")?.value.trim() || null;
+    if (preview.archived.length && !reason) return toast("Indique o motivo da retirada.", "error");
+    const payload = { version: 1, obra_id: state.workId, changes: planningChanges(state.original, state.items),
+      expected_items: state.original, dependencies: state.dependencies, expected_dependencies: state.originalDependencies,
+      archive_reason: reason, approved_cascade: preview.automatic.map(row => ({ id: row.id, data_inicio_prevista: row.after.data_inicio_prevista, data_fim_prevista: row.after.data_fim_prevista })) };
+    state.batchSaving = true; render();
+    try {
+      const server = await requestPlanningBatch(supabase, payload);
+      if (!Array.isArray(server.conflicts) || server.conflicts.length) throw new Error("O servidor detetou conflitos ou devolveu um preview incompleto.");
+      if (JSON.stringify(server.approved_cascade) !== JSON.stringify(payload.approved_cascade)) throw new Error("A cascata do servidor difere do preview. Reveja as consequências antes de guardar.");
+      if (!await platformConfirm("Confirmar todas as alterações e a cascata apresentada?", { title: "Guardar lote", confirmLabel: "GUARDAR ALTERAÇÕES" })) return;
+      await requestPlanningBatch(supabase, payload, server.confirmation_token);
+      state.original = structuredClone(state.items); state.originalDependencies = structuredClone(state.dependencies);
+      state.preview = null;
+      onCommitted({ workId: state.workId });
+      await load(state.workId);
+      toast("Lote confirmado; recálculo financeiro pendente.", "warning");
+    } catch (error) { toast(error.message, "error"); }
+    finally { state.batchSaving = false; render(); }
   }
 
   function render() {
@@ -576,10 +631,10 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       return;
     }
     if (!state.phases.length) {
-      content.innerHTML = `<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não possui fases configuradas.</span></div>`;
+      content.innerHTML = `${renderWorkData()}<div class="empty-state"><strong>SEM FASES</strong><span>Esta obra ainda não possui fases configuradas.</span></div>`;
       return;
     }
-    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Planeamento detalhado da execução</h2></div><span class="planning-sheet-note">Estrutura operacional por fase</span></header>${renderUnifiedPlanning()}</section></div>`;
+    content.innerHTML = `<div class="planning-module-shell planning-unified"><section class="planning-layer-content"><header><div><p class="eyebrow">PLANEAMENTO</p><h2>Planeamento detalhado da execução</h2></div><span class="planning-sheet-note">Estrutura operacional por fase</span></header>${renderWorkData()}${renderUnifiedPlanning()}</section></div>`;
 
     // Bind the primary import action directly too. This keeps it reliable in
     // embedded browsers where a delegated toolbar click may be swallowed.
@@ -605,25 +660,27 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     const firstPhase = state.phases[0];
     const draft = { id: `draft-${crypto.randomUUID()}`, fase_id: firstPhase?.id, codigo: "", descricao: "", responsavel: "", especialidade_id: null, executado_por: "", percentual_executado: 0, estado: "por_iniciar", _new: true };
     state.items.unshift(draft);
+    state.preview = null;
     state.expandedTasks.add(draft.id);
     render();
     content.querySelector("[data-edit-item] input[name='codigo']")?.focus();
   }
 
   async function load(workId = state.workId) {
-    renderWorkOptions();
-    state.workId = workId || workSelect.value;
-    state.work = getWorks().find(work => work.id === state.workId) || null;
+    if (dirtyCount() && !await platformConfirm("Existem alterações locais por guardar. Descartar e carregar os dados?", { title: "Alterações por guardar", confirmLabel: "DESCARTAR" })) { workSelect.value = state.workId; return; }
+    state.preview = null;
+    renderWorkOptions(workId);
     if (!state.workId) { state.loaded = true; state.phases = []; render(); return; }
     workSelect.value = state.workId;
     state.loaded = false;
+    state.dependenciesLoaded = false;
     render();
     if (!isSupabaseConfigured) {
       state.phases = []; state.items = []; state.dependencies = []; state.loaded = true; render(); return;
     }
     const encoded = encodeURIComponent(state.workId);
     const [phaseResponse, specialtiesResponse] = await Promise.all([
-      supabase(`fases?select=id,obra_id,codigo,descricao&obra_id=eq.${encoded}&order=codigo`),
+      supabase(`fases?select=id,obra_id,codigo,descricao,peso_percentual&obra_id=eq.${encoded}&order=codigo`),
       supabase("especialidades?select=id,nome&order=nome"),
     ]);
     if (!phaseResponse.ok) {
@@ -683,19 +740,32 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
           toast("Não foi possível carregar os custos da obra. Os valores estão indisponíveis.", "error");
         }
         const itemIds = state.items.map(item => item.id);
+        state.dependencies = [];
         if (itemIds.length) {
-          const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);
-          state.dependencies = dependencyResponse.ok ? await dependencyResponse.json() : [];
-        } else state.dependencies = [];
+          try {
+            const dependencyResponse = await supabase(`planeamento_itens_dependencias?select=id,item_id,depende_de_item_id,tipo,atraso_dias&item_id=in.(${itemIds.map(encodeURIComponent).join(",")})&order=criado_em`);
+            if (!dependencyResponse.ok) throw new Error(dependencyError);
+            const dependencies = await dependencyResponse.json();
+            if (!Array.isArray(dependencies)) throw new Error(dependencyError);
+            state.dependencies = dependencies;
+            state.dependenciesLoaded = true;
+          } catch {
+            toast(dependencyError, "error");
+          }
+        } else state.dependenciesLoaded = true;
       }
     }
+    state.original = structuredClone(state.items);
+    state.originalDependencies = structuredClone(state.dependencies);
     state.loaded = true;
     render();
   }
 
-  workSelect.addEventListener("change", () => { state.expanded.clear(); state.expandedTasks.clear(); state.collapsedEditorPhases.clear(); load(workSelect.value); });
+  window.addEventListener("beforeunload", event => { if (dirtyCount()) { event.preventDefault(); event.returnValue = ""; } });
+  workSelect.addEventListener("change", () => { if (state.batchSaving) { workSelect.value = state.workId; return; } load(workSelect.value); });
   content.addEventListener("click", event => {
-    if (readOnly() && event.target.closest("[data-open-import],[data-new-task],[data-save-task],[data-remove-task],[data-add-dependency],[data-remove-dependency],[data-confirm-import]")) return;
+    if (state.batchSaving) return;
+    if (readOnly() && event.target.closest("[data-open-import],[data-new-task],[data-save-batch],[data-confirm-batch],[data-redistribute],[data-remove-task],[data-add-dependency],[data-remove-dependency],[data-confirm-import]")) return;
     if (event.target.closest("[data-open-import]")) { openImportPanel(); return; }
     if (event.target.closest("[data-close-import]")) { state.importOpen = false; state.importRows = []; state.importErrors = []; render(); return; }
     if (event.target.closest("[data-new-task]")) {
@@ -722,7 +792,16 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       render();
       return;
     }
-    const save = event.target.closest("[data-save-task]"); if (save) { saveTask(save.dataset.saveTask); return; }
+    if (event.target.closest("[data-save-batch]")) { if (!state.dependenciesLoaded) return toast(dependencyError, "error"); state.preview = batchPreview(state.original, state.items, state.phases, state.dependencies); render(); return; }
+    if (event.target.closest("[data-confirm-batch]")) { confirmBatch(); return; }
+    const redistribute = event.target.closest("[data-redistribute]");
+    if (redistribute) {
+      try {
+        const weights = new Map(redistributeWeights(state.items.filter(item => item.fase_id === redistribute.dataset.redistribute)).map(item => [item.id, item.peso_percentual]));
+        state.items.forEach(item => { if (weights.has(item.id)) item.peso_percentual = weights.get(item.id); }); state.preview = null; render();
+      } catch (error) { toast(error.message, "error"); }
+      return;
+    }
     const remove = event.target.closest("[data-remove-task]"); if (remove) { removeTask(remove.dataset.removeTask); return; }
     const addDep = event.target.closest("[data-add-dependency]"); if (addDep) { addDependency(addDep.dataset.addDependency, addDep.closest("label")?.querySelector("select")); return; }
     const removeDep = event.target.closest("[data-remove-dependency]"); if (removeDep) { removeDependency(removeDep.dataset.removeDependency); return; }
@@ -736,6 +815,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     render();
   });
   content.addEventListener("input", event => {
+    captureInput(event.target);
     if (event.target.matches("[data-import-paste]")) prepareImport(csvRows(event.target.value));
     const row = event.target.closest("[data-edit-item]");
     if (row && event.target.matches('[name="peso_percentual"],[name="percentual_executado"]')) {
@@ -750,6 +830,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     }
   });
   content.addEventListener("change", async event => {
+    captureInput(event.target);
     if (event.target.matches("[data-control-mode]")) {
       state.controlMode = event.target.value;
       render();
@@ -769,10 +850,13 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   });
 
   return {
+    hasUnsavedChanges: () => dirtyCount() > 0,
+    canLeave: () => state.batchSaving ? Promise.resolve(false) : !dirtyCount() ? Promise.resolve(true) : platformConfirm("Existem alterações por guardar. Continuar para outra área mantendo o lote local?", { title: "Alterações por guardar", confirmLabel: "CONTINUAR" }),
     show(options = {}) {
-      if (options.workId) state.workId = options.workId;
+      const targetWorkId = options.workId || state.workId;
+      if (dirtyCount() && targetWorkId === state.workId) { render(); return; }
       if (["baseline", "effective", "summary", "control"].includes(options.view)) state.view = options.view;
-      renderWorkOptions(); load(state.workId || workSelect.value);
+      load(targetWorkId);
     },
     refresh: load,
   };

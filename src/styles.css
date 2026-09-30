@@ -2671,3 +2671,19 @@ button, input, select, textarea,
 
 .fleet-assignment-action { margin-top:10px; max-width:100%; white-space:normal; }
 .fleet-assignment-dialog select { width:100%; }
+
+/* Operational batch: local changes stay visible until atomic confirmation. */
+.planning-editor-row.dirty { box-shadow: inset 4px 0 #b77d26; background: #fff9e9; }
+.planning-editor-row.archiving { background: #fff0ed; border-left: 4px solid #b94b3e; }
+.planning-editor-row.archiving > input, .planning-editor-row.archiving > textarea { opacity: .65; }
+.planning-weights, .planning-batch-preview { padding: 16px; margin: 12px 0; border: 1px solid #cbd4de; border-radius: 8px; }
+.planning-weights > div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 0; }
+.planning-weights button { margin-left: auto; }
+.planning-batch-preview { background: #f5f8fc; }
+.planning-batch-preview ul { max-height: 200px; overflow: auto; }
+.planning-batch-preview input { display: block; width: 100%; margin: 8px 0; }
+.planning-work-data { margin: 16px 0; padding: 16px; border: 1px solid var(--border, #dce2e8); border-radius: 8px; }
+.planning-work-data summary { cursor: pointer; font-weight: 700; }
+.planning-work-data dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.planning-work-data dt { font-size: 12px; opacity: .75; }
+.planning-work-data dd { margin: 4px 0 0; font-weight: 600; }
