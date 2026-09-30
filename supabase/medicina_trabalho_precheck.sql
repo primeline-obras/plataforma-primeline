@@ -1,7 +1,17 @@
 -- SOMENTE LEITURA. Executar e rever ANTES de autorizar backup/migration.
 BEGIN READ ONLY;
+SET LOCAL lock_timeout = '10s';
 DO $$
 BEGIN
+ IF (SELECT array_agg(policyname::text ORDER BY policyname) FROM pg_policies
+   WHERE schemaname='public' AND tablename='medicina_trabalho') IS DISTINCT FROM
+   ARRAY['pl_admin_total','pl_medicina_encarregado_atual_select','pl_medicina_rh']::text[] THEN
+  RAISE EXCEPTION 'PRECHECK: policies divergentes.';
+ END IF;
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.medicina_trabalho'::regclass
+   AND attnum>0 AND NOT attisdropped AND attacl IS NOT NULL) THEN
+  RAISE EXCEPTION 'PRECHECK: grants por coluna exigem revisão.';
+ END IF;
  IF (SELECT count(*) FROM public.medicina_trabalho)<>34 THEN RAISE EXCEPTION 'PRECHECK: contagem diferente de 34.'; END IF;
  IF EXISTS(SELECT 1 FROM public.medicina_trabalho WHERE data_ultima_consulta IS NULL
  OR data_proxima_consulta<data_ultima_consulta) THEN RAISE EXCEPTION 'PRECHECK: datas antigas precisam revisão.'; END IF;
@@ -32,4 +42,9 @@ SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='medicina_trab
 SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='public.medicina_trabalho'::regclass;
 SELECT pg_get_triggerdef(oid),tgenabled FROM pg_trigger WHERE tgrelid='public.medicina_trabalho'::regclass AND NOT tgisinternal;
 SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.medicina_trabalho'::regclass;
+SELECT indexname,indexdef FROM pg_indexes WHERE schemaname='public' AND tablename IN('medicina_trabalho','alertas');
+SELECT has_function_privilege('authenticated',p.oid,'EXECUTE') AS authenticated_execute,
+ has_function_privilege('anon',p.oid,'EXECUTE') AS anon_execute,p.oid::regprocedure AS assinatura
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'
+ AND p.proname IN('fn_verificar_primeiras_consultas_medicina','fn_verificar_alertas_vencimento','fn_executar_rotinas_diarias');
 COMMIT;

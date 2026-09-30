@@ -8,7 +8,7 @@ import {spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
 import {setTimeout as delay} from 'node:timers/promises';
 const require=createRequire(import.meta.url),bin=process.env.MEDICINA_PG_BIN,deps=process.env.MEDICINA_TEST_DEPS;
-const read=p=>readFile(new URL(p,import.meta.url),'utf8');
+const read=async p=>(await readFile(new URL(p,import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const migration=await read('../supabase/medicina_trabalho_controlada.sql'),rollback=await read('../supabase/medicina_trabalho_controlada_rollback.sql');
 const defs=JSON.parse(await read('./fixtures/medicina-funcoes-instaladas.json'));
@@ -43,7 +43,20 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  for(let n=20;n<60;n++)await q('INSERT INTO colaboradores VALUES($1,$2,$3,current_date-90,NULL)',[id(n),id(n===59?2:1),n===20?'Visível ao Encarregado':'Pessoa sintética '+n]);
  for(let n=20;n<54;n++)await q('INSERT INTO medicina_trabalho(id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta) VALUES($1,$2,current_date+$3::integer,$4,current_date+365)',[id(100+n),id(n),n===53?10:-30,'Texto antigo livre']);
  await q("INSERT INTO parametros_operacionais VALUES('antecedencia_alerta_medicina','30')");
- const old=(await q('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows;await q(await read('../supabase/medicina_trabalho_precheck.sql'));await q(await read('../supabase/medicina_trabalho_backup.sql'));await q(migration);await q(await read('../supabase/medicina_trabalho_postcheck.sql'));
+ const old=(await q('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows;
+ await q(await read('../supabase/medicina_trabalho_precheck.sql'));
+ await t.test('migration sem backup é recusada antes de criar estrutura',async()=>{
+ await assert.rejects(()=>q(migration),/backup revisto/);await q('ROLLBACK');
+ assert.equal((await q("SELECT to_regclass('public.medicina_operacoes') r")).rows[0].r,null);
+ });
+ await q(await read('../supabase/medicina_trabalho_backup.sql'));
+ await t.test('backup desatualizado recusa migration sem alterar dados',async()=>{
+ await q('UPDATE medicina_trabalho SET resultado=$1 WHERE id=$2',['Mudou depois do backup',old[0].row.id]);
+ await assert.rejects(()=>q(migration),/dados mudaram desde o backup/);await q('ROLLBACK');
+ assert.equal((await q('SELECT resultado FROM medicina_trabalho WHERE id=$1',[old[0].row.id])).rows[0].resultado,'Mudou depois do backup');
+ await q('UPDATE medicina_trabalho SET resultado=$1 WHERE id=$2',[old[0].row.resultado,old[0].row.id]);
+ });
+ await q(migration);await q(await read('../supabase/medicina_trabalho_postcheck.sql'));
  const actor=async(c,n=10)=>{await c.query('RESET ROLE');await c.query("SELECT set_config('test.actor',$1,false)",[id(n)]);await c.query('SET ROLE authenticated');};
  const reg=(c,p=54,r=1000,d=-1,result='Aptidão ocupacional')=>c.query('SELECT fn_medicina_registar_consulta(1,$1,current_date+$2::integer,$3,current_date+365,$4) result',[id(p),d,result,id(r)]);
  const person=(c,p=54)=>c.query('SELECT fn_medicina_consultar_colaborador(1,$1) result',[id(p)]);
@@ -119,6 +132,11 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  await reject(a,()=>person(a,21),/PERMISSION_DENIED/);await reject(a,()=>reg(a,20),/PERMISSION_DENIED/);
  assert.equal((await a.query('SELECT id FROM medicina_trabalho')).rows.length,1);
  });
+ await unit('RPC não revela operações da empresa anterior após reatribuição da pessoa',async()=>{
+ await reg(a);await a.query('RESET ROLE');await a.query('UPDATE colaboradores SET empresa_id=$1 WHERE id=$2',[id(2),id(54)]);
+ await actor(a,15);assert.deepEqual((await person(a)).rows[0].result.historico,[]);
+ assert.equal((await a.query('SELECT count(*)::int n FROM medicina_operacoes')).rows[0].n,0);
+ });
  await unit('admissão antiga funciona, com autoria e auditoria, sem sobrescrita',async()=>{
  await a.query('SELECT test_admissao($1,current_date)',[id(54)]);const h=(await person(a)).rows[0].result;
  assert.equal(h.consultas.length,1);assert.equal(h.atual.registado_por,id(10));assert.equal(h.historico.length,1);
@@ -172,7 +190,7 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  // Apenas a criação/alocação auxiliar é sintética; o corpo RH instalado é integral.
  await a.query("CREATE FUNCTION fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid,text,numeric,text,text,text,text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER AS $$ DECLARE c colaboradores; BEGIN INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao) VALUES(gen_random_uuid(),(SELECT empresa_id FROM utilizadores WHERE id=fn_utilizador_atual_id()),$1,$2,$3) RETURNING * INTO c;RETURN jsonb_build_object('colaborador',to_jsonb(c));END $$");
  await actor(a);
- const result=(await a.query("SELECT fn_rh_guardar_interno($1,false,false) result",[JSON.stringify({campos:{nome:'Admissão sintética',funcao:'Pedreiro',data_admissao:'2026-09-01'},alocacao_tipo:'escritorio',medicina_data:'2026-09-02'})])).rows[0].result;
+ const result=(await a.query("SELECT fn_rh_guardar($1,false) result",[JSON.stringify({campos:{nome:'Admissão sintética',funcao:'Pedreiro',data_admissao:'2026-09-01'},alocacao_tipo:'escritorio',medicina_data:'2026-09-02'})])).rows[0].result;
  assert.equal(result.alterado,true);const r=(await a.query('SELECT fn_medicina_consultar_colaborador(1,$1) result',[result.id])).rows[0].result;
  assert.equal(r.consultas.length,1);assert.equal(r.atual.registado_por,id(10));assert.equal(r.historico.length,1);
  assert.equal(r.atual.resultado,'Consulta inicial registada na admissão');
@@ -180,8 +198,65 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  assert.equal((await a.query('SELECT count(*)::int n FROM epis')).rows[0].n,0);
  assert.equal((await a.query('SELECT count(*)::int n FROM colaboradores_contratos')).rows[0].n,0);
  });
+ await unit('snapshot privado e escrita service_role/TRUNCATE recusados',async()=>{
+ await a.query('RESET ROLE; SET LOCAL ROLE service_role');
+ for(const sql of ['SELECT * FROM medicina_instalacao_snapshot','TRUNCATE medicina_operacoes',
+   "UPDATE medicina_trabalho SET resultado='X'",'SELECT fn_medicina_reconciliar_alertas(NULL)'])
+   await reject(a,()=>a.query(sql),/permission denied/);
+ });
+ await unit('READ COMMITTED obrigatório, erros não deixam operações parciais',async()=>{
+ await a.query('ROLLBACK; BEGIN ISOLATION LEVEL REPEATABLE READ');await actor(a);
+ await reject(a,()=>reg(a),/STALE_REVISION/);
+ assert.equal((await a.query('SELECT count(*)::int n FROM medicina_operacoes')).rows[0].n,0);
+ });
+ await unit('falha de auditoria reverte consulta e alertas atomicamente',async()=>{
+ await a.query('RESET ROLE');
+ await a.query("CREATE FUNCTION test_fail_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'audit_failed'; END $$; CREATE TRIGGER test_fail_audit BEFORE INSERT ON medicina_operacoes FOR EACH ROW EXECUTE FUNCTION test_fail_audit()");
+ await actor(a);await reject(a,()=>reg(a),/audit_failed/);
+ assert.equal((await person(a)).rows[0].result.consultas.length,0);
+ });
+ await unit('alerta resolvido manualmente não é reaberto nem duplicado pela rotina',async()=>{
+ const c=(await a.query('SELECT fn_medicina_registar_consulta(1,$1,current_date-1,$2,current_date+10,$3) r',[id(54),'A',id(1000)])).rows[0].r.consulta.id;
+ await a.query('RESET ROLE');await a.query("UPDATE alertas SET estado='resolvido',resolvido_em=now() WHERE entidade_id=$1",[c]);
+ const before=(await a.query('SELECT to_jsonb(a) r FROM alertas a WHERE entidade_id=$1 ORDER BY id',[c])).rows;
+ await a.query('SELECT fn_executar_rotinas_diarias()');
+ assert.deepEqual((await a.query('SELECT to_jsonb(a) r FROM alertas a WHERE entidade_id=$1 ORDER BY id',[c])).rows,before);
+ });
+ await unit('ciclo de vida: isolamento, duas reativações e histórico resolvido preservado',async()=>{
+ await a.query('RESET ROLE');
+ await a.query('ALTER TABLE colaboradores ADD COLUMN funcao text,ADD COLUMN data_nascimento date,ADD COLUMN nivel text,ADD COLUMN valor_hora numeric,ADD COLUMN nif text,ADD COLUMN email text,ADD COLUMN contacto text,ADD COLUMN morada text');
+ await actor(a);
+ const life=(p,out,full=false)=>a.query(full?
+ 'SELECT fn_atualizar_colaborador_ciclo_vida($1,$2,$3,current_date-90,NULL,$4,NULL,NULL,NULL,NULL,NULL,NULL)':
+ 'SELECT fn_atualizar_colaborador_ciclo_vida($1,$2,$3,current_date-90,NULL,$4)',[id(p),'Pessoa sintética','Pedreiro',out]);
+ for(const full of [false,true])await reject(a,()=>life(59,null,full),/PERMISSION_DENIED/);
+ const c=(await a.query('SELECT fn_medicina_registar_consulta(1,$1,current_date-1,$2,current_date+10,$3) r',[id(54),'A',id(1000)])).rows[0].r.consulta.id;
+ const today=(await a.query("SELECT current_date::text d")).rows[0].d;
+ for(const full of [false,true]){
+ await life(54,today,full);await a.query('RESET ROLE');
+ assert.equal((await a.query("SELECT count(*)::int n FROM alertas WHERE entidade_id=$1 AND estado='pendente'",[c])).rows[0].n,0);
+ const done=(await a.query("SELECT to_jsonb(a) r FROM alertas a WHERE entidade_id=$1 AND estado='resolvido' ORDER BY id",[c])).rows;
+ await actor(a);await life(54,null,full);await a.query('RESET ROLE');
+ assert.equal((await a.query("SELECT count(*)::int n FROM alertas WHERE entidade_id=$1 AND estado='pendente'",[c])).rows[0].n,1);
+ assert.deepEqual((await a.query("SELECT to_jsonb(a) r FROM alertas a WHERE entidade_id=$1 AND estado='resolvido' ORDER BY id",[c])).rows,done);
+ await actor(a);
+ }
+ });
  const pidA=(await a.query('SELECT pg_backend_pid() pid')).rows[0].pid,pidB=(await b.query('SELECT pg_backend_pid() pid')).rows[0].pid;assert.notEqual(pidA,pidB);
  async function waitLock(){for(let n=0;n<150;n++){if((await q('SELECT $2::int=ANY(pg_blocking_pids($1)) blocked',[pidB,pidA])).rows[0].blocked)return;await delay(20);}assert.fail('Sem lock real entre sessões');}
+ await t.test('concorrência: empresa muda durante espera, autorização é revalidada',async()=>{
+ await a.query('RESET ROLE; BEGIN');await a.query('UPDATE colaboradores SET empresa_id=$1 WHERE id=$2',[id(2),id(58)]);
+ await b.query('BEGIN');await actor(b);const pending=outcome(reg(b,58,1900));await waitLock();await a.query('COMMIT');
+ assert.match((await pending).error?.message||'',/PERMISSION_DENIED/);await b.query('ROLLBACK');
+ assert.equal((await q('SELECT count(*)::int n FROM medicina_trabalho WHERE colaborador_id=$1',[id(58)])).rows[0].n,0);
+ await q('UPDATE colaboradores SET empresa_id=$1 WHERE id=$2',[id(1),id(58)]);
+ });
+ await t.test('concorrência: primeiro request faz rollback, segundo cria uma única consulta',async()=>{
+ await a.query('BEGIN');await actor(a);await reg(a,58,1950);await b.query('BEGIN');await actor(b);
+ const pending=outcome(reg(b,58,1950));await waitLock();await a.query('ROLLBACK');
+ const r=await pending;assert.equal(r.error,undefined);assert.equal(r.value.rows[0].result.idempotent,false);await b.query('COMMIT');
+ assert.equal((await q('SELECT count(*)::int n FROM medicina_operacoes WHERE request_id=$1',[id(1950)])).rows[0].n,1);
+ });
  await t.test('concorrência: mesmo request/payload cria uma consulta',async()=>{
  await a.query('BEGIN');await actor(a);const first=(await reg(a,55,2000)).rows[0].result;
  await b.query('BEGIN');await actor(b);const pending=outcome(reg(b,55,2000));await waitLock();await a.query('COMMIT');
@@ -201,17 +276,32 @@ test('PostgreSQL 17.6: testes locais e duas ligações independentes',{timeout:1
  const r=await pending;assert.match(r.error.message,/STALE_REVISION/);await b.query('ROLLBACK');
  assert.equal((await q('SELECT revisao FROM medicina_trabalho WHERE id=$1',[c])).rows[0].revisao,1);
  });
+ await q('ALTER TABLE colaboradores ADD COLUMN funcao text,ADD COLUMN data_nascimento date');
+ for(const first of ['consulta','inativacao'])await t.test('concorrência ciclo de vida: '+first+' primeiro, sem alerta pendente de inativo',async()=>{
+ await q('UPDATE colaboradores SET data_saida=NULL WHERE id=$1',[id(58)]);
+ const life=c=>c.query("SELECT fn_atualizar_colaborador_ciclo_vida($1,'Pessoa','Pedreiro',current_date-90,NULL,current_date)",[id(58)]);
+ const consult=c=>c.query('SELECT fn_medicina_registar_consulta(1,$1,current_date,$2,current_date+10,$3)',[id(58),'A',id(first==='consulta'?2300:2301)]);
+ await a.query('BEGIN');await actor(a);await (first==='consulta'?consult(a):life(a));
+ await b.query('BEGIN');await actor(b);const pending=outcome(first==='consulta'?life(b):consult(b));
+ await waitLock();await a.query('COMMIT');const r=await pending;assert.equal(r.error,undefined);await b.query('COMMIT');
+ assert.equal((await q("SELECT count(*)::int n FROM alertas a JOIN medicina_trabalho m ON m.id=a.entidade_id WHERE m.colaborador_id=$1 AND a.estado='pendente'",[id(58)])).rows[0].n,0);
+ });
  await t.test('rollback recusa perder operações confirmadas',async()=>{await assert.rejects(()=>q(rollback),/ROLLBACK_REFUSED/);await q('ROLLBACK');});
  await q('CREATE DATABASE rollback_test');const clean=await connect('rollback_test');
- let fixture=await read('./fixtures/medicina-base.sql');fixture=fixture.replace('CREATE ROLE anon NOLOGIN;','').replace('CREATE ROLE authenticated NOLOGIN;','');
+ let fixture=await read('./fixtures/medicina-base.sql');fixture=fixture.replace('CREATE ROLE anon NOLOGIN;','').replace('CREATE ROLE authenticated NOLOGIN;','').replace('CREATE ROLE service_role NOLOGIN BYPASSRLS;','');
  await clean.query(fixture);for(const d of defs)await clean.query(d.definition);
  await clean.query('INSERT INTO empresas VALUES($1)',[id(1)]);await clean.query('INSERT INTO colaboradores VALUES($1,$2,$3,current_date-90,NULL)',[id(20),id(1),'Legado']);
  for(let n=0;n<34;n++)await clean.query('INSERT INTO medicina_trabalho(colaborador_id,data_ultima_consulta,resultado) VALUES($1,current_date-30,$2)',[id(20),'Legado '+n]);
  await t.test('rollback completo sem operações restaura linhas/funções/grants',async()=>{
- const before=(await clean.query('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows;await clean.query(migration);await clean.query(rollback);
+ const before=(await clean.query('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows;
+ const policyBefore=(await clean.query("SELECT * FROM pg_policies WHERE tablename='medicina_trabalho' ORDER BY policyname")).rows;
+ const grants=async()=> (await clean.query("SELECT grantee,privilege_type,is_grantable FROM information_schema.role_table_grants WHERE table_schema='public' AND table_name='medicina_trabalho' ORDER BY grantee,privilege_type")).rows;
+ const grantsBefore=await grants();await clean.query(await read('../supabase/medicina_trabalho_backup.sql'));await clean.query(migration);await clean.query(rollback);
  assert.deepEqual((await clean.query('SELECT to_jsonb(m) row FROM medicina_trabalho m ORDER BY id')).rows,before);
  for(const d of prior){const r=(await clean.query('SELECT pg_get_functiondef(oid) def FROM pg_proc WHERE proname=$1',[d.proname])).rows;assert.ok(r.some(x=>x.def.replace(/\r\n/g,'\n')===d.definition));}
  assert.equal((await clean.query("SELECT has_table_privilege('authenticated','medicina_trabalho','UPDATE') ok")).rows[0].ok,true);
+ assert.deepEqual(await grants(),grantsBefore);
+ assert.deepEqual((await clean.query("SELECT * FROM pg_policies WHERE tablename='medicina_trabalho' ORDER BY policyname")).rows,policyBefore);
  });
  console.log('PostgreSQL 17.6 local; sessões independentes '+pidA+'/'+pidB+'; '+folder);
  }finally{for(const c of clients)await c.end().catch(()=>{});if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}

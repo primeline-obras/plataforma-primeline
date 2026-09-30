@@ -1,6 +1,13 @@
 -- Medicina do Trabalho: backend controlado. NÃO aplicado em produção.
 BEGIN;
+SET LOCAL lock_timeout = '10s';
+-- Fotografar e alterar a estrutura sem escritas concorrentes entre os checks.
+LOCK TABLE public.colaboradores, public.medicina_trabalho, public.alertas IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN
+ IF current_user IS DISTINCT FROM (SELECT pg_get_userbyid(proowner) FROM pg_proc
+ WHERE oid='public.fn_rh_guardar_interno(jsonb,boolean,boolean)'::regprocedure) THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: executar como o proprietário de confiança do cadastro RH.';
+ END IF;
  IF md5(replace(pg_get_functiondef('public.fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date)'::regprocedure),chr(13),'')) <> 'f85d19fc2f70a8655f7169755b0f8841' THEN RAISE EXCEPTION 'PRECONDITION_FAILED: definição divergente: fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date)'; END IF;
  IF md5(replace(pg_get_functiondef('public.fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date,text,numeric,text,text,text,text)'::regprocedure),chr(13),'')) <> '97a86f43524447d2efd071aff452b705' THEN RAISE EXCEPTION 'PRECONDITION_FAILED: definição divergente: fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date,text,numeric,text,text,text,text)'; END IF;
  IF md5(replace(pg_get_functiondef('public.fn_executar_rotinas_diarias()'::regprocedure),chr(13),'')) <> 'eafafef50828812e496dd1f28c835e71' THEN RAISE EXCEPTION 'PRECONDITION_FAILED: definição divergente: fn_executar_rotinas_diarias()'; END IF;
@@ -11,11 +18,34 @@ END $$;
 
 DO $$
 BEGIN
+ IF EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.medicina_trabalho'::regclass
+   AND attnum>0 AND NOT attisdropped AND attacl IS NOT NULL) THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: grants por coluna exigem novo preflight.';
+ END IF;
+ IF (SELECT array_agg(policyname::text ORDER BY policyname) FROM pg_policies
+   WHERE schemaname='public' AND tablename='medicina_trabalho') IS DISTINCT FROM
+   ARRAY['pl_admin_total','pl_medicina_encarregado_atual_select','pl_medicina_rh']::text[] THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: policies divergentes; não manter permissões desconhecidas.';
+ END IF;
+ IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.medicina_trabalho'::regclass) THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: RLS de Medicina não está ativo.';
+ END IF;
  IF to_regclass('public.medicina_operacoes') IS NOT NULL THEN
   RAISE EXCEPTION 'PRECONDITION_FAILED: backend já instalado.';
  END IF;
  IF (SELECT count(*) FROM public.medicina_trabalho) <> 34 THEN
   RAISE EXCEPTION 'PRECONDITION_FAILED: esperados 34 registos; repetir preflight.';
+ END IF;
+ IF to_regclass('primeline_backup.medicina_20260930') IS NULL
+ OR to_regclass('primeline_backup.medicina_alertas_20260930') IS NULL THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: executar primeiro o backup revisto e autorizado.';
+ END IF;
+ IF (SELECT jsonb_agg(to_jsonb(m) ORDER BY id) FROM public.medicina_trabalho m)
+ IS DISTINCT FROM (SELECT jsonb_agg(to_jsonb(m) ORDER BY id) FROM primeline_backup.medicina_20260930 m)
+ OR (SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY id),'[]') FROM public.alertas a
+ WHERE tipo IN('primeira_consulta_medicina','consulta_medicina','medicina_trabalho_vencimento'))
+ IS DISTINCT FROM (SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY id),'[]') FROM primeline_backup.medicina_alertas_20260930 a) THEN
+  RAISE EXCEPTION 'PRECONDITION_FAILED: dados mudaram desde o backup; parar e repetir preflight.';
  END IF;
  IF EXISTS(SELECT 1 FROM public.medicina_trabalho WHERE data_ultima_consulta IS NULL
     OR data_proxima_consulta < data_ultima_consulta) THEN
@@ -27,14 +57,22 @@ END $$;
 CREATE TABLE public.medicina_instalacao_snapshot (
  id boolean PRIMARY KEY DEFAULT true CHECK(id),
  criado_em timestamptz NOT NULL DEFAULT now(),
- linhas jsonb NOT NULL, alertas jsonb NOT NULL
+ linhas jsonb NOT NULL, alertas jsonb NOT NULL, grants_originais jsonb NOT NULL,
+ policies_originais jsonb NOT NULL
 );
-REVOKE ALL ON public.medicina_instalacao_snapshot FROM PUBLIC, anon, authenticated;
-INSERT INTO public.medicina_instalacao_snapshot(id,linhas,alertas)
+ALTER TABLE public.medicina_instalacao_snapshot ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.medicina_instalacao_snapshot FROM PUBLIC, anon, authenticated, service_role;
+INSERT INTO public.medicina_instalacao_snapshot(id,linhas,alertas,grants_originais,policies_originais)
 SELECT true,
  coalesce((SELECT jsonb_agg(to_jsonb(m) ORDER BY id) FROM public.medicina_trabalho m),'[]'),
  coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY id) FROM public.alertas a
- WHERE tipo IN ('primeira_consulta_medicina','consulta_medicina','medicina_trabalho_vencimento')),'[]');
+ WHERE tipo IN ('primeira_consulta_medicina','consulta_medicina','medicina_trabalho_vencimento')),'[]'),
+ (SELECT coalesce(jsonb_agg(jsonb_build_object('role',CASE WHEN a.grantee=0 THEN 'PUBLIC'
+ ELSE pg_get_userbyid(a.grantee)::text END,'privilege',a.privilege_type,'grantable',a.is_grantable)),'[]')
+ FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a
+ WHERE c.oid='public.medicina_trabalho'::regclass),
+ (SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY policyname),'[]') FROM pg_policies p
+ WHERE schemaname='public' AND tablename='medicina_trabalho');
 
 ALTER TABLE public.medicina_trabalho
  ADD COLUMN registado_por uuid REFERENCES public.utilizadores(id) ON DELETE RESTRICT,
@@ -70,9 +108,14 @@ CREATE TABLE public.medicina_alertas_historico (
  criado_em timestamptz NOT NULL DEFAULT now(),
  motivo text NOT NULL, antes jsonb NOT NULL, depois jsonb NOT NULL
 );
+CREATE INDEX medicina_consulta_atual_idx ON public.medicina_trabalho
+ (colaborador_id,data_ultima_consulta DESC,criado_em DESC,id DESC) WHERE anulado_em IS NULL;
+CREATE INDEX medicina_operacoes_consulta_idx ON public.medicina_operacoes(consulta_id,criado_em DESC,id DESC);
+CREATE INDEX medicina_operacoes_colaborador_idx ON public.medicina_operacoes(colaborador_id,criado_em DESC,id DESC);
+CREATE INDEX medicina_alertas_colaborador_idx ON public.medicina_alertas_historico(colaborador_id,criado_em DESC,id DESC);
 ALTER TABLE public.medicina_operacoes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.medicina_alertas_historico ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.medicina_operacoes,public.medicina_alertas_historico FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON public.medicina_operacoes,public.medicina_alertas_historico FROM PUBLIC,anon,authenticated,service_role;
 GRANT SELECT ON public.medicina_operacoes,public.medicina_alertas_historico TO authenticated;
 CREATE POLICY medicina_operacoes_select ON public.medicina_operacoes FOR SELECT TO authenticated
  USING(EXISTS(SELECT 1 FROM public.utilizadores u WHERE u.id=public.fn_utilizador_atual_id()
@@ -107,6 +150,7 @@ CREATE POLICY medicina_leitura ON public.medicina_trabalho FOR SELECT TO authent
  SELECT 1 FROM public.utilizadores u JOIN public.colaboradores c ON c.empresa_id=u.empresa_id
  WHERE c.id=medicina_trabalho.colaborador_id AND u.id=public.fn_utilizador_atual_id() AND u.ativo)));
 REVOKE ALL ON public.medicina_trabalho FROM PUBLIC,anon,authenticated;
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE ON public.medicina_trabalho FROM service_role;
 -- Mantém as colunas da aba atual; metadados de auditoria só pela RPC autorizada.
 GRANT SELECT(id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em)
  ON public.medicina_trabalho TO authenticated;
@@ -114,8 +158,11 @@ GRANT SELECT(id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consu
 CREATE FUNCTION public.fn_medicina_reconciliar_alertas(p_colaborador_id uuid)
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
 DECLARE v_atual public.medicina_trabalho; v_pessoa public.colaboradores;
- v_a public.alertas; v_depois jsonb; v_n integer:=0; v_dias integer; v_chave uuid;
+ v_a public.alertas; v_depois jsonb; v_n integer:=0; v_dias integer; v_chave uuid; v_seguinte uuid;
 BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN
+  RAISE EXCEPTION 'STALE_REVISION: reconciliação exige READ COMMITTED.' USING ERRCODE='40001';
+ END IF;
  SELECT * INTO v_pessoa FROM public.colaboradores WHERE id=p_colaborador_id FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'VALIDATION_FAILED: colaborador inexistente.'; END IF;
  SELECT * INTO v_atual FROM public.fn_medicina_atual(p_colaborador_id);
@@ -126,6 +173,17 @@ BEGIN
   SELECT id INTO v_chave FROM public.medicina_operacoes WHERE colaborador_id=p_colaborador_id
    ORDER BY criado_em DESC,id DESC LIMIT 1;
  END IF;
+ -- Uma reativação cria outra ocorrência, sem reabrir a resolvida na saída.
+ -- Seguir a cadeia permite várias saídas/reativações da mesma consulta/revisão.
+ LOOP
+  SELECT h.id INTO v_seguinte FROM public.medicina_alertas_historico h
+   WHERE h.colaborador_id=p_colaborador_id AND h.motivo='Colaborador inativo'
+   AND h.consulta_atual_id IS NOT DISTINCT FROM v_atual.id
+   AND (h.antes->>'ocorrencia_chave') IS NOT DISTINCT FROM v_chave::text
+   ORDER BY h.criado_em DESC,h.id DESC LIMIT 1;
+  EXIT WHEN NOT FOUND;
+  v_chave:=v_seguinte;
+ END LOOP;
  v_dias:=public.fn_parametro_operacional_numero('antecedencia_alerta_medicina',30)::integer;
  FOR v_a IN SELECT a.* FROM public.alertas a WHERE a.estado='pendente' AND
  ((a.tipo='primeira_consulta_medicina' AND a.entidade_tipo='colaboradores' AND a.entidade_id=p_colaborador_id)
@@ -189,6 +247,7 @@ BEGIN
  -- Nenhuma linha antiga recebe autor/request. Só um INSERT novo de admissão.
  v_inicial:=TG_OP='INSERT' AND coalesce(current_setting('primeline.medicina_rpc',true),'')<>'on';
  IF v_inicial THEN
+  PERFORM 1 FROM public.colaboradores WHERE id=NEW.colaborador_id FOR UPDATE;
   IF NEW.resultado IS DISTINCT FROM 'Consulta inicial registada na admissão'
    OR NEW.data_proxima_consulta IS NOT NULL
    OR NOT public.fn_medicina_pode_gerir(NEW.colaborador_id)
@@ -244,7 +303,7 @@ DECLARE v_actor uuid:=public.fn_utilizador_atual_id(); v_c uuid; v_empresa uuid;
  v_pedido jsonb; v_result jsonb; v_h uuid:=gen_random_uuid(); v_flag text;
 BEGIN
  IF p_version IS DISTINCT FROM 1 OR p_request_id IS NULL
- OR p_operacao NOT IN ('registar','corrigir','anular') THEN
+ OR p_operacao IS NULL OR p_operacao NOT IN ('registar','corrigir','anular') THEN
   RAISE EXCEPTION 'VALIDATION_FAILED: versão, operação ou request_id inválido.' USING ERRCODE='22023';
  END IF;
  IF current_setting('transaction_isolation')<>'read committed' THEN
@@ -261,14 +320,22 @@ BEGIN
   'consulta_id',p_consulta_id,'data_consulta',p_data_consulta,'resultado',p_resultado,
   'proxima_consulta',p_proxima_consulta,'revisao_esperada',p_revisao_esperada,'motivo',p_motivo,'autor',v_actor);
  PERFORM pg_advisory_xact_lock(hashtextextended('medicina:'||p_request_id::text,0));
+ -- Revalidar autorização com a pessoa bloqueada: pode ter mudado de empresa
+ -- enquanto esperávamos. O replay também não pode devolver dados de outra empresa.
+ SELECT empresa_id INTO v_empresa FROM public.colaboradores WHERE id=v_c FOR UPDATE;
+ IF NOT FOUND OR NOT public.fn_medicina_pode_gerir(v_c) THEN
+  RAISE EXCEPTION 'PERMISSION_DENIED: autorização alterada durante a operação.' USING ERRCODE='42501';
+ END IF;
  SELECT * INTO v_replay FROM public.medicina_operacoes WHERE request_id=p_request_id;
  IF FOUND THEN
+  IF v_replay.empresa_id IS DISTINCT FROM v_empresa THEN
+   RAISE EXCEPTION 'PERMISSION_DENIED: operação histórica pertence a outra empresa.' USING ERRCODE='42501';
+  END IF;
   IF v_replay.pedido IS DISTINCT FROM v_pedido THEN
    RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT: request_id usado com pedido diferente.' USING ERRCODE='22023';
   END IF;
   RETURN v_replay.resposta||jsonb_build_object('idempotent',true);
  END IF;
- SELECT empresa_id INTO v_empresa FROM public.colaboradores WHERE id=v_c FOR UPDATE;
  IF p_operacao<>'registar' THEN
   SELECT * INTO v_old FROM public.medicina_trabalho WHERE id=p_consulta_id FOR UPDATE;
   IF v_old.revisao IS DISTINCT FROM p_revisao_esperada THEN
@@ -340,7 +407,8 @@ BEGIN
  SELECT coalesce(jsonb_agg(to_jsonb(m) ORDER BY data_ultima_consulta DESC NULLS LAST,criado_em DESC,id DESC),'[]')
  INTO v_linhas FROM public.medicina_trabalho m WHERE colaborador_id=p_colaborador_id;
  SELECT coalesce(jsonb_agg(to_jsonb(o) ORDER BY criado_em,id),'[]') INTO v_audit
- FROM public.medicina_operacoes o WHERE colaborador_id=p_colaborador_id;
+ FROM public.medicina_operacoes o WHERE colaborador_id=p_colaborador_id
+ AND empresa_id=(SELECT empresa_id FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id());
  RETURN jsonb_build_object('version',1,'can_write',true,'atual',
  CASE WHEN v_atual.id IS NULL THEN NULL ELSE to_jsonb(v_atual) END,'consultas',v_linhas,'historico',v_audit);
 END $$;
@@ -368,7 +436,7 @@ GRANT EXECUTE ON FUNCTION public.fn_medicina_pode_gerir(uuid) TO authenticated;
 REVOKE ALL ON FUNCTION public.fn_medicina_atual(uuid),public.fn_medicina_reconciliar_alertas(uuid),
  public.fn_medicina_proteger(),public.fn_medicina_proteger_historico(),public.fn_medicina_admissao_historico(),
  public.fn_medicina_guardar_interno(integer,text,uuid,uuid,date,text,date,integer,uuid,text)
- FROM PUBLIC,anon,authenticated;
+ FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON FUNCTION public.fn_medicina_registar_consulta(integer,uuid,date,text,date,uuid),
  public.fn_medicina_corrigir_consulta(integer,uuid,date,text,date,integer,uuid,text),
  public.fn_medicina_anular_consulta(integer,uuid,integer,uuid,text),
@@ -640,6 +708,10 @@ begin
       'A data de saída não pode ser anterior à data de admissão.';
   end if;
 
+  perform 1 from public.colaboradores where id=p_colaborador_id for update;
+  if not public.fn_medicina_pode_gerir(p_colaborador_id) then
+    raise exception 'PERMISSION_DENIED: colaborador de outra empresa ou sem autorização.' using errcode='42501';
+  end if;
   update public.colaboradores
   set
     nome = btrim(p_nome),
@@ -714,6 +786,10 @@ begin
     raise exception 'O valor/hora não pode ser negativo.';
   end if;
 
+  perform 1 from public.colaboradores where id=p_colaborador_id for update;
+  if not public.fn_medicina_pode_gerir(p_colaborador_id) then
+    raise exception 'PERMISSION_DENIED: colaborador de outra empresa ou sem autorização.' using errcode='42501';
+  end if;
   update public.colaboradores
   set
     nome = btrim(p_nome),

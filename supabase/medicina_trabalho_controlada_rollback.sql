@@ -1,6 +1,14 @@
 -- Rollback sem perda: recusado depois de qualquer operação real.
 BEGIN;
+SET LOCAL lock_timeout = '10s';
+LOCK TABLE public.colaboradores,public.medicina_trabalho,public.alertas,
+ public.medicina_operacoes,public.medicina_alertas_historico,
+ public.medicina_instalacao_snapshot IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN
+ IF EXISTS(SELECT 1 FROM public.medicina_trabalho WHERE registado_por IS NOT NULL
+ OR request_id IS NOT NULL OR revisao<>0 OR anulado_em IS NOT NULL OR anulado_por IS NOT NULL) THEN
+  RAISE EXCEPTION 'ROLLBACK_REFUSED: existem metadados novos; não perder autoria/revisão.';
+ END IF;
  IF EXISTS(SELECT 1 FROM public.medicina_operacoes) OR EXISTS(SELECT 1 FROM public.medicina_alertas_historico) THEN
   RAISE EXCEPTION 'ROLLBACK_REFUSED: existem operações; preservar histórico e preparar rollback específico.';
  END IF;
@@ -498,14 +506,39 @@ ALTER TABLE public.medicina_trabalho DROP CONSTRAINT medicina_datas_coerentes,
  DROP CONSTRAINT medicina_anulacao_coerente,
  DROP COLUMN registado_por,DROP COLUMN request_id,DROP COLUMN revisao,
  DROP COLUMN anulado_em,DROP COLUMN anulado_por;
-CREATE POLICY pl_admin_total ON public.medicina_trabalho FOR ALL TO authenticated
- USING(public.fn_e_admin()) WITH CHECK(public.fn_e_admin());
-CREATE POLICY pl_medicina_rh ON public.medicina_trabalho FOR ALL TO authenticated
- USING(public.fn_e_administrativo()) WITH CHECK(public.fn_e_administrativo());
-CREATE POLICY pl_medicina_encarregado_atual_select ON public.medicina_trabalho FOR SELECT TO authenticated
- USING(public.fn_colaborador_na_obra_atual_encarregado(colaborador_id));
+-- O índice parcial depende de anulado_em e é removido ao eliminar essa coluna.
+DO $$
+DECLARE p jsonb; v_roles text;
+BEGIN
+ FOR p IN SELECT value FROM public.medicina_instalacao_snapshot,
+  LATERAL jsonb_array_elements(policies_originais)
+ LOOP
+  SELECT string_agg(quote_ident(value),',') INTO v_roles FROM jsonb_array_elements_text(p->'roles');
+  EXECUTE format('CREATE POLICY %I ON public.medicina_trabalho AS %s FOR %s TO %s%s%s',
+   p->>'policyname',p->>'permissive',p->>'cmd',v_roles,
+   CASE WHEN p->>'qual' IS NULL THEN '' ELSE ' USING ('||(p->>'qual')||')' END,
+   CASE WHEN p->>'with_check' IS NULL THEN '' ELSE ' WITH CHECK ('||(p->>'with_check')||')' END);
+ END LOOP;
+END $$;
 REVOKE SELECT(id,colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta,criado_em)
  ON public.medicina_trabalho FROM authenticated;
-GRANT SELECT,INSERT,UPDATE,DELETE ON public.medicina_trabalho TO authenticated;
+-- Restaurar todos os grants originais, incluindo service_role, sem os presumir.
+DO $$
+DECLARE g jsonb; r text;
+BEGIN
+ FOR r IN SELECT DISTINCT value->>'role' FROM public.medicina_instalacao_snapshot,
+  LATERAL jsonb_array_elements(grants_originais)
+ LOOP
+  EXECUTE format('REVOKE ALL ON public.medicina_trabalho FROM %s',
+    CASE WHEN r='PUBLIC' THEN 'PUBLIC' ELSE quote_ident(r) END);
+ END LOOP;
+ FOR g IN SELECT value FROM public.medicina_instalacao_snapshot,
+  LATERAL jsonb_array_elements(grants_originais)
+ LOOP
+  EXECUTE format('GRANT %s ON public.medicina_trabalho TO %s%s',g->>'privilege',
+    CASE WHEN g->>'role'='PUBLIC' THEN 'PUBLIC' ELSE quote_ident(g->>'role') END,
+    CASE WHEN (g->>'grantable')::boolean THEN ' WITH GRANT OPTION' ELSE '' END);
+ END LOOP;
+END $$;
 DROP TABLE public.medicina_instalacao_snapshot;
 COMMIT;
