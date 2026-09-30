@@ -2711,3 +2711,6 @@ button, input, select, textarea,
 .fleet-validity-preview { padding:12px; background:var(--bg); border:1px solid var(--card-border); border-radius:4px; }
 .fleet-validity-dialog .form-error { white-space:normal; overflow-wrap:anywhere; }
 @media (max-width:600px) { .fleet-validity-dialog .form-row { grid-template-columns:minmax(0,1fr); } .fleet-validity-dialog .dialog-actions { flex-wrap:wrap; } }
+
+.fleet-assignment-action { margin-top:10px; max-width:100%; white-space:normal; }
+.fleet-assignment-dialog select { width:100%; }

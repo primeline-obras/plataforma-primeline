@@ -1,6 +1,6 @@
 # Alteração controlada do responsável de Viaturas
 
-Estado: preparado e testado localmente; **não aplicado no Supabase**. Sem frontend nesta etapa.
+Estado: backend aplicado e validado no Supabase. Frontend de alteração do responsável implementado localmente, ainda não publicado.
 
 ## Base confirmada no preflight de 30/09/2026
 
@@ -101,8 +101,7 @@ falhas revertem o contexto juntamente com a transação/subtransação.
 A proteção aplica-se à alteração de atribuições existentes (UPDATE), incluindo escrever novamente
 os mesmos campos. Não muda as regras atuais de criação/eliminação de viaturas. Proprietários da BD
 com poderes de DDL continuam fora da fronteira de segurança da aplicação.
-O antigo editor escondido de Equipa deixará de poder enviar PATCH destes campos; o frontend não
-é alterado nesta etapa. Outros PATCHs que não incluam estes campos continuam sujeitos às regras atuais.
+O antigo editor escondido de Equipa deixará de poder enviar PATCH destes campos; o novo frontend utiliza exclusivamente a RPC. Outros PATCHs que não incluam estes campos continuam sujeitos às regras atuais.
 
 ## Rollback
 
@@ -141,11 +140,11 @@ com duas ligações e confirmação dos bloqueios através de `pg_blocking_pids`
 - 9 resultados TAP no PostgreSQL 17.6 nativo aprovados, zero falhas/skip (8 cenários e agregador).
 - Teste offline `vehicle-validity-browser.mjs`: PASS.
 - `git diff --check`: sem erros. Ficheiros novos também verificados individualmente.
-- Nada aplicado na BD real; sem alterações frontend, commit, push, merge ou deploy.
+- Resultado da preparação original; posteriormente o backend foi aplicado e validado na BD real, com testes sintéticos revertidos integralmente.
 
 ## Proteção da saída de colaboradores
 
-Incluída na mesma migration ainda não aplicada, para instalar atomicamente a RPC e a invariável.
+Incluída na mesma migration aplicada, para instalar atomicamente a RPC e a invariável.
 `trg_impedir_saida_colaborador_com_viaturas` chama
 `fn_impedir_saida_colaborador_com_viaturas()` antes de UPDATE de `data_saida`, exclusivamente
 quando o valor anterior é NULL e o novo está preenchido.
@@ -197,3 +196,7 @@ Depois de disponibilizar o fluxo:
 2. Só depois corrigir a saída de Vitor no cadastro, quando a data correta estiver confirmada.
 
 Nenhum dado de Vitor foi alterado nem foi criada uma exceção pelo nome.
+
+## Frontend local
+
+A ficha resolve responsáveis por UUID, incluindo inativos. Novos destinos são ativos da mesma empresa. A capacidade de gestão existente controla o botão. O modal envia revisão e UUID por intenção; mantém o UUID numa repetição incerta e nunca repete automaticamente. STALE_REVISION/40001 recarrega o responsável e exige nova confirmação. Após confirmação, recarrega viatura e histórico somente leitura. Nenhum dado real foi alterado durante a implementação frontend.

@@ -3,7 +3,7 @@ import { legacyContractValues } from "./contract-composition.js?v=1";
 import { recordReceipt } from "./financial-movements.js?v=1";
 import { workDates } from "./planning-operational.js?v=1";
 import { canManageGeneralWorkforce, canReadWorkforceHistory, workforceRequest } from "./workforce-policy.js?v=1";
-import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=6";
+import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=7";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=26";
 import { createPlanningModule } from "./planning.js?v=15";
@@ -17,7 +17,7 @@ import { createActionPlanModule } from "./action-plan.js?v=5";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=4";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
-import { createVehiclesModule } from "./vehicles.js?v=2";
+import { createVehiclesModule } from "./vehicles.js?v=4";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
 import { createCalendarModule } from "./calendar.js?v=2";
 import { createPropertiesModule } from "./properties.js?v=3";
@@ -756,6 +756,7 @@ const rncModule = createRncModule({
 });
 const vehiclesModule = createVehiclesModule({
   root: $("#vehicles-view"), supabase, isConfigured: isSupabaseConfigured,
+  canManageAssignment: () => accessContext.profile?.ativo === true && canManageTeam(),
   getCollaborators: () => collaborators, getSuppliers: () => suppliers,
   uploadEntityDocument, downloadWorkDocument, deleteWorkDocument, euro, prettyDate, toast,
 });
