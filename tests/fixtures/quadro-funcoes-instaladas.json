@@ -1,0 +1,889 @@
+{
+  "tables": [
+    {
+      "rls": true,
+      "name": "ausencias",
+      "grants": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "colaborador_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "tipo",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "estado",
+          "type": "text",
+          "default": "'confirmada'::text",
+          "notnull": true
+        },
+        {
+          "name": "comentario",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "SELECT",
+          "qual": "((tipo = 'ferias'::text) OR fn_e_administrativo())",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "ausencias",
+          "permissive": "PERMISSIVE",
+          "policyname": "ausencias_ferias_select",
+          "schemaname": "public",
+          "with_check": null
+        },
+        {
+          "cmd": "DELETE",
+          "qual": "fn_e_administrativo()",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "ausencias",
+          "permissive": "PERMISSIVE",
+          "policyname": "ausencias_rh_delete",
+          "schemaname": "public",
+          "with_check": null
+        },
+        {
+          "cmd": "INSERT",
+          "qual": null,
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "ausencias",
+          "permissive": "PERMISSIVE",
+          "policyname": "ausencias_rh_insert",
+          "schemaname": "public",
+          "with_check": "fn_e_administrativo()"
+        },
+        {
+          "cmd": "UPDATE",
+          "qual": "fn_e_administrativo()",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "ausencias",
+          "permissive": "PERMISSIVE",
+          "policyname": "ausencias_rh_update",
+          "schemaname": "public",
+          "with_check": "fn_e_administrativo()"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "trg_auditoria_ausencias",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_registar_log_auditoria()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_anterior jsonb;\r\n  v_novo jsonb;\r\n  v_registo jsonb;\r\n  v_registo_id uuid;\r\n  v_utilizador_id uuid;\r\n  v_campo text;\r\n  v_campos_sensiveis constant text[] := array[\r\n    'password', 'senha', 'palavra_passe', 'access_token', 'refresh_token',\r\n    'token', 'secret', 'service_role_key', 'anon_key'\r\n  ];\r\nbegin\r\n  if tg_op = 'INSERT' then\r\n    v_novo := to_jsonb(new);\r\n    v_registo := v_novo;\r\n  elsif tg_op = 'UPDATE' then\r\n    v_anterior := to_jsonb(old);\r\n    v_novo := to_jsonb(new);\r\n    v_registo := v_novo;\r\n  else\r\n    v_anterior := to_jsonb(old);\r\n    v_registo := v_anterior;\r\n  end if;\r\n\r\n  v_registo_id := nullif(v_registo ->> coalesce(nullif(tg_argv[0], ''), 'id'), '')::uuid;\r\n\r\n  -- Uma tabela sem UUID identificável não pode alimentar a estrutura existente.\r\n  -- Os triggers abaixo são instalados apenas em tabelas com coluna id UUID.\r\n  if v_registo_id is null then\r\n    if tg_op = 'DELETE' then return old; end if;\r\n    return new;\r\n  end if;\r\n\r\n  v_utilizador_id := public.fn_utilizador_atual_id();\r\n\r\n  if tg_op = 'INSERT' then\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      '__INSERT__',\r\n      null,\r\n      (v_novo - v_campos_sensiveis)::text,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n    return new;\r\n  end if;\r\n\r\n  if tg_op = 'DELETE' then\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      '__DELETE__',\r\n      (v_anterior - v_campos_sensiveis)::text,\r\n      null,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n    return old;\r\n  end if;\r\n\r\n  for v_campo in\r\n    select campo\r\n    from (\r\n      select jsonb_object_keys(v_anterior) as campo\r\n      union\r\n      select jsonb_object_keys(v_novo) as campo\r\n    ) campos\r\n    where not (campo = any(v_campos_sensiveis))\r\n      and v_anterior -> campo is distinct from v_novo -> campo\r\n    order by campo\r\n  loop\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      v_campo,\r\n      case when v_anterior ? v_campo then (v_anterior -> v_campo)::text else null end,\r\n      case when v_novo ? v_campo then (v_novo -> v_campo)::text else null end,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n  end loop;\r\n\r\n  return new;\r\nend;\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_auditoria_ausencias AFTER INSERT OR DELETE OR UPDATE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+        },
+        {
+          "name": "trg_normalizar_estado_ausencia",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_normalizar_estado_ausencia()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nbegin\r\n  if tg_op = 'INSERT' then\r\n    if new.tipo in ('ferias', 'falta_justificada_com_remuneracao') then\r\n      new.estado := 'confirmada';\r\n    elsif new.tipo in ('falta_injustificada', 'falta_justificada_sem_remuneracao') then\r\n      new.estado := 'ausente_pendente';\r\n    end if;\r\n  end if;\r\n\r\n  if new.estado = 'justificada' and nullif(btrim(new.comentario), '') is null then\r\n    raise exception 'Para justificar a ausência é obrigatório preencher o comentário.';\r\n  end if;\r\n\r\n  return new;\r\nend;\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_normalizar_estado_ausencia BEFORE INSERT OR UPDATE OF tipo, estado, comentario ON public.ausencias FOR EACH ROW EXECUTE FUNCTION fn_normalizar_estado_ausencia()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "ausencias_colaborador_id_data_key",
+          "definition": "UNIQUE (colaborador_id, data)"
+        },
+        {
+          "name": "ausencias_colaborador_id_fkey",
+          "definition": "FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id)"
+        },
+        {
+          "name": "ausencias_estado_check",
+          "definition": "CHECK ((estado = ANY (ARRAY['ausente_pendente'::text, 'justificada'::text, 'confirmada'::text])))"
+        },
+        {
+          "name": "ausencias_fluxo_check",
+          "definition": "CHECK ((((tipo = ANY (ARRAY['ferias'::text, 'falta_justificada_com_remuneracao'::text])) AND (estado = 'confirmada'::text)) OR ((tipo = ANY (ARRAY['falta_injustificada'::text, 'falta_justificada_sem_remuneracao'::text])) AND (estado = ANY (ARRAY['ausente_pendente'::text, 'justificada'::text])))))"
+        },
+        {
+          "name": "ausencias_justificacao_comentario_check",
+          "definition": "CHECK (((estado <> 'justificada'::text) OR (NULLIF(btrim(comentario), ''::text) IS NOT NULL)))"
+        },
+        {
+          "name": "ausencias_pkey",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "ausencias_tipo_check",
+          "definition": "CHECK ((tipo = ANY (ARRAY['ferias'::text, 'falta_injustificada'::text, 'falta_justificada_sem_remuneracao'::text, 'falta_justificada_com_remuneracao'::text])))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "obra_responsaveis",
+      "grants": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "obra_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "utilizador_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "papel",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "ALL",
+          "qual": "fn_e_admin()",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "obra_responsaveis",
+          "permissive": "PERMISSIVE",
+          "policyname": "pl_admin_total",
+          "schemaname": "public",
+          "with_check": "fn_e_admin()"
+        },
+        {
+          "cmd": "SELECT",
+          "qual": "((utilizador_id = fn_utilizador_atual_id()) OR fn_e_administrativo())",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "obra_responsaveis",
+          "permissive": "PERMISSIVE",
+          "policyname": "pl_responsabilidades_select",
+          "schemaname": "public",
+          "with_check": null
+        },
+        {
+          "cmd": "DELETE",
+          "qual": "fn_e_admin()",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "obra_responsaveis",
+          "permissive": "PERMISSIVE",
+          "policyname": "settings_responsaveis_admin_delete",
+          "schemaname": "public",
+          "with_check": null
+        },
+        {
+          "cmd": "INSERT",
+          "qual": null,
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "obra_responsaveis",
+          "permissive": "PERMISSIVE",
+          "policyname": "settings_responsaveis_admin_insert",
+          "schemaname": "public",
+          "with_check": "fn_e_admin()"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "trg_auditoria_obra_responsaveis",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_registar_log_auditoria()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_anterior jsonb;\r\n  v_novo jsonb;\r\n  v_registo jsonb;\r\n  v_registo_id uuid;\r\n  v_utilizador_id uuid;\r\n  v_campo text;\r\n  v_campos_sensiveis constant text[] := array[\r\n    'password', 'senha', 'palavra_passe', 'access_token', 'refresh_token',\r\n    'token', 'secret', 'service_role_key', 'anon_key'\r\n  ];\r\nbegin\r\n  if tg_op = 'INSERT' then\r\n    v_novo := to_jsonb(new);\r\n    v_registo := v_novo;\r\n  elsif tg_op = 'UPDATE' then\r\n    v_anterior := to_jsonb(old);\r\n    v_novo := to_jsonb(new);\r\n    v_registo := v_novo;\r\n  else\r\n    v_anterior := to_jsonb(old);\r\n    v_registo := v_anterior;\r\n  end if;\r\n\r\n  v_registo_id := nullif(v_registo ->> coalesce(nullif(tg_argv[0], ''), 'id'), '')::uuid;\r\n\r\n  -- Uma tabela sem UUID identificável não pode alimentar a estrutura existente.\r\n  -- Os triggers abaixo são instalados apenas em tabelas com coluna id UUID.\r\n  if v_registo_id is null then\r\n    if tg_op = 'DELETE' then return old; end if;\r\n    return new;\r\n  end if;\r\n\r\n  v_utilizador_id := public.fn_utilizador_atual_id();\r\n\r\n  if tg_op = 'INSERT' then\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      '__INSERT__',\r\n      null,\r\n      (v_novo - v_campos_sensiveis)::text,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n    return new;\r\n  end if;\r\n\r\n  if tg_op = 'DELETE' then\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      '__DELETE__',\r\n      (v_anterior - v_campos_sensiveis)::text,\r\n      null,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n    return old;\r\n  end if;\r\n\r\n  for v_campo in\r\n    select campo\r\n    from (\r\n      select jsonb_object_keys(v_anterior) as campo\r\n      union\r\n      select jsonb_object_keys(v_novo) as campo\r\n    ) campos\r\n    where not (campo = any(v_campos_sensiveis))\r\n      and v_anterior -> campo is distinct from v_novo -> campo\r\n    order by campo\r\n  loop\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      v_campo,\r\n      case when v_anterior ? v_campo then (v_anterior -> v_campo)::text else null end,\r\n      case when v_novo ? v_campo then (v_novo -> v_campo)::text else null end,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n  end loop;\r\n\r\n  return new;\r\nend;\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_auditoria_obra_responsaveis AFTER INSERT OR DELETE OR UPDATE ON public.obra_responsaveis FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "obra_responsaveis_obra_id_fkey",
+          "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id)"
+        },
+        {
+          "name": "obra_responsaveis_obra_id_utilizador_id_papel_key",
+          "definition": "UNIQUE (obra_id, utilizador_id, papel)"
+        },
+        {
+          "name": "obra_responsaveis_papel_check",
+          "definition": "CHECK ((papel = ANY (ARRAY['diretor_obra'::text, 'adjunto'::text, 'preparador'::text, 'encarregado'::text])))"
+        },
+        {
+          "name": "obra_responsaveis_pkey",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "obra_responsaveis_utilizador_id_fkey",
+          "definition": "FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "quadro_pessoal_alocacao",
+      "grants": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "colaborador_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "obra_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "semana_inicio",
+          "type": "date",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "criado_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "default": "CURRENT_DATE",
+          "notnull": true
+        },
+        {
+          "name": "periodo",
+          "type": "text",
+          "default": "'dia_inteiro'::text",
+          "notnull": true
+        },
+        {
+          "name": "tipo_alocacao",
+          "type": "text",
+          "default": "'obra'::text",
+          "notnull": true
+        },
+        {
+          "name": "descricao_livre",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "SELECT",
+          "qual": "fn_pode_consultar_quadro()",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "quadro_pessoal_alocacao",
+          "permissive": "PERMISSIVE",
+          "policyname": "quadro_pessoal_operacional_select",
+          "schemaname": "public",
+          "with_check": null
+        },
+        {
+          "cmd": "DELETE",
+          "qual": "fn_pode_gerir_quadro(obra_id)",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "quadro_pessoal_alocacao",
+          "permissive": "PERMISSIVE",
+          "policyname": "quadro_v3_delete",
+          "schemaname": "public",
+          "with_check": null
+        },
+        {
+          "cmd": "INSERT",
+          "qual": null,
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "quadro_pessoal_alocacao",
+          "permissive": "PERMISSIVE",
+          "policyname": "quadro_v3_insert",
+          "schemaname": "public",
+          "with_check": "(fn_pode_gerir_quadro(obra_id) AND (criado_por = fn_utilizador_atual_id()))"
+        },
+        {
+          "cmd": "UPDATE",
+          "qual": "fn_pode_gerir_quadro(obra_id)",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "quadro_pessoal_alocacao",
+          "permissive": "PERMISSIVE",
+          "policyname": "quadro_v3_update",
+          "schemaname": "public",
+          "with_check": "fn_pode_gerir_quadro(obra_id)"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "trg_00_quadro_proteger_escrita",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_quadro_proteger_escrita()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  u public.utilizadores;\r\n  c public.colaboradores;\r\n  q public.quadro_pessoal_alocacao;\r\nBEGIN\r\n  IF TG_OP = 'DELETE' THEN\r\n    q := OLD;\r\n  ELSE\r\n    q := NEW;\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO c\r\n  FROM public.colaboradores\r\n  WHERE id = q.colaborador_id;\r\n\r\n  PERFORM pg_advisory_xact_lock(\r\n    hashtextextended(q.colaborador_id::text, 0)\r\n  );\r\n\r\n  IF TG_OP = 'UPDATE'\r\n     AND (\r\n       NEW.id IS DISTINCT FROM OLD.id\r\n       OR NEW.colaborador_id IS DISTINCT FROM OLD.colaborador_id\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Não é permitido alterar a identidade da alocação.';\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO u\r\n  FROM public.utilizadores\r\n  WHERE id = public.fn_utilizador_atual_id()\r\n    AND ativo IS TRUE;\r\n\r\n  IF u.id IS NULL THEN\r\n\r\n    IF session_user NOT IN ('postgres', 'supabase_admin')\r\n       OR auth.uid() IS NOT NULL\r\n    THEN\r\n      RAISE EXCEPTION 'Sem utilizador autorizado.'\r\n      USING ERRCODE = '42501';\r\n    END IF;\r\n\r\n  ELSE\r\n\r\n    IF c.empresa_id IS DISTINCT FROM u.empresa_id THEN\r\n      RAISE EXCEPTION 'Colaborador de outra empresa.'\r\n      USING ERRCODE = '42501';\r\n    END IF;\r\n\r\n    IF NOT public.fn_pode_gerir_quadro(NULL) THEN\r\n\r\n      IF TG_OP = 'DELETE'\r\n         OR NOT EXISTS (\r\n           SELECT 1\r\n           FROM public.quadro_pessoal_rpc_permit p\r\n           WHERE p.transacao = txid_current()\r\n             AND p.utilizador_id = u.id\r\n             AND p.colaborador_id = NEW.colaborador_id\r\n             AND p.destino_id = NEW.obra_id\r\n             AND p.data = NEW.data\r\n             AND p.periodo = NEW.periodo\r\n             AND NEW.tipo_alocacao = 'obra'\r\n             AND NEW.descricao_livre IS NULL\r\n             AND (\r\n               (\r\n                 TG_OP = 'INSERT'\r\n                 AND p.origem_id IS NULL\r\n               )\r\n               OR (\r\n                 TG_OP = 'UPDATE'\r\n                 AND p.origem_id = OLD.id\r\n                 AND NEW.data = OLD.data\r\n                 AND NEW.periodo = OLD.periodo\r\n               )\r\n             )\r\n             AND public.fn_quadro_minha_obra(p.destino_id)\r\n         )\r\n      THEN\r\n        RAISE EXCEPTION 'Sem autorização para editar o Quadro Geral.'\r\n        USING ERRCODE = '42501';\r\n      END IF;\r\n\r\n    END IF;\r\n  END IF;\r\n\r\n  IF q.obra_id IS NOT NULL\r\n     AND NOT EXISTS (\r\n       SELECT 1\r\n       FROM public.obras o\r\n       WHERE o.id = q.obra_id\r\n         AND o.empresa_id = c.empresa_id\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Obra de outra empresa.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  IF TG_OP <> 'DELETE' THEN\r\n\r\n    IF c.id IS NULL\r\n       OR (\r\n         c.data_saida IS NOT NULL\r\n         AND c.data_saida <= NEW.data\r\n       )\r\n       OR c.data_admissao > NEW.data\r\n    THEN\r\n      RAISE EXCEPTION 'Colaborador indisponível nesta data.';\r\n    END IF;\r\n\r\n    IF EXISTS (\r\n      SELECT 1\r\n      FROM public.ausencias a\r\n      WHERE a.colaborador_id = NEW.colaborador_id\r\n        AND a.data = NEW.data\r\n    )\r\n    THEN\r\n      RAISE EXCEPTION\r\n        'Este colaborador está de férias/ausente nesta data.';\r\n    END IF;\r\n\r\n    IF u.id IS NOT NULL\r\n       AND TG_OP = 'INSERT'\r\n    THEN\r\n      NEW.criado_por := u.id;\r\n    END IF;\r\n\r\n    IF TG_OP = 'UPDATE' THEN\r\n      NEW.criado_por := OLD.criado_por;\r\n    END IF;\r\n\r\n  END IF;\r\n\r\n  IF TG_OP = 'DELETE' THEN\r\n    RETURN OLD;\r\n  END IF;\r\n\r\n  RETURN NEW;\r\nEND\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_00_quadro_proteger_escrita BEFORE INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_quadro_proteger_escrita()"
+        },
+        {
+          "name": "trg_auditoria_quadro_pessoal_alocacao",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_registar_log_auditoria()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_anterior jsonb;\r\n  v_novo jsonb;\r\n  v_registo jsonb;\r\n  v_registo_id uuid;\r\n  v_utilizador_id uuid;\r\n  v_campo text;\r\n  v_campos_sensiveis constant text[] := array[\r\n    'password', 'senha', 'palavra_passe', 'access_token', 'refresh_token',\r\n    'token', 'secret', 'service_role_key', 'anon_key'\r\n  ];\r\nbegin\r\n  if tg_op = 'INSERT' then\r\n    v_novo := to_jsonb(new);\r\n    v_registo := v_novo;\r\n  elsif tg_op = 'UPDATE' then\r\n    v_anterior := to_jsonb(old);\r\n    v_novo := to_jsonb(new);\r\n    v_registo := v_novo;\r\n  else\r\n    v_anterior := to_jsonb(old);\r\n    v_registo := v_anterior;\r\n  end if;\r\n\r\n  v_registo_id := nullif(v_registo ->> coalesce(nullif(tg_argv[0], ''), 'id'), '')::uuid;\r\n\r\n  -- Uma tabela sem UUID identificável não pode alimentar a estrutura existente.\r\n  -- Os triggers abaixo são instalados apenas em tabelas com coluna id UUID.\r\n  if v_registo_id is null then\r\n    if tg_op = 'DELETE' then return old; end if;\r\n    return new;\r\n  end if;\r\n\r\n  v_utilizador_id := public.fn_utilizador_atual_id();\r\n\r\n  if tg_op = 'INSERT' then\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      '__INSERT__',\r\n      null,\r\n      (v_novo - v_campos_sensiveis)::text,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n    return new;\r\n  end if;\r\n\r\n  if tg_op = 'DELETE' then\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      '__DELETE__',\r\n      (v_anterior - v_campos_sensiveis)::text,\r\n      null,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n    return old;\r\n  end if;\r\n\r\n  for v_campo in\r\n    select campo\r\n    from (\r\n      select jsonb_object_keys(v_anterior) as campo\r\n      union\r\n      select jsonb_object_keys(v_novo) as campo\r\n    ) campos\r\n    where not (campo = any(v_campos_sensiveis))\r\n      and v_anterior -> campo is distinct from v_novo -> campo\r\n    order by campo\r\n  loop\r\n    insert into public.log_auditoria (\r\n      tabela_afetada, registo_id, campo, valor_anterior, valor_novo,\r\n      utilizador_id, criado_em\r\n    ) values (\r\n      tg_table_schema || '.' || tg_table_name,\r\n      v_registo_id,\r\n      v_campo,\r\n      case when v_anterior ? v_campo then (v_anterior -> v_campo)::text else null end,\r\n      case when v_novo ? v_campo then (v_novo -> v_campo)::text else null end,\r\n      v_utilizador_id,\r\n      now()\r\n    );\r\n  end loop;\r\n\r\n  return new;\r\nend;\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_auditoria_quadro_pessoal_alocacao AFTER INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+        },
+        {
+          "name": "trg_bloquear_quadro_pessoal_ausencia",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_bloquear_registo_em_ausencia()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nbegin\r\n  if exists (\r\n    select 1\r\n    from public.ausencias a\r\n    where a.colaborador_id = new.colaborador_id\r\n      and a.data = new.data\r\n  ) then\r\n    raise exception 'Este colaborador está de férias/ausente nesta data.';\r\n  end if;\r\n\r\n  return new;\r\nend;\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_bloquear_quadro_pessoal_ausencia BEFORE INSERT OR UPDATE OF colaborador_id, data ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_bloquear_registo_em_ausencia()"
+        },
+        {
+          "name": "trg_quadro_notificar_movimentacao_encarregado",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_quadro_notificar_movimentacao_encarregado()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  v_atual public.utilizadores;\r\n  v_permit public.quadro_pessoal_rpc_permit;\r\n  v_colaborador public.colaboradores;\r\n  v_origem_id uuid;\r\n  v_destino_id uuid;\r\n  v_origem_numero text;\r\n  v_origem_nome text;\r\n  v_destino_numero text;\r\n  v_destino_nome text;\r\n  v_titulo text;\r\n  v_descricao text;\r\nBEGIN\r\n  IF TG_OP NOT IN ('INSERT','UPDATE') THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO v_atual\r\n  FROM public.utilizadores\r\n  WHERE id=public.fn_utilizador_atual_id()\r\n    AND ativo IS TRUE\r\n    AND funcao='encarregado';\r\n\r\n  IF v_atual.id IS NULL THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  SELECT p.*\r\n  INTO v_permit\r\n  FROM public.quadro_pessoal_rpc_permit p\r\n  WHERE p.transacao=txid_current()\r\n    AND p.utilizador_id=v_atual.id\r\n    AND p.colaborador_id=NEW.colaborador_id\r\n    AND p.destino_id=NEW.obra_id\r\n    AND p.data=NEW.data\r\n    AND p.periodo=NEW.periodo\r\n    AND (\r\n      (TG_OP='INSERT' AND p.origem_id IS NULL)\r\n      OR\r\n      (TG_OP='UPDATE' AND p.origem_id=OLD.id)\r\n    )\r\n  LIMIT 1;\r\n\r\n  IF v_permit.utilizador_id IS NULL THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  v_origem_id := CASE WHEN TG_OP='UPDATE' THEN OLD.obra_id ELSE NULL END;\r\n  v_destino_id := NEW.obra_id;\r\n\r\n  IF TG_OP='UPDATE'\r\n    AND v_origem_id IS NOT DISTINCT FROM v_destino_id\r\n  THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO v_colaborador\r\n  FROM public.colaboradores\r\n  WHERE id=NEW.colaborador_id\r\n    AND empresa_id=v_atual.empresa_id;\r\n\r\n  IF v_colaborador.id IS NULL THEN\r\n    RAISE EXCEPTION 'Colaborador da movimentação não encontrado.';\r\n  END IF;\r\n\r\n  IF v_origem_id IS NOT NULL THEN\r\n    SELECT o.numero::text,o.nome\r\n    INTO v_origem_numero,v_origem_nome\r\n    FROM public.obras o\r\n    WHERE o.id=v_origem_id\r\n      AND o.empresa_id=v_atual.empresa_id;\r\n  END IF;\r\n\r\n  SELECT o.numero::text,o.nome\r\n  INTO v_destino_numero,v_destino_nome\r\n  FROM public.obras o\r\n  WHERE o.id=v_destino_id\r\n    AND o.empresa_id=v_atual.empresa_id;\r\n\r\n  IF v_destino_numero IS NULL THEN\r\n    RAISE EXCEPTION 'Obra de destino da movimentação não encontrada.';\r\n  END IF;\r\n\r\n  v_titulo := 'Movimentação de equipa · ' || v_colaborador.nome;\r\n\r\n  IF v_origem_id IS NULL THEN\r\n    v_descricao := format(\r\n      '%s foi adicionado à Obra %s · %s em %s por %s.',\r\n      v_colaborador.nome,\r\n      v_destino_numero,\r\n      v_destino_nome,\r\n      to_char(NEW.data,'DD/MM/YYYY'),\r\n      v_atual.nome\r\n    );\r\n  ELSE\r\n    v_descricao := format(\r\n      '%s foi movimentado da Obra %s · %s para a Obra %s · %s em %s por %s.',\r\n      v_colaborador.nome,\r\n      coalesce(v_origem_numero,'—'),\r\n      coalesce(v_origem_nome,'Obra de origem'),\r\n      v_destino_numero,\r\n      v_destino_nome,\r\n      to_char(NEW.data,'DD/MM/YYYY'),\r\n      v_atual.nome\r\n    );\r\n  END IF;\r\n\r\n  WITH destinatarios AS (\r\n    SELECT\r\n      r.utilizador_id,\r\n      v_origem_id AS obra_ref,\r\n      1 AS prioridade\r\n    FROM public.obra_responsaveis r\r\n    WHERE v_origem_id IS NOT NULL\r\n      AND r.obra_id=v_origem_id\r\n      AND r.papel='encarregado'\r\n\r\n    UNION ALL\r\n\r\n    SELECT\r\n      r.utilizador_id,\r\n      v_origem_id AS obra_ref,\r\n      2 AS prioridade\r\n    FROM public.obra_responsaveis r\r\n    WHERE v_origem_id IS NOT NULL\r\n      AND r.obra_id=v_origem_id\r\n      AND r.papel='diretor_obra'\r\n\r\n    UNION ALL\r\n\r\n    SELECT\r\n      r.utilizador_id,\r\n      v_destino_id AS obra_ref,\r\n      3 AS prioridade\r\n    FROM public.obra_responsaveis r\r\n    WHERE r.obra_id=v_destino_id\r\n      AND r.papel='diretor_obra'\r\n\r\n    UNION ALL\r\n\r\n    SELECT\r\n      u.id AS utilizador_id,\r\n      v_destino_id AS obra_ref,\r\n      4 AS prioridade\r\n    FROM public.utilizadores u\r\n    WHERE u.empresa_id=v_atual.empresa_id\r\n      AND u.funcao='administrativo'\r\n      AND u.ativo IS TRUE\r\n      AND u.auth_user_id IS NOT NULL\r\n  ),\r\n  unicos AS (\r\n    SELECT DISTINCT ON (d.utilizador_id)\r\n      d.utilizador_id,\r\n      d.obra_ref\r\n    FROM destinatarios d\r\n    WHERE d.utilizador_id IS NOT NULL\r\n      AND d.utilizador_id IS DISTINCT FROM v_atual.id\r\n    ORDER BY d.utilizador_id,d.prioridade\r\n  )\r\n  INSERT INTO public.alertas(\r\n    empresa_id,\r\n    obra_id,\r\n    tipo,\r\n    entidade_tipo,\r\n    entidade_id,\r\n    titulo,\r\n    descricao,\r\n    data_evento_referencia,\r\n    antecedencia_dias,\r\n    data_gatilho,\r\n    destinatario_role,\r\n    estado,\r\n    enviar_email,\r\n    destinatario_utilizador_id\r\n  )\r\n  SELECT\r\n    v_atual.empresa_id,\r\n    u.obra_ref,\r\n    'movimentacao_equipa',\r\n    'quadro_pessoal_alocacao',\r\n    NEW.id,\r\n    v_titulo,\r\n    v_descricao,\r\n    NEW.data,\r\n    0,\r\n    current_date,\r\n    destinatario.funcao,\r\n    'pendente',\r\n    false,\r\n    destinatario.id\r\n  FROM unicos u\r\n  JOIN public.utilizadores destinatario\r\n    ON destinatario.id=u.utilizador_id\r\n   AND destinatario.empresa_id=v_atual.empresa_id\r\n   AND destinatario.ativo IS TRUE\r\n   AND destinatario.auth_user_id IS NOT NULL;\r\n\r\n  RETURN NEW;\r\nEND;\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_quadro_notificar_movimentacao_encarregado AFTER INSERT OR UPDATE OF obra_id ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_quadro_notificar_movimentacao_encarregado()"
+        },
+        {
+          "name": "trg_quadro_pessoal_movimentos",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_registar_movimento_quadro()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  c public.colaboradores;\r\n  u public.utilizadores;\r\n  q public.quadro_pessoal_alocacao;\r\n  b jsonb;\r\n  a jsonb;\r\n  action text;\r\nBEGIN\r\n\r\n  IF TG_OP = 'UPDATE'\r\n     AND OLD IS NOT DISTINCT FROM NEW\r\n  THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  IF TG_OP = 'DELETE' THEN\r\n    q := OLD;\r\n  ELSE\r\n    q := NEW;\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO c\r\n  FROM public.colaboradores\r\n  WHERE id = q.colaborador_id;\r\n\r\n  SELECT *\r\n  INTO u\r\n  FROM public.utilizadores\r\n  WHERE id = public.fn_utilizador_atual_id();\r\n\r\n  IF TG_OP <> 'INSERT' THEN\r\n    b := to_jsonb(OLD);\r\n  END IF;\r\n\r\n  IF TG_OP <> 'DELETE' THEN\r\n    a := to_jsonb(NEW);\r\n  END IF;\r\n\r\n  action :=\r\n    CASE\r\n      WHEN TG_OP = 'INSERT'\r\n        THEN 'adicionar'\r\n      WHEN TG_OP = 'DELETE'\r\n        THEN 'remover'\r\n      WHEN OLD.obra_id IS DISTINCT FROM NEW.obra_id\r\n        OR OLD.data IS DISTINCT FROM NEW.data\r\n        OR OLD.periodo IS DISTINCT FROM NEW.periodo\r\n        OR OLD.tipo_alocacao IS DISTINCT FROM NEW.tipo_alocacao\r\n        THEN 'mover'\r\n      ELSE 'corrigir'\r\n    END;\r\n\r\n  INSERT INTO public.quadro_pessoal_movimentos (\r\n    empresa_id,\r\n    alocacao_id,\r\n    colaborador_id,\r\n    data,\r\n    periodo,\r\n    acao,\r\n    obra_origem_id,\r\n    obra_destino_id,\r\n    tipo_origem,\r\n    tipo_destino,\r\n    descricao_origem,\r\n    descricao_destino,\r\n    alterado_por,\r\n    perfil_autor,\r\n    nome_autor,\r\n    nome_colaborador,\r\n    tipo_acao,\r\n    alocacao_origem_id,\r\n    alocacao_destino_id,\r\n    antes,\r\n    depois\r\n  )\r\n  VALUES (\r\n    c.empresa_id,\r\n    q.id,\r\n    c.id,\r\n    q.data,\r\n    q.periodo,\r\n    CASE TG_OP\r\n      WHEN 'INSERT' THEN 'adicionada'\r\n      WHEN 'DELETE' THEN 'retirada'\r\n      ELSE 'alterada'\r\n    END,\r\n    (b->>'obra_id')::uuid,\r\n    (a->>'obra_id')::uuid,\r\n    b->>'tipo_alocacao',\r\n    a->>'tipo_alocacao',\r\n    b->>'descricao_livre',\r\n    a->>'descricao_livre',\r\n    u.id,\r\n    coalesce(u.funcao, 'sql_administrativo'),\r\n    coalesce(u.nome, session_user),\r\n    c.nome,\r\n    action,\r\n    (b->>'id')::uuid,\r\n    (a->>'id')::uuid,\r\n    b,\r\n    a\r\n  );\r\n\r\n  IF TG_OP = 'DELETE' THEN\r\n    RETURN OLD;\r\n  END IF;\r\n\r\n  RETURN NEW;\r\nEND\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_quadro_pessoal_movimentos AFTER INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_registar_movimento_quadro()"
+        },
+        {
+          "name": "trg_validar_conflito_quadro_pessoal",
+          "enabled": "O",
+          "function": "CREATE OR REPLACE FUNCTION public.fn_validar_conflito_quadro_pessoal()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nBEGIN\r\n  IF EXISTS (\r\n    SELECT 1\r\n    FROM public.quadro_pessoal_alocacao q\r\n    WHERE q.id IS DISTINCT FROM NEW.id\r\n      AND q.colaborador_id = NEW.colaborador_id\r\n      AND q.data = NEW.data\r\n      AND q.periodo = NEW.periodo\r\n      AND q.obra_id IS NOT DISTINCT FROM NEW.obra_id\r\n      AND q.tipo_alocacao IS NOT DISTINCT FROM NEW.tipo_alocacao\r\n      AND q.descricao_livre IS NOT DISTINCT FROM NEW.descricao_livre\r\n  )\r\n  THEN\r\n    RAISE EXCEPTION 'Alocação idêntica já existente.'\r\n    USING ERRCODE = '23505';\r\n  END IF;\r\n\r\n  RETURN NEW;\r\nEND\r\n$function$\n",
+          "definition": "CREATE TRIGGER trg_validar_conflito_quadro_pessoal BEFORE INSERT OR UPDATE OF colaborador_id, data, periodo, obra_id, tipo_alocacao, descricao_livre ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_validar_conflito_quadro_pessoal()"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "quadro_pessoal_alocacao_colaborador_id_fkey",
+          "definition": "FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id)"
+        },
+        {
+          "name": "quadro_pessoal_alocacao_criado_por_fkey",
+          "definition": "FOREIGN KEY (criado_por) REFERENCES utilizadores(id)"
+        },
+        {
+          "name": "quadro_pessoal_alocacao_obra_id_fkey",
+          "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id)"
+        },
+        {
+          "name": "quadro_pessoal_alocacao_periodo_check",
+          "definition": "CHECK ((periodo = ANY (ARRAY['manha'::text, 'tarde'::text, 'dia_inteiro'::text])))"
+        },
+        {
+          "name": "quadro_pessoal_alocacao_pkey",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "quadro_pessoal_alocacao_tipo_check",
+          "definition": "CHECK ((tipo_alocacao = ANY (ARRAY['obra'::text, 'escritorio'::text, 'garantia'::text, 'pontual'::text])))"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "quadro_pessoal_movimentos",
+      "grants": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notnull": true
+        },
+        {
+          "name": "empresa_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "alocacao_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "colaborador_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "periodo",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "acao",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "obra_origem_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "obra_destino_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "tipo_origem",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "tipo_destino",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "descricao_origem",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "descricao_destino",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "alterado_por",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "alterado_em",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notnull": true
+        },
+        {
+          "name": "perfil_autor",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "nome_autor",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "nome_colaborador",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "tipo_acao",
+          "type": "text",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "alocacao_origem_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "alocacao_destino_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "antes",
+          "type": "jsonb",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "depois",
+          "type": "jsonb",
+          "default": null,
+          "notnull": false
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "SELECT",
+          "qual": "((EXISTS ( SELECT 1\n   FROM utilizadores u\n  WHERE ((u.id = fn_utilizador_atual_id()) AND (u.ativo IS TRUE) AND (u.empresa_id = quadro_pessoal_movimentos.empresa_id)))) AND (fn_pode_gerir_quadro(NULL::uuid) OR fn_quadro_minha_obra(obra_origem_id) OR fn_quadro_minha_obra(obra_destino_id)))",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "quadro_pessoal_movimentos",
+          "permissive": "PERMISSIVE",
+          "policyname": "quadro_v3_historico",
+          "schemaname": "public",
+          "with_check": null
+        }
+      ],
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "quadro_pessoal_movimentos_acao_check",
+          "definition": "CHECK ((acao = ANY (ARRAY['adicionada'::text, 'alterada'::text, 'retirada'::text])))"
+        },
+        {
+          "name": "quadro_pessoal_movimentos_alterado_por_fkey",
+          "definition": "FOREIGN KEY (alterado_por) REFERENCES utilizadores(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "quadro_pessoal_movimentos_colaborador_id_fkey",
+          "definition": "FOREIGN KEY (colaborador_id) REFERENCES colaboradores(id) ON DELETE RESTRICT"
+        },
+        {
+          "name": "quadro_pessoal_movimentos_empresa_id_fkey",
+          "definition": "FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "quadro_pessoal_movimentos_obra_destino_id_fkey",
+          "definition": "FOREIGN KEY (obra_destino_id) REFERENCES obras(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "quadro_pessoal_movimentos_obra_origem_id_fkey",
+          "definition": "FOREIGN KEY (obra_origem_id) REFERENCES obras(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "quadro_pessoal_movimentos_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "rls": true,
+      "name": "quadro_pessoal_rpc_permit",
+      "grants": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "name": "transacao",
+          "type": "bigint",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "utilizador_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "colaborador_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "origem_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": false
+        },
+        {
+          "name": "destino_id",
+          "type": "uuid",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "default": null,
+          "notnull": true
+        },
+        {
+          "name": "periodo",
+          "type": "text",
+          "default": null,
+          "notnull": true
+        }
+      ],
+      "policies": null,
+      "triggers": null,
+      "constraints": [
+        {
+          "name": "quadro_pessoal_rpc_permit_pkey",
+          "definition": "PRIMARY KEY (transacao, utilizador_id)"
+        }
+      ]
+    }
+  ],
+  "rhFunctions": [
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "oid": "22643",
+      "name": "fn_rh_empresa",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_rh_empresa(boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_rh_empresa(p_importacao boolean DEFAULT false)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare v_empresa uuid;\r\nbegin\r\n  select empresa_id into v_empresa from public.utilizadores\r\n  where id=public.fn_utilizador_atual_id() and ativo is true\r\n    and case when p_importacao then funcao='gestao_plataforma'\r\n      else funcao in ('gestao_plataforma','gerencia','administrativo') end;\r\n  if v_empresa is null then raise exception 'Sem permissão para gerir estes dados de RH.'; end if;\r\n  return v_empresa;\r\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "22644",
+      "name": "fn_rh_consultar",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_rh_consultar(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_rh_consultar(p_id uuid DEFAULT NULL::uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare v_empresa uuid:=public.fn_rh_empresa(); v_result jsonb;\r\nbegin\r\n  select coalesce(jsonb_agg(dados||jsonb_build_object('versao',md5(dados::text)) order by nome),'[]')\r\n  into v_result from (\r\n    select c.nome,jsonb_build_object('colaborador',to_jsonb(c),'niss',r.niss,'contratos',\r\n      coalesce((select jsonb_agg(to_jsonb(cc) order by cc.data_inicio,cc.id)\r\n        from public.colaboradores_contratos cc where cc.colaborador_id=c.id),'[]')) dados\r\n    from public.colaboradores c left join public.colaboradores_rh_privado r on r.colaborador_id=c.id\r\n    where c.empresa_id=v_empresa and (p_id is null or c.id=p_id)\r\n  ) s;\r\n  return v_result;\r\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "22645",
+      "name": "fn_rh_guardar",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_rh_guardar(jsonb,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_rh_guardar(p_dados jsonb, p_simular boolean DEFAULT false)\n RETURNS jsonb\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\n  select public.fn_rh_guardar_interno(p_dados,p_simular,false);\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "oid": "22675",
+      "name": "fn_rh_guardar_interno",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_rh_guardar_interno(jsonb,boolean,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_rh_guardar_interno(p_dados jsonb, p_simular boolean, p_importacao boolean)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_empresa uuid:=public.fn_rh_empresa(p_importacao); v_id uuid:=nullif(p_dados->>'id','')::uuid;\r\n  v_antes jsonb; v_patch jsonb:=coalesce(p_dados->'campos','{}'); v_result jsonb;\r\n  v_c public.colaboradores%rowtype; v_ct public.colaboradores_contratos%rowtype;\r\n  v_cp jsonb:=p_dados->'contrato'; v_niss text; v_count integer; v_alterado boolean;\r\n  v_novo boolean:=v_id is null; v_original_ct jsonb;\r\n  v_avisos jsonb:='[]'; v_pendencia text;\r\nbegin\r\n  perform pg_advisory_xact_lock(hashtextextended('rh:'||v_empresa::text,0));\r\n  if p_importacao and v_novo then raise exception 'A importação exige ID existente.'; end if;\r\n  if jsonb_typeof(v_patch) is distinct from 'object' then raise exception 'Campos inválidos.'; end if;\r\n  if exists(select 1 from jsonb_object_keys(v_patch) k where k not in\r\n    ('nome','funcao','nivel','valor_hora','nif','email','contacto','morada','data_admissao',\r\n     'data_nascimento','data_saida','codigo_rh','observacoes','seguranca_social_ok','seguro_ok','registo_trabalhador_ok')) then\r\n    raise exception 'Campos de RH desconhecidos.';\r\n  end if;\r\n  if not v_novo then\r\n    perform 1 from public.colaboradores where id=v_id and empresa_id=v_empresa for update;\r\n    if not found then raise exception 'Colaborador não encontrado nesta empresa.'; end if;\r\n    perform 1 from public.colaboradores_contratos where colaborador_id=v_id for update;\r\n    v_antes:=public.fn_rh_consultar(v_id)->0;\r\n  end if;\r\n  v_c:=jsonb_populate_record(null::public.colaboradores,coalesce(v_antes->'colaborador','{}')||v_patch);\r\n  if nullif(btrim(v_c.nome),'') is null or nullif(btrim(v_c.funcao),'') is null or v_c.data_admissao is null then\r\n    raise exception 'Nome, função e admissão são obrigatórios.';\r\n  end if;\r\n  if v_c.valor_hora<0 then raise exception 'Valor/hora não pode ser negativo.'; end if;\r\n  if v_c.data_saida<v_c.data_admissao or v_c.data_nascimento>v_c.data_admissao then raise exception 'Datas incompatíveis.'; end if;\r\n  if nullif(v_c.nif,'') is not null and v_c.nif !~ '^[0-9]{9}$' then raise exception 'NIF deve ter 9 algarismos.'; end if;\r\n  if nullif(v_c.email,'') is not null and v_c.email !~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' then raise exception 'Email inválido.'; end if;\r\n  if exists(select 1 from public.colaboradores c where c.empresa_id=v_empresa and c.id is distinct from v_id\r\n    and ((nullif(v_c.nif,'') is not null and c.nif=v_c.nif) or\r\n      (nullif(v_c.codigo_rh,'') is not null and c.codigo_rh=v_c.codigo_rh))) then\r\n    raise exception 'NIF ou código RH já pertence a outro colaborador.';\r\n  end if;\r\n  v_niss:=case when p_dados ? 'niss' then nullif(p_dados->>'niss','') else v_antes->>'niss' end;\r\n  if v_niss is not null and v_niss !~ '^[0-9]{11}$' then raise exception 'NISS deve ter 11 algarismos.'; end if;\r\n  if v_cp is not null and v_cp<>'null'::jsonb then\r\n    if jsonb_typeof(v_cp)<>'object' then raise exception 'Contrato inválido.'; end if;\r\n    if exists(select 1 from jsonb_object_keys(v_cp) k where k not in ('tipo_contrato','data_inicio','data_fim_prevista')) then\r\n      raise exception 'Campos de contrato desconhecidos.';\r\n    end if;\r\n    select count(*) into v_count from public.colaboradores_contratos where colaborador_id=v_id and estado='ativo';\r\n    if v_count>1 then raise exception 'Existem vários contratos ativos; rever antes de editar.'; end if;\r\n    select * into v_ct from public.colaboradores_contratos where colaborador_id=v_id and estado='ativo';\r\n    v_original_ct:=to_jsonb(v_ct);\r\n    v_ct:=jsonb_populate_record(v_ct,v_cp);\r\n    if not p_importacao and (v_ct.tipo_contrato is null or v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') or v_ct.data_inicio is null) then\r\n      raise exception 'Tipo e início do contrato são obrigatórios.';\r\n    end if;\r\n    if v_ct.tipo_contrato is not null and v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') then\r\n      raise exception 'Tipo de contrato inválido.';\r\n    end if;\r\n    if v_ct.data_inicio is null then v_pendencia:='Início do contrato em falta.';\r\n    elsif v_ct.tipo_contrato='a_prazo' and v_ct.data_fim_prevista is null then v_pendencia:='Indique o fim previsto.';\r\n    elsif v_ct.data_fim_prevista<v_ct.data_inicio then v_pendencia:='Fim contratual anterior ao início.';\r\n    end if;\r\n    if v_pendencia is not null then\r\n      if not p_importacao then raise exception '%',v_pendencia; end if;\r\n      v_avisos:=v_avisos||jsonb_build_array('Contrato não alterado: '||v_pendencia||' Os restantes campos podem ser atualizados.');\r\n      v_cp:=null;\r\n    elsif v_ct.tipo_contrato='tempo_indeterminado' and v_ct.data_fim_prevista is not null then\r\n      if not p_importacao then raise exception 'Tempo indeterminado não tem fim previsto.'; end if;\r\n      -- Na importação parcial, vazio não autoriza apagar uma data anterior.\r\n      if v_cp ? 'data_fim_prevista' then\r\n        v_avisos:=v_avisos||jsonb_build_array('Contrato não alterado: tempo indeterminado com fim fornecido. Rever no cadastro individual.');\r\n        v_cp:=null;\r\n      else\r\n        v_avisos:=v_avisos||jsonb_build_array('Fim previsto existente preservado. Rever no cadastro individual o contrato sem termo.');\r\n      end if;\r\n    elsif v_ct.tipo_contrato is null then\r\n      v_avisos:=v_avisos||jsonb_build_array('Data contratual aceite; tipo de contrato por confirmar pelo RH.');\r\n    end if;\r\n  end if;\r\n  v_alterado:=v_novo or to_jsonb(v_c) is distinct from v_antes->'colaborador'\r\n    or v_niss is distinct from v_antes->>'niss'\r\n    or (v_cp is not null and v_cp<>'null'::jsonb and to_jsonb(v_ct) is distinct from v_original_ct);\r\n  -- Reimportar o mesmo conteúdo é um no-op, mesmo com a versão antiga do Excel.\r\n  if not v_novo and v_alterado and p_dados->>'versao' is distinct from v_antes->>'versao' then\r\n    raise exception 'Cadastro alterado entretanto. Reabra ou exporte novamente o modelo.';\r\n  end if;\r\n  if v_novo then\r\n    if coalesce(p_dados->>'alocacao_tipo','') not in ('obra','escritorio') then raise exception 'Indique a alocação inicial.'; end if;\r\n    if p_dados->>'alocacao_tipo'='obra' and not exists(select 1 from public.obras\r\n      where id=nullif(p_dados->>'obra_id','')::uuid and empresa_id=v_empresa and situacao in ('preparacao','em_curso')) then\r\n      raise exception 'Selecione uma obra ativa da empresa.';\r\n    end if;\r\n    if p_dados->>'alocacao_tipo'='escritorio' and nullif(p_dados->>'obra_id','') is not null then raise exception 'Escritório não tem obra.'; end if;\r\n    perform nullif(p_dados->>'epi_data','')::date;\r\n    perform nullif(p_dados->>'medicina_data','')::date;\r\n  end if;\r\n  if p_simular or not v_alterado then return jsonb_build_object('alterado',v_alterado,'id',v_id,'avisos',v_avisos); end if;\r\n  if v_novo then\r\n    v_id:=(public.fn_criar_colaborador_com_alocacao(v_c.nome,v_c.funcao,v_c.data_admissao,v_c.data_nascimento,\r\n      p_dados->>'alocacao_tipo',nullif(p_dados->>'obra_id','')::uuid,v_c.nivel,v_c.valor_hora,v_c.nif,v_c.email,v_c.contacto,v_c.morada)\r\n      ->'colaborador'->>'id')::uuid;\r\n  end if;\r\n  update public.colaboradores set nome=v_c.nome,funcao=v_c.funcao,nivel=v_c.nivel,valor_hora=v_c.valor_hora,\r\n    nif=v_c.nif,email=v_c.email,contacto=v_c.contacto,morada=v_c.morada,data_admissao=v_c.data_admissao,\r\n    data_nascimento=v_c.data_nascimento,data_saida=v_c.data_saida,codigo_rh=v_c.codigo_rh,observacoes=v_c.observacoes,\r\n    seguranca_social_ok=v_c.seguranca_social_ok,seguro_ok=v_c.seguro_ok,registo_trabalhador_ok=v_c.registo_trabalhador_ok\r\n    where id=v_id and empresa_id=v_empresa;\r\n  if v_novo then\r\n    if nullif(p_dados->>'epi_data','') is not null then\r\n      insert into public.epis(colaborador_id,tipo_epi,data_entrega,data_validade)\r\n      values(v_id,'Entrega inicial',(p_dados->>'epi_data')::date,null);\r\n    end if;\r\n    if nullif(p_dados->>'medicina_data','') is not null then\r\n      insert into public.medicina_trabalho(colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta)\r\n      values(v_id,(p_dados->>'medicina_data')::date,'Consulta inicial registada na admissão',null);\r\n    end if;\r\n  elsif (v_antes->'colaborador'->>'data_saida') is distinct from v_c.data_saida::text then\r\n    perform public.fn_atualizar_colaborador_ciclo_vida(v_id,v_c.nome,v_c.funcao,v_c.data_admissao,\r\n      v_c.data_nascimento,v_c.data_saida,v_c.nivel,v_c.valor_hora,v_c.nif,v_c.email,v_c.contacto,v_c.morada);\r\n  end if;\r\n  insert into public.colaboradores_rh_privado(colaborador_id,niss) values(v_id,v_niss)\r\n    on conflict(colaborador_id) do update set niss=excluded.niss;\r\n  if v_cp is not null and v_cp<>'null'::jsonb then\r\n    if v_ct.id is null then\r\n      insert into public.colaboradores_contratos(colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado)\r\n      values(v_id,v_ct.tipo_contrato,v_ct.data_inicio,v_ct.data_fim_prevista,'ativo');\r\n    else\r\n      update public.colaboradores_contratos set tipo_contrato=v_ct.tipo_contrato,data_inicio=v_ct.data_inicio,\r\n        data_fim_prevista=v_ct.data_fim_prevista where id=v_ct.id;\r\n    end if;\r\n  end if;\r\n  v_result:=public.fn_rh_consultar(v_id)->0;\r\n  insert into public.rh_cadastro_auditoria(empresa_id,colaborador_id,utilizador_id,origem,antes,depois)\r\n    values(v_empresa,v_id,public.fn_utilizador_atual_id(),case when p_importacao then 'importacao_excel' else 'cadastro' end,v_antes,v_result);\r\n  return jsonb_build_object('alterado',true,'id',v_id,'avisos',v_avisos);\r\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "22647",
+      "name": "fn_rh_importar",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_rh_importar(jsonb,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_rh_importar(p_linhas jsonb, p_confirmar boolean DEFAULT false)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare v_empresa uuid:=public.fn_rh_empresa(true); v_row jsonb; v_result jsonb:='[]';\r\n  v_validado jsonb; v_erros integer:=0; v_seen uuid[]:='{}'; v_id uuid; v_patch jsonb;\r\nbegin\r\n  p_confirmar:=coalesce(p_confirmar,false);\r\n  if jsonb_typeof(p_linhas) is distinct from 'array' then raise exception 'Lista inválida.'; end if;\r\n  if octet_length(p_linhas::text)>4194304 then raise exception 'Lote demasiado grande (máximo 4 MB).'; end if;\r\n  if jsonb_array_length(p_linhas) not between 1 and 1000 then raise exception 'Importe entre 1 e 1000 linhas.'; end if;\r\n  perform pg_advisory_xact_lock(hashtextextended('rh:'||v_empresa::text,0));\r\n  for v_row in select value from jsonb_array_elements(p_linhas) loop\r\n    begin\r\n      v_id:=nullif(v_row->>'id','')::uuid;\r\n      if v_id is null or v_id=any(v_seen) then raise exception 'ID ausente ou repetido.'; end if;\r\n      v_seen:=array_append(v_seen,v_id);\r\n      if coalesce(v_row->'campos','{}') ? 'data_saida' then raise exception 'Excel não altera ativo/inativo.'; end if;\r\n      select coalesce(jsonb_object_agg(key,value),'{}') into v_patch from jsonb_each(coalesce(v_row->'campos','{}'))\r\n        where value<>'null'::jsonb and btrim(value#>>'{}')<>'';\r\n      v_row:=v_row||jsonb_build_object('campos',v_patch);\r\n      if btrim(coalesce(v_row->>'niss',''))='' then v_row:=v_row-'niss'; end if;\r\n      if jsonb_typeof(v_row->'contrato')='object' then\r\n        select coalesce(jsonb_object_agg(key,value),'{}') into v_patch from jsonb_each(v_row->'contrato')\r\n          where value<>'null'::jsonb and btrim(value#>>'{}')<>'';\r\n        v_row:=v_row-'contrato';\r\n        if v_patch<>'{}'::jsonb then v_row:=v_row||jsonb_build_object('contrato',v_patch); end if;\r\n      end if;\r\n      v_validado:=public.fn_rh_guardar_interno(v_row,not p_confirmar,true);\r\n      v_result:=v_result||jsonb_build_array(v_validado||jsonb_build_object('id',v_id,'ok',true));\r\n    exception when others then\r\n      v_erros:=v_erros+1;\r\n      v_result:=v_result||jsonb_build_array(jsonb_build_object('id',v_row->>'id','ok',false,'erro',sqlerrm));\r\n    end;\r\n  end loop;\r\n  if p_confirmar and v_erros>0 then raise exception 'Lote cancelado; nenhuma alteração guardada. %',v_result; end if;\r\n  return jsonb_build_object('linhas',v_result,'erros',v_erros,'confirmado',p_confirmar);\r\nend $function$\n"
+    }
+  ],
+  "writers": [
+    "fn_quadro_operar(text,jsonb,boolean,text)",
+    "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid)",
+    "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid,text,numeric,text,text,text,text)"
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "oid": "22876",
+      "name": "fn_quadro_proteger_escrita",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_quadro_proteger_escrita()",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_quadro_proteger_escrita()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  u public.utilizadores;\r\n  c public.colaboradores;\r\n  q public.quadro_pessoal_alocacao;\r\nBEGIN\r\n  IF TG_OP = 'DELETE' THEN\r\n    q := OLD;\r\n  ELSE\r\n    q := NEW;\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO c\r\n  FROM public.colaboradores\r\n  WHERE id = q.colaborador_id;\r\n\r\n  PERFORM pg_advisory_xact_lock(\r\n    hashtextextended(q.colaborador_id::text, 0)\r\n  );\r\n\r\n  IF TG_OP = 'UPDATE'\r\n     AND (\r\n       NEW.id IS DISTINCT FROM OLD.id\r\n       OR NEW.colaborador_id IS DISTINCT FROM OLD.colaborador_id\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Não é permitido alterar a identidade da alocação.';\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO u\r\n  FROM public.utilizadores\r\n  WHERE id = public.fn_utilizador_atual_id()\r\n    AND ativo IS TRUE;\r\n\r\n  IF u.id IS NULL THEN\r\n\r\n    IF session_user NOT IN ('postgres', 'supabase_admin')\r\n       OR auth.uid() IS NOT NULL\r\n    THEN\r\n      RAISE EXCEPTION 'Sem utilizador autorizado.'\r\n      USING ERRCODE = '42501';\r\n    END IF;\r\n\r\n  ELSE\r\n\r\n    IF c.empresa_id IS DISTINCT FROM u.empresa_id THEN\r\n      RAISE EXCEPTION 'Colaborador de outra empresa.'\r\n      USING ERRCODE = '42501';\r\n    END IF;\r\n\r\n    IF NOT public.fn_pode_gerir_quadro(NULL) THEN\r\n\r\n      IF TG_OP = 'DELETE'\r\n         OR NOT EXISTS (\r\n           SELECT 1\r\n           FROM public.quadro_pessoal_rpc_permit p\r\n           WHERE p.transacao = txid_current()\r\n             AND p.utilizador_id = u.id\r\n             AND p.colaborador_id = NEW.colaborador_id\r\n             AND p.destino_id = NEW.obra_id\r\n             AND p.data = NEW.data\r\n             AND p.periodo = NEW.periodo\r\n             AND NEW.tipo_alocacao = 'obra'\r\n             AND NEW.descricao_livre IS NULL\r\n             AND (\r\n               (\r\n                 TG_OP = 'INSERT'\r\n                 AND p.origem_id IS NULL\r\n               )\r\n               OR (\r\n                 TG_OP = 'UPDATE'\r\n                 AND p.origem_id = OLD.id\r\n                 AND NEW.data = OLD.data\r\n                 AND NEW.periodo = OLD.periodo\r\n               )\r\n             )\r\n             AND public.fn_quadro_minha_obra(p.destino_id)\r\n         )\r\n      THEN\r\n        RAISE EXCEPTION 'Sem autorização para editar o Quadro Geral.'\r\n        USING ERRCODE = '42501';\r\n      END IF;\r\n\r\n    END IF;\r\n  END IF;\r\n\r\n  IF q.obra_id IS NOT NULL\r\n     AND NOT EXISTS (\r\n       SELECT 1\r\n       FROM public.obras o\r\n       WHERE o.id = q.obra_id\r\n         AND o.empresa_id = c.empresa_id\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Obra de outra empresa.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  IF TG_OP <> 'DELETE' THEN\r\n\r\n    IF c.id IS NULL\r\n       OR (\r\n         c.data_saida IS NOT NULL\r\n         AND c.data_saida <= NEW.data\r\n       )\r\n       OR c.data_admissao > NEW.data\r\n    THEN\r\n      RAISE EXCEPTION 'Colaborador indisponível nesta data.';\r\n    END IF;\r\n\r\n    IF EXISTS (\r\n      SELECT 1\r\n      FROM public.ausencias a\r\n      WHERE a.colaborador_id = NEW.colaborador_id\r\n        AND a.data = NEW.data\r\n    )\r\n    THEN\r\n      RAISE EXCEPTION\r\n        'Este colaborador está de férias/ausente nesta data.';\r\n    END IF;\r\n\r\n    IF u.id IS NOT NULL\r\n       AND TG_OP = 'INSERT'\r\n    THEN\r\n      NEW.criado_por := u.id;\r\n    END IF;\r\n\r\n    IF TG_OP = 'UPDATE' THEN\r\n      NEW.criado_por := OLD.criado_por;\r\n    END IF;\r\n\r\n  END IF;\r\n\r\n  IF TG_OP = 'DELETE' THEN\r\n    RETURN OLD;\r\n  END IF;\r\n\r\n  RETURN NEW;\r\nEND\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "22885",
+      "name": "fn_quadro_operar",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_quadro_operar(text,jsonb,boolean,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_quadro_operar(p_acao text, p_dados jsonb, p_confirmar boolean DEFAULT false, p_versao text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  u public.utilizadores;\r\n  c public.colaboradores;\r\n  src public.quadro_pessoal_alocacao;\r\n  dest uuid;\r\n  person uuid;\r\n  day date;\r\n  period text;\r\n  kind text;\r\n  description text;\r\n  sid uuid;\r\n  rows_before jsonb;\r\n  v_version text;\r\n  n integer;\r\n  result_id uuid;\r\n  manage boolean;\r\n  result jsonb;\r\nBEGIN\r\n\r\n  SELECT *\r\n  INTO u\r\n  FROM public.utilizadores\r\n  WHERE id = public.fn_utilizador_atual_id()\r\n    AND ativo IS TRUE;\r\n\r\n  IF u.id IS NULL THEN\r\n    RAISE EXCEPTION 'Sessão sem utilizador ativo.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  manage := public.fn_pode_gerir_quadro(NULL);\r\n\r\n  IF p_acao IS NULL\r\n     OR p_acao NOT IN (\r\n       'adicionar',\r\n       'mover',\r\n       'remover',\r\n       'corrigir',\r\n       'minha_obra'\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Ação inválida.';\r\n  END IF;\r\n\r\n  IF NOT manage\r\n     AND (\r\n       u.funcao <> 'encarregado'\r\n       OR p_acao <> 'minha_obra'\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Sem autorização para editar o Quadro Geral.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  IF p_acao IN ('mover', 'remover', 'corrigir') THEN\r\n\r\n    sid := nullif(p_dados->>'id', '')::uuid;\r\n\r\n    SELECT *\r\n    INTO src\r\n    FROM public.quadro_pessoal_alocacao\r\n    WHERE id = sid;\r\n\r\n    IF NOT FOUND THEN\r\n      RAISE EXCEPTION 'Alocação não encontrada; recarregue.';\r\n    END IF;\r\n\r\n    person := src.colaborador_id;\r\n\r\n  ELSE\r\n\r\n    person := (p_dados->>'colaborador_id')::uuid;\r\n\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO c\r\n  FROM public.colaboradores\r\n  WHERE id = person\r\n    AND empresa_id = u.empresa_id;\r\n\r\n  IF NOT FOUND THEN\r\n    RAISE EXCEPTION 'Colaborador não autorizado.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  PERFORM pg_advisory_xact_lock(\r\n    hashtextextended(person::text, 0)\r\n  );\r\n\r\n  IF sid IS NOT NULL THEN\r\n\r\n    SELECT *\r\n    INTO src\r\n    FROM public.quadro_pessoal_alocacao\r\n    WHERE id = sid\r\n    FOR UPDATE;\r\n\r\n    IF NOT FOUND\r\n       OR src.colaborador_id <> person\r\n    THEN\r\n      RAISE EXCEPTION 'Origem alterada; recarregue.';\r\n    END IF;\r\n\r\n  END IF;\r\n\r\n  day := coalesce(\r\n    (p_dados->>'data')::date,\r\n    src.data\r\n  );\r\n\r\n  period := coalesce(\r\n    p_dados->>'periodo',\r\n    src.periodo\r\n  );\r\n\r\n  dest := nullif(p_dados->>'obra_id', '')::uuid;\r\n\r\n  kind := coalesce(\r\n    p_dados->>'tipo_alocacao',\r\n    'obra'\r\n  );\r\n\r\n  description := nullif(\r\n    btrim(p_dados->>'descricao_livre'),\r\n    ''\r\n  );\r\n\r\n  IF p_acao = 'remover' THEN\r\n    dest := src.obra_id;\r\n    kind := src.tipo_alocacao;\r\n    description := src.descricao_livre;\r\n  END IF;\r\n\r\n  IF day IS NULL\r\n     OR period IS NULL\r\n     OR period NOT IN ('manha', 'tarde', 'dia_inteiro')\r\n  THEN\r\n    RAISE EXCEPTION 'Indique data e período válidos.';\r\n  END IF;\r\n\r\n  IF p_acao <> 'remover'\r\n     AND (\r\n       (\r\n         c.data_saida IS NOT NULL\r\n         AND c.data_saida <= day\r\n       )\r\n       OR c.data_admissao > day\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Colaborador indisponível nesta data.';\r\n  END IF;\r\n\r\n  IF kind NOT IN (\r\n       'obra',\r\n       'garantia',\r\n       'pontual',\r\n       'escritorio'\r\n     )\r\n     OR (\r\n       kind = 'obra'\r\n       AND dest IS NULL\r\n     )\r\n     OR (\r\n       kind <> 'obra'\r\n       AND (\r\n         dest IS NOT NULL\r\n         OR description IS NULL\r\n       )\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Destino inválido.';\r\n  END IF;\r\n\r\n  IF kind = 'obra' THEN\r\n    description := NULL;\r\n  END IF;\r\n\r\n  IF dest IS NOT NULL\r\n     AND NOT EXISTS (\r\n       SELECT 1\r\n       FROM public.obras o\r\n       WHERE o.id = dest\r\n         AND o.empresa_id = u.empresa_id\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Destino de outra empresa.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  IF p_acao = 'minha_obra'\r\n     AND (\r\n       kind <> 'obra'\r\n       OR NOT public.fn_quadro_minha_obra(dest)\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION\r\n      'Só pode adicionar à obra em que é Encarregado.'\r\n    USING ERRCODE = '42501';\r\n  END IF;\r\n\r\n  IF p_acao <> 'remover'\r\n     AND EXISTS (\r\n       SELECT 1\r\n       FROM public.ausencias a\r\n       WHERE a.colaborador_id = person\r\n         AND a.data = day\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION\r\n      'Este colaborador está de férias/ausente nesta data.';\r\n  END IF;\r\n\r\n  SELECT coalesce(\r\n           jsonb_agg(\r\n             to_jsonb(q)\r\n             ORDER BY q.id\r\n           ),\r\n           '[]'::jsonb\r\n         )\r\n  INTO rows_before\r\n  FROM public.quadro_pessoal_alocacao q\r\n  WHERE q.colaborador_id = person\r\n    AND q.data = day\r\n    AND (\r\n      q.periodo = period\r\n      OR q.periodo = 'dia_inteiro'\r\n      OR period = 'dia_inteiro'\r\n    );\r\n\r\n  IF p_acao = 'minha_obra' THEN\r\n\r\n    IF EXISTS (\r\n      SELECT 1\r\n      FROM public.quadro_pessoal_alocacao q\r\n      WHERE q.colaborador_id = person\r\n        AND q.data = day\r\n        AND q.periodo = period\r\n        AND q.obra_id = dest\r\n        AND q.tipo_alocacao = 'obra'\r\n        AND q.descricao_livre IS NULL\r\n    )\r\n    THEN\r\n      RAISE EXCEPTION\r\n        'Destino já existente: nenhuma origem foi removida.';\r\n    END IF;\r\n\r\n    n := jsonb_array_length(rows_before);\r\n\r\n    IF n > 1 THEN\r\n      RAISE EXCEPTION\r\n        'Várias origens: peça a resolução ao ADM/Gestão. Nada foi alterado.';\r\n    END IF;\r\n\r\n    IF n = 1 THEN\r\n\r\n      SELECT *\r\n      INTO src\r\n      FROM jsonb_populate_record(\r\n        NULL::public.quadro_pessoal_alocacao,\r\n        rows_before->0\r\n      );\r\n\r\n      IF src.periodo <> period THEN\r\n        RAISE EXCEPTION\r\n          'Sobreposição parcial: peça a resolução ao ADM/Gestão.';\r\n      END IF;\r\n\r\n      sid := src.id;\r\n\r\n    END IF;\r\n\r\n  END IF;\r\n\r\n  IF p_acao <> 'remover'\r\n     AND EXISTS (\r\n       SELECT 1\r\n       FROM public.quadro_pessoal_alocacao q\r\n       WHERE q.colaborador_id = person\r\n         AND q.data = day\r\n         AND q.periodo = period\r\n         AND q.obra_id IS NOT DISTINCT FROM dest\r\n         AND q.tipo_alocacao = kind\r\n         AND q.descricao_livre IS NOT DISTINCT FROM description\r\n         AND q.id IS DISTINCT FROM sid\r\n     )\r\n  THEN\r\n    RAISE EXCEPTION 'Alocação idêntica já existente.'\r\n    USING ERRCODE = '23505';\r\n  END IF;\r\n\r\n  v_version := md5(\r\n    jsonb_build_object(\r\n      'linhas', rows_before,\r\n      'origem', to_jsonb(src),\r\n      'dados', p_dados,\r\n      'acao', p_acao\r\n    )::text\r\n  );\r\n\r\n  result := jsonb_build_object(\r\n    'versao', v_version,\r\n    'colaborador', c.nome,\r\n    'origem_id', sid,\r\n    'obra_origem_id', src.obra_id,\r\n    'obra_destino_id', dest,\r\n    'data', day,\r\n    'periodo', period,\r\n    'acao',\r\n      CASE\r\n        WHEN p_acao = 'minha_obra'\r\n          THEN CASE\r\n                 WHEN sid IS NULL THEN 'adicionar'\r\n                 ELSE 'mover'\r\n               END\r\n        ELSE p_acao\r\n      END\r\n  );\r\n\r\n  IF NOT p_confirmar THEN\r\n    RETURN result\r\n      || jsonb_build_object(\r\n           'estado',\r\n           'PREVISUALIZACAO'\r\n         );\r\n  END IF;\r\n\r\n  IF p_versao IS DISTINCT FROM v_version THEN\r\n    RAISE EXCEPTION\r\n      'Pré-visualização desatualizada. Consulte novamente.';\r\n  END IF;\r\n\r\n  IF NOT manage THEN\r\n\r\n    INSERT INTO public.quadro_pessoal_rpc_permit\r\n    VALUES (\r\n      txid_current(),\r\n      u.id,\r\n      person,\r\n      sid,\r\n      dest,\r\n      day,\r\n      period\r\n    );\r\n\r\n  END IF;\r\n\r\n  IF p_acao = 'remover' THEN\r\n\r\n    DELETE FROM public.quadro_pessoal_alocacao\r\n    WHERE id = sid;\r\n\r\n    result_id := sid;\r\n\r\n  ELSIF sid IS NOT NULL THEN\r\n\r\n    UPDATE public.quadro_pessoal_alocacao\r\n    SET\r\n      obra_id = dest,\r\n      data = day,\r\n      periodo = period,\r\n      semana_inicio =\r\n        date_trunc(\r\n          'week',\r\n          day::timestamp\r\n        )::date,\r\n      tipo_alocacao = kind,\r\n      descricao_livre = description\r\n    WHERE id = sid\r\n    RETURNING id INTO result_id;\r\n\r\n  ELSE\r\n\r\n    INSERT INTO public.quadro_pessoal_alocacao (\r\n      colaborador_id,\r\n      obra_id,\r\n      data,\r\n      periodo,\r\n      semana_inicio,\r\n      tipo_alocacao,\r\n      descricao_livre,\r\n      criado_por\r\n    )\r\n    VALUES (\r\n      person,\r\n      dest,\r\n      day,\r\n      period,\r\n      date_trunc(\r\n        'week',\r\n        day::timestamp\r\n      )::date,\r\n      kind,\r\n      description,\r\n      u.id\r\n    )\r\n    RETURNING id INTO result_id;\r\n\r\n  END IF;\r\n\r\n  DELETE FROM public.quadro_pessoal_rpc_permit\r\n  WHERE transacao = txid_current()\r\n    AND utilizador_id = u.id;\r\n\r\n  RETURN result\r\n    || jsonb_build_object(\r\n         'estado',\r\n         'GUARDADO',\r\n         'alocacao_id',\r\n         result_id\r\n       );\r\n\r\nEND\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "oid": "22592",
+      "name": "fn_registar_movimento_quadro",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_registar_movimento_quadro()",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_registar_movimento_quadro()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  c public.colaboradores;\r\n  u public.utilizadores;\r\n  q public.quadro_pessoal_alocacao;\r\n  b jsonb;\r\n  a jsonb;\r\n  action text;\r\nBEGIN\r\n\r\n  IF TG_OP = 'UPDATE'\r\n     AND OLD IS NOT DISTINCT FROM NEW\r\n  THEN\r\n    RETURN NEW;\r\n  END IF;\r\n\r\n  IF TG_OP = 'DELETE' THEN\r\n    q := OLD;\r\n  ELSE\r\n    q := NEW;\r\n  END IF;\r\n\r\n  SELECT *\r\n  INTO c\r\n  FROM public.colaboradores\r\n  WHERE id = q.colaborador_id;\r\n\r\n  SELECT *\r\n  INTO u\r\n  FROM public.utilizadores\r\n  WHERE id = public.fn_utilizador_atual_id();\r\n\r\n  IF TG_OP <> 'INSERT' THEN\r\n    b := to_jsonb(OLD);\r\n  END IF;\r\n\r\n  IF TG_OP <> 'DELETE' THEN\r\n    a := to_jsonb(NEW);\r\n  END IF;\r\n\r\n  action :=\r\n    CASE\r\n      WHEN TG_OP = 'INSERT'\r\n        THEN 'adicionar'\r\n      WHEN TG_OP = 'DELETE'\r\n        THEN 'remover'\r\n      WHEN OLD.obra_id IS DISTINCT FROM NEW.obra_id\r\n        OR OLD.data IS DISTINCT FROM NEW.data\r\n        OR OLD.periodo IS DISTINCT FROM NEW.periodo\r\n        OR OLD.tipo_alocacao IS DISTINCT FROM NEW.tipo_alocacao\r\n        THEN 'mover'\r\n      ELSE 'corrigir'\r\n    END;\r\n\r\n  INSERT INTO public.quadro_pessoal_movimentos (\r\n    empresa_id,\r\n    alocacao_id,\r\n    colaborador_id,\r\n    data,\r\n    periodo,\r\n    acao,\r\n    obra_origem_id,\r\n    obra_destino_id,\r\n    tipo_origem,\r\n    tipo_destino,\r\n    descricao_origem,\r\n    descricao_destino,\r\n    alterado_por,\r\n    perfil_autor,\r\n    nome_autor,\r\n    nome_colaborador,\r\n    tipo_acao,\r\n    alocacao_origem_id,\r\n    alocacao_destino_id,\r\n    antes,\r\n    depois\r\n  )\r\n  VALUES (\r\n    c.empresa_id,\r\n    q.id,\r\n    c.id,\r\n    q.data,\r\n    q.periodo,\r\n    CASE TG_OP\r\n      WHEN 'INSERT' THEN 'adicionada'\r\n      WHEN 'DELETE' THEN 'retirada'\r\n      ELSE 'alterada'\r\n    END,\r\n    (b->>'obra_id')::uuid,\r\n    (a->>'obra_id')::uuid,\r\n    b->>'tipo_alocacao',\r\n    a->>'tipo_alocacao',\r\n    b->>'descricao_livre',\r\n    a->>'descricao_livre',\r\n    u.id,\r\n    coalesce(u.funcao, 'sql_administrativo'),\r\n    coalesce(u.nome, session_user),\r\n    c.nome,\r\n    action,\r\n    (b->>'id')::uuid,\r\n    (a->>'id')::uuid,\r\n    b,\r\n    a\r\n  );\r\n\r\n  IF TG_OP = 'DELETE' THEN\r\n    RETURN OLD;\r\n  END IF;\r\n\r\n  RETURN NEW;\r\nEND\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "oid": "22675",
+      "name": "fn_rh_guardar_interno",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_rh_guardar_interno(jsonb,boolean,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_rh_guardar_interno(p_dados jsonb, p_simular boolean, p_importacao boolean)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_empresa uuid:=public.fn_rh_empresa(p_importacao); v_id uuid:=nullif(p_dados->>'id','')::uuid;\r\n  v_antes jsonb; v_patch jsonb:=coalesce(p_dados->'campos','{}'); v_result jsonb;\r\n  v_c public.colaboradores%rowtype; v_ct public.colaboradores_contratos%rowtype;\r\n  v_cp jsonb:=p_dados->'contrato'; v_niss text; v_count integer; v_alterado boolean;\r\n  v_novo boolean:=v_id is null; v_original_ct jsonb;\r\n  v_avisos jsonb:='[]'; v_pendencia text;\r\nbegin\r\n  perform pg_advisory_xact_lock(hashtextextended('rh:'||v_empresa::text,0));\r\n  if p_importacao and v_novo then raise exception 'A importação exige ID existente.'; end if;\r\n  if jsonb_typeof(v_patch) is distinct from 'object' then raise exception 'Campos inválidos.'; end if;\r\n  if exists(select 1 from jsonb_object_keys(v_patch) k where k not in\r\n    ('nome','funcao','nivel','valor_hora','nif','email','contacto','morada','data_admissao',\r\n     'data_nascimento','data_saida','codigo_rh','observacoes','seguranca_social_ok','seguro_ok','registo_trabalhador_ok')) then\r\n    raise exception 'Campos de RH desconhecidos.';\r\n  end if;\r\n  if not v_novo then\r\n    perform 1 from public.colaboradores where id=v_id and empresa_id=v_empresa for update;\r\n    if not found then raise exception 'Colaborador não encontrado nesta empresa.'; end if;\r\n    perform 1 from public.colaboradores_contratos where colaborador_id=v_id for update;\r\n    v_antes:=public.fn_rh_consultar(v_id)->0;\r\n  end if;\r\n  v_c:=jsonb_populate_record(null::public.colaboradores,coalesce(v_antes->'colaborador','{}')||v_patch);\r\n  if nullif(btrim(v_c.nome),'') is null or nullif(btrim(v_c.funcao),'') is null or v_c.data_admissao is null then\r\n    raise exception 'Nome, função e admissão são obrigatórios.';\r\n  end if;\r\n  if v_c.valor_hora<0 then raise exception 'Valor/hora não pode ser negativo.'; end if;\r\n  if v_c.data_saida<v_c.data_admissao or v_c.data_nascimento>v_c.data_admissao then raise exception 'Datas incompatíveis.'; end if;\r\n  if nullif(v_c.nif,'') is not null and v_c.nif !~ '^[0-9]{9}$' then raise exception 'NIF deve ter 9 algarismos.'; end if;\r\n  if nullif(v_c.email,'') is not null and v_c.email !~ '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' then raise exception 'Email inválido.'; end if;\r\n  if exists(select 1 from public.colaboradores c where c.empresa_id=v_empresa and c.id is distinct from v_id\r\n    and ((nullif(v_c.nif,'') is not null and c.nif=v_c.nif) or\r\n      (nullif(v_c.codigo_rh,'') is not null and c.codigo_rh=v_c.codigo_rh))) then\r\n    raise exception 'NIF ou código RH já pertence a outro colaborador.';\r\n  end if;\r\n  v_niss:=case when p_dados ? 'niss' then nullif(p_dados->>'niss','') else v_antes->>'niss' end;\r\n  if v_niss is not null and v_niss !~ '^[0-9]{11}$' then raise exception 'NISS deve ter 11 algarismos.'; end if;\r\n  if v_cp is not null and v_cp<>'null'::jsonb then\r\n    if jsonb_typeof(v_cp)<>'object' then raise exception 'Contrato inválido.'; end if;\r\n    if exists(select 1 from jsonb_object_keys(v_cp) k where k not in ('tipo_contrato','data_inicio','data_fim_prevista')) then\r\n      raise exception 'Campos de contrato desconhecidos.';\r\n    end if;\r\n    select count(*) into v_count from public.colaboradores_contratos where colaborador_id=v_id and estado='ativo';\r\n    if v_count>1 then raise exception 'Existem vários contratos ativos; rever antes de editar.'; end if;\r\n    select * into v_ct from public.colaboradores_contratos where colaborador_id=v_id and estado='ativo';\r\n    v_original_ct:=to_jsonb(v_ct);\r\n    v_ct:=jsonb_populate_record(v_ct,v_cp);\r\n    if not p_importacao and (v_ct.tipo_contrato is null or v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') or v_ct.data_inicio is null) then\r\n      raise exception 'Tipo e início do contrato são obrigatórios.';\r\n    end if;\r\n    if v_ct.tipo_contrato is not null and v_ct.tipo_contrato not in ('a_prazo','tempo_indeterminado') then\r\n      raise exception 'Tipo de contrato inválido.';\r\n    end if;\r\n    if v_ct.data_inicio is null then v_pendencia:='Início do contrato em falta.';\r\n    elsif v_ct.tipo_contrato='a_prazo' and v_ct.data_fim_prevista is null then v_pendencia:='Indique o fim previsto.';\r\n    elsif v_ct.data_fim_prevista<v_ct.data_inicio then v_pendencia:='Fim contratual anterior ao início.';\r\n    end if;\r\n    if v_pendencia is not null then\r\n      if not p_importacao then raise exception '%',v_pendencia; end if;\r\n      v_avisos:=v_avisos||jsonb_build_array('Contrato não alterado: '||v_pendencia||' Os restantes campos podem ser atualizados.');\r\n      v_cp:=null;\r\n    elsif v_ct.tipo_contrato='tempo_indeterminado' and v_ct.data_fim_prevista is not null then\r\n      if not p_importacao then raise exception 'Tempo indeterminado não tem fim previsto.'; end if;\r\n      -- Na importação parcial, vazio não autoriza apagar uma data anterior.\r\n      if v_cp ? 'data_fim_prevista' then\r\n        v_avisos:=v_avisos||jsonb_build_array('Contrato não alterado: tempo indeterminado com fim fornecido. Rever no cadastro individual.');\r\n        v_cp:=null;\r\n      else\r\n        v_avisos:=v_avisos||jsonb_build_array('Fim previsto existente preservado. Rever no cadastro individual o contrato sem termo.');\r\n      end if;\r\n    elsif v_ct.tipo_contrato is null then\r\n      v_avisos:=v_avisos||jsonb_build_array('Data contratual aceite; tipo de contrato por confirmar pelo RH.');\r\n    end if;\r\n  end if;\r\n  v_alterado:=v_novo or to_jsonb(v_c) is distinct from v_antes->'colaborador'\r\n    or v_niss is distinct from v_antes->>'niss'\r\n    or (v_cp is not null and v_cp<>'null'::jsonb and to_jsonb(v_ct) is distinct from v_original_ct);\r\n  -- Reimportar o mesmo conteúdo é um no-op, mesmo com a versão antiga do Excel.\r\n  if not v_novo and v_alterado and p_dados->>'versao' is distinct from v_antes->>'versao' then\r\n    raise exception 'Cadastro alterado entretanto. Reabra ou exporte novamente o modelo.';\r\n  end if;\r\n  if v_novo then\r\n    if coalesce(p_dados->>'alocacao_tipo','') not in ('obra','escritorio') then raise exception 'Indique a alocação inicial.'; end if;\r\n    if p_dados->>'alocacao_tipo'='obra' and not exists(select 1 from public.obras\r\n      where id=nullif(p_dados->>'obra_id','')::uuid and empresa_id=v_empresa and situacao in ('preparacao','em_curso')) then\r\n      raise exception 'Selecione uma obra ativa da empresa.';\r\n    end if;\r\n    if p_dados->>'alocacao_tipo'='escritorio' and nullif(p_dados->>'obra_id','') is not null then raise exception 'Escritório não tem obra.'; end if;\r\n    perform nullif(p_dados->>'epi_data','')::date;\r\n    perform nullif(p_dados->>'medicina_data','')::date;\r\n  end if;\r\n  if p_simular or not v_alterado then return jsonb_build_object('alterado',v_alterado,'id',v_id,'avisos',v_avisos); end if;\r\n  if v_novo then\r\n    v_id:=(public.fn_criar_colaborador_com_alocacao(v_c.nome,v_c.funcao,v_c.data_admissao,v_c.data_nascimento,\r\n      p_dados->>'alocacao_tipo',nullif(p_dados->>'obra_id','')::uuid,v_c.nivel,v_c.valor_hora,v_c.nif,v_c.email,v_c.contacto,v_c.morada)\r\n      ->'colaborador'->>'id')::uuid;\r\n  end if;\r\n  update public.colaboradores set nome=v_c.nome,funcao=v_c.funcao,nivel=v_c.nivel,valor_hora=v_c.valor_hora,\r\n    nif=v_c.nif,email=v_c.email,contacto=v_c.contacto,morada=v_c.morada,data_admissao=v_c.data_admissao,\r\n    data_nascimento=v_c.data_nascimento,data_saida=v_c.data_saida,codigo_rh=v_c.codigo_rh,observacoes=v_c.observacoes,\r\n    seguranca_social_ok=v_c.seguranca_social_ok,seguro_ok=v_c.seguro_ok,registo_trabalhador_ok=v_c.registo_trabalhador_ok\r\n    where id=v_id and empresa_id=v_empresa;\r\n  if v_novo then\r\n    if nullif(p_dados->>'epi_data','') is not null then\r\n      insert into public.epis(colaborador_id,tipo_epi,data_entrega,data_validade)\r\n      values(v_id,'Entrega inicial',(p_dados->>'epi_data')::date,null);\r\n    end if;\r\n    if nullif(p_dados->>'medicina_data','') is not null then\r\n      insert into public.medicina_trabalho(colaborador_id,data_ultima_consulta,resultado,data_proxima_consulta)\r\n      values(v_id,(p_dados->>'medicina_data')::date,'Consulta inicial registada na admissão',null);\r\n    end if;\r\n  elsif (v_antes->'colaborador'->>'data_saida') is distinct from v_c.data_saida::text then\r\n    perform public.fn_atualizar_colaborador_ciclo_vida(v_id,v_c.nome,v_c.funcao,v_c.data_admissao,\r\n      v_c.data_nascimento,v_c.data_saida,v_c.nivel,v_c.valor_hora,v_c.nif,v_c.email,v_c.contacto,v_c.morada);\r\n  end if;\r\n  insert into public.colaboradores_rh_privado(colaborador_id,niss) values(v_id,v_niss)\r\n    on conflict(colaborador_id) do update set niss=excluded.niss;\r\n  if v_cp is not null and v_cp<>'null'::jsonb then\r\n    if v_ct.id is null then\r\n      insert into public.colaboradores_contratos(colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado)\r\n      values(v_id,v_ct.tipo_contrato,v_ct.data_inicio,v_ct.data_fim_prevista,'ativo');\r\n    else\r\n      update public.colaboradores_contratos set tipo_contrato=v_ct.tipo_contrato,data_inicio=v_ct.data_inicio,\r\n        data_fim_prevista=v_ct.data_fim_prevista where id=v_ct.id;\r\n    end if;\r\n  end if;\r\n  v_result:=public.fn_rh_consultar(v_id)->0;\r\n  insert into public.rh_cadastro_auditoria(empresa_id,colaborador_id,utilizador_id,origem,antes,depois)\r\n    values(v_empresa,v_id,public.fn_utilizador_atual_id(),case when p_importacao then 'importacao_excel' else 'cadastro' end,v_antes,v_result);\r\n  return jsonb_build_object('alterado',true,'id',v_id,'avisos',v_avisos);\r\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "20875",
+      "name": "fn_criar_colaborador_com_alocacao",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_criar_colaborador_com_alocacao(p_nome text, p_funcao text, p_data_admissao date, p_data_nascimento date DEFAULT NULL::date, p_alocacao_tipo text DEFAULT 'obra'::text, p_obra_id uuid DEFAULT NULL::uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_empresa_id uuid;\r\n  v_utilizador_id uuid := public.fn_utilizador_atual_id();\r\n  v_colaborador public.colaboradores%rowtype;\r\n  v_alocacao public.quadro_pessoal_alocacao%rowtype;\r\n  v_semana_inicio date;\r\nbegin\r\n  if not (\r\n    public.fn_e_admin()\r\n    or public.fn_e_administrativo()\r\n  ) then\r\n    raise exception\r\n      'A criação de colaboradores está reservada ao Administrativo e à Gerência.';\r\n  end if;\r\n\r\n  if nullif(btrim(p_nome), '') is null\r\n     or nullif(btrim(p_funcao), '') is null\r\n     or p_data_admissao is null then\r\n    raise exception\r\n      'Nome, função e data de admissão são obrigatórios.';\r\n  end if;\r\n\r\n  if p_alocacao_tipo not in ('obra', 'escritorio') then\r\n    raise exception\r\n      'A alocação inicial deve ser uma obra ativa ou o Escritório.';\r\n  end if;\r\n\r\n  select u.empresa_id\r\n  into v_empresa_id\r\n  from public.utilizadores u\r\n  where u.id = v_utilizador_id;\r\n\r\n  if v_empresa_id is null and public.fn_e_admin() then\r\n    select e.id\r\n    into v_empresa_id\r\n    from public.empresas e\r\n    limit 1;\r\n  end if;\r\n\r\n  if v_empresa_id is null then\r\n    raise exception\r\n      'Não foi possível identificar a empresa do utilizador atual.';\r\n  end if;\r\n\r\n  if p_alocacao_tipo = 'obra' then\r\n    if p_obra_id is null or not exists (\r\n      select 1\r\n      from public.obras o\r\n      where o.id = p_obra_id\r\n        and coalesce(lower(o.situacao), '') not in (\r\n          'concluida',\r\n          'concluído',\r\n          'concluido',\r\n          'cancelada'\r\n        )\r\n    ) then\r\n      raise exception\r\n        'Selecione uma obra ativa válida para a alocação inicial.';\r\n    end if;\r\n  elsif p_obra_id is not null then\r\n    raise exception\r\n      'A alocação de Escritório não pode ficar ligada a uma obra.';\r\n  end if;\r\n\r\n  insert into public.colaboradores (\r\n    empresa_id,\r\n    nome,\r\n    funcao,\r\n    data_admissao,\r\n    data_nascimento,\r\n    data_saida\r\n  )\r\n  values (\r\n    v_empresa_id,\r\n    btrim(p_nome),\r\n    btrim(p_funcao),\r\n    p_data_admissao,\r\n    p_data_nascimento,\r\n    null\r\n  )\r\n  returning * into v_colaborador;\r\n\r\n  v_semana_inicio :=\r\n    p_data_admissao\r\n    - (extract(isodow from p_data_admissao)::integer - 1);\r\n\r\n  insert into public.quadro_pessoal_alocacao (\r\n    colaborador_id,\r\n    obra_id,\r\n    tipo_alocacao,\r\n    descricao_livre,\r\n    semana_inicio,\r\n    data,\r\n    periodo,\r\n    criado_por\r\n  )\r\n  values (\r\n    v_colaborador.id,\r\n    case\r\n      when p_alocacao_tipo = 'obra' then p_obra_id\r\n      else null\r\n    end,\r\n    p_alocacao_tipo,\r\n    case\r\n      when p_alocacao_tipo = 'escritorio' then 'Escritório'\r\n      else null\r\n    end,\r\n    v_semana_inicio,\r\n    p_data_admissao,\r\n    'dia_inteiro',\r\n    v_utilizador_id\r\n  )\r\n  returning * into v_alocacao;\r\n\r\n  return jsonb_build_object(\r\n    'colaborador', to_jsonb(v_colaborador),\r\n    'alocacao', to_jsonb(v_alocacao)\r\n  );\r\nend;\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "21077",
+      "name": "fn_criar_colaborador_com_alocacao",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid,text,numeric,text,text,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_criar_colaborador_com_alocacao(p_nome text, p_funcao text, p_data_admissao date, p_data_nascimento date, p_alocacao_tipo text, p_obra_id uuid, p_nivel text, p_valor_hora numeric, p_nif text, p_email text, p_contacto text, p_morada text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_empresa_id uuid;\r\n  v_utilizador_id uuid := public.fn_utilizador_atual_id();\r\n  v_colaborador public.colaboradores%rowtype;\r\n  v_alocacao public.quadro_pessoal_alocacao%rowtype;\r\n  v_semana_inicio date;\r\nbegin\r\n  if not (\r\n    public.fn_e_admin()\r\n    or public.fn_e_administrativo()\r\n  ) then\r\n    raise exception\r\n      'A criação de colaboradores está reservada ao Administrativo e à Gerência.';\r\n  end if;\r\n\r\n  if nullif(btrim(p_nome), '') is null\r\n     or nullif(btrim(p_funcao), '') is null\r\n     or p_data_admissao is null then\r\n    raise exception\r\n      'Nome, função e data de admissão são obrigatórios.';\r\n  end if;\r\n\r\n  if p_valor_hora is not null and p_valor_hora < 0 then\r\n    raise exception 'O valor/hora não pode ser negativo.';\r\n  end if;\r\n\r\n  if p_alocacao_tipo not in ('obra', 'escritorio') then\r\n    raise exception\r\n      'A alocação inicial deve ser uma obra ativa ou o Escritório.';\r\n  end if;\r\n\r\n  select u.empresa_id\r\n  into v_empresa_id\r\n  from public.utilizadores u\r\n  where u.id = v_utilizador_id;\r\n\r\n  if v_empresa_id is null and public.fn_e_admin() then\r\n    select e.id\r\n    into v_empresa_id\r\n    from public.empresas e\r\n    limit 1;\r\n  end if;\r\n\r\n  if v_empresa_id is null then\r\n    raise exception\r\n      'Não foi possível identificar a empresa do utilizador atual.';\r\n  end if;\r\n\r\n  if p_alocacao_tipo = 'obra' then\r\n    if p_obra_id is null or not exists (\r\n      select 1\r\n      from public.obras o\r\n      where o.id = p_obra_id\r\n        and coalesce(lower(o.situacao), '') not in (\r\n          'concluida',\r\n          'concluído',\r\n          'concluido',\r\n          'cancelada'\r\n        )\r\n    ) then\r\n      raise exception\r\n        'Selecione uma obra ativa válida para a alocação inicial.';\r\n    end if;\r\n  elsif p_obra_id is not null then\r\n    raise exception\r\n      'A alocação de Escritório não pode ficar ligada a uma obra.';\r\n  end if;\r\n\r\n  insert into public.colaboradores (\r\n    empresa_id,\r\n    nome,\r\n    funcao,\r\n    nivel,\r\n    valor_hora,\r\n    nif,\r\n    email,\r\n    contacto,\r\n    morada,\r\n    data_admissao,\r\n    data_nascimento,\r\n    data_saida\r\n  )\r\n  values (\r\n    v_empresa_id,\r\n    btrim(p_nome),\r\n    btrim(p_funcao),\r\n    nullif(btrim(p_nivel), ''),\r\n    p_valor_hora,\r\n    nullif(btrim(p_nif), ''),\r\n    nullif(btrim(p_email), ''),\r\n    nullif(btrim(p_contacto), ''),\r\n    nullif(btrim(p_morada), ''),\r\n    p_data_admissao,\r\n    p_data_nascimento,\r\n    null\r\n  )\r\n  returning *\r\n  into v_colaborador;\r\n\r\n  v_semana_inicio :=\r\n    p_data_admissao\r\n    - (extract(isodow from p_data_admissao)::integer - 1);\r\n\r\n  insert into public.quadro_pessoal_alocacao (\r\n    colaborador_id,\r\n    obra_id,\r\n    tipo_alocacao,\r\n    descricao_livre,\r\n    semana_inicio,\r\n    data,\r\n    periodo,\r\n    criado_por\r\n  )\r\n  values (\r\n    v_colaborador.id,\r\n    case\r\n      when p_alocacao_tipo = 'obra' then p_obra_id\r\n      else null\r\n    end,\r\n    p_alocacao_tipo,\r\n    case\r\n      when p_alocacao_tipo = 'escritorio' then 'Escritório'\r\n      else null\r\n    end,\r\n    v_semana_inicio,\r\n    p_data_admissao,\r\n    'dia_inteiro',\r\n    v_utilizador_id\r\n  )\r\n  returning *\r\n  into v_alocacao;\r\n\r\n  return jsonb_build_object(\r\n    'colaborador', to_jsonb(v_colaborador),\r\n    'alocacao', to_jsonb(v_alocacao)\r\n  );\r\nend;\r\n$function$\n"
+    },
+    {
+      "signature": "fn_pode_gerir_quadro(uuid)",
+      "name": "fn_pode_gerir_quadro",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_pode_gerir_quadro(p_obra_id uuid DEFAULT NULL::uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1\r\n    FROM public.utilizadores u\r\n    WHERE u.id = public.fn_utilizador_atual_id()\r\n      AND u.ativo IS TRUE\r\n      AND u.funcao IN ('gestao_plataforma', 'administrativo')\r\n      AND (\r\n        p_obra_id IS NULL\r\n        OR EXISTS (\r\n          SELECT 1\r\n          FROM public.obras o\r\n          WHERE o.id = p_obra_id\r\n            AND o.empresa_id = u.empresa_id\r\n        )\r\n      )\r\n  );\r\n$function$\n",
+      "acl": null
+    },
+    {
+      "signature": "fn_quadro_minha_obra(uuid)",
+      "name": "fn_quadro_minha_obra",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_quadro_minha_obra(p_obra_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1\r\n    FROM public.utilizadores u\r\n    JOIN public.obra_responsaveis r\r\n      ON r.utilizador_id = u.id\r\n     AND r.papel = 'encarregado'\r\n    JOIN public.obras o\r\n      ON o.id = r.obra_id\r\n     AND o.empresa_id = u.empresa_id\r\n    WHERE u.id = public.fn_utilizador_atual_id()\r\n      AND u.ativo IS TRUE\r\n      AND u.funcao = 'encarregado'\r\n      AND o.id = p_obra_id\r\n  );\r\n$function$\n",
+      "acl": null
+    },
+    {
+      "signature": "fn_pode_consultar_quadro()",
+      "name": "fn_pode_consultar_quadro",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_pode_consultar_quadro()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  select public.fn_e_administrativo()\r\n    or exists (\r\n      select 1 from public.utilizadores u\r\n      where u.id = public.fn_utilizador_atual_id()\r\n        and u.funcao in ('diretor_obra', 'encarregado')\r\n        and coalesce(u.ativo, true)\r\n    );\r\n$function$\n",
+      "acl": null
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "22543",
+      "name": "fn_listar_ponto_obra",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_listar_ponto_obra(date,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_listar_ponto_obra(p_data date DEFAULT CURRENT_DATE, p_obra_id uuid DEFAULT NULL::uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_atual public.utilizadores;\r\n  v_empresa_id uuid;\r\n  v_pode_gerir boolean;\r\nbegin\r\n  select * into v_atual from public.utilizadores\r\n  where id = public.fn_utilizador_atual_id() and ativo is true;\r\n  if v_atual.id is null then raise exception 'Utilizador sem perfil ativo.'; end if;\r\n  v_empresa_id := v_atual.empresa_id;\r\n  v_pode_gerir := public.fn_e_admin() or public.fn_e_administrativo();\r\n  if not v_pode_gerir and v_atual.funcao <> 'encarregado' then\r\n    raise exception 'O ponto estÃ¡ disponÃ­vel apenas para o Administrativo, GestÃ£o e Encarregados.' using errcode = '42501';\r\n  end if;\r\n  if p_obra_id is not null and not exists (\r\n    select 1 from public.obras o where o.id = p_obra_id and o.empresa_id = v_empresa_id\r\n      and (v_pode_gerir or public.fn_e_encarregado_da_obra(o.id))\r\n  ) then raise exception 'Sem permissÃ£o para consultar o ponto desta obra.' using errcode = '42501'; end if;\r\n\r\n  return jsonb_build_object(\r\n    'data', p_data,\r\n    'pode_validar', v_pode_gerir,\r\n    'obras', coalesce((\r\n      select jsonb_agg(jsonb_build_object('id', o.id, 'numero', o.numero, 'nome', o.nome) order by o.numero, o.nome)\r\n      from public.obras o\r\n      where o.empresa_id = v_empresa_id\r\n        and o.situacao in ('preparacao','em_curso','receb_provisoria')\r\n        and (v_pode_gerir or public.fn_e_encarregado_da_obra(o.id))\r\n    ), '[]'::jsonb),\r\n    'linhas', case when p_obra_id is null then '[]'::jsonb else coalesce((\r\n      with eventos as (\r\n        select q.*, slot.periodo_efetivo\r\n        from public.quadro_pessoal_alocacao q\r\n        join public.colaboradores c on c.id = q.colaborador_id and c.empresa_id = v_empresa_id\r\n        cross join lateral unnest(case when q.periodo = 'dia_inteiro'\r\n          then array['manha','tarde']::text[] else array[q.periodo]::text[] end) slot(periodo_efetivo)\r\n        where q.data <= p_data and c.data_saida is null\r\n      ), efetivos as (\r\n        select distinct on (colaborador_id, periodo_efetivo)\r\n          colaborador_id, obra_id, tipo_alocacao, periodo_efetivo, data, criado_em\r\n        from eventos\r\n        order by colaborador_id, periodo_efetivo, data desc, criado_em desc, id desc\r\n      ), equipa as (\r\n        select e.colaborador_id, e.obra_id,\r\n          array_agg(e.periodo_efetivo order by e.periodo_efetivo) as periodos\r\n        from efetivos e\r\n        where e.obra_id = p_obra_id and e.tipo_alocacao = 'obra'\r\n        group by e.colaborador_id, e.obra_id\r\n      )\r\n      select jsonb_agg(jsonb_build_object(\r\n        'colaborador_id', c.id,\r\n        'nome', c.nome,\r\n        'funcao', c.funcao,\r\n        'periodos', eq.periodos,\r\n        'ponto', case when p.id is null then null else to_jsonb(p) end,\r\n        'ausencia', case when a.id is null then null else to_jsonb(a) end\r\n      ) order by\r\n        case\r\n          when lower(coalesce(c.funcao,'')) like '%encarreg%' then 1\r\n          when lower(coalesce(c.funcao,'')) like '%pedreiro%' then 2\r\n          when lower(coalesce(c.funcao,'')) like '%servente%' then 3\r\n          else 4 end,\r\n        c.nome)\r\n      from equipa eq\r\n      join public.colaboradores c on c.id = eq.colaborador_id\r\n      left join public.ponto_pessoal_obra p\r\n        on p.colaborador_id = c.id and p.obra_id = p_obra_id and p.data = p_data\r\n      left join public.ausencias a\r\n        on a.colaborador_id = c.id and a.data = p_data\r\n    ), '[]'::jsonb) end\r\n  );\r\nend;\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "oid": "22544",
+      "name": "fn_guardar_ponto_obra",
+      "owner": "postgres",
+      "definer": true,
+      "signature": "fn_guardar_ponto_obra(uuid,uuid,date,text,time without time zone,time without time zone,time without time zone,time without time zone,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_guardar_ponto_obra(p_obra_id uuid, p_colaborador_id uuid, p_data date, p_estado text, p_entrada_manha time without time zone DEFAULT NULL::time without time zone, p_saida_manha time without time zone DEFAULT NULL::time without time zone, p_entrada_tarde time without time zone DEFAULT NULL::time without time zone, p_saida_tarde time without time zone DEFAULT NULL::time without time zone, p_observacao text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\ndeclare\r\n  v_atual public.utilizadores;\r\n  v_empresa_id uuid;\r\n  v_pode_gerir boolean;\r\n  v_periodos text[];\r\n  v_horas numeric(5,2);\r\n  v_registo public.ponto_pessoal_obra;\r\nbegin\r\n  select * into v_atual from public.utilizadores\r\n  where id = public.fn_utilizador_atual_id() and ativo is true;\r\n  if v_atual.id is null then raise exception 'Utilizador sem perfil ativo.'; end if;\r\n  v_empresa_id := v_atual.empresa_id;\r\n  v_pode_gerir := public.fn_e_admin() or public.fn_e_administrativo();\r\n  if not v_pode_gerir and not public.fn_e_encarregado_da_obra(p_obra_id) then\r\n    raise exception 'Sem permissÃ£o para registar o ponto desta obra.' using errcode = '42501';\r\n  end if;\r\n  if p_estado not in ('presente','falta_com_justificacao','falta_sem_justificacao') then\r\n    raise exception 'Estado de presenÃ§a invÃ¡lido.';\r\n  end if;\r\n  if p_estado = 'falta_com_justificacao' and nullif(btrim(p_observacao), '') is null then\r\n    raise exception 'Indique a justificaÃ§Ã£o apresentada pelo colaborador.';\r\n  end if;\r\n\r\n  with eventos as (\r\n    select q.*, slot.periodo_efetivo\r\n    from public.quadro_pessoal_alocacao q\r\n    cross join lateral unnest(case when q.periodo = 'dia_inteiro'\r\n      then array['manha','tarde']::text[] else array[q.periodo]::text[] end) slot(periodo_efetivo)\r\n    where q.colaborador_id = p_colaborador_id and q.data <= p_data\r\n  ), efetivos as (\r\n    select distinct on (periodo_efetivo) obra_id, tipo_alocacao, periodo_efetivo\r\n    from eventos order by periodo_efetivo, data desc, criado_em desc, id desc\r\n  )\r\n  select array_agg(periodo_efetivo order by periodo_efetivo) into v_periodos\r\n  from efetivos where obra_id = p_obra_id and tipo_alocacao = 'obra';\r\n\r\n  if coalesce(cardinality(v_periodos), 0) = 0 then\r\n    raise exception 'Este colaborador nÃ£o estÃ¡ alocado a esta obra na data indicada.';\r\n  end if;\r\n  if not exists (select 1 from public.colaboradores c where c.id = p_colaborador_id and c.empresa_id = v_empresa_id) then\r\n    raise exception 'Colaborador inexistente ou fora da empresa.';\r\n  end if;\r\n  if p_estado = 'presente' and exists (\r\n    select 1 from public.ausencias a\r\n    where a.colaborador_id = p_colaborador_id and a.data = p_data\r\n      and (a.tipo = 'ferias' or a.estado in ('confirmada','justificada'))\r\n  ) then\r\n    raise exception 'Este colaborador tem uma ausÃªncia ou fÃ©rias jÃ¡ confirmadas nesta data.';\r\n  end if;\r\n\r\n  if p_estado = 'presente' then\r\n    if 'manha' = any(v_periodos) and (p_entrada_manha is null or p_saida_manha is null or p_saida_manha <= p_entrada_manha) then\r\n      raise exception 'Preencha um horÃ¡rio vÃ¡lido para a manhÃ£.';\r\n    end if;\r\n    if 'tarde' = any(v_periodos) and (p_entrada_tarde is null or p_saida_tarde is null or p_saida_tarde <= p_entrada_tarde) then\r\n      raise exception 'Preencha um horÃ¡rio vÃ¡lido para a tarde.';\r\n    end if;\r\n    if p_saida_manha is not null and p_entrada_tarde is not null and p_entrada_tarde < p_saida_manha then\r\n      raise exception 'Os perÃ­odos da manhÃ£ e da tarde nÃ£o podem sobrepor-se.';\r\n    end if;\r\n    if not ('manha'=any(v_periodos)) then p_entrada_manha:=null; p_saida_manha:=null; end if;\r\n    if not ('tarde'=any(v_periodos)) then p_entrada_tarde:=null; p_saida_tarde:=null; end if;\r\n    v_horas := public.fn_ponto_horas(\r\n      p_entrada_manha, p_saida_manha, p_entrada_tarde, p_saida_tarde\r\n    );\r\n    if v_horas <= 0 or v_horas > 16 then raise exception 'O total diÃ¡rio deve estar entre 0 e 16 horas.'; end if;\r\n    if exists (\r\n      select 1 from public.ponto_pessoal_obra outro\r\n      where outro.colaborador_id=p_colaborador_id and outro.data=p_data\r\n        and outro.obra_id<>p_obra_id and outro.estado='presente'\r\n        and (\r\n          (p_entrada_manha is not null and outro.entrada_manha is not null and p_entrada_manha < outro.saida_manha and outro.entrada_manha < p_saida_manha)\r\n          or (p_entrada_manha is not null and outro.entrada_tarde is not null and p_entrada_manha < outro.saida_tarde and outro.entrada_tarde < p_saida_manha)\r\n          or (p_entrada_tarde is not null and outro.entrada_manha is not null and p_entrada_tarde < outro.saida_manha and outro.entrada_manha < p_saida_tarde)\r\n          or (p_entrada_tarde is not null and outro.entrada_tarde is not null and p_entrada_tarde < outro.saida_tarde and outro.entrada_tarde < p_saida_tarde)\r\n        )\r\n    ) then raise exception 'O horÃ¡rio sobrepÃµe-se ao ponto deste colaborador noutra obra.'; end if;\r\n  else\r\n    v_horas := 0;\r\n    p_entrada_manha := null; p_saida_manha := null;\r\n    p_entrada_tarde := null; p_saida_tarde := null;\r\n  end if;\r\n\r\n  insert into public.ponto_pessoal_obra(\r\n    empresa_id, obra_id, colaborador_id, data, periodos_alocados, estado,\r\n    entrada_manha, saida_manha, entrada_tarde, saida_tarde, horas,\r\n    observacao, justificacao_estado, registado_por, atualizado_por, atualizado_em\r\n  ) values (\r\n    v_empresa_id, p_obra_id, p_colaborador_id, p_data, v_periodos, p_estado,\r\n    p_entrada_manha, p_saida_manha, p_entrada_tarde, p_saida_tarde, v_horas,\r\n    nullif(btrim(p_observacao), ''),\r\n    case when p_estado='falta_com_justificacao' then 'pendente' else 'nao_aplicavel' end,\r\n    v_atual.id, v_atual.id, now()\r\n  ) on conflict (colaborador_id, obra_id, data) do update set\r\n    periodos_alocados = excluded.periodos_alocados,\r\n    estado = excluded.estado,\r\n    entrada_manha = excluded.entrada_manha,\r\n    saida_manha = excluded.saida_manha,\r\n    entrada_tarde = excluded.entrada_tarde,\r\n    saida_tarde = excluded.saida_tarde,\r\n    horas = excluded.horas,\r\n    observacao = excluded.observacao,\r\n    justificacao_estado = excluded.justificacao_estado,\r\n    atualizado_por = v_atual.id,\r\n    atualizado_em = now()\r\n  returning * into v_registo;\r\n\r\n  return to_jsonb(v_registo);\r\nend;\r\n$function$\n"
+    }
+  ]
+}

@@ -8,8 +8,9 @@ const saveEnd = app.indexOf("async function removeWorkforceAllocation()", saveSt
 const saveAllocation = app.slice(saveStart, saveEnd);
 
 test("alocar atualiza o estado local sem recarregar todos os dados", () => {
-  assert.match(saveAllocation, /Prefer: "return=representation"/);
-  assert.match(saveAllocation, /replaceLocalAllocations/);
+  assert.match(saveAllocation, /workforceAllocationClient\.execute/);
+  assert.match(saveAllocation, /applyWorkforceResult/);
+  assert.match(app, /replaceLocalAllocations/);
   assert.doesNotMatch(saveAllocation, /loadTeamData\(true\)/);
 });
 
@@ -18,5 +19,5 @@ test("a atualização da grelha preserva o scroll da página e da grelha", () =>
   assert.match(app, /window\.scrollX/);
   assert.match(app, /window\.scrollTo\(pagePosition\.x, pagePosition\.y\)/);
   assert.match(app, /element\.scrollTo\(\{ top: position\.top, left: position\.left/);
-  assert.match(saveAllocation, /renderTeamPreservingScroll\(\)/);
+  assert.match(app, /renderTeamPreservingScroll\(\)/);
 });

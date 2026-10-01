@@ -1,9 +1,10 @@
+import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=1";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=7";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
 import { createPlanningModule } from "./planning.js?v=16";
 import { createSubcontractorsModule } from "./subcontractors.js?v=8";
-import { accessFor, effectiveAccessRole } from "./access-control.js?v=15";
+import { accessFor, effectiveAccessRole } from "./access-control.js?v=16";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
@@ -855,17 +856,20 @@ function canManageOvertime() {
   return canManageTeam();
 }
 
+function canReadWorkforce() {
+  return accessContext.profile?.ativo === true && (canManageTeam() || ["diretor_obra", "adjunto", "encarregado"].includes(effectiveRole()));
+}
+
 function canManageWorkforce() {
-  return canManageTeam() || ["diretor_obra", "encarregado"].includes(effectiveRole());
+  return accessContext.profile?.ativo === true && (canManageTeam() || effectiveRole() === "encarregado")
+    && Boolean(teamData.quadroContext) && teamData.quadroReady === true
+    && (teamData.quadroContext.can_manage_global === true || teamData.quadroContext.edit_work_ids.length > 0);
 }
 
 function canManageWorkforceWork(workId, destinationType = "obra") {
-  if (destinationType === "escritorio") return !workId && canManageTeam();
-  if (destinationType !== "obra") return false;
-  if (!workId) return false;
-  if (canManageTeam()) return true;
-  return ["diretor_obra", "encarregado"].includes(effectiveRole())
-    && works.some(work => work.id === workId);
+  if (!canManageWorkforce() || !teamData.quadroContext) return false;
+  if (destinationType !== "obra") return !workId && ["escritorio", "garantia", "pontual"].includes(destinationType) && teamData.quadroContext.can_manage_global === true;
+  return Boolean(workId) && teamData.quadroContext.edit_work_ids.includes(workId);
 }
 
 function canOpenTeamTab(tab) {
@@ -977,7 +981,7 @@ function applyAccessVisibility() {
   $(".new-invoice").hidden = !canInsertInvoices();
   $("#new-work").hidden = !hasFullAccess();
   $("#edit-workforce").hidden = !canManageWorkforce();
-  $("#workforce-movements").hidden = !canManageWorkforce();
+  $("#workforce-movements").hidden = !canReadWorkforce();
   document.querySelectorAll("[data-team-tab]").forEach(button => {
     button.hidden = !canOpenTeamTab(button.dataset.teamTab);
   });
@@ -1721,7 +1725,7 @@ function renderWorkforceMagnet(person, allocation = null) {
 
 function effectiveWorkforceForDate(events, date, personById) {
   const result = [];
-  const dayEvents = events.filter(item => item.data === date);
+  const dayEvents = allocationsForDate(events, date);
   [...new Set(dayEvents.map(item => item.colaborador_id))].forEach(personId => {
     const person = personById.get(personId);
     if (!person || !workforceRoleClass(person)) return;
@@ -2051,6 +2055,8 @@ async function reactivateCollaborator(personId) {
 }
 
 function renderTeam() {
+  $("#edit-workforce").hidden = !canManageWorkforce();
+  $("#workforce-movements").hidden = !canReadWorkforce();
   renderWorkforceLineEditor();
   const lifecycleActions = $("#team-lifecycle-actions");
   if (lifecycleActions && !$("#rh-import-button")) {
@@ -2072,10 +2078,11 @@ function renderTeam() {
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const isForemanReadOnly = effectiveRole() === "encarregado";
-  const boardPeople = isForemanReadOnly && teamData.boardCollaborators.length ? teamData.boardCollaborators : collaborators;
-  const boardWorkList = isForemanReadOnly && teamData.boardWorks.length ? teamData.boardWorks : works;
-  const workById = new Map([...works, ...boardWorkList].map(work => [work.id, work]));
-  const personById = new Map([...collaborators, ...boardPeople].map(person => [person.id, person]));
+  const boardPeople = teamData.quadroContext ? teamData.boardCollaborators : [];
+  const boardWorkList = teamData.quadroContext ? teamData.boardWorks : [];
+  const workById = new Map([...boardWorkList, ...works].map(work => [work.id, work]));
+  const personById = new Map([...boardPeople, ...collaborators].map(person => [person.id, person]));
+  const boardPersonById = new Map(boardPeople.map(person => [person.id, person]));
   const activeAbsences = teamData.absences.filter(item => personById.has(item.colaborador_id));
   const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
   const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
@@ -2139,31 +2146,19 @@ function renderTeam() {
       return `<article class="workforce-grid team-work-row">
         <div class="team-work-name">${rowHeading}</div>
         ${boardWeeks.map((week, weekIndex) => {
-          let previousSignature = "";
-          let previousEffective = [];
           return `<div class="workforce-week-cell ${weekIndex === 1 ? "current" : ""}">${weekdays.map((day, dayIndex) => {
             const date = addDaysIso(week, dayIndex);
-            const allExact = effectiveWorkforceForDate(allocations, date, personById);
+            const allExact = effectiveWorkforceForDate(allocations, date, boardPersonById);
             const exact = allExact.filter(item => item.row_key === row.key);
-            const carried = previousEffective.map(previous => {
-              const reassignedSlots = allExact.filter(item => item.person.id === previous.person.id && item.row_key !== row.key).flatMap(item => item.slots);
-              return { ...previous, slots: previous.slots.filter(slot => !reassignedSlots.includes(slot)) };
-            }).filter(item => item.slots.length);
-            const effective = exact.length ? exact : carried;
-            const signature = workforceStateSignature(effective);
-            const unchanged = dayIndex > 0 && !exact.length && signature && signature === previousSignature;
-            previousSignature = signature;
-            previousEffective = effective;
+            const effective = exact;
             const functionTint = workforceFunctionTint(effective);
             const absence = workforceAbsencePresentation(activeAbsences, effective, date);
             const content = !effective.length
               ? '<span class="no-workforce" title="Sem equipa nesta obra"></span>'
-              : unchanged
-                ? '<span class="workforce-arrow" title="Equipa sem alterações">→</span>'
-                : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
+              : effective.sort((a, b) => compareWorkforcePeople(a.person, b.person)).map(item => renderWorkforceMagnet(item.person, item.allocation)).join("");
             const holiday = activeHoliday(date);
             const absenceBadge = absence ? `<span class="workforce-absence-badge ${absence.visualType}" tabindex="0" role="button" aria-label="${safeText(absence.tooltip)}" data-absence-detail data-tooltip="${safeText(absence.tooltip)}">${absence.badge}</span>` : "";
-            return `<div class="workforce-day-cell ${functionTint ? "function-tinted" : ""} ${absence ? `has-absence absence-${absence.visualType}` : ""} ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : unchanged ? "unchanged-day" : "changed-day"}" ${functionTint ? `style="--function-row-tint:${functionTint}"` : ""} title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}${absenceBadge}</div>`;
+            return `<div class="workforce-day-cell ${functionTint ? "function-tinted" : ""} ${absence ? `has-absence absence-${absence.visualType}` : ""} ${dayIndex >= 5 ? "weekend" : ""} ${holiday ? "holiday" : ""} ${!effective.length ? "empty-day" : "changed-day"}" ${functionTint ? `style="--function-row-tint:${functionTint}"` : ""} title="${holiday ? safeText(holiday.nome) : ""}" data-workforce-cell data-work-id="${row.workId || ""}" data-allocation-type="${row.type}" data-description="${encodeURIComponent(row.description || "")}" data-date="${date}">${content}${absenceBadge}</div>`;
           }).join("")}</div>`;
         }).join("")}
       </article>`;
@@ -2395,15 +2390,11 @@ async function renameWorkforceLine(type, oldDescription, newDescription) {
     return;
   }
 
-  const response = await supabase(`quadro_pessoal_alocacao?tipo_alocacao=eq.${encodeURIComponent(type)}&descricao_livre=eq.${encodeURIComponent(oldName)}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ descricao_livre: newName }),
-  });
-  if (!response.ok) {
-    toast(`Não foi possível alterar o nome da linha: ${await response.text()}`, "error");
-    pendingWorkforceRows = pendingWorkforceRows.map(row =>
-      row.type === type && row.description === newName ? { ...row, description: oldName } : row);
+  try {
+    await workforceAllocationClient.execute("renomear_linha", { tipo_alocacao: type, descricao_anterior: oldName, descricao_nova: newName });
+  } catch (error) {
+    toast(error.message, "error");
+    pendingWorkforceRows = pendingWorkforceRows.map(row => row.type === type && row.description === newName ? { ...row, description: oldName } : row);
     renderTeam();
     return;
   }
@@ -2411,112 +2402,63 @@ async function renameWorkforceLine(type, oldDescription, newDescription) {
   toast("Nome da linha atualizado.");
 }
 
-async function saveWorkforceAllocation(personId, date, target) {
-  const person = collaborators.find(item => item.id === personId);
-  if (!person) return;
-  const type = ["escritorio", "garantia", "pontual"].includes(target?.type) ? target.type : "obra";
-  const workId = type === "obra" ? target?.workId || null : null;
-  const description = type === "obra" ? null : type === "escritorio" ? "Escritório" : String(target?.description || "").trim();
-  if (!canManageWorkforceWork(workId, type)) {
-    toast(type === "obra" ? "Só pode alterar o quadro das obras pelas quais é responsável." : "As linhas de Escritório, garantia e trabalhos pontuais são geridas pelo Administrativo ou pela Gerência.", "error");
-    return;
-  }
-  const targetKey = workforceRowKey({ obra_id: workId, tipo_alocacao: type, descricao_livre: description });
-  if (!targetKey || (type !== "obra" && !description)) {
-    toast("A linha de destino não está corretamente identificada.", "error");
-    return;
-  }
-  const period = selectedWorkforcePeriod;
-  const vacation = teamData.absences.find(item => item.colaborador_id === personId && item.data === date && isVacation(item));
-  if (vacation) {
-    toast(`${shortPersonName(person.nome)} está de férias em ${formatOptionalDate(date)} e não pode ser colocado no quadro.`, "error");
-    return;
-  }
-  const dayAllocations = teamData.allocations.filter(item => item.colaborador_id === personId && item.data === date);
-  const conflicting = dayAllocations.filter(item => period === "dia_inteiro" || item.periodo === "dia_inteiro" || item.periodo === period);
-  const alreadyThere = conflicting.some(item => workforceRowKey(item) === targetKey && item.periodo === period);
-  if (alreadyThere) {
-    toast("O colaborador já se encontra nessa posição.");
-    return;
-  }
-  const allowsMultipleWorks = isWorkforceForeman(person);
-  if (!allowsMultipleWorks && period !== "dia_inteiro" && dayAllocations.some(item => item.periodo === "dia_inteiro")) {
-    toast("Retire primeiro a alocação de dia inteiro antes de dividir o dia.", "error");
-    return;
-  }
-  const currentUser = teamData.users.find(user => user.auth_user_id === session?.user?.id);
-  $("#workforce-edit-message").textContent = `A guardar ${shortPersonName(person.nome)}…`;
-  let response = null;
-  let removedDay = false;
-  if (!allowsMultipleWorks && period === "dia_inteiro" && dayAllocations.length) {
-    response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}`, { method: "DELETE" });
-    if (!response.ok) {
-      toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
-      return;
-    }
-    removedDay = true;
-  } else if (!allowsMultipleWorks && conflicting.length) {
-    response = await supabase(`quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(personId)}&data=eq.${date}&periodo=eq.${period}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ obra_id: workId, tipo_alocacao: type, descricao_livre: description, criado_por: currentUser?.id || null }),
-    });
-    if (response.ok) {
-      const updatedRows = await returnedAllocationRows(response);
-      replaceLocalAllocations(item => item.colaborador_id === personId && item.data === date && item.periodo === period, updatedRows);
-      selectedWorkforceSourceDate = "";
-      selectedWorkforceSourcePeriod = "";
-      selectedWorkforceSourceRowKey = "";
-      selectedWorkforceSourceIds = [];
-      renderTeamPreservingScroll();
-      $("#remove-workforce-allocation").hidden = true;
-      $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
-      toast("Alocação adicionada. O íman continua selecionado.");
-      return;
-    }
-  }
-  if (!response || response.ok) {
-    response = await supabase("quadro_pessoal_alocacao", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ colaborador_id: personId, obra_id: workId, tipo_alocacao: type, descricao_livre: description, semana_inicio: mondayIso(date), data: date, periodo: period, criado_por: currentUser?.id || null }),
-    });
-  }
-  if (!response.ok) {
-    toast(await friendlyApiError(response, "Não foi possível alterar o quadro."), "error");
-    $("#workforce-edit-message").textContent = "A alteração falhou. Confirme as permissões e tente novamente.";
-    return;
-  }
-  const insertedRows = await returnedAllocationRows(response);
-  replaceLocalAllocations(item => removedDay && item.colaborador_id === personId && item.data === date, insertedRows);
+let workforceSaving = false;
+const workforceAllocationClient = createWorkforceAllocationClient({ supabase, reload: () => loadTeamData(true) });
+
+function workforceRevision(personId, date) {
+  return teamData.quadroContext?.revisions?.find(row => row.colaborador_id === personId && row.data === date)?.revisao || 0;
+}
+
+function applyWorkforceResult(personId, date, result) {
+  replaceLocalAllocations(item => item.colaborador_id === personId && item.data === date, result.allocations);
+  const context = teamData.quadroContext;
+  if (context) context.revisions = [...context.revisions.filter(row => row.colaborador_id !== personId || row.data !== date),
+    { colaborador_id: personId, data: date, revisao: result.revision }];
   selectedWorkforceSourceDate = "";
   selectedWorkforceSourcePeriod = "";
   selectedWorkforceSourceRowKey = "";
   selectedWorkforceSourceIds = [];
   renderTeamPreservingScroll();
   $("#remove-workforce-allocation").hidden = true;
-  $("#workforce-edit-message").textContent = `${shortPersonName(person.nome)} continua selecionado. Clique nos próximos dias/obras.`;
-  toast("Alocação adicionada. O íman continua selecionado.");
+}
+
+async function saveWorkforceAllocation(personId, date, target) {
+  if (workforceSaving || !teamData.quadroReady) return;
+  const person = teamData.boardCollaborators.find(item => item.id === personId);
+  if (!person) return;
+  const type = ["escritorio", "garantia", "pontual"].includes(target?.type) ? target.type : "obra";
+  const workId = type === "obra" ? target?.workId || null : null;
+  const description = type === "obra" ? null : type === "escritorio" ? "Escritório" : String(target?.description || "").trim();
+  if (!canManageWorkforceWork(workId, type)) { toast("Não tem permissão para alterar este destino.", "error"); return; }
+  if (!workforceRowKey({ obra_id: workId, tipo_alocacao: type, descricao_livre: description }) || (type !== "obra" && !description)) {
+    toast("A linha de destino não está corretamente identificada.", "error"); return;
+  }
+  workforceSaving = true;
+  $("#workforce-edit-message").textContent = "A guardar " + shortPersonName(person.nome) + "…";
+  try {
+    const result = await workforceAllocationClient.execute("alocar", { colaborador_id: personId, data: date,
+      periodo: selectedWorkforcePeriod, obra_id: workId, tipo_alocacao: type, descricao_livre: description,
+      expected_revision: workforceRevision(personId, date) });
+    applyWorkforceResult(personId, date, result);
+    $("#workforce-edit-message").textContent = shortPersonName(person.nome) + " continua selecionado. Clique nos próximos dias/obras.";
+    toast("Alocação guardada. O íman continua selecionado.");
+  } catch (error) {
+    toast(error.message, "error");
+    $("#workforce-edit-message").textContent = error.message;
+  } finally { workforceSaving = false; }
 }
 
 async function removeWorkforceAllocation() {
-  if (!selectedWorkforcePersonId || !selectedWorkforceSourceDate || !selectedWorkforceSourcePeriod) return;
-  const sourceIds = selectedWorkforceSourceIds.filter(Boolean);
-  const query = sourceIds.length
-    ? `quadro_pessoal_alocacao?id=in.(${sourceIds.map(encodeURIComponent).join(",")})`
-    : `quadro_pessoal_alocacao?colaborador_id=eq.${encodeURIComponent(selectedWorkforcePersonId)}&data=eq.${selectedWorkforceSourceDate}&periodo=eq.${selectedWorkforceSourcePeriod}`;
-  const response = await supabase(query, { method: "DELETE" });
-  if (!response.ok) {
-    toast(`Não foi possível retirar a alocação: ${await response.text()}`, "error");
-  } else {
-    selectedWorkforceSourceDate = "";
-    selectedWorkforceSourcePeriod = "";
-    selectedWorkforceSourceRowKey = "";
-    selectedWorkforceSourceIds = [];
-    $("#remove-workforce-allocation").hidden = true;
-    await loadTeamData(true);
+  if (workforceSaving || !teamData.quadroReady || !selectedWorkforcePersonId || !selectedWorkforceSourceDate || !selectedWorkforceSourceIds.length) return;
+  workforceSaving = true;
+  const personId = selectedWorkforcePersonId, date = selectedWorkforceSourceDate;
+  try {
+    const result = await workforceAllocationClient.execute("remover", { colaborador_id: personId, data: date,
+      ids: selectedWorkforceSourceIds.filter(Boolean), expected_revision: workforceRevision(personId, date) });
+    applyWorkforceResult(personId, date, result);
     toast("Alocação retirada.");
-  }
+  } catch (error) { toast(error.message, "error"); }
+  finally { workforceSaving = false; }
 }
 
 function openVacationDaysDialog(personId, week) {
@@ -2591,7 +2533,7 @@ async function loadTeamData(force = false) {
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
-    canManageWorkforce() ? supabase(`quadro_pessoal_alocacao?select=id,colaborador_id,obra_id,tipo_alocacao,descricao_livre,semana_inicio,data,periodo&semana_inicio=gte.${boardStart}&semana_inicio=lte.${addDaysIso(selectedTeamWeek, 14)}&order=data`) : Promise.resolve(new Response("[]", { status: 200 })),
+    canReadWorkforce() ? supabase("rpc/fn_quadro_contexto", { method: "POST", body: JSON.stringify({ p_inicio: boardStart, p_fim: boardEnd }) }) : Promise.resolve(Response.json({ version: 1, allocations: [], revisions: [], can_manage_global: false, read_work_ids: [], edit_work_ids: [], people: [], works: [] })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     canManageAbsences() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
@@ -2607,6 +2549,15 @@ async function loadTeamData(force = false) {
   ]);
   const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias", "feriados"];
   const payloads = await Promise.all(results.map(async (result, index) => result.ok ? result.json() : { failed: names[index], detail: await result.text() }));
+  const quadroContext = payloads[0];
+  if (!quadroContext?.failed && (quadroContext?.version !== 1 || !Array.isArray(quadroContext.allocations) || !Array.isArray(quadroContext.revisions) || !Array.isArray(quadroContext.edit_work_ids) || !Array.isArray(quadroContext.people) || !Array.isArray(quadroContext.works))) {
+    payloads[0] = { failed: "alocações", detail: "Resposta inválida do contexto controlado." };
+  } else if (!quadroContext?.failed) {
+    teamData.quadroContext = quadroContext;
+    teamData.boardCollaborators = quadroContext.people;
+    teamData.boardWorks = quadroContext.works;
+    payloads[0] = quadroContext.allocations;
+  }
   const failures = payloads.filter(payload => payload?.failed);
   [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.slice(0, 11).map(payload => Array.isArray(payload) ? payload : []);
   const globalPayload = payloads[11];
@@ -2614,6 +2565,7 @@ async function loadTeamData(force = false) {
   if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
   const essentialFailures = failures.filter(item => ["alocações", "ausências", "mapa global de férias"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
+  teamData.quadroReady = essentialFailures.length === 0 && Boolean(teamData.quadroContext);
   const documentFailures = failures.filter(item => ["anexos de ausências", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos"].includes(item.failed));
   if (documentFailures.length) teamData.error = `${teamData.error ? `${teamData.error} ` : ""}Não foi possível ler ${documentFailures.map(item => item.failed).join(", ")}. Confirme as migrações de Equipa e documentos de RH.`;
   renderTeam();
@@ -2640,7 +2592,7 @@ async function openWorkforceMovements() {
   try {
     let rows = [];
     if (isSupabaseConfigured) {
-      const response = await supabase(`quadro_pessoal_movimentos?select=id,colaborador_id,data,periodo,acao,obra_origem_id,obra_destino_id,tipo_origem,tipo_destino,descricao_origem,descricao_destino,alterado_por,alterado_em&data=gte.${monthStart}&data=lte.${monthEnd}&order=alterado_em.desc`);
+      const response = await supabase(`quadro_pessoal_movimentos?select=id,colaborador_id,data,periodo,acao,obra_origem_id,obra_destino_id,tipo_origem,tipo_destino,descricao_origem,descricao_destino,alterado_por,alterado_em,nome_autor,nome_colaborador,origem_operacao&data=gte.${monthStart}&data=lte.${monthEnd}&order=alterado_em.desc`);
       if (!response.ok) throw new Error(await friendlyApiError(response, "Não foi possível carregar as movimentações."));
       rows = await response.json();
     }
@@ -2656,11 +2608,11 @@ async function openWorkforceMovements() {
       return `${type === "garantia" ? "Garantia" : "Pontual"} · ${row[`descricao_${side}`] || "Sem designação"}`;
     };
     const movements = rows.map(row => ({
-      person: collaborators.find(item => item.id === row.colaborador_id),
+      person: collaborators.find(item => item.id === row.colaborador_id) || { nome: row.nome_colaborador },
       date: row.data,
       from: place(row, "origem"),
       to: place(row, "destino"),
-      user: teamData.users.find(item => item.id === row.alterado_por),
+      user: teamData.users.find(item => item.id === row.alterado_por) || { nome: row.nome_autor },
       createdAt: row.alterado_em,
       action: row.acao,
     }));

@@ -7,12 +7,12 @@ const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
 const attendance = await readFile(new URL("../src/attendance.js", import.meta.url), "utf8");
 const sql = await readFile(new URL("../supabase/quadro_pessoal_operacional_relatorio.sql", import.meta.url), "utf8");
 
-test("Diretor e Encarregado recuperam o mapa sem alargar a Adjunto ou Preparador", () => {
+test("Equipa Técnica consulta Quadro; apenas Encarregado recebe edição no âmbito", () => {
   assert(accessFor({ role: "diretor_obra" }).views.includes("workforce"));
   assert(accessFor({ role: "encarregado" }).views.includes("workforce"));
-  assert(!accessFor({ role: "adjunto" }).views.includes("workforce"));
+  assert(accessFor({ role: "adjunto" }).views.includes("workforce"));
   assert(!accessFor({ role: "preparador" }).views.includes("workforce"));
-  assert.match(app, /\["diretor_obra", "encarregado"\]\.includes\(effectiveRole\(\)\)/);
+  assert.match(app, /teamData\.quadroContext\.edit_work_ids\.includes\(workId\)/);
 });
 
 test("escrita fica limitada à obra responsável e cada mudança é auditada", () => {

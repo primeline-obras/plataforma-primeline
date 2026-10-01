@@ -16,6 +16,9 @@ const hooks = `
 window.rhTest = {
   authorize(role, workId, type) {
     accessContext = {role, isAdmin: role === 'gestao_plataforma', profile: {ativo:true}};
+    teamData.quadroReady = true;
+    const global = ['administrativo','gerencia','gestao_plataforma'].includes(role);
+    teamData.quadroContext = { can_manage_global:global, edit_work_ids:global || role === 'encarregado' ? ['w1'] : [], revisions:[] };
     return canManageWorkforceWork(workId, type);
   },
   save: saveWorkforceAllocation,
@@ -62,6 +65,8 @@ try {
   await page.addInitScript(() => {
     sessionStorage.setItem("primeline_supabase_session", JSON.stringify({ access_token: "synthetic", user: { id: "auth-test" } }));
     window.calls = [];
+    window.allocationRevision = 0;
+    window.allocations = [];
     window.people = [
       { id: "p1", nome: "Ana Ativa", funcao: "Administrativa", data_saida: null },
       { id: "p2", nome: "Inês Inativa", funcao: "Técnica", data_saida: "2026-09-01" },
@@ -75,6 +80,12 @@ try {
       calls.push({ resource, query: url.search, method, body });
       if (resource === "rpc/fn_e_admin") return Response.json(false);
       if (resource === "rpc/fn_listar_rastreio_faturas") return Response.json([]);
+      if (resource === "rpc/fn_quadro_contexto") return Response.json({ version:1, allocations, revisions:[], can_manage_global:true, read_work_ids:['w1'], edit_work_ids:['w1'], people, works:[{id:'w1',numero:'120',nome:'Obra sintética',situacao:'em_curso'}] });
+      if (resource === "rpc/fn_quadro_operar") {
+        if (!body.p_confirmar) return Response.json({version:1,committed:false,versao:'test-preview'});
+        allocations = [{id:'a-test',...body.p_dados}]; allocationRevision++;
+        return Response.json({version:1,committed:true,revision:allocationRevision,allocations});
+      }
       if (method !== "GET") {
         if (resource === "quadro_pessoal_alocacao" && method === "POST") return Response.json([{ id: "a-test", ...body }]);
         if (resource === "viaturas" && method === "PATCH") return Response.json([{ id: "v1", ...body }]);
@@ -108,24 +119,24 @@ try {
 
   for (const role of ["administrativo", "gerencia", "gestao_plataforma", "diretor_obra", "encarregado", "preparador", "financeiro"]) {
     const admin = ["administrativo", "gerencia", "gestao_plataforma"].includes(role);
-    const operational = ["diretor_obra", "encarregado"].includes(role);
-    for (const [workId, type, expected] of [[null, "escritorio", admin], ["w1", "obra", admin || operational], ["other", "obra", admin], [null, "obra", false], [null, "invalid", false], ["w1", "escritorio", false], [null, "garantia", false]]) {
+    const operational = role === "encarregado";
+    for (const [workId, type, expected] of [[null, "escritorio", admin], ["w1", "obra", admin || operational], ["other", "obra", false], [null, "obra", false], [null, "invalid", false], ["w1", "escritorio", false], [null, "garantia", admin]]) {
       assert.equal(await page.evaluate(args => rhTest.authorize(...args), [role, workId, type]), expected, `${role}/${workId}/${type}`);
     }
   }
   await page.evaluate(() => rhTest.authorize("administrativo", null, "escritorio"));
   await page.evaluate(() => rhTest.save("p1", "2026-10-05", { type: "escritorio" }));
-  const allocation = await page.evaluate(() => calls.find(call => call.resource === "quadro_pessoal_alocacao" && call.method === "POST"));
-  assert.equal(allocation.body.obra_id, null);
-  assert.equal(allocation.body.tipo_alocacao, "escritorio");
-  const writes = await page.evaluate(() => calls.filter(call => call.resource === "quadro_pessoal_alocacao" && call.method !== "GET").length);
+  const allocation = await page.evaluate(() => calls.find(call => call.resource === "rpc/fn_quadro_operar" && call.body.p_confirmar));
+  assert.equal(allocation.body.p_dados.obra_id, null);
+  assert.equal(allocation.body.p_dados.tipo_alocacao, "escritorio");
+  const writes = await page.evaluate(() => calls.filter(call => call.resource === "rpc/fn_quadro_operar" && call.body.p_confirmar).length);
   await page.evaluate(async () => {
     await rhTest.save("p1", "2026-10-06", { type: "obra" });
     rhTest.authorize("encarregado", null, "escritorio");
     await rhTest.save("p1", "2026-10-06", { type: "escritorio" });
     rhTest.authorize("administrativo", null, "escritorio");
   });
-  assert.equal(await page.evaluate(() => calls.filter(call => call.resource === "quadro_pessoal_alocacao" && call.method !== "GET").length), writes);
+  assert.equal(await page.evaluate(() => calls.filter(call => call.resource === "rpc/fn_quadro_operar" && call.body.p_confirmar).length), writes);
   console.log("PASS RH-02: 49 permission combinations + real save consumer, invalid destinations issue no write");
 
   const hostile = '<img src=x onerror="window.rhInjected=true"><b data-hostile>Nome & texto</b>';

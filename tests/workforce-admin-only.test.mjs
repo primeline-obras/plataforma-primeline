@@ -9,10 +9,10 @@ const teamSql = await readFile(new URL("../supabase/equipa_restringir_ausencias_
 
 test("Quadro de Pessoal é uma vista operacional de Administrativo, Diretores e Encarregados", () => {
   assert.match(app, /data-view="workforce"[^>]*>[\s\S]*?Quadro de pessoal/i);
-  for (const role of ["adjunto", "preparador", "financeiro"]) {
+  for (const role of ["preparador", "financeiro"]) {
     assert.equal(accessFor({ role }).views.includes("workforce"), false, `${role} não pode ver o Quadro`);
   }
-  for (const role of ["administrativo", "gerencia", "diretor_obra", "encarregado"]) {
+  for (const role of ["administrativo", "gerencia", "diretor_obra", "adjunto", "encarregado"]) {
     assert.equal(accessFor({ role }).views.includes("workforce"), true, `${role} deve ver o Quadro`);
   }
   assert.match(sql, /u\.funcao = 'diretor_obra'/);
@@ -46,9 +46,9 @@ test("diretório da Equipa calcula as alocações da semana antes de as consulta
 });
 
 test("frontend consulta alocações apenas para papéis com acesso ao Quadro", () => {
-  assert.match(app, /canManageWorkforce\(\) \? supabase\(`quadro_pessoal_alocacao/);
+  assert.match(app, /canReadWorkforce\(\) \? supabase\("rpc\/fn_quadro_contexto/);
   assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/);
-  assert.match(app, /function canManageWorkforce\(\) \{\s*return canManageTeam\(\) \|\| \["diretor_obra", "encarregado"\]/);
+  assert.match(app, /function canManageWorkforce\(\)[\s\S]*?effectiveRole\(\) === "encarregado"/);
 });
 
 test("RLS remove políticas antigas e limita escrita à obra responsável", () => {

@@ -46,7 +46,7 @@ const ACCESS_BY_ROLE = {
     createWorks: false,
   },
   adjunto: {
-    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "calendar", "team", "settings"],
+    views: ["overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "documents", "rnc", "rooms", "calendar", "workforce", "team", "settings"],
     insertInvoices: false,
     approveInvoices: true,
     payInvoices: false,
