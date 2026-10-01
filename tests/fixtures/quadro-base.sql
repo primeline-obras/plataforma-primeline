@@ -162,3 +162,6 @@ UNIQUE (colaborador_id, obra_id, data),
 PRIMARY KEY (id));
 CREATE FUNCTION fn_e_encarregado_da_obra(uuid) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
 CREATE FUNCTION fn_ponto_horas(time,time,time,time) RETURNS numeric LANGUAGE sql IMMUTABLE AS $$ SELECT (coalesce(extract(epoch from($2-$1)),0)+coalesce(extract(epoch from($4-$3)),0))/3600 $$;
+
+-- Auditoria sintética: estrutura mínima usada pelo trigger instalado; sem dados reais.
+CREATE TABLE public.log_auditoria(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tabela_afetada text,registo_id uuid,campo text,valor_anterior text,valor_novo text,utilizador_id uuid,criado_em timestamptz);

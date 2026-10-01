@@ -24,7 +24,7 @@ window.rhTest = {
   authorize(role, workId, type) {
     accessContext = {role, isAdmin: role === 'gestao_plataforma', profile: {ativo:true}};
     teamData.quadroReady = true;
-    const global = ['administrativo','gerencia','gestao_plataforma'].includes(role);
+    const global = ['administrativo','gestao_plataforma'].includes(role);
     teamData.quadroContext = { can_manage_global:global, edit_work_ids:global || role === 'encarregado' ? ['w1'] : [], revisions:[] };
     return canManageWorkforceWork(workId, type);
   },
@@ -88,8 +88,8 @@ try {
       calls.push({ resource, query: url.search, method, body });
       if (resource === "rpc/fn_e_admin") return Response.json(false);
       if (resource === "rpc/fn_listar_rastreio_faturas") return Response.json([]);
-      if (resource === "rpc/fn_quadro_contexto") return Response.json({ version:1, allocations, revisions:[{colaborador_id:'p1',data:'2026-10-05',revisao:allocationRevision}], can_manage_global:true, read_work_ids:['w1','w2'], edit_work_ids:['w1','w2'], people:people.filter(p=>!p.data_saida), works:[{id:'w1',numero:'120',nome:'Obra sintética',situacao:'em_curso'},{id:'w2',numero:'118',nome:'Outra obra sintética',situacao:'em_curso'}] });
-      if (resource === "rpc/fn_quadro_operar") {
+      if (resource === "rpc/fn_quadro_contexto_v1") return Response.json({ version:1, allocations, revisions:[{colaborador_id:'p1',data:'2026-10-05',revisao:allocationRevision}], can_manage_global:true, read_work_ids:['w1','w2'], edit_work_ids:['w1','w2'], people:people.filter(p=>!p.data_saida), works:[{id:'w1',numero:'120',nome:'Obra sintética',situacao:'em_curso'},{id:'w2',numero:'118',nome:'Outra obra sintética',situacao:'em_curso'}] });
+      if (resource === "rpc/fn_quadro_operar_v1") {
         if (quadroFailure?.stage === (body.p_confirmar ? 'confirm' : 'preview')) {
           if (quadroFailure.uncommitted) return Response.json({version:1,committed:false});
           return Response.json({message:quadroFailure.code},{status:400});
@@ -127,7 +127,7 @@ try {
   await page.waitForFunction(()=>quadroTest.state().allocations.some(row=>row.obra_id==='w2'));
   assert.equal(await cell('w2','2026-10-05').locator('[data-workforce-person="p1"]').count(),1);
   assert.equal(await cell('w1','2026-10-05').locator('[data-workforce-person="p1"]').count(),0);
-  const confirmations=()=>page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_operar'&&c.body.p_confirmar));
+  const confirmations=()=>page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_operar_v1'&&c.body.p_confirmar));
   assert.equal((await confirmations())[0].body.p_dados.expected_revision,0);
   assert.equal((await confirmations())[0].body.p_dados.periodo,'dia_inteiro');
   for(const [code,pattern] of [['ABSENCE_CONFLICT',/ausência/],['LEGACY_CONFLICT',/sobrepostas/],['PERMISSION_DENIED',/permissão/]]) {
@@ -143,14 +143,14 @@ try {
   assert.deepEqual(await page.evaluate(()=>quadroTest.state().allocations),snapshot);
   console.log('PASS failure/uncommitted: existing UI allocation preserved');
   await page.evaluate(()=>{quadroFailure={stage:'confirm',code:'STALE_REVISION'};});
-  const beforeReload=await page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_contexto').length);
+  const beforeReload=await page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_contexto_v1').length);
   const beforeConfirm=(await confirmations()).length;
   await page.evaluate(()=>quadroTest.save('p1','2026-10-05',{type:'obra',workId:'w1'}));
   assert.equal((await confirmations()).length,beforeConfirm+1);
-  assert.equal(await page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_contexto').length),beforeReload+1);
+  assert.equal(await page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_contexto_v1').length),beforeReload+1);
   assert.match(await page.locator('#workforce-edit-message').textContent(),/alterada por outro utilizador/);
   await page.evaluate(()=>{quadroFailure=null;});
-  for(const role of ['diretor_obra','adjunto','preparador']) {
+  for(const role of ['gerencia','diretor_obra','adjunto','preparador']) {
     await page.evaluate(value=>quadroTest.role(value),role);
     assert.equal(await page.locator('#edit-workforce').isVisible(),false);
   }

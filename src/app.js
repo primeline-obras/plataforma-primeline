@@ -1,4 +1,4 @@
-import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=1";
+import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=2";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=7";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
@@ -861,7 +861,7 @@ function canReadWorkforce() {
 }
 
 function canManageWorkforce() {
-  return accessContext.profile?.ativo === true && (canManageTeam() || effectiveRole() === "encarregado")
+  return accessContext.profile?.ativo === true && (["administrativo", "gestao_plataforma", "encarregado"].includes(effectiveRole()))
     && Boolean(teamData.quadroContext) && teamData.quadroReady === true
     && (teamData.quadroContext.can_manage_global === true || teamData.quadroContext.edit_work_ids.length > 0);
 }
@@ -2533,7 +2533,7 @@ async function loadTeamData(force = false) {
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
-    canReadWorkforce() ? supabase("rpc/fn_quadro_contexto", { method: "POST", body: JSON.stringify({ p_inicio: boardStart, p_fim: boardEnd }) }) : Promise.resolve(Response.json({ version: 1, allocations: [], revisions: [], can_manage_global: false, read_work_ids: [], edit_work_ids: [], people: [], works: [] })),
+    canReadWorkforce() ? supabase("rpc/fn_quadro_contexto_v1", { method: "POST", body: JSON.stringify({ p_inicio: boardStart, p_fim: boardEnd }) }) : Promise.resolve(Response.json({ version: 1, allocations: [], revisions: [], can_manage_global: false, read_work_ids: [], edit_work_ids: [], people: [], works: [] })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     canManageAbsences() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),

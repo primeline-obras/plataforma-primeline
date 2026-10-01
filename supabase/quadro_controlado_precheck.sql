@@ -9,7 +9,7 @@ SELECT q.id AS alocacao_id,a.id AS ausencia_id,a.estado,a.tipo FROM public.quadr
  JOIN public.ausencias a ON a.colaborador_id=q.colaborador_id AND a.data=q.data;
 SELECT p.oid::regprocedure::text assinatura,p.prosecdef,p.proacl,pg_get_functiondef(p.oid) definicao
 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-WHERE n.nspname='public' AND p.prokind IN('f','p') AND (p.prosrc ILIKE '%quadro%' OR p.prosrc ~* '\mexecute\M' OR p.proname LIKE 'fn_rh_%');
+WHERE n.nspname='public' AND p.prokind IN('f','p') AND (p.prosrc ILIKE '%quadro%' OR p.prosrc ~* '\mexecute\M' OR p.proname LIKE 'fn_rh_%' OR p.proname IN('fn_pode_gerir_quadro','fn_quadro_minha_obra','fn_pode_consultar_quadro'));
 SELECT tgname,tgenabled,pg_get_triggerdef(oid) FROM pg_trigger
 WHERE tgrelid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass) AND NOT tgisinternal;
 SELECT * FROM pg_policies WHERE schemaname='public' AND tablename IN('quadro_pessoal_alocacao','quadro_pessoal_movimentos');
@@ -19,4 +19,5 @@ DO $$ BEGIN
  IF to_regclass('public.quadro_operacoes') IS NOT NULL OR to_regclass('public.quadro_dias_revisoes') IS NOT NULL
  OR to_regprocedure('public.fn_quadro_aplicar_interno(uuid,date,jsonb,jsonb,text,uuid,boolean)') IS NOT NULL
  THEN RAISE EXCEPTION 'PRECONDITION_FAILED: objetos do pacote já presentes.'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname LIKE 'fn_quadro_%v1' OR p.proname IN('fn_quadro_ler_obra','fn_quadro_dia_explicito','fn_quadro_resolver_data','fn_quadro_criar_colaborador_interno','fn_quadro_renomear_interno'))) THEN RAISE EXCEPTION 'PRECONDITION_FAILED: nomes de funções novas já ocupados.'; END IF;
 END $$;

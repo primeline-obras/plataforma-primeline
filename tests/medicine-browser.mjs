@@ -37,6 +37,7 @@ try {
     window.fetch=async(address,options={})=>{
       const url=new URL(address,location.href);if(url.hostname!=='synthetic.test')throw Error('Non-synthetic fetch refused');
       const resource=url.pathname.replace('/rest/v1/',''),payload=options.body?JSON.parse(options.body):null,method=options.method||'GET';calls.push({resource,payload,method});
+      if(resource==='rpc/fn_quadro_contexto_v1')return Response.json({version:1,allocations:[],revisions:[],can_manage_global:role==='gestao_plataforma'||role==='administrativo',read_work_ids:[],edit_work_ids:[],people:[],works:[]});
       if(resource==='rpc/fn_e_admin')return Response.json(role==='gestao_plataforma');
       if(resource==='rpc/fn_listar_rastreio_faturas')return Response.json([]);
       if(resource==='rpc/fn_rh_consultar'){const person=people.find(p=>p.id===payload.p_id);return Response.json([{colaborador:person,contratos:[],niss:null,versao:'v1'}]);}

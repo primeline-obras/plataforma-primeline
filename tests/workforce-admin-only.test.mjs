@@ -46,7 +46,7 @@ test("diretório da Equipa calcula as alocações da semana antes de as consulta
 });
 
 test("frontend consulta alocações apenas para papéis com acesso ao Quadro", () => {
-  assert.match(app, /canReadWorkforce\(\) \? supabase\("rpc\/fn_quadro_contexto/);
+  assert.match(app, /canReadWorkforce\(\) \? supabase\("rpc\/fn_quadro_contexto_v1/);
   assert.doesNotMatch(app, /rpc\/fn_quadro_ferias_encarregado_global/);
   assert.match(app, /function canManageWorkforce\(\)[\s\S]*?effectiveRole\(\) === "encarregado"/);
 });

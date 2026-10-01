@@ -16,7 +16,7 @@ export function allocationError(error) {
 
 export function createWorkforceAllocationClient({ supabase, reload = async () => {}, requestId = () => crypto.randomUUID() }) {
   async function rpc(acao, dados, confirmar, versao = null) {
-    const response = await supabase('rpc/fn_quadro_operar', {
+    const response = await supabase('rpc/fn_quadro_operar_v1', {
       method: 'POST', body: JSON.stringify({ p_acao: acao, p_dados: dados, p_confirmar: confirmar, p_versao: versao }),
     });
     const result = await response.json().catch(() => null);
