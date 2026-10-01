@@ -993,4 +993,3 @@ Triggers:
 | validar_soma_afetacao_diaria() | False | volatile | não recolhido neste item; ver ACL | não recolhido neste item; ver ACL |
 
 Nota: grants EXECUTE em funções de trigger não as tornam invocáveis como RPC comum; não presumir exploração por essa ACL. RPCs principais Ponto/Quadro confirmadas authenticated=true, anon=false. Os corpos completos foram lidos; não se copiam operações de escrita para aplicar.
-
