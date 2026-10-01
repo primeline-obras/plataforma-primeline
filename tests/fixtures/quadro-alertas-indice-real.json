@@ -1,0 +1,13 @@
+{
+  "source": "Levantamento read-only anterior: ponto-extra-parsed.json e ponto-schema-parsed.json",
+  "index": {
+    "name": "alertas_ocorrencia_unica_idx",
+    "table": "alertas",
+    "definition": "CREATE UNIQUE INDEX alertas_ocorrencia_unica_idx ON public.alertas USING btree (tipo, entidade_tipo, entidade_id, data_evento_referencia, COALESCE(antecedencia_dias, '-1'::integer), COALESCE(ocorrencia_chave, '00000000-0000-0000-0000-000000000000'::uuid))"
+  },
+  "ocorrencia_chave": {
+    "type": "uuid",
+    "default": null,
+    "notnull": false
+  }
+}
