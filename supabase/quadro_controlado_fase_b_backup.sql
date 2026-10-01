@@ -1,6 +1,15 @@
 BEGIN;
+DO $$ BEGIN
+ IF current_user <> 'postgres' OR session_user <> 'postgres' THEN
+  RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED: executar como operador postgres, sem SET ROLE da aplicação.' USING ERRCODE='42501';
+ END IF;
+END $$;
 SET LOCAL lock_timeout='10s';
 LOCK TABLE public.quadro_pessoal_alocacao,public.quadro_pessoal_movimentos IN SHARE MODE;
+LOCK TABLE primeline_quadro_rollout.controlo,primeline_quadro_rollout.validacoes IN SHARE MODE;
+SELECT primeline_quadro_rollout.exigir_validacao();
+CREATE TABLE primeline_backup.quadro_fase_b_controlo_20261001 AS TABLE primeline_quadro_rollout.controlo;
+CREATE TABLE primeline_backup.quadro_fase_b_validacoes_20261001 AS TABLE primeline_quadro_rollout.validacoes;
 CREATE TABLE primeline_backup.quadro_fase_b_alocacoes_20261001 AS TABLE public.quadro_pessoal_alocacao;
 CREATE TABLE primeline_backup.quadro_fase_b_movimentos_20261001 AS TABLE public.quadro_pessoal_movimentos;
 CREATE TABLE primeline_backup.quadro_fase_b_revisoes_20261001 AS TABLE public.quadro_dias_revisoes;

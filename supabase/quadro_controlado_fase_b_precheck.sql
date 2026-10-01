@@ -1,3 +1,12 @@
+-- Apenas leitura: prova operacional deve preceder o marcador privado do owner.
+DO $$ BEGIN
+ IF current_user <> 'postgres' OR session_user <> 'postgres' THEN
+  RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED: executar como operador postgres, sem SET ROLE da aplicação.' USING ERRCODE='42501';
+ END IF;
+END $$;
+DO $$ BEGIN
+ IF to_regclass('primeline_quadro_rollout.controlo') IS NULL THEN RAISE EXCEPTION 'FRONTEND_VALIDATION_REQUIRED: controlo privado ausente'; END IF;
+END $$;
 -- Postcheck A: somente leitura, aborta em divergência.
 DO $$ DECLARE r record; role_name text; f record; t text; priv text; BEGIN
  FOR t IN SELECT unnest(ARRAY['quadro_dias_revisoes','quadro_operacoes','quadro_escrita_interna']) LOOP
@@ -39,6 +48,8 @@ DO $$ DECLARE r record; role_name text; f record; t text; priv text; BEGIN
 END $$;
 -- UUIDs usam gen_random_uuid(): não são introduzidas sequências novas.
 SELECT 'POSTCHECK_A_OK' status;
-
-SELECT current_setting('primeline.quadro.frontend_validado',true) sha_validado;
--- Rever SHA servido, reload dos clientes e ausência de DML no Network antes de backup/instalação B.
+-- Controlo de rollout não é RPC pública; owner/ACL/RLS privados obrigatórios.
+SELECT primeline_quadro_rollout.exigir_privacidade();
+SELECT primeline_quadro_rollout.exigir_fase_a();
+SELECT primeline_quadro_rollout.exigir_validacao();
+SELECT instalacao_id,tentativa,contract_version,frontend_release_id FROM primeline_quadro_rollout.controlo;

@@ -1,4 +1,4 @@
-import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=2";
+import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=3";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=7";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";

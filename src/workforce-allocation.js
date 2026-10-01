@@ -1,3 +1,5 @@
+// Identificador estável exposto pelo módulo servido; a prova operacional continua humana.
+export const WORKFORCE_FRONTEND_CONTRACT = Object.freeze({ version: 1, releaseId: 'quadro_frontend_contract_v1' });
 // Alocação explícita da data; responsabilidade por obra não cria presença.
 export function allocationsForDate(items, date) {
   return items.filter(item => item.data === date);

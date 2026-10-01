@@ -21,3 +21,4 @@ DO $$ BEGIN
  THEN RAISE EXCEPTION 'PRECONDITION_FAILED: objetos do pacote já presentes.'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND (p.proname LIKE 'fn_quadro_%v1' OR p.proname IN('fn_quadro_ler_obra','fn_quadro_dia_explicito','fn_quadro_resolver_data','fn_quadro_criar_colaborador_interno','fn_quadro_renomear_interno'))) THEN RAISE EXCEPTION 'PRECONDITION_FAILED: nomes de funções novas já ocupados.'; END IF;
 END $$;
+DO $$ BEGIN IF to_regnamespace('primeline_quadro_rollout') IS NOT NULL THEN RAISE EXCEPTION 'PRECONDITION_FAILED: namespace de rollout já presente'; END IF; END $$;

@@ -1,7 +1,14 @@
 -- Rollback B: preserva dados e histórico produzidos após instalação.
 BEGIN;
+DO $$ BEGIN
+ IF current_user <> 'postgres' OR session_user <> 'postgres' THEN
+  RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED: executar como operador postgres, sem SET ROLE da aplicação.' USING ERRCODE='42501';
+ END IF;
+END $$;
 SET LOCAL lock_timeout='10s';
 LOCK TABLE public.quadro_pessoal_alocacao,public.quadro_pessoal_movimentos IN ACCESS EXCLUSIVE MODE;
+SELECT primeline_quadro_rollout.exigir_privacidade();
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM primeline_quadro_rollout.controlo WHERE singleton AND estado='b') THEN RAISE EXCEPTION 'ROLLOUT_INVALID: rollback exige estado b'; END IF; END $$;
 DO $$ DECLARE f record; g record; p record; role_name text; BEGIN
  FOR f IN SELECT * FROM primeline_backup.quadro_fase_b_funcoes_20261001 b WHERE (SELECT proc_row.proname FROM pg_proc proc_row WHERE proc_row.oid=b.assinatura::regprocedure) IN('fn_quadro_operar','fn_quadro_proteger_escrita','fn_quadro_ler_obra') LOOP
   EXECUTE f.definicao;
@@ -29,4 +36,10 @@ DO $$ DECLARE f record; g record; p record; role_name text; BEGIN
   EXECUTE format('GRANT %s (%I) ON TABLE %s TO %s%s',g.privilege_type,g.attname,g.tabela,role_name,CASE WHEN g.is_grantable THEN ' WITH GRANT OPTION' ELSE '' END);
  END LOOP;
 END $$;
+-- Não restaurar/reativar validações pelo backup: preservar evidência e exigir nova tentativa.
+SELECT primeline_quadro_rollout.exigir_privacidade();
+UPDATE primeline_quadro_rollout.validacoes SET invalidada_em=clock_timestamp()
+WHERE instalacao_id=(SELECT instalacao_id FROM primeline_quadro_rollout.controlo WHERE singleton) AND invalidada_em IS NULL;
+UPDATE primeline_quadro_rollout.controlo SET estado='a',tentativa=tentativa+1,tentativa_iniciada_em=clock_timestamp(),fase_b_aplicada_em=NULL WHERE singleton AND estado='b';
+SELECT primeline_quadro_rollout.exigir_fase_a();
 COMMIT;

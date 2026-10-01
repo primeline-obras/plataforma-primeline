@@ -39,3 +39,6 @@ DO $$ DECLARE r record; role_name text; f record; t text; priv text; BEGIN
 END $$;
 -- UUIDs usam gen_random_uuid(): não são introduzidas sequências novas.
 SELECT 'POSTCHECK_A_OK' status;
+-- Controlo de rollout não é RPC pública; owner/ACL/RLS privados obrigatórios.
+SELECT primeline_quadro_rollout.exigir_privacidade();
+SELECT primeline_quadro_rollout.exigir_fase_a();

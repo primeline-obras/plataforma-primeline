@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {allocationsForDate,createWorkforceAllocationClient} from '../src/workforce-allocation.js';
+import {WORKFORCE_FRONTEND_CONTRACT,allocationsForDate,createWorkforceAllocationClient} from '../src/workforce-allocation.js';
 const values={colaborador_id:'person',data:'2026-10-05',periodo:'manha',obra_id:'work',tipo_alocacao:'obra',expected_revision:2};
 const preview={version:1,committed:false,versao:'snapshot'};
 const confirmed={version:1,committed:true,idempotent:false,revision:3,allocations:[{id:'allocation',data:values.data}]};
@@ -12,3 +12,5 @@ test('STALE_REVISION recarrega e não repete com revisão nova',async()=>{const 
 for(const [message,expect] of [['PERMISSION_DENIED',/permissão/],['ABSENCE_CONFLICT',/ausência/],['LEGACY_CONFLICT',/sobrepostas/],['IDEMPOTENCY_CONFLICT',/outra operação/]])test(message+' mantém o pedido sem retry',async()=>{const m=mock([{body:{message},status:400}]);await assert.rejects(m.client.execute('alocar',values),expect);assert.equal(m.calls.length,1);assert.equal(m.reloads(),0);});
 test('erro de rede na confirmação não repete RPC nem assume gravação',async()=>{const m=mock([preview,new Error('Network unavailable')]);await assert.rejects(m.client.execute('alocar',values),/Network/);assert.equal(m.calls.length,2);});
 test('replay confirmado aceite sem segunda confirmação',async()=>{const m=mock([preview,{...confirmed,idempotent:true}]);assert.equal((await m.client.execute('remover',{...values,ids:['allocation']})).idempotent,true);assert.equal(m.calls.length,2);});
+
+test('contrato frontend estável exposto pelo módulo',()=>{assert.deepEqual(WORKFORCE_FRONTEND_CONTRACT,{version:1,releaseId:'quadro_frontend_contract_v1'});assert.ok(Object.isFrozen(WORKFORCE_FRONTEND_CONTRACT));});

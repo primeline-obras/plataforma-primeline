@@ -73,9 +73,79 @@ test('PostgreSQL 17.6: operações, Cadastro RH, RLS e concorrência real',{time
   const preview=(await q("SELECT fn_quadro_operar_v1('alocar',$1::jsonb,false,NULL) v",[JSON.stringify(d)])).rows[0].v;
   const value=(await q("SELECT fn_quadro_operar_v1('alocar',$1::jsonb,true,$2) v",[JSON.stringify(d),preview.versao])).rows[0].v;assert.equal(value.committed,true);assert.equal(value.revision,1);await q('ROLLBACK');
  });
+ const markFrontend=async()=>q(await read('../supabase/quadro_controlado_marcar_frontend_validado.sql'));
+ const requireB=async()=>q(await read('../supabase/quadro_controlado_fase_b.sql'));
+ const rejectedScript=async(script,pattern)=>{try{await assert.rejects(()=>q(script),pattern);}finally{await q('ROLLBACK');}};
+ await t.test('gate: GUC falsificado não substitui marcador ausente',async()=>{
+  await q("SELECT set_config('primeline.quadro.frontend_validado','not-a-sha',false)");
+  await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/FRONTEND_VALIDATION_REQUIRED/);
+  assert.equal((await q("SELECT estado FROM primeline_quadro_rollout.controlo")).rows[0].estado,'a');
+ });
+ for(const role of ['authenticated','anon','service_role']){
+  for(const sql of ["SELECT * FROM primeline_quadro_rollout.controlo","SELECT * FROM primeline_quadro_rollout.validacoes","INSERT INTO primeline_quadro_rollout.controlo(singleton,estado,identidade_a) VALUES(true,'a','spoof')","UPDATE primeline_quadro_rollout.controlo SET estado='b' WHERE singleton","DELETE FROM primeline_quadro_rollout.controlo WHERE singleton","INSERT INTO primeline_quadro_rollout.validacoes(instalacao_id,tentativa,contract_version,frontend_release_id,frontend_validado_por,identidade_a) VALUES(gen_random_uuid(),1,1,'quadro_frontend_contract_v1','postgres','spoof')","UPDATE primeline_quadro_rollout.validacoes SET frontend_release_id='spoof'","DELETE FROM primeline_quadro_rollout.validacoes","SELECT primeline_quadro_rollout.exigir_validacao()"]){
+   await t.test('gate: '+role+' não acede '+sql.split(' ')[0]+' '+sql.split(' ')[2],async()=>{
+    await q('BEGIN; SET LOCAL ROLE '+role);await q("SELECT set_config('primeline.quadro.frontend_validado','quadro_frontend_contract_v1',true)");
+    await assert.rejects(()=>q(sql),/permission denied/);await q('ROLLBACK');
+   });
+  }
+  await t.test('gate: script de marcação recusa '+role,async()=>{await q('SET ROLE '+role);await rejectedScript(await read('../supabase/quadro_controlado_marcar_frontend_validado.sql'),/ROLLOUT_OWNER_REQUIRED/);await q('RESET ROLE');});
+ }
+ await t.test('gate: controlo ausente recusa B',async()=>{
+  await q('ALTER TABLE primeline_quadro_rollout.controlo RENAME TO controlo_temporario');
+  await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/controlo privado ausente/);
+  await q('ALTER TABLE primeline_quadro_rollout.controlo_temporario RENAME TO controlo');
+ });
+ await t.test('gate: payload não substitui marcador ausente',async()=>{
+  await q('BEGIN; SET LOCAL ROLE authenticated');await q("SELECT set_config('test.actor',$1,true)",[id(10)]);
+  const d={version:1,colaborador_id:id(30),data:'2026-10-05',periodo:'manha',tipo_alocacao:'obra',obra_id:id(100),expected_revision:0,request_id:id(2988),frontend_validado:true,contract_version:1,frontend_release_id:'quadro_frontend_contract_v1'};
+  await q("SELECT fn_quadro_operar_v1('alocar',$1::jsonb,false,NULL)",[JSON.stringify(d)]);await q('ROLLBACK');
+  assert.equal((await q('SELECT count(*)::int n FROM primeline_quadro_rollout.validacoes')).rows[0].n,0);
+  await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/FRONTEND_VALIDATION_REQUIRED/);
+ });
+ await t.test('gate: operador não marca release errado',async()=>{
+  const sql=(await read('../supabase/quadro_controlado_marcar_frontend_validado.sql')).replace("v_frontend_release_id text := 'quadro_frontend_contract_v1'","v_frontend_release_id text := 'wrong-release'");
+  await rejectedScript(sql,/FRONTEND_VALIDATION_INVALID/);
+ });
+ await markFrontend();
+ for(const [field,value] of [['contract_version','2'],['frontend_release_id',"'wrong-release'"],['instalacao_id','gen_random_uuid()'],['frontend_validado_em',"'2000-01-01'::timestamptz"],['identidade_a',"'wrong-identity'"]]){
+  await t.test('gate: marcador errado '+field+' recusa B',async()=>{
+   const saved=(await q('SELECT * FROM primeline_quadro_rollout.validacoes')).rows[0];
+   await q('UPDATE primeline_quadro_rollout.validacoes SET '+field+'='+value+' WHERE id=$1',[saved.id]);
+   await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/FRONTEND_VALIDATION_(INVALID|REQUIRED)/);
+   await q('UPDATE primeline_quadro_rollout.validacoes SET '+field+'=$1 WHERE id=$2',[saved[field],saved.id]);
+  });
+ }
+ await t.test('gate: grant divergente da Fase A recusa B',async()=>{
+  await q('GRANT INSERT ON public.quadro_operacoes TO authenticated');
+  await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/ROLLOUT_DRIFT/);
+  await q('REVOKE INSERT ON public.quadro_operacoes FROM authenticated');
+ });
+ await t.test('gate: alteração de helper privado recusa B',async()=>{
+  const def=(await q("SELECT pg_get_functiondef('primeline_quadro_rollout.exigir_validacao()'::regprocedure) v")).rows[0].v;
+  await q("CREATE OR REPLACE FUNCTION primeline_quadro_rollout.exigir_validacao() RETURNS uuid LANGUAGE sql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS 'SELECT NULL::uuid'");
+  await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/ROLLOUT_DRIFT/);
+  await q(def);
+ });
+ await t.test('gate: payload RPC não marca validação',async()=>{
+  const n=(await q('SELECT count(*)::int n FROM primeline_quadro_rollout.validacoes')).rows[0].n;
+  await q('BEGIN; SET LOCAL ROLE authenticated');await q("SELECT set_config('test.actor',$1,true)",[id(10)]);
+  const d={version:1,colaborador_id:id(30),data:'2026-10-05',periodo:'manha',tipo_alocacao:'obra',obra_id:id(100),expected_revision:0,request_id:id(2989),frontend_release_id:'quadro_frontend_contract_v1',frontend_validado:true};
+  await q("SELECT fn_quadro_operar_v1('alocar',$1::jsonb,false,NULL)",[JSON.stringify(d)]);await q('ROLLBACK');
+  assert.equal((await q('SELECT count(*)::int n FROM primeline_quadro_rollout.validacoes')).rows[0].n,n);
+ });
+ await t.test('gate: segundo registo na mesma tentativa não substitui o primeiro',async()=>{await rejectedScript(await read('../supabase/quadro_controlado_marcar_frontend_validado.sql'),/duplicate key/);});
+ await q(await read('../supabase/quadro_controlado_fase_b_precheck.sql'));
  await q(await read('../supabase/quadro_controlado_fase_b_backup.sql'));
- await q("SELECT set_config('primeline.quadro.frontend_validado','fixture-synthetic-only',false)");
+
+ await t.test('gate: falha depois do consumo reverte marcador e alterações B',async()=>{
+  const sql=(await read('../supabase/quadro_controlado_fase_b.sql')).replace('CREATE OR REPLACE FUNCTION public.fn_quadro_proteger_escrita()',()=> 'SELECT 1/0;\nCREATE OR REPLACE FUNCTION public.fn_quadro_proteger_escrita()');
+  await rejectedScript(sql,/division by zero/);
+  assert.equal((await q('SELECT estado FROM primeline_quadro_rollout.controlo')).rows[0].estado,'a');
+  assert.equal((await q('SELECT consumida_em FROM primeline_quadro_rollout.validacoes')).rows[0].consumida_em,null);
+  await q(await read('../supabase/quadro_controlado_fase_a_postcheck.sql'));
+ });
  await q(await read('../supabase/quadro_controlado_fase_b.sql'));await q(await read('../supabase/quadro_controlado_fase_b_postcheck.sql'));
+ await t.test('gate: B consumiu validação, repetição sem rollback é recusada',async()=>{assert.ok((await q('SELECT consumida_em FROM primeline_quadro_rollout.validacoes')).rows[0].consumida_em);await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/ROLLOUT_INVALID/);});
  const actor=async(c,n=10)=>{await c.query('RESET ROLE');await c.query("SELECT set_config('test.actor',$1,false)",[id(n)]);await c.query('SET ROLE authenticated');};
  const call=async(c,acao,body,confirm=false,versao=null)=>(await c.query('SELECT fn_quadro_operar_v1($1,$2::jsonb,$3,$4) value',[acao,JSON.stringify(body),confirm,versao])).rows[0].value;
  const body=(person=30,work=100,rev=0,req=3000,period='dia_inteiro',date='2026-10-05')=>({version:1,colaborador_id:id(person),data:date,periodo:period,tipo_alocacao:'obra',obra_id:id(work),descricao_livre:null,expected_revision:rev,request_id:id(req)});
@@ -187,8 +257,8 @@ test('PostgreSQL 17.6: operações, Cadastro RH, RLS e concorrência real',{time
   await concurrent(body(43,100,2,4102),body(43,101,2,4103),/STALE_REVISION/,13);
  });
  await t.test('rollback B preserva operações e restaura compatibilidade A',async()=>{const before=(await q('SELECT count(*)::int n FROM quadro_operacoes')).rows[0].n;await q(await read('../supabase/quadro_controlado_fase_b_rollback.sql'));assert.equal((await q('SELECT count(*)::int n FROM quadro_operacoes')).rows[0].n,before);await q(await read('../supabase/quadro_controlado_fase_a_postcheck.sql'));});
- await t.test('forward-fix B preserva dados e reinstala proteções finais',async()=>{const before=(await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v;await q(await read('../supabase/quadro_controlado_fase_b_forward_fix.sql'));assert.deepEqual((await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v,before);await q(await read('../supabase/quadro_controlado_fase_b_postcheck.sql'));await q(await read('../supabase/quadro_controlado_fase_b_rollback.sql'));});
+ await t.test('forward-fix B preserva dados e reinstala proteções finais',async()=>{const before=(await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v;await rejectedScript(await read('../supabase/quadro_controlado_fase_b_forward_fix.sql'),/FRONTEND_VALIDATION_REQUIRED/);assert.equal((await q('SELECT count(*)::int n FROM primeline_quadro_rollout.validacoes WHERE invalidada_em IS NOT NULL')).rows[0].n,1);await markFrontend();await q(await read('../supabase/quadro_controlado_fase_b_forward_fix.sql'));assert.deepEqual((await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v,before);await q(await read('../supabase/quadro_controlado_fase_b_postcheck.sql'));await q(await read('../supabase/quadro_controlado_fase_b_rollback.sql'));});
  await t.test('rollback A preserva histórico/revisões e restaura definições antigas',async()=>{const before=(await q('SELECT count(*)::int n FROM quadro_pessoal_movimentos')).rows[0].n;await q(await read('../supabase/quadro_controlado_fase_a_rollback.sql'));assert.equal((await q('SELECT count(*)::int n FROM quadro_pessoal_movimentos')).rows[0].n,before);assert.equal((await q("SELECT has_table_privilege('authenticated','quadro_pessoal_alocacao','UPDATE') v")).rows[0].v,true);});
- await t.test('forward-fix A conserva dados após rollback e invalida previews antigos',async()=>{const before=(await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v;await q(await read('../supabase/quadro_controlado_fase_a_forward_fix.sql'));assert.deepEqual((await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v,before);await q(await read('../supabase/quadro_controlado_fase_a_postcheck.sql'));});
+ await t.test('forward-fix A conserva dados após rollback e invalida previews antigos',async()=>{const before=(await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v;await q(await read('../supabase/quadro_controlado_fase_a_forward_fix.sql'));assert.deepEqual((await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY id) v FROM quadro_pessoal_alocacao x')).rows[0].v,before);await q(await read('../supabase/quadro_controlado_fase_a_postcheck.sql'));await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/FRONTEND_VALIDATION_REQUIRED/);});
  } finally {for(const c of clients)await c.end().catch(()=>{});if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}
 });

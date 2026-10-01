@@ -1,9 +1,15 @@
 -- Reinstalação revista após rollback A; não cria nem corrige alocações.
 BEGIN;
+DO $$ BEGIN
+ IF current_user <> 'postgres' OR session_user <> 'postgres' THEN
+  RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED: executar como operador postgres, sem SET ROLE da aplicação.' USING ERRCODE='42501';
+ END IF;
+END $$;
 SET LOCAL lock_timeout='10s';
 LOCK TABLE public.quadro_pessoal_alocacao,public.quadro_pessoal_movimentos IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN
  IF to_regclass('primeline_backup.quadro_funcoes_20261001') IS NULL OR to_regclass('public.quadro_dias_revisoes') IS NULL THEN RAISE EXCEPTION 'PRECONDITION_FAILED: requer backup e estruturas A retidas.'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM primeline_quadro_rollout.controlo WHERE singleton AND estado='a_rollback') THEN RAISE EXCEPTION 'ROLLOUT_INVALID: forward-fix A exige rollback A'; END IF;
  IF NOT has_table_privilege('authenticated','public.quadro_pessoal_alocacao','UPDATE') THEN RAISE EXCEPTION 'PRECONDITION_FAILED: não reabrir cliente legado na Fase B.'; END IF;
 END $$;
 INSERT INTO public.quadro_dias_revisoes(colaborador_id,data,revisao,obras_visiveis)
@@ -1658,4 +1664,72 @@ END
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION primeline_quadro_rollout.identidade_a()
+RETURNS text LANGUAGE sql STABLE SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $$
+ SELECT md5(jsonb_build_object(
+  'funcoes',(SELECT jsonb_agg(jsonb_build_object('assinatura',p.oid::regprocedure::text,'definicao',pg_get_functiondef(p.oid),'acl',(SELECT jsonb_agg(to_jsonb(x) ORDER BY x.grantee,x.privilege_type) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x),'owner',p.proowner,'config',p.proconfig,'sd',p.prosecdef) ORDER BY p.oid::regprocedure::text)
+   FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+   WHERE p.prokind IN('f','p') AND n.nspname='public' AND (p.proname LIKE 'fn_quadro_%' OR p.proname LIKE 'fn_rh_%' OR p.proname IN('fn_criar_colaborador_com_alocacao','fn_registar_movimento_quadro','fn_pode_gerir_quadro','fn_pode_consultar_quadro','fn_listar_ponto_obra','fn_guardar_ponto_obra') OR p.prosrc ILIKE '%quadro_pessoal_alocacao%' OR p.oid IN(SELECT tgfoid FROM pg_trigger WHERE tgrelid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass) AND NOT tgisinternal)) OR (p.prokind IN('f','p') AND n.nspname='primeline_quadro_rollout')),
+  'tabelas',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'owner',c.relowner,'acl',(SELECT jsonb_agg(to_jsonb(x) ORDER BY x.grantee,x.privilege_type) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x),'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass,'public.quadro_dias_revisoes'::regclass,'public.quadro_operacoes'::regclass,'public.quadro_escrita_interna'::regclass,'primeline_quadro_rollout.controlo'::regclass,'primeline_quadro_rollout.validacoes'::regclass)),
+  'colunas',(SELECT jsonb_agg(jsonb_build_object('rel',a.attrelid,'nome',a.attname,'tipo',a.atttypid,'notnull',a.attnotnull,'acl',(SELECT jsonb_agg(to_jsonb(x) ORDER BY x.grantee,x.privilege_type) FROM aclexplode(a.attacl) x),'default',pg_get_expr(d.adbin,d.adrelid)) ORDER BY a.attrelid,a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass,'public.quadro_dias_revisoes'::regclass,'public.quadro_operacoes'::regclass,'public.quadro_escrita_interna'::regclass,'primeline_quadro_rollout.controlo'::regclass,'primeline_quadro_rollout.validacoes'::regclass) AND a.attnum>0 AND NOT a.attisdropped),
+  'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY p.tablename,p.policyname) FROM pg_policies p WHERE (p.schemaname='public' AND p.tablename IN('quadro_pessoal_alocacao','quadro_pessoal_movimentos','quadro_dias_revisoes','quadro_operacoes','quadro_escrita_interna')) OR p.schemaname='primeline_quadro_rollout'),
+  'triggers',(SELECT jsonb_agg(jsonb_build_object('def',pg_get_triggerdef(t.oid),'enabled',t.tgenabled) ORDER BY t.tgrelid,t.tgname) FROM pg_trigger t WHERE t.tgrelid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass) AND NOT t.tgisinternal),
+  'constraints',(SELECT jsonb_agg(jsonb_build_object('rel',c.conrelid,'nome',c.conname,'def',pg_get_constraintdef(c.oid)) ORDER BY c.conrelid,c.conname) FROM pg_constraint c WHERE c.conrelid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass,'public.quadro_dias_revisoes'::regclass,'public.quadro_operacoes'::regclass,'public.quadro_escrita_interna'::regclass,'primeline_quadro_rollout.controlo'::regclass,'primeline_quadro_rollout.validacoes'::regclass))
+ )::text);
+$$;
+CREATE OR REPLACE FUNCTION primeline_quadro_rollout.exigir_privacidade()
+RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE r record; perfil text; privilegio text;
+BEGIN
+ IF current_user <> 'postgres' OR session_user <> 'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='primeline_quadro_rollout' AND pg_get_userbyid(nspowner)='postgres') THEN RAISE EXCEPTION 'ROLLOUT_INVALID: owner do schema'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN LATERAL aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner))) x WHERE n.nspname='primeline_quadro_rollout' AND (x.grantee=0 OR pg_get_userbyid(x.grantee) IN('anon','authenticated','service_role'))) THEN RAISE EXCEPTION 'ROLLOUT_INVALID: ACL do schema'; END IF;
+ FOR r IN SELECT c.* FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='primeline_quadro_rollout' AND c.relname IN('controlo','validacoes') LOOP
+  IF pg_get_userbyid(r.relowner)<>'postgres' OR NOT r.relrowsecurity OR EXISTS(SELECT 1 FROM pg_policy WHERE polrelid=r.oid) THEN RAISE EXCEPTION 'ROLLOUT_INVALID: owner/RLS/policy privada'; END IF;
+  IF EXISTS(SELECT 1 FROM aclexplode(coalesce(r.relacl,acldefault('r',r.relowner))) x WHERE x.grantee=0) THEN RAISE EXCEPTION 'ROLLOUT_INVALID: PUBLIC tabela'; END IF;
+  FOREACH perfil IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+   FOREACH privilegio IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER'] LOOP
+    IF has_table_privilege(perfil,r.oid,privilegio) THEN RAISE EXCEPTION 'ROLLOUT_INVALID: grant privado'; END IF;
+   END LOOP;
+   IF has_any_column_privilege(perfil,r.oid,'SELECT') OR has_any_column_privilege(perfil,r.oid,'INSERT') OR has_any_column_privilege(perfil,r.oid,'UPDATE') OR has_any_column_privilege(perfil,r.oid,'REFERENCES') THEN RAISE EXCEPTION 'ROLLOUT_INVALID: grant coluna privada'; END IF;
+  END LOOP;
+ END LOOP;
+ IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='primeline_quadro_rollout' AND c.relname IN('controlo','validacoes'))<>2 THEN RAISE EXCEPTION 'ROLLOUT_INVALID: tabela ausente'; END IF;
+ FOR r IN SELECT p.* FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='primeline_quadro_rollout' LOOP
+  IF pg_get_userbyid(r.proowner)<>'postgres' OR r.prosecdef OR r.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog, pg_temp']::text[] THEN RAISE EXCEPTION 'ROLLOUT_INVALID: helper privado'; END IF;
+  IF EXISTS(SELECT 1 FROM aclexplode(coalesce(r.proacl,acldefault('f',r.proowner))) x WHERE x.grantee=0) THEN RAISE EXCEPTION 'ROLLOUT_INVALID: PUBLIC helper'; END IF;
+  FOREACH perfil IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+   IF has_function_privilege(perfil,r.oid,'EXECUTE') THEN RAISE EXCEPTION 'ROLLOUT_INVALID: EXECUTE helper'; END IF;
+  END LOOP;
+ END LOOP;
+END;
+$$;
+CREATE OR REPLACE FUNCTION primeline_quadro_rollout.exigir_fase_a()
+RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE c primeline_quadro_rollout.controlo;
+BEGIN
+ PERFORM primeline_quadro_rollout.exigir_privacidade();
+ IF (SELECT count(*) FROM primeline_quadro_rollout.controlo)<>1 THEN RAISE EXCEPTION 'ROLLOUT_INVALID: instalação ausente'; END IF;
+ SELECT * INTO STRICT c FROM primeline_quadro_rollout.controlo WHERE singleton;
+ IF c.estado<>'a' OR c.contract_version<>1 OR c.frontend_release_id<>'quadro_frontend_contract_v1' OR c.fase_b_aplicada_em IS NOT NULL THEN RAISE EXCEPTION 'ROLLOUT_INVALID: Fase A/contrato incoerente'; END IF;
+ IF c.identidade_a IS DISTINCT FROM primeline_quadro_rollout.identidade_a() THEN RAISE EXCEPTION 'ROLLOUT_DRIFT: definições/ACL/policies/triggers/writers da Fase A divergentes'; END IF;
+END;
+$$;
+CREATE OR REPLACE FUNCTION primeline_quadro_rollout.exigir_validacao()
+RETURNS uuid LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE c primeline_quadro_rollout.controlo; v primeline_quadro_rollout.validacoes;
+BEGIN
+ PERFORM primeline_quadro_rollout.exigir_fase_a();
+ SELECT * INTO STRICT c FROM primeline_quadro_rollout.controlo WHERE singleton FOR UPDATE;
+ SELECT * INTO v FROM primeline_quadro_rollout.validacoes WHERE instalacao_id=c.instalacao_id AND tentativa=c.tentativa FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'FRONTEND_VALIDATION_REQUIRED: validar operacionalmente e executar script do owner'; END IF;
+ IF v.contract_version<>c.contract_version OR v.frontend_release_id<>c.frontend_release_id OR v.frontend_validado_por<>'postgres' OR v.frontend_validado_em<GREATEST(c.instalada_em,c.tentativa_iniciada_em) OR v.frontend_validado_em>clock_timestamp() OR v.identidade_a IS DISTINCT FROM c.identidade_a OR v.consumida_em IS NOT NULL OR v.invalidada_em IS NOT NULL THEN RAISE EXCEPTION 'FRONTEND_VALIDATION_INVALID: contrato/release/instalação/tentativa incoerente ou já consumida'; END IF;
+ RETURN v.id;
+END;
+$$;
+REVOKE ALL ON ALL FUNCTIONS IN SCHEMA primeline_quadro_rollout FROM PUBLIC,anon,authenticated,service_role;
+UPDATE primeline_quadro_rollout.validacoes SET invalidada_em=clock_timestamp()
+WHERE invalidada_em IS NULL;
+UPDATE primeline_quadro_rollout.controlo
+SET instalacao_id=gen_random_uuid(),tentativa=tentativa+1,estado='a',identidade_a=primeline_quadro_rollout.identidade_a(),instalada_em=clock_timestamp(),tentativa_iniciada_em=clock_timestamp(),fase_b_aplicada_em=NULL WHERE singleton;
 COMMIT;

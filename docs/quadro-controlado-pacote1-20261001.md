@@ -23,13 +23,26 @@ Todos os scripts estão em `supabase/`. São completos, transacionais e preparad
 2. Executar `quadro_controlado_backup.sql`. Exportar para arquivo privado externo, confirmar acesso e comparar as cópias. Nenhuma linha real deve entrar no Git.
 3. Instalar `quadro_controlado_fase_a.sql`.
 4. Executar `quadro_controlado_fase_a_postcheck.sql` e a validação funcional do cliente antigo e novo.
-5. Publicar, mediante autorização futura, o frontend corrigido. O candidato usa app v171 / workforce-allocation v2, com endpoints v1 explícitos.
+5. Publicar, mediante autorização futura, o frontend corrigido. O candidato usa app v172 / workforce-allocation v3, com endpoints v1 explícitos.
 6. Recarregar as sessões/clientes. Verificar Network: consultas `fn_quadro_contexto_v1`, preview/confirmação `fn_quadro_operar_v1`, nenhum INSERT/PATCH/DELETE de alocação. Identificar o SHA efetivamente servido e testar Administrativo/Gestão e Encarregado. Não usar a ausência de tráfego num instante como prova de que todos os separadores antigos foram atualizados.
-7. Executar `quadro_controlado_fase_b_precheck.sql`, guardar a identificação do SHA publicado/validado e executar `quadro_controlado_fase_b_backup.sql` imediatamente antes do hardening. Este backup é da Fase A instalada, sem pressupor que as contagens iniciais ainda sejam iguais.
-8. Na mesma sessão de operador, definir `primeline.quadro.frontend_validado` com o SHA confirmado; instalar `quadro_controlado_fase_b.sql`.
-9. Executar `quadro_controlado_fase_b_postcheck.sql` (também disponível como `quadro_controlado_postcheck.sql`) e repetir as validações finais.
+7. Após a prova operacional, executar SEPARADAMENTE e manualmente como sessão/role `postgres` o script `quadro_controlado_marcar_frontend_validado.sql`. Regista contrato 1, release estável `quadro_frontend_contract_v1`, instalação/tentativa atuais, timestamp e identidade do operador; timestamps anteriores à tentativa ou futuros são recusados. O SHA servido é metadado opcional. Não executar este script automaticamente durante A/B.
+8. Executar `quadro_controlado_fase_b_precheck.sql` e `quadro_controlado_fase_b_backup.sql` imediatamente antes do hardening. O backup inclui o controlo e as validações privados. Não restaurar esses marcadores como autorização de nova tentativa.
+9. Instalar `quadro_controlado_fase_b.sql`. O script repete os checks de integridade A, verifica o marcador e consome-o na mesma transação das alterações B. Falha reverte tanto o consumo como o hardening.
+10. Executar `quadro_controlado_fase_b_postcheck.sql` (também `quadro_controlado_postcheck.sql`) e repetir as validações finais.
 
-O identificador de frontend é uma pré-condição operacional do script administrado pelo proprietário. Não é um sinalizador de autorização de DML. A proteção de escrita usa tabela privada, inacessível a anon/authenticated/service_role, com autorização limitada à transação, pessoa, dia e autor.
+A BD não prova autonomamente a versão no Cloudflare. O operador confirma no browser os assets, os endpoints v1, a ausência de DML direto, Administrativo/Gestão/Encarregado e o reload dos clientes relevantes; só depois regista essa validação. O módulo servido expõe `WORKFORCE_FRONTEND_CONTRACT` (`version: 1`, `releaseId: quadro_frontend_contract_v1`). Pode ser inspecionado por import do asset servido no DevTools. O Git SHA não é uma referência circular exigida pelo gate.
+
+O custom GUC anteriormente utilizado deixou completamente de participar nos scripts de autorização. Qualquer valor configurado pela aplicação é irrelevante para o rollout.
+
+### Gate privado de rollout
+
+Schema `primeline_quadro_rollout`, owner `postgres`, fora do schema público/API. Tabelas `controlo` e `validacoes`, RLS ativa sem policies; nenhum grant de schema, tabela, coluna ou função para PUBLIC/anon/authenticated/service_role. Helpers são SECURITY INVOKER privados, nunca RPCs públicas. Apenas operador com session_user=current_user=postgres pode executar os scripts. Superutilizadores da BD continuam, naturalmente, capazes de administrar objetos; não são contas de aplicação.
+
+O controlo tem UUID da instalação A, tentativa, estado, contrato/release estáveis e fingerprint da estrutura A. A validação guarda instalação/tentativa, contrato/release, SHA opcional, autor, data e fingerprint, com marcas de consumo/invalidação. O fingerprint cobre definições/ACL/owners dos escritores e funções relevantes, tabelas privadas do núcleo, colunas, policies, triggers e constraints. Exclui linhas operacionais: uso legítimo do Quadro/RH não invalida a instalação. Divergência estrutural exige parar/rever, não atualizar o fingerprint para forçar a execução.
+
+Após rollback B, o estado volta a A, a tentativa aumenta, regista a hora de início da nova tentativa e a autorização anterior fica invalidada, preservada para auditoria. Forward-fix B exige NOVA prova operacional e execução do script de marcação pelo owner para a tentativa atual. Sem isso, recusa. O backup original B continua disponível para restauração estrutural; não reativa validações antigas. O gate exige que o backup corresponda ao UUID e fingerprint da instalação A atual; o rollback B conserva essa instalação, enquanto um forward-fix A inicia outra instalação e exige rever/substituir o backup B com arquivo privado prévio. Não apagar um backup para forçar a execução.
+
+Rollback A marca a instalação como retirada e invalida validações. Forward-fix A gera nova identidade de instalação e novo fingerprint apenas após reinstalar a estrutura A; é necessária nova validação operacional antes de B. Não há autorização para migração real ou publicação nesta entrega.
 
 ### Fase A compatível
 
@@ -127,7 +140,7 @@ Rollback de B permite cliente antigo/novo em A. Rollback A torna o novo cliente 
 
 ## Testes e limites
 
-Resultados finais: **58 testes do backend Quadro passaram**, zero falhas/skips; **176 testes de regressão passaram**, zero falhas e um skip opcional (RH_XLSX externo não fornecido). Oito navegadores offline passaram: Quadro, RH frontend, Cadastro RH, Medicina, Planeamento, seleção de obra, atribuição de Viaturas e validades.
+Resultados da revisão anterior (não repetidos integralmente nesta correção): **58 testes do backend Quadro passaram**, zero falhas/skips; **176 testes de regressão passaram**, zero falhas e um skip opcional (RH_XLSX externo não fornecido). Oito navegadores offline passaram: Quadro, RH frontend, Cadastro RH, Medicina, Planeamento, seleção de obra, atribuição de Viaturas e validades.
 
 PostgreSQL **17.6**, cluster descartável, dois clientes independentes, dados sintéticos. Todos os seis triggers reais do Quadro estão exercitados; tabela de auditoria e alertas são locais. Outros helpers periféricos não exercitados continuam identificados como stubs na fixture. Nenhum teste de escrita usa produção.
 
@@ -136,6 +149,16 @@ Cobertura: quatro combinações suportadas + antiga/B recusada; revisão após e
 Regressões: Quadro, Cadastro/Importação RH, Ponto legado, Férias, Medicina, Viaturas e Planeamento. Medicina: apenas atualização do mock do contexto v1 no teste original; nenhum ficheiro de produção de Medicina alterado. Navegadores offline usam desktop/tablet/mobile e verificam console/ausência de DML direto.
 
 O browser Cadastro RH original usa bootstrap temporário para caminhos Windows e Edge instalado; o teste/código RH de produção não é alterado por esse bootstrap. O caso opcional de Excel externo com 47 pessoas é separado: depende de RH_XLSX, não se inventa ficheiro real para o substituir.
+
+## Correção do gate após a segunda auditoria
+
+Auditoria preservada na branch audit/quadro-controlado-pacote1-critica2-20261001, commit 28157ed. O GUC configurável pela aplicação aceitava qualquer texto não vazio; não era prova operacional confiável. Foi substituído pelo controlo privado descrito acima, sem alteração das funções funcionais de Quadro/RH/Ponto.
+
+Nesta revisão: **115 testes de Quadro/gate/client passaram**, incluindo PostgreSQL 17.6 com duas ligações; **40 regressões passaram**, com 1 skip do Excel externo opcional RH_XLSX. Dois browsers offline passaram: Quadro (três viewports e console) e RH (três viewports, 49 combinações de permissões e console). git diff --check passou.
+
+Ataques: DML e helpers privados negados a anon/authenticated/service_role; marcação recusada a esses roles; GUC/payload não autorizam B; marcador ausente, release/contrato/instalação/fingerprint/data inválidos recusados; drift de ACL recusa B; duplicação de marcador recusada; consumo e DDL B revertidos juntos em falha; rollback exige nova validação antes do forward-fix. O SHA opcional do frontend é apenas metadado. A comparação com 80d41cc confirmou os blocos funcionais anteriores de A e forward-fix A integralmente preservados.
+
+Apenas estes testes foram repetidos nesta revisão. Os resultados históricos de Medicina/Viaturas/Planeamento acima não constituem nova execução nesta etapa. A nova varredura crítica completa permanece obrigatória; não emitir GO de produção.
 
 ## Riscos restantes / próxima etapa
 

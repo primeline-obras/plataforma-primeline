@@ -53,3 +53,8 @@ DO $$ DECLARE r record; role_name text; f record; t text; priv text; BEGIN
 END $$;
 -- UUIDs usam gen_random_uuid(): não são introduzidas sequências novas.
 SELECT 'POSTCHECK_B_OK' status;
+-- Controlo de rollout não é RPC pública; owner/ACL/RLS privados obrigatórios.
+SELECT primeline_quadro_rollout.exigir_privacidade();
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM primeline_quadro_rollout.controlo c JOIN primeline_quadro_rollout.validacoes v ON v.instalacao_id=c.instalacao_id AND v.tentativa=c.tentativa WHERE c.singleton AND c.estado='b' AND c.fase_b_aplicada_em IS NOT NULL AND c.contract_version=1 AND c.frontend_release_id='quadro_frontend_contract_v1' AND v.contract_version=c.contract_version AND v.frontend_release_id=c.frontend_release_id AND v.consumida_em IS NOT NULL AND v.invalidada_em IS NULL AND v.identidade_a=c.identidade_a) THEN RAISE EXCEPTION 'POSTCHECK_FAILED: autorização privada de rollout incoerente'; END IF;
+END $$;
