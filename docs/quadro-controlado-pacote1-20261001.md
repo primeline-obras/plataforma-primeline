@@ -190,3 +190,7 @@ Pós-check B recalcula o catálogo atual contra uma referência privada obtida d
 Frontend limpa saving no finally do handler real, preservando o bloqueio enquanto a gravação está ativa. Sete dias têm targets legíveis e scroll horizontal; testes mouse/tap comprovam que data visual e payload coincidem em desktop/tablet/mobile. Cache-busting app v173/workforce-calendar v8.
 
 Regras de alocação/RH/Ponto/alertas preservadas. GO local somente para nova auditoria independente; nenhuma autorização de aplicação/merge/deploy. P2/P3 e validações reais permanecem no relatório. A falha Agenda hardcoded continua documentada e intacta.
+
+## Correção final da ACL de coluna da referência B — 02/10/2026
+
+Ver [relatório da correção isolada](quadro-controlado-acl-referencia-20261002.md). B e alias verificam todas as ACL de coluna da referência e privilégios efetivos da aplicação. Negativos PostgreSQL locais recusam SELECT/INSERT/UPDATE/REFERENCES para roles da aplicação, PUBLIC e role inesperado; sem SQL real. GO local apenas para auditoria final do novo SHA, sem GO de produção.

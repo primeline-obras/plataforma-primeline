@@ -151,6 +151,48 @@ test('PostgreSQL 17.6: operações, Cadastro RH, RLS e concorrência real',{time
   assert.equal(await read('../supabase/quadro_controlado_postcheck.sql'),postFinal);
   await q(postFinal);await q(await read('../supabase/quadro_controlado_postcheck.sql'));
  });
+
+ const reference='primeline_backup.quadro_fase_b_estrutura_20261001',aliasPost=await read('../supabase/quadro_controlado_postcheck.sql');
+ await t.test('referência B criada limpa: todas as colunas sem ACL e roles sem privilégios efetivos',async()=>{
+  const columns=(await q('SELECT attname,attacl FROM pg_attribute WHERE attrelid=$1::regclass AND attnum>0 AND NOT attisdropped',[reference])).rows;
+  assert.ok(columns.length);assert.ok(columns.every(c=>c.attacl===null));
+  for(const role of ['anon','authenticated','service_role'])for(const privilege of ['SELECT','INSERT','UPDATE','REFERENCES'])assert.equal((await q('SELECT has_any_column_privilege($1,$2,$3) v',[role,reference,privilege])).rows[0].v,false);
+  await q(postFinal);await q(aliasPost);
+ });
+ for(const role of ['authenticated','anon','service_role','PUBLIC','quadro_column_unexpected'])for(const privilege of ['SELECT','INSERT','UPDATE','REFERENCES'])await t.test('ACL referência: '+role+' '+privilege+' → B/alias FAIL; revoke/rollback → PASS',async()=>{
+  for(const check of [postFinal,aliasPost]){
+   await q('BEGIN');try{
+    if(role==='quadro_column_unexpected')await q('CREATE ROLE quadro_column_unexpected');
+    const before=(await q('SELECT relacl::text v FROM pg_class WHERE oid=$1::regclass',[reference])).rows[0].v;
+    await q('GRANT '+privilege+'(estrutura) ON '+reference+' TO '+role);
+    assert.equal((await q('SELECT relacl::text v FROM pg_class WHERE oid=$1::regclass',[reference])).rows[0].v,before);
+    assert.ok((await q("SELECT attacl::text v FROM pg_attribute WHERE attrelid=$1::regclass AND attname='estrutura'",[reference])).rows[0].v);
+    const effectiveRole=role==='PUBLIC'?'anon':role;
+    assert.equal((await q('SELECT has_column_privilege($1,$2,$3,$4) v',[effectiveRole,reference,'estrutura',privilege])).rows[0].v,true);
+    await q('SAVEPOINT grant_check');await assert.rejects(()=>q(check),/POSTCHECK_FAILED: ACL de coluna inesperada/);await q('ROLLBACK TO grant_check; RELEASE grant_check');
+    await q('REVOKE '+privilege+'(estrutura) ON '+reference+' FROM '+role);await q(check);
+    assert.equal((await q('SELECT has_column_privilege($1,$2,$3,$4) v',[effectiveRole,reference,'estrutura',privilege])).rows[0].v,false);
+   }finally{await q('ROLLBACK');}await q(check);
+  }
+ });
+ for(const privilege of ['SELECT','INSERT','UPDATE','REFERENCES'])await t.test('ACL referência: coluna adicional não hardcoded '+privilege,async()=>{
+  for(const check of [postFinal,aliasPost]){await q('BEGIN');try{
+   await q('ALTER TABLE '+reference+' ADD COLUMN acceptance_extra text');await q(check);
+   await q('GRANT '+privilege+'(acceptance_extra) ON '+reference+' TO authenticated');assert.equal((await q('SELECT has_column_privilege($1,$2,$3,$4) v',['authenticated',reference,'acceptance_extra',privilege])).rows[0].v,true);
+   await q('SAVEPOINT grant_check');await assert.rejects(()=>q(check),/POSTCHECK_FAILED: ACL de coluna inesperada/);await q('ROLLBACK TO grant_check; RELEASE grant_check');
+   await q('REVOKE '+privilege+'(acceptance_extra) ON '+reference+' FROM authenticated');await q(check);
+  }finally{await q('ROLLBACK');}await q(check);}
+ });
+ for(const privilege of ['SELECT','INSERT','UPDATE','REFERENCES'])await t.test('ACL referência: grant herdado por authenticated '+privilege,async()=>{
+  for(const check of [postFinal,aliasPost]){await q('BEGIN');try{
+   await q('CREATE ROLE quadro_column_parent; GRANT quadro_column_parent TO authenticated');await q('GRANT '+privilege+'(estrutura) ON '+reference+' TO quadro_column_parent');
+   assert.equal((await q('SELECT has_column_privilege($1,$2,$3,$4) v',['authenticated',reference,'estrutura',privilege])).rows[0].v,true);
+   await assert.rejects(()=>q(check),/POSTCHECK_FAILED: ACL de coluna inesperada/);
+  }finally{await q('ROLLBACK');}await q(check);}
+ });
+ await t.test('referência: owner/operator conserva privilégios; ACL explícita apenas owner passa',async()=>{
+  await q('BEGIN');try{await q('GRANT SELECT(estrutura),INSERT(estrutura),UPDATE(estrutura),REFERENCES(estrutura) ON '+reference+' TO postgres');await q(postFinal);await q(aliasPost);for(const privilege of ['SELECT','INSERT','UPDATE','REFERENCES'])assert.equal((await q('SELECT has_column_privilege($1,$2,$3,$4) v',['postgres',reference,'estrutura',privilege])).rows[0].v,true);}finally{await q('ROLLBACK');}
+ });
  for(const [name,sql] of [
   ['remover histórico','DROP TRIGGER trg_quadro_pessoal_movimentos ON quadro_pessoal_alocacao'],
   ['desativar histórico','ALTER TABLE quadro_pessoal_alocacao DISABLE TRIGGER trg_quadro_pessoal_movimentos'],

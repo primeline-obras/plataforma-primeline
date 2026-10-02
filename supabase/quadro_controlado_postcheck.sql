@@ -85,6 +85,27 @@ BEGIN
  EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid=to_regclass('primeline_backup.quadro_fase_b_estrutura_20261001') AND (pg_get_userbyid(c.relowner)<>'postgres' OR a.grantee<>c.relowner)) THEN
   RAISE EXCEPTION 'POSTCHECK_FAILED: referência estrutural deve permanecer privada/owner postgres';
  END IF;
+ -- Column grants do not change relacl. Inspect every current, non-dropped column.
+ -- Only the postgres owner/operator may hold explicit column privileges.
+ IF EXISTS(
+  SELECT 1 FROM pg_attribute col JOIN pg_class ref ON ref.oid=col.attrelid
+  CROSS JOIN LATERAL aclexplode(col.attacl) acl
+  WHERE ref.oid=to_regclass('primeline_backup.quadro_fase_b_estrutura_20261001')
+    AND col.attnum>0 AND NOT col.attisdropped
+    AND (acl.grantee<>ref.relowner OR acl.grantor<>ref.relowner)
+ ) THEN
+  RAISE EXCEPTION 'POSTCHECK_FAILED: ACL de coluna inesperada na referência estrutural privada';
+ END IF;
+ -- Also reject effective application access, including PUBLIC and inherited grants.
+ IF EXISTS(
+  SELECT 1 FROM pg_roles app_role WHERE app_role.rolname IN('anon','authenticated','service_role')
+    AND (has_any_column_privilege(app_role.oid,'primeline_backup.quadro_fase_b_estrutura_20261001','SELECT')
+      OR has_any_column_privilege(app_role.oid,'primeline_backup.quadro_fase_b_estrutura_20261001','INSERT')
+      OR has_any_column_privilege(app_role.oid,'primeline_backup.quadro_fase_b_estrutura_20261001','UPDATE')
+      OR has_any_column_privilege(app_role.oid,'primeline_backup.quadro_fase_b_estrutura_20261001','REFERENCES'))
+ ) THEN
+  RAISE EXCEPTION 'POSTCHECK_FAILED: privilégio efetivo de coluna da aplicação na referência estrutural privada';
+ END IF;
  SELECT b.estrutura INTO STRICT v_expected FROM primeline_backup.quadro_fase_b_estrutura_20261001 b;
  -- B changes exactly two function bodies, two function ACLs, two table ACLs and two policies.
  SELECT jsonb_agg(CASE
