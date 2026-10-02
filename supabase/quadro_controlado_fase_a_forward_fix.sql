@@ -876,9 +876,14 @@ DECLARE
   v_destino_nome text;
   v_titulo text;
   v_descricao text;
+  v_request uuid;
 BEGIN
  SELECT * INTO v_atual FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id() AND ativo IS TRUE AND funcao='encarregado';
  IF v_atual.id IS NULL OR p_destino IS NULL OR p_origem IS NOT DISTINCT FROM p_destino THEN RETURN; END IF;
+ -- A ocorrência controlada identifica o pedido lógico, não o UUID aleatório do alerta/alocação.
+ SELECT p.request_id INTO v_request FROM public.quadro_escrita_interna p
+ WHERE p.transacao=txid_current() AND p.colaborador_id=p_colaborador AND p.data=p_data AND p.utilizador_id=v_atual.id;
+ IF v_request IS NULL THEN RAISE EXCEPTION 'CONTROLLED_NOTIFICATION_REQUIRED: falta request da movimentação.' USING ERRCODE='42501'; END IF;
  v_origem_id:=p_origem; v_destino_id:=p_destino;
   SELECT *
   INTO v_colaborador
@@ -998,7 +1003,8 @@ BEGIN
     destinatario_role,
     estado,
     enviar_email,
-    destinatario_utilizador_id
+    destinatario_utilizador_id,
+    ocorrencia_chave
   )
   SELECT
     v_atual.empresa_id,
@@ -1014,7 +1020,9 @@ BEGIN
     destinatario.funcao,
     'pendente',
     false,
-    destinatario.id
+    destinatario.id,
+    md5(jsonb_build_array('quadro_movimento_alerta_v1',v_atual.empresa_id,v_request,
+      p_colaborador,p_data,p_origem,p_destino,destinatario.id)::text)::uuid
   FROM unicos u
   JOIN public.utilizadores destinatario
     ON destinatario.id=u.utilizador_id
@@ -1043,6 +1051,7 @@ DECLARE
   v_destino_nome text;
   v_titulo text;
   v_descricao text;
+  v_revisao_evento integer;
 BEGIN
  IF EXISTS(SELECT 1 FROM public.quadro_escrita_interna p WHERE p.transacao=txid_current() AND p.colaborador_id=NEW.colaborador_id AND p.data=NEW.data) THEN RETURN NEW; END IF;
   IF TG_OP NOT IN ('INSERT','UPDATE') THEN
@@ -1141,6 +1150,11 @@ BEGIN
     );
   END IF;
 
+  -- O trigger de movimentos incrementa a revisão após este trigger; a revisão seguinte
+  -- identifica o evento legado de pessoa/dia, incluindo novas movimentações A→B→A.
+  SELECT coalesce((SELECT revisao FROM public.quadro_dias_revisoes
+   WHERE colaborador_id=NEW.colaborador_id AND data=NEW.data),0)+1 INTO v_revisao_evento;
+
   WITH destinatarios AS (
     SELECT
       r.utilizador_id,
@@ -1207,7 +1221,8 @@ BEGIN
     destinatario_role,
     estado,
     enviar_email,
-    destinatario_utilizador_id
+    destinatario_utilizador_id,
+    ocorrencia_chave
   )
   SELECT
     v_atual.empresa_id,
@@ -1223,7 +1238,9 @@ BEGIN
     destinatario.funcao,
     'pendente',
     false,
-    destinatario.id
+    destinatario.id,
+    md5(jsonb_build_array('quadro_movimento_legado_v1',v_atual.empresa_id,
+      NEW.colaborador_id,NEW.data,v_revisao_evento,v_origem_id,v_destino_id,destinatario.id)::text)::uuid
   FROM unicos u
   JOIN public.utilizadores destinatario
     ON destinatario.id=u.utilizador_id

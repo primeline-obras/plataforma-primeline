@@ -171,3 +171,13 @@ Apenas estes testes foram repetidos nesta revisão. Os resultados históricos de
 - Nenhuma nova regra de Financeiro, Férias, horas, custos ou novo Ponto foi implementada.
 
 **Sem GO para produção. Próxima etapa: nova varredura estrutural crítica.**
+
+## Correção de notificações e pré-varredura local — 02/10/2026
+
+O P1 da terceira auditoria foi corrigido somente nos emissores de alertas A/forward-fix A. A ocorrência controlada deriva de empresa, request privado, pessoa/data, par origem/destino e destinatário. O trigger legado deriva da revisão seguinte da pessoa/dia e destinatário. Ambas são determinísticas; o índice global não foi alterado.
+
+Os testes habituais agora instalam o índice real capturado de alertas. A entrega executou 347 testes aprovados, zero falhas e um skip opcional RH_XLSX, mais oito browsers offline, incluindo o original de Medicina. Inclui 28 testes específicos de alertas e 29 de pré-varredura adicional, sem somar novamente as execuções isoladas.
+
+Relatório completo: [quadro-controlado-prevarredura-local-20261002.md](quadro-controlado-prevarredura-local-20261002.md). Contém provas A/B/gate/rollback, escritores, limites e questões P2. Os resultados desta secção são os desta entrega; os números das secções anteriores são históricos.
+
+**GO LOCAL apenas para nova auditoria independente. Sem GO para produção ou SQL real.** Nenhum acesso ao Supabase/Chrome autenticado/produção nesta sessão. As validações reais pendentes estão enumeradas no relatório.
