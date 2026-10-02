@@ -4008,12 +4008,17 @@ $("#team-board").addEventListener("click", async event => {
     if (cell) toast("Selecione primeiro um íman.", "error");
     return;
   }
+  if (workforceSaving) return;
   cell.classList.add("saving");
-  await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.date, {
-    type: cell.dataset.allocationType,
-    workId: cell.dataset.workId,
-    description: decodeURIComponent(cell.dataset.description || ""),
-  });
+  try {
+    await saveWorkforceAllocation(selectedWorkforcePersonId, cell.dataset.date, {
+      type: cell.dataset.allocationType,
+      workId: cell.dataset.workId,
+      description: decodeURIComponent(cell.dataset.description || ""),
+    });
+  } finally {
+    cell.classList.remove("saving");
+  }
 });
 $("#workforce-roster").addEventListener("click", event => {
   if (!workforceEditing) return;

@@ -146,6 +146,39 @@ test('PostgreSQL 17.6: operações, Cadastro RH, RLS e concorrência real',{time
  });
  await q(await read('../supabase/quadro_controlado_fase_b.sql'));await q(await read('../supabase/quadro_controlado_fase_b_postcheck.sql'));
  await t.test('gate: B consumiu validação, repetição sem rollback é recusada',async()=>{assert.ok((await q('SELECT consumida_em FROM primeline_quadro_rollout.validacoes')).rows[0].consumida_em);await rejectedScript(await read('../supabase/quadro_controlado_fase_b.sql'),/ROLLOUT_INVALID/);});
+
+ await t.test('postcheck íntegro B e alias equivalentes: identidade atual calculada',async()=>{
+  assert.equal(await read('../supabase/quadro_controlado_postcheck.sql'),postFinal);
+  await q(postFinal);await q(await read('../supabase/quadro_controlado_postcheck.sql'));
+ });
+ for(const [name,sql] of [
+  ['remover histórico','DROP TRIGGER trg_quadro_pessoal_movimentos ON quadro_pessoal_alocacao'],
+  ['desativar histórico','ALTER TABLE quadro_pessoal_alocacao DISABLE TRIGGER trg_quadro_pessoal_movimentos'],
+  ['função chamada errada',"DROP TRIGGER trg_quadro_pessoal_movimentos ON quadro_pessoal_alocacao; CREATE TRIGGER trg_quadro_pessoal_movimentos AFTER INSERT OR DELETE OR UPDATE ON quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_quadro_notificar_movimentacao_encarregado()"],
+  ['timing errado',"DROP TRIGGER trg_quadro_pessoal_movimentos ON quadro_pessoal_alocacao; CREATE TRIGGER trg_quadro_pessoal_movimentos BEFORE INSERT OR DELETE OR UPDATE ON quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_registar_movimento_quadro()"],
+  ['eventos errados',"DROP TRIGGER trg_quadro_pessoal_movimentos ON quadro_pessoal_alocacao; CREATE TRIGGER trg_quadro_pessoal_movimentos AFTER INSERT ON quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_registar_movimento_quadro()"],
+  ['grant referência privada','GRANT SELECT ON primeline_backup.quadro_fase_b_estrutura_20261001 TO authenticated'],
+  ['função privada ausente','DROP FUNCTION fn_quadro_aplicar_interno(uuid,date,jsonb,jsonb,text,uuid,boolean)'],
+  ['role inesperado em função','CREATE ROLE quadro_audit_role; GRANT EXECUTE ON FUNCTION fn_quadro_proteger_escrita() TO quadro_audit_role'],
+  ['role inesperado em tabela','CREATE ROLE quadro_audit_role; GRANT SELECT ON quadro_pessoal_alocacao TO quadro_audit_role'],
+  ['novo SECURITY DEFINER dinâmico',"CREATE FUNCTION public.quadro_audit_generic(p_table regclass) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $body$ BEGIN EXECUTE format('DELETE FROM %s WHERE false',p_table); END $body$"],
+  ['constraint privado ausente','ALTER TABLE quadro_operacoes DROP CONSTRAINT quadro_operacoes_pkey'],
+  ['coluna privada alterada','ALTER TABLE quadro_dias_revisoes ALTER COLUMN revisao DROP NOT NULL'],
+  ['grant inesperado de função','GRANT EXECUTE ON FUNCTION fn_quadro_proteger_escrita() TO service_role']
+ ])await t.test('postcheck drift FAIL: '+name,async()=>{await q('BEGIN');try{await q(sql);await assert.rejects(()=>q(postFinal),/POSTCHECK_FAILED/);}finally{await q('ROLLBACK');}await q(postFinal);});
+ for(const [signature,replacement] of [
+  ['public.fn_quadro_notificar_controlado_v1(uuid,date,uuid,uuid,uuid)','BEGIN RETURN; END'],
+  ['public.fn_registar_movimento_quadro()','BEGIN RETURN NEW; END'],
+  ['public.fn_quadro_proteger_escrita()','BEGIN RETURN NEW; END'],
+  ['public.fn_quadro_operar_v1(text,jsonb,boolean,text)',"BEGIN RETURN '{}'::jsonb; END"],
+  ['public.fn_quadro_contexto_v1(date,date)',"BEGIN RETURN '{}'::jsonb; END"],
+  ['public.fn_quadro_aplicar_interno(uuid,date,jsonb,jsonb,text,uuid,boolean)',"BEGIN RETURN '{}'::jsonb; END"],
+  ['primeline_quadro_rollout.exigir_privacidade()','BEGIN RETURN; END']
+ ])await t.test('postcheck drift FAIL: corpo com assinatura preservada '+signature,async()=>{
+  await q('BEGIN');try{const f=(await q('SELECT pg_get_functiondef($1::regprocedure) def,prosrc FROM pg_proc WHERE oid=$1::regprocedure',[signature])).rows[0];await q(f.def.replace(f.prosrc,()=>replacement));await assert.rejects(()=>q(postFinal),/POSTCHECK_FAILED/);}finally{await q('ROLLBACK');}await q(postFinal);
+ });
+ for(const required of ['trg_00_quadro_lock_escrita_v1','trg_00_quadro_proteger_escrita','trg_auditoria_quadro_pessoal_alocacao','trg_bloquear_quadro_pessoal_ausencia','trg_quadro_notificar_movimentacao_encarregado','trg_validar_conflito_quadro_pessoal'])await t.test('postcheck exige também '+required,async()=>{await q('BEGIN');try{await q('DROP TRIGGER '+required+' ON quadro_pessoal_alocacao');await assert.rejects(()=>q(postFinal),/POSTCHECK_FAILED/);}finally{await q('ROLLBACK');}});
+
  const actor=async(c,n=10)=>{await c.query('RESET ROLE');await c.query("SELECT set_config('test.actor',$1,false)",[id(n)]);await c.query('SET ROLE authenticated');};
  const call=async(c,acao,body,confirm=false,versao=null)=>(await c.query('SELECT fn_quadro_operar_v1($1,$2::jsonb,$3,$4) value',[acao,JSON.stringify(body),confirm,versao])).rows[0].value;
  const body=(person=30,work=100,rev=0,req=3000,period='dia_inteiro',date='2026-10-05')=>({version:1,colaborador_id:id(person),data:date,periodo:period,tipo_alocacao:'obra',obra_id:id(work),descricao_livre:null,expected_revision:rev,request_id:id(req)});

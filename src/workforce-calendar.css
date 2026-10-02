@@ -188,3 +188,16 @@ main::-webkit-scrollbar-thumb {
 .index-state.cancelado, .index-state.nao, .index-state.recusado { color: var(--neg-text); background: var(--neg-bg); border-color: var(--neg-border); }
 .work-document-description, .work-document-notes { grid-column: span 2; }
 .work-document-index-field textarea, .work-document-index-field select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--card-border); background: var(--bg); color: var(--text-primary); resize: vertical; }
+
+/* Keep seven explicit days legible; scroll the board rather than compress hit targets. */
+#team-board { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+#team-board .workforce-grid { min-width: 1600px; grid-template-columns: 240px repeat(4, minmax(340px, 1fr)); }
+#team-board .workforce-week-cell,
+#team-board .workforce-day-labels { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+#team-board .workforce-grid-head > div { padding-left: 0; padding-right: 0; }
+#team-board .workforce-grid-head > div:first-child { padding-left: 14px; padding-right: 14px; }
+#team-board .workforce-grid-head > div > strong,
+#team-board .workforce-grid-head > div > span,
+#team-board .workforce-vacation-box { margin-left: 8px; margin-right: 8px; }
+#team-board .workforce-day-labels { margin-left: 0; margin-right: 0; }
+#team-board .workforce-day-cell { min-height: 48px; overflow: hidden; }

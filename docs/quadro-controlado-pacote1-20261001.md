@@ -181,3 +181,12 @@ Os testes habituais agora instalam o índice real capturado de alertas. A entreg
 Relatório completo: [quadro-controlado-prevarredura-local-20261002.md](quadro-controlado-prevarredura-local-20261002.md). Contém provas A/B/gate/rollback, escritores, limites e questões P2. Os resultados desta secção são os desta entrega; os números das secções anteriores são históricos.
 
 **GO LOCAL apenas para nova auditoria independente. Sem GO para produção ou SQL real.** Nenhum acesso ao Supabase/Chrome autenticado/produção nesta sessão. As validações reais pendentes estão enumeradas no relatório.
+## Correção dos três P1 da auditoria final — 02/10/2026
+
+Ver [relatório de correção e pré-varredura](quadro-controlado-correcao-p1-20261002.md).
+
+Pós-check B recalcula o catálogo atual contra uma referência privada obtida da A validada antes da instalação. Sete triggers são explicitamente obrigatórios; corpos/ACL/policies/objetos críticos são comparados, não apenas metadados de segurança. O alias postcheck é equivalente. O backup B agora deve incluir `primeline_backup.quadro_fase_b_estrutura_20261001`; B e forward-fix B recusam backup antigo sem essa referência. Não gerar referência a partir de um B com drift nem sobrescrever backups existentes.
+
+Frontend limpa saving no finally do handler real, preservando o bloqueio enquanto a gravação está ativa. Sete dias têm targets legíveis e scroll horizontal; testes mouse/tap comprovam que data visual e payload coincidem em desktop/tablet/mobile. Cache-busting app v173/workforce-calendar v8.
+
+Regras de alocação/RH/Ponto/alertas preservadas. GO local somente para nova auditoria independente; nenhuma autorização de aplicação/merge/deploy. P2/P3 e validações reais permanecem no relatório. A falha Agenda hardcoded continua documentada e intacta.

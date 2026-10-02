@@ -12,6 +12,7 @@ DO $$ BEGIN
  IF to_regclass('primeline_quadro_rollout.controlo') IS NULL OR to_regclass('primeline_quadro_rollout.validacoes') IS NULL THEN RAISE EXCEPTION 'FRONTEND_VALIDATION_REQUIRED: controlo privado ausente'; END IF;
  PERFORM primeline_quadro_rollout.exigir_fase_a();
  PERFORM primeline_quadro_rollout.exigir_validacao();
+ IF to_regclass('primeline_backup.quadro_fase_b_estrutura_20261001') IS NULL THEN RAISE EXCEPTION 'PRECONDITION_FAILED: executar backup B com referência estrutural validada A'; END IF;
  IF to_regclass('primeline_backup.quadro_fase_b_funcoes_20261001') IS NULL THEN RAISE EXCEPTION 'PRECONDITION_FAILED: executar backup da Fase B.'; END IF;
  IF to_regclass('primeline_backup.quadro_fase_b_controlo_20261001') IS NULL THEN RAISE EXCEPTION 'PRECONDITION_FAILED: backup sem identidade privada'; END IF;
  IF NOT EXISTS(SELECT 1 FROM primeline_backup.quadro_fase_b_controlo_20261001 b JOIN primeline_quadro_rollout.controlo c ON c.instalacao_id=b.instalacao_id AND c.identidade_a=b.identidade_a WHERE c.singleton AND b.singleton AND b.estado='a') THEN RAISE EXCEPTION 'PRECONDITION_FAILED: backup pertence a outra instalação/estrutura A'; END IF;
