@@ -17,6 +17,24 @@ BEGIN
 ));
  IF md5(v::text) <> '2be961099e9694bdd29ba95d3cc10173' THEN RAISE EXCEPTION 'CATALOG_DRIFT: interromper e repetir diagnóstico'; END IF;
 END $check$;
+-- Read-only integrity gate: report identifiers only; never reconcile automatically.
+DO $budget_phase_coherence$
+DECLARE divergencias jsonb;
+BEGIN
+ SELECT jsonb_agg(jsonb_build_object(
+   'orcamento_fase_id',o.id,'fase_id',o.fase_id,
+   'obra_orcamento_id',o.obra_id,'obra_fase_id',f.obra_id) ORDER BY o.id)
+ INTO divergencias
+ FROM public.orcamento_fases o LEFT JOIN public.fases f ON f.id=o.fase_id
+ WHERE f.id IS NULL OR o.obra_id IS DISTINCT FROM f.obra_id;
+ IF divergencias IS NOT NULL THEN
+  RAISE EXCEPTION USING ERRCODE='23514',
+   MESSAGE='ORCAMENTO_FASES_OBRA_DIVERGENTE: interromper e reconciliar manualmente; nenhum registo foi corrigido.',
+   DETAIL=divergencias::text;
+ END IF;
+END $budget_phase_coherence$;
+
+
 
 DO $private$
 BEGIN
@@ -2740,16 +2758,31 @@ CREATE OR REPLACE FUNCTION public.fn_importar_orcamento_fases(p_obra_id uuid, p_
  SECURITY DEFINER
  SET search_path TO 'pg_catalog', 'public', 'pg_temp'
 AS $function$
-declare linha jsonb; total integer:=0; fase_obra uuid;
+declare linha jsonb; total integer:=0; fase_obra uuid; alvo_obra uuid; linhas_escritas integer;
 begin
   perform public.fn_financeiro_autorizar_obra(p_obra_id,false);
   if not (public.fn_e_gestao_plataforma() or public.fn_e_diretor_obra(p_obra_id)) then raise exception 'Importação reservada à Gestão da Plataforma ou Diretor de Obra.' using errcode='42501'; end if;
+  -- Validate every real target before the first write. Existing targets remain locked.
   for linha in select * from jsonb_array_elements(coalesce(p_linhas,'[]'::jsonb)) loop
     select obra_id into fase_obra from public.fases where id=(linha->>'fase_id')::uuid for share;
-    if fase_obra is distinct from p_obra_id then raise exception 'A fase indicada não pertence à obra.'; end if;
+    if not found or fase_obra is distinct from p_obra_id then
+      raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501';
+    end if;
+    select obra_id into alvo_obra from public.orcamento_fases where fase_id=(linha->>'fase_id')::uuid for update;
+    if found and alvo_obra is distinct from p_obra_id then
+      raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501';
+    end if;
+  end loop;
+  for linha in select * from jsonb_array_elements(coalesce(p_linhas,'[]'::jsonb)) loop
     insert into public.orcamento_fases(obra_id,fase_id,descricao,venda_prevista,custo_total_estimado,margem_prevista,deslocacoes,mao_obra,maquinas,materiais,mao_obra_sub,subempreitada,nome_ficheiro_origem,importado_por,importado_em)
     values(p_obra_id,(linha->>'fase_id')::uuid,linha->>'descricao',coalesce((linha->>'venda_prevista')::numeric,0),coalesce((linha->>'custo_total_estimado')::numeric,0),coalesce((linha->>'margem_prevista')::numeric,0),coalesce((linha->>'deslocacoes')::numeric,0),coalesce((linha->>'mao_obra')::numeric,0),coalesce((linha->>'maquinas')::numeric,0),coalesce((linha->>'materiais')::numeric,0),coalesce((linha->>'mao_obra_sub')::numeric,0),coalesce((linha->>'subempreitada')::numeric,0),p_nome_ficheiro,public.fn_utilizador_atual_id(),now())
-    on conflict(fase_id) do update set descricao=excluded.descricao,venda_prevista=excluded.venda_prevista,custo_total_estimado=excluded.custo_total_estimado,margem_prevista=excluded.margem_prevista,deslocacoes=excluded.deslocacoes,mao_obra=excluded.mao_obra,maquinas=excluded.maquinas,materiais=excluded.materiais,mao_obra_sub=excluded.mao_obra_sub,subempreitada=excluded.subempreitada,nome_ficheiro_origem=excluded.nome_ficheiro_origem,importado_por=excluded.importado_por,importado_em=now();
+    on conflict(fase_id) do update set descricao=excluded.descricao,venda_prevista=excluded.venda_prevista,custo_total_estimado=excluded.custo_total_estimado,margem_prevista=excluded.margem_prevista,deslocacoes=excluded.deslocacoes,mao_obra=excluded.mao_obra,maquinas=excluded.maquinas,materiais=excluded.materiais,mao_obra_sub=excluded.mao_obra_sub,subempreitada=excluded.subempreitada,nome_ficheiro_origem=excluded.nome_ficheiro_origem,importado_por=excluded.importado_por,importado_em=now()
+    where orcamento_fases.obra_id = excluded.obra_id;
+    -- An absent target may appear concurrently after prevalidation. Never silently skip it.
+    get diagnostics linhas_escritas = row_count;
+    if linhas_escritas <> 1 then
+      raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501';
+    end if;
     total:=total+1;
   end loop;
   return jsonb_build_object('importadas',total);

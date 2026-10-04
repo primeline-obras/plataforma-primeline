@@ -16,6 +16,24 @@ BEGIN
 ));
  IF md5(v::text) <> '2be961099e9694bdd29ba95d3cc10173' THEN RAISE EXCEPTION 'CATALOG_DRIFT: interromper e repetir diagnóstico'; END IF;
 END $check$;
+-- Read-only integrity gate: report identifiers only; never reconcile automatically.
+DO $budget_phase_coherence$
+DECLARE divergencias jsonb;
+BEGIN
+ SELECT jsonb_agg(jsonb_build_object(
+   'orcamento_fase_id',o.id,'fase_id',o.fase_id,
+   'obra_orcamento_id',o.obra_id,'obra_fase_id',f.obra_id) ORDER BY o.id)
+ INTO divergencias
+ FROM public.orcamento_fases o LEFT JOIN public.fases f ON f.id=o.fase_id
+ WHERE f.id IS NULL OR o.obra_id IS DISTINCT FROM f.obra_id;
+ IF divergencias IS NOT NULL THEN
+  RAISE EXCEPTION USING ERRCODE='23514',
+   MESSAGE='ORCAMENTO_FASES_OBRA_DIVERGENTE: interromper e reconciliar manualmente; nenhum registo foi corrigido.',
+   DETAIL=divergencias::text;
+ END IF;
+END $budget_phase_coherence$;
+
+
 -- O snapshot integral inclui os 12 writers e as respetivas definições/ACLs anteriores.
 DO $economic_inventory$
 DECLARE sig text;

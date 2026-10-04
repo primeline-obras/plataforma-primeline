@@ -10,6 +10,23 @@ BEGIN
  IF EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(c.relacl) a WHERE n.nspname='primeline_encarregado_20261004' AND a.grantee<>'postgres'::regrole)
  OR EXISTS(SELECT 1 FROM pg_attribute x JOIN pg_class c ON c.oid=x.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(x.attacl) a WHERE n.nspname='primeline_encarregado_20261004' AND a.grantee<>'postgres'::regrole) THEN RAISE EXCEPTION 'BACKUP_ACL_INVALID'; END IF;
 END $private$;
+-- Read-only integrity gate: report identifiers only; never reconcile automatically.
+DO $budget_phase_coherence$
+DECLARE divergencias jsonb;
+BEGIN
+ SELECT jsonb_agg(jsonb_build_object(
+   'orcamento_fase_id',o.id,'fase_id',o.fase_id,
+   'obra_orcamento_id',o.obra_id,'obra_fase_id',f.obra_id) ORDER BY o.id)
+ INTO divergencias
+ FROM public.orcamento_fases o LEFT JOIN public.fases f ON f.id=o.fase_id
+ WHERE f.id IS NULL OR o.obra_id IS DISTINCT FROM f.obra_id;
+ IF divergencias IS NOT NULL THEN
+  RAISE EXCEPTION USING ERRCODE='23514',
+   MESSAGE='ORCAMENTO_FASES_OBRA_DIVERGENTE: interromper e reconciliar manualmente; nenhum registo foi corrigido.',
+   DETAIL=divergencias::text;
+ END IF;
+END $budget_phase_coherence$;
+
 DO $post$
 DECLARE b jsonb; a jsonb; live jsonb; x jsonb; y jsonb;
 BEGIN
@@ -186,7 +203,7 @@ DO $economic_final_writers$
 DECLARE r record; p record; old text; expected_acl text;
 BEGIN
  FOR r IN SELECT * FROM (VALUES ('fn_confirmar_compromisso_subempreitada(uuid)','db5da79a79d06ea83a8e509623aee593',true),
-('fn_importar_orcamento_fases(uuid,jsonb,text)','3af856058b688467ec7d1b60bcb907c2',true),
+('fn_importar_orcamento_fases(uuid,jsonb,text)','429978a320a0c174b517757382a5b63f',true),
 ('fn_guardar_precos_candidato_subempreitada(uuid,jsonb)','d03801deb8424efabae54806210bd4a8',true),
 ('fn_criar_consulta_subempreitada(uuid,uuid,text,uuid[])','f9992648dee1f0116e436cb187bc9d67',true),
 ('fn_adjudicar_candidato_subempreitada(uuid,date,date,text)','55724f5de22a5386fc5361144ecb4057',true),
