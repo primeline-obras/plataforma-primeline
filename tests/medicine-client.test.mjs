@@ -54,6 +54,8 @@ test('frontend não consulta nem escreve diretamente medicina_trabalho',()=>{
   const module=readFileSync(new URL('../src/medicine.js',import.meta.url),'utf8');
   assert.doesNotMatch(app,/supabase\(["'`]medicina_trabalho/);
   assert.doesNotMatch(module,/medicina_trabalho\?|method:\s*['"](?:PATCH|DELETE)/);
-  assert.match(app,/medicineClient\.list\(collaborators\)/);
+  // Encarregado must use the installed scope predicate before consulting Medicine.
+  assert.match(app,/medicineClient\.list\(effectiveRole\(\) === "encarregado" \? collaborators\.filter/);
+  assert.match(app,/foremanMedicineIds\.has\(person.id\)/);
   assert.match(app,/data-edit-collaborator="\$\{person.id\}">CONSULTAR FICHA/);
 });

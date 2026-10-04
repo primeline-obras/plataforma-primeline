@@ -1,5 +1,7 @@
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=3";
-import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=7";
+import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, isSessionTransitioning, onSessionReset, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=8";
+import { installSessionBoundary } from "./session-boundary.js?v=1";
+import { loadForemanDirectory } from "./foreman-scope.js?v=1";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
 import { createPlanningModule } from "./planning.js?v=16";
@@ -25,11 +27,12 @@ import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceModule } from "./attendance.js?v=2";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
-import { createMedicineClient, mountMedicine, medicineStatus } from "./medicine.js?v=1";
+import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=2";
 import { setupLoginPassword } from "./login-password.js?v=1";
 
+installSessionBoundary({ onReset: onSessionReset });
 const $ = (selector) => document.querySelector(selector);
 const euro = new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" });
 const prettyDate = new Intl.DateTimeFormat("pt-PT", { day: "2-digit", month: "short", year: "numeric" });
@@ -75,6 +78,7 @@ let directDebits = [], directDebitEntries = [], invoiceTrace = [];
 let invoiceTraceError = "";
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: "", isAdmin: false, profile: null };
+let foremanMedicineIds = new Set();
 let currentFilter = "all";
 let session = initialSession;
 let selectedPdf = null;
@@ -1020,10 +1024,7 @@ async function loadAccessContext() {
 }
 
 window.addEventListener("primeline:session-expired", () => {
-  session = null;
-  applyLoginTheme();
-  $("#auth-screen").hidden = false;
-  $("#auth-error").textContent = "A sua sessão expirou. Inicie sessão novamente.";
+  if (!isSessionTransitioning()) clearSession();
 });
 
 function toast(message, kind = "success") {
@@ -1469,17 +1470,19 @@ async function loadData() {
   }
   if (isSupabaseConfigured && !getSession()) return;
   await loadAccessContext();
+  const foreman = effectiveRole() === "encarregado";
+  const emptyResult = () => Promise.resolve(Response.json([]));
   {
     const results = await Promise.all([
       supabase("obras?select=id,numero,nome,cliente,morada,tipo,modalidade,projeto_id,situacao,data_inicio,data_fim_prevista,diretor_obra_id,planeamento_baseline_congelado,planeamento_baseline_congelado_em&order=numero.desc"),
-      supabase("fornecedores?select=id,nome,tipo_entidade,estado_confianca&order=nome"),
-      isFinancial()
+      foreman ? emptyResult() : supabase("fornecedores?select=id,nome,tipo_entidade,estado_confianca&order=nome"),
+      isFinancial() || foreman
         ? Promise.resolve(new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } }))
         : supabase("subempreitadas?select=id,obra_id,fornecedor_id,especialidade,valor_adjudicado,estado,tipo_pagamento,fase_id,mapa_comparativo_id&order=especialidade"),
-      supabase("faturas?select=*&estado_fluxo=in.(recebida,em_validacao,aprovada_tecnicamente,devolvida_administrativo)&order=criado_em.desc"),
-      supabase("faturas?select=*&estado_fluxo=in.(enviada_financeiro,paga)&order=data_aprovacao.desc"),
-      supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
-      supabase("faturas_anexos?select=*&order=criado_em.asc"),
+      foreman ? emptyResult() : supabase("faturas?select=*&estado_fluxo=in.(recebida,em_validacao,aprovada_tecnicamente,devolvida_administrativo)&order=criado_em.desc"),
+      foreman ? emptyResult() : supabase("faturas?select=*&estado_fluxo=in.(enviada_financeiro,paga)&order=data_aprovacao.desc"),
+      foreman ? emptyResult() : supabase("faturas_guias?select=id,fatura_id,arquivo_url,nome_arquivo,mime_type,criado_em&order=criado_em.asc"),
+      foreman ? emptyResult() : supabase("faturas_anexos?select=*&order=criado_em.asc"),
     ]);
     const failed = results.find(result => !result.ok);
     if (failed) { toast(`Não foi possível carregar os dados: ${await failed.text()}`, "error"); return; }
@@ -1500,7 +1503,15 @@ async function loadData() {
       directDebits = [];
       directDebitEntries = [];
     }
-    if (hasFullAccess() || isAdministrative() || allowedViews().has("team")) {
+    if (foreman) {
+      collaborators = [];
+      foremanMedicineIds = new Set();
+      try {
+        const directory = await loadForemanDirectory(supabase, medicineToday());
+        collaborators = directory.people;
+        foremanMedicineIds = directory.medicineIds;
+      } catch (error) { toast(error.message, "error"); }
+    } else if (hasFullAccess() || isAdministrative() || allowedViews().has("team")) {
       const collaboratorsResult = await supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,permite_multiplas_obras&data_saida=is.null&order=nome");
       collaborators = collaboratorsResult.ok ? await collaboratorsResult.json() : [];
     } else collaborators = [];
@@ -2529,6 +2540,19 @@ async function loadTeamData(force = false) {
   teamData = { allocations: [], absences: [], vacations: [], holidays: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: selectedTeamWeek, error: "" };
   $("#team-board").innerHTML = `<div class="empty-state">A CARREGAR O QUADRO…</div>`;
   if (!isSupabaseConfigured) return renderTeam();
+  if (effectiveRole() === "encarregado") {
+    collaborators = [];
+    foremanMedicineIds = new Set();
+    try {
+      const directory = await loadForemanDirectory(supabase, medicineToday());
+      collaborators = directory.people;
+      foremanMedicineIds = directory.medicineIds;
+    } catch (error) {
+      teamData.error = error.message;
+      teamData.loadedWeek = "";
+      return renderTeam();
+    }
+  }
   const boardStart = addDaysIso(selectedTeamWeek, -7);
   const boardEnd = addDaysIso(selectedTeamWeek, 20);
   const vacationBounds = vacationMonthBounds();
@@ -2541,7 +2565,7 @@ async function loadTeamData(force = false) {
     supabase("obra_responsaveis?select=obra_id,utilizador_id,papel"),
     supabase("utilizadores?select=id,nome,funcao,auth_user_id,ativo&ativo=eq.true"),
     canManageTeam() ? supabase("viaturas?select=*&order=numero_interno.asc.nullslast,matricula.asc") : Promise.resolve(new Response("[]", { status: 200 })),
-    (canManageTeam() || effectiveRole() === "encarregado") ? medicineClient.list(collaborators).then(rows=>Response.json(rows)) : Promise.resolve(new Response("[]", { status: 200 })),
+    (canManageTeam() || effectiveRole() === "encarregado") ? medicineClient.list(effectiveRole() === "encarregado" ? collaborators.filter(person => foremanMedicineIds.has(person.id)) : collaborators).then(rows=>Response.json(rows)) : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome", { includeInactiveCollaborators: true }) : Promise.resolve(new Response("[]", { status: 200 })),
     supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
@@ -2553,6 +2577,10 @@ async function loadTeamData(force = false) {
   if (!quadroContext?.failed && (quadroContext?.version !== 1 || !Array.isArray(quadroContext.allocations) || !Array.isArray(quadroContext.revisions) || !Array.isArray(quadroContext.edit_work_ids) || !Array.isArray(quadroContext.people) || !Array.isArray(quadroContext.works))) {
     payloads[0] = { failed: "alocações", detail: "Resposta inválida do contexto controlado." };
   } else if (!quadroContext?.failed) {
+    if (effectiveRole() === "encarregado") {
+      const permittedPeople = new Set([...collaborators.map(person => person.id), ...quadroContext.allocations.map(row => row.colaborador_id)]);
+      quadroContext.people = quadroContext.people.filter(person => permittedPeople.has(person.id));
+    }
     teamData.quadroContext = quadroContext;
     teamData.boardCollaborators = quadroContext.people;
     teamData.boardWorks = quadroContext.works;
@@ -4073,7 +4101,7 @@ $("#team-view").addEventListener("click", async event => {
     const person=collaborators.find(p=>p.id===medicineButton.dataset.openMedicine);
     if(!person) return;
     if(canManageTeam()) await openCollaboratorDialog(person);
-    else if(effectiveRole()==='encarregado') {
+    else if(effectiveRole()==='encarregado' && foremanMedicineIds.has(person.id)) {
       $('#workflow-dialog-title').textContent=`MEDICINA · ${person.nome}`;
       $('#workflow-dialog-content').innerHTML='<div data-rh-medicine></div>';
       $('#workflow-dialog').hidden=false;
@@ -5311,13 +5339,13 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape" && !$("#pdf-modal").hidden) closePdfModal();
 });
 const hideLoginPassword = setupLoginPassword($("#login-form"));
+if (sessionStorage.getItem('primeline_login_failed')) {
+  sessionStorage.removeItem('primeline_login_failed');
+  $('#auth-error').textContent = 'Não foi possível iniciar sessão. Verifique as credenciais e tente novamente.';
+}
 $("#logout").addEventListener("click", async () => {
   hideLoginPassword();
-  await signOut(); session = null;
-  applyLoginTheme();
-  $("#auth-screen").hidden = false;
-  works = []; suppliers = []; subcontracts = []; invoices = [];
-  renderInvoices();
+  await signOut();
 });
 
 $("#login-form").addEventListener("submit", async event => {
@@ -5328,12 +5356,14 @@ $("#login-form").addEventListener("submit", async event => {
   $("#auth-error").textContent = "";
   try {
     session = await signIn(fields.email, fields.password);
+    if (isSessionTransitioning()) return;
     applyAuthenticatedTheme();
     $("#auth-screen").hidden = true;
     renderUser();
     await loadData();
     redirectToRoleHome();
   } catch (error) {
+    if (isSessionTransitioning()) return;
     clearSession();
     session = null;
     applyLoginTheme();

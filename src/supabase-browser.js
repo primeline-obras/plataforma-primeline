@@ -5,6 +5,23 @@ export const isSupabaseConfigured = Boolean(url && anonKey);
 const SESSION_KEY = "primeline_supabase_session";
 const sessionStore = window.sessionStorage;
 let refreshPromise = null;
+let sessionEpoch = 0;
+let resetHandler = null;
+let transitioning = false;
+let knownIdentity = readSession()?.user?.id || null;
+export function onSessionReset(handler) { resetHandler = handler; }
+export function isSessionTransitioning() { return transitioning; }
+function resetSession(reason) {
+  sessionEpoch++;
+  refreshPromise = null;
+  if (resetHandler) transitioning = true;
+  resetHandler?.(reason);
+}
+function staleSession() { return new DOMException('A sessão mudou. Recarregue a aplicação.', 'AbortError'); }
+function checkEpoch(epoch) {
+  getSession();
+  if (epoch !== sessionEpoch || transitioning) throw staleSession();
+}
 
 // As sessões são isoladas por separador/janela. O localStorage era partilhado
 // pelo navegador e fazia um segundo login substituir o utilizador da primeira janela.
@@ -14,7 +31,7 @@ try {
   // A aplicação continua funcional mesmo quando o browser bloqueia localStorage.
 }
 
-export function getSession() {
+function readSession() {
   try {
     const session = JSON.parse(sessionStore.getItem(SESSION_KEY));
     if (!session?.access_token) return null;
@@ -24,56 +41,89 @@ export function getSession() {
   }
 }
 
+export function getSession() {
+  const current = readSession();
+  const identity = current?.user?.id || null;
+  if (identity !== knownIdentity) {
+    knownIdentity = identity;
+    resetSession('identity-changed');
+  }
+  return transitioning ? null : current;
+}
+
 export function clearSession() {
   sessionStore.removeItem(SESSION_KEY);
+  knownIdentity = null;
+  resetSession('session-cleared');
 }
 
 export async function signIn(email, password) {
+  sessionStore.removeItem(SESSION_KEY);
+  knownIdentity = null;
+  resetSession('login-start');
+  const epoch = sessionEpoch;
+  try {
   const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
     method: "POST",
     headers: { apikey: anonKey, "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
   const payload = await response.json();
+  if (epoch !== sessionEpoch) throw staleSession();
   if (!response.ok) throw new Error(payload.error_description || payload.msg || "Não foi possível iniciar sessão.");
   sessionStore.setItem(SESSION_KEY, JSON.stringify(payload));
+  knownIdentity = payload.user?.id || null;
+  resetSession('login-complete');
   return payload;
+  } catch (error) {
+    if (epoch === sessionEpoch) {
+      // Keep only a non-sensitive failure flag across the automatic navigation.
+      sessionStore.setItem('primeline_login_failed', '1');
+      resetSession('login-failed');
+    }
+    throw error;
+  }
 }
 
 export async function signOut() {
   const session = getSession();
+  clearSession(); // Remove protected UI immediately, even if logout is offline/slow.
   if (session?.access_token) {
     await fetch(`${url}/auth/v1/logout`, {
       method: "POST",
+      keepalive: true,
       headers: { apikey: anonKey, Authorization: `Bearer ${session.access_token}` },
     }).catch(() => {});
   }
-  clearSession();
 }
 
 export async function refreshSession() {
   const current = getSession();
   if (!current?.refresh_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
   if (refreshPromise) return refreshPromise;
-  refreshPromise = (async () => {
+  const epoch = sessionEpoch;
+  const pending = (async () => {
     const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
       method: "POST",
       headers: { apikey: anonKey, "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: current.refresh_token }),
     });
     const payload = await response.json().catch(() => ({}));
+    checkEpoch(epoch);
     if (!response.ok || !payload.access_token) {
       clearSession();
       window.dispatchEvent(new CustomEvent("primeline:session-expired"));
       throw new Error("A sessão expirou. Inicie sessão novamente.");
     }
     sessionStore.setItem(SESSION_KEY, JSON.stringify(payload));
+    getSession(); // An unexpected identity change uses the same boundary.
     return payload;
   })();
+  refreshPromise = pending;
   try {
-    return await refreshPromise;
+    return await pending;
   } finally {
-    refreshPromise = null;
+    if (refreshPromise === pending) refreshPromise = null;
   }
 }
 
@@ -135,6 +185,33 @@ function storageBucketUrl(bucket, path, mode = "object") {
   return `${url}/storage/v1/${mode}/${encodeURIComponent(bucket)}/${encodedPath}`;
 }
 
+function guardSessionResponse(response, epoch) {
+  for (const method of ['json', 'text', 'blob', 'arrayBuffer', 'formData']) {
+    const consume = response[method].bind(response);
+    response[method] = async (...args) => {
+      checkEpoch(epoch);
+      const body = await consume(...args);
+      checkEpoch(epoch);
+      return body;
+    };
+  }
+  const clone = response.clone.bind(response);
+  response.clone = () => { checkEpoch(epoch); return guardSessionResponse(clone(), epoch); };
+  return response;
+}
+
+async function authenticatedFetch(url, options) {
+  const epoch = sessionEpoch;
+  checkEpoch(epoch);
+  const response = await fetch(url, options);
+  checkEpoch(epoch);
+  if (response.status === 401 && getSession()) {
+    clearSession();
+    throw staleSession();
+  }
+  return guardSessionResponse(response, epoch);
+}
+
 function storageObjectUrl(path, mode = "object") {
   return storageBucketUrl("faturas", path, mode);
 }
@@ -154,7 +231,7 @@ export async function uploadInvoicePdf(file, obraId) {
   const now = new Date();
   const folder = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
   const objectPath = `${obraId}/${folder}/${crypto.randomUUID()}-${safeName}`;
-  const response = await fetch(storageObjectUrl(objectPath), {
+  const response = await authenticatedFetch(storageObjectUrl(objectPath), {
     method: "POST",
     headers: {
       apikey: anonKey,
@@ -182,7 +259,7 @@ export async function uploadDeliveryNote(file, obraId, invoiceId) {
   const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "guia";
   const objectPath = `${obraId}/guias-remessa/${invoiceId}/${crypto.randomUUID()}-${safeName}`;
-  const response = await fetch(storageObjectUrl(objectPath), {
+  const response = await authenticatedFetch(storageObjectUrl(objectPath), {
     method: "POST",
     headers: {
       apikey: anonKey,
@@ -205,7 +282,7 @@ export async function uploadWorkflowPdf(file, obraId, entityType) {
   const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "documento.pdf";
   const objectPath = `${obraId}/${entityType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
-  const response = await fetch(storageObjectUrl(objectPath), {
+  const response = await authenticatedFetch(storageObjectUrl(objectPath), {
     method: "POST",
     headers: {
       apikey: anonKey,
@@ -223,7 +300,7 @@ export async function uploadWorkflowPdf(file, obraId, entityType) {
 export async function downloadInvoicePdf(objectPath) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
-  const response = await fetch(storageObjectUrl(objectPath, "object/authenticated"), {
+  const response = await authenticatedFetch(storageObjectUrl(objectPath, "object/authenticated"), {
     headers: {
       apikey: anonKey,
       Authorization: `Bearer ${session.access_token}`,
@@ -239,7 +316,7 @@ export async function downloadInvoicePdf(objectPath) {
 export async function deleteInvoiceFile(objectPath) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
-  const response = await fetch(storageObjectUrl(objectPath), {
+  const response = await authenticatedFetch(storageObjectUrl(objectPath), {
     method: "DELETE",
     headers: { apikey: anonKey, Authorization: `Bearer ${session.access_token}` },
   });
@@ -258,7 +335,7 @@ export async function uploadInvoiceAttachment(file, obraId, invoiceId) {
   const safeName = file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-100) || "anexo";
   const objectPath = `${obraId}/faturas-anexos/${invoiceId}/${crypto.randomUUID()}-${safeName}`;
-  const response = await fetch(storageObjectUrl(objectPath), {
+  const response = await authenticatedFetch(storageObjectUrl(objectPath), {
     method: "POST",
     headers: { apikey: anonKey, Authorization: `Bearer ${session.access_token}`, "Content-Type": file.type, "x-upsert": "false" },
     body: file,
@@ -285,7 +362,7 @@ export async function uploadWorkDocument(file, obraId, documentType) {
     .replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(-140) || `documento.${extension || "bin"}`;
   const safeType = String(documentType || "outro").replace(/[^a-z0-9_-]/gi, "-");
   const objectPath = `${obraId}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
-  const response = await fetch(storageBucketUrl("documentos", objectPath), {
+  const response = await authenticatedFetch(storageBucketUrl("documentos", objectPath), {
     method: "POST",
     headers: {
       apikey: anonKey,
@@ -315,7 +392,7 @@ export async function uploadEntityDocument(file, entityType, entityId, documentT
     .replace(/[^a-z0-9_-]/gi, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "outro";
   const rootPath = entityType === "empresa" ? `empresa/${entityId}` : ["imovel", "pedido_orcamento"].includes(entityType) ? `entidades/${entityType}/${entityId}` : `rh/${entityType}/${entityId}`;
   const objectPath = `${rootPath}/${safeType}/${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}-${safeName}`;
-  const response = await fetch(storageBucketUrl("documentos", objectPath), {
+  const response = await authenticatedFetch(storageBucketUrl("documentos", objectPath), {
     method: "POST",
     headers: {
       apikey: anonKey,
@@ -333,7 +410,7 @@ export async function uploadEntityDocument(file, entityType, entityId, documentT
 export async function downloadWorkDocument(objectPath) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
-  const response = await fetch(storageBucketUrl("documentos", objectPath, "object/authenticated"), {
+  const response = await authenticatedFetch(storageBucketUrl("documentos", objectPath, "object/authenticated"), {
     headers: {
       apikey: anonKey,
       Authorization: `Bearer ${session.access_token}`,
@@ -349,7 +426,7 @@ export async function downloadWorkDocument(objectPath) {
 export async function deleteWorkDocument(objectPath) {
   const session = getSession();
   if (!session?.access_token) throw new Error("A sessão expirou. Inicie sessão novamente.");
-  const response = await fetch(storageBucketUrl("documentos", objectPath), {
+  const response = await authenticatedFetch(storageBucketUrl("documentos", objectPath), {
     method: "DELETE",
     headers: { apikey: anonKey, Authorization: `Bearer ${session.access_token}` },
   });
@@ -368,6 +445,9 @@ function enforceActiveCollaborators(path) {
 }
 
 export const supabase = async (path, options = {}) => {
+  getSession();
+  const epoch = sessionEpoch;
+  checkEpoch(epoch);
   // Opt-out explícito apenas para leituras; nunca inferido dos parâmetros da URL.
   const { includeInactiveCollaborators = false, ...requestOptions } = options;
   const includeInactive = includeInactiveCollaborators === true
@@ -375,6 +455,7 @@ export const supabase = async (path, options = {}) => {
   const filteredPath = includeInactive ? path : enforceActiveCollaborators(path);
   let tokenUsed = "";
   const request = () => {
+    checkEpoch(epoch);
     const session = getSession();
     tokenUsed = session?.access_token || anonKey;
     return fetch(`${url}/rest/v1/${filteredPath}`, {
@@ -388,6 +469,7 @@ export const supabase = async (path, options = {}) => {
     });
   };
   let response = await request();
+  checkEpoch(epoch);
   if (response.status === 401 && getSession()?.refresh_token) {
     const detail = await response.clone().json().catch(() => ({}));
     if (detail.code === "PGRST303" || /jwt.*expired/i.test(detail.message || "")) {
@@ -395,9 +477,23 @@ export const supabase = async (path, options = {}) => {
         if (getSession()?.access_token === tokenUsed) await refreshSession();
         response = await request();
       } catch {
-        return response;
+        checkEpoch(epoch);
+        clearSession();
+        throw staleSession();
       }
     }
   }
-  return response;
+  checkEpoch(epoch);
+  if (response.status === 401 && getSession()) {
+    clearSession();
+    throw staleSession();
+  }
+  // A body can finish after a logout, even when headers arrived earlier.
+  return guardSessionResponse(response, epoch);
 };
+
+// Detect a restored/replaced identity before returning to cached views.
+window.addEventListener?.('focus', getSession);
+window.addEventListener?.('storage', event => {
+  if (event.key === SESSION_KEY) getSession();
+});
