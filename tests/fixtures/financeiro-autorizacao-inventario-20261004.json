@@ -1,0 +1,186 @@
+[
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "hash": "a0bb364f40b05c0da63a21d9f4035494",
+    "name": "fn_avancar_estado_fluxo_fatura",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "language": "plpgsql",
+    "relevant": true,
+    "signature": "fn_avancar_estado_fluxo_fatura(uuid,text,date,text)",
+    "volatility": "v",
+    "dynamic_sql": false,
+    "security_definer": true,
+    "definition_sha256": "662954ce1c8632a86fa35151fa79d08efb1eb5c683b6bd1b201cf619ef0f719a",
+    "writes_direct": [
+      "faturas"
+    ],
+    "internal_callers_captured": [],
+    "frontend_callers": [
+      "src/app.js:3811",
+      "src/app.js:5974"
+    ],
+    "target_scope": "obra_id resolved from locked existing entity; no client company parameter",
+    "baseline_company_guard": false,
+    "candidate_company_guard": "fn_financeiro_autorizar_obra actual obra vs active auth.uid() company",
+    "candidate_execute": [
+      "postgres",
+      "authenticated"
+    ],
+    "candidate_search_path": "pg_catalog, public, pg_temp"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "hash": "3344ec99d21ade2f1355c6e745ccf001",
+    "name": "fn_desmarcar_fatura_paga",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "language": "plpgsql",
+    "relevant": true,
+    "signature": "fn_desmarcar_fatura_paga(uuid)",
+    "volatility": "v",
+    "dynamic_sql": false,
+    "security_definer": true,
+    "definition_sha256": "87ebc7823242ea6db9f9175eebaf5ba25760fc8c4cb4cca0a220c5038e05d0eb",
+    "writes_direct": [
+      "faturas"
+    ],
+    "internal_callers_captured": [],
+    "frontend_callers": [
+      "src/app.js:5920"
+    ],
+    "target_scope": "obra_id resolved from locked existing entity; no client company parameter",
+    "baseline_company_guard": false,
+    "candidate_company_guard": "fn_financeiro_autorizar_obra actual obra vs active auth.uid() company",
+    "candidate_execute": [
+      "postgres",
+      "authenticated"
+    ],
+    "candidate_search_path": "pg_catalog, public, pg_temp"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "hash": "16a3317ebac66cf26d409dcf7f535090",
+    "name": "fn_devolver_fatura_financeiro",
+    "owner": "postgres",
+    "config": [
+      "search_path=public"
+    ],
+    "language": "plpgsql",
+    "relevant": true,
+    "signature": "fn_devolver_fatura_financeiro(uuid,text)",
+    "volatility": "v",
+    "dynamic_sql": false,
+    "security_definer": true,
+    "definition_sha256": "9b3352ed998f5f5afd422671bdc7cdfd237258c46b1913a20ab025a063d7e19b",
+    "writes_direct": [
+      "faturas"
+    ],
+    "internal_callers_captured": [],
+    "frontend_callers": [
+      "src/app.js:5906"
+    ],
+    "target_scope": "obra_id resolved from locked existing entity; no client company parameter",
+    "baseline_company_guard": false,
+    "candidate_company_guard": "fn_financeiro_autorizar_obra actual obra vs active auth.uid() company",
+    "candidate_execute": [
+      "postgres",
+      "authenticated"
+    ],
+    "candidate_search_path": "pg_catalog, public, pg_temp"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "hash": "74d039cdce860ecda560e43a941562c0",
+    "name": "fn_marcar_fatura_paga",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "language": "plpgsql",
+    "relevant": true,
+    "signature": "fn_marcar_fatura_paga(uuid,date)",
+    "volatility": "v",
+    "dynamic_sql": false,
+    "security_definer": true,
+    "definition_sha256": "e38c183e40e18e584ebb2aee0116d4188bdf1e6336be32a123917aebb2344a8e",
+    "writes_direct": [
+      "faturas"
+    ],
+    "internal_callers_captured": [],
+    "frontend_callers": [],
+    "target_scope": "obra_id resolved from locked existing entity; no client company parameter",
+    "baseline_company_guard": false,
+    "candidate_company_guard": "fn_financeiro_autorizar_obra actual obra vs active auth.uid() company",
+    "candidate_execute": [
+      "postgres",
+      "authenticated"
+    ],
+    "candidate_search_path": "pg_catalog, public, pg_temp"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "hash": "388890ceff6ce85fa4032b8d5d1aa978",
+    "name": "fn_marcar_faturacao_auto_paga",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "language": "plpgsql",
+    "relevant": false,
+    "signature": "fn_marcar_faturacao_auto_paga(uuid,date,numeric)",
+    "volatility": "v",
+    "dynamic_sql": false,
+    "security_definer": true,
+    "definition_sha256": "60ddccdaa9c281a7c67394d07e9e5855f06d6ce36f445047a3c7824b3749e575",
+    "writes_direct": [
+      "faturacao"
+    ],
+    "internal_callers_captured": [],
+    "frontend_callers": [
+      "src/app.js:4668"
+    ],
+    "target_scope": "obra_id resolved from locked existing entity; no client company parameter",
+    "baseline_company_guard": false,
+    "candidate_company_guard": "fn_financeiro_autorizar_obra actual obra vs active auth.uid() company",
+    "candidate_execute": [
+      "postgres",
+      "authenticated"
+    ],
+    "candidate_search_path": "pg_catalog, public, pg_temp"
+  },
+  {
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "hash": "1c7c3d22688b871b3ad391c08bc82ba1",
+    "name": "fn_registar_recebimento_parcial",
+    "owner": "postgres",
+    "config": [
+      "search_path=public, pg_temp"
+    ],
+    "language": "plpgsql",
+    "relevant": false,
+    "signature": "fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric)",
+    "volatility": "v",
+    "dynamic_sql": false,
+    "security_definer": true,
+    "definition_sha256": "7fe096556f234f5c559d739ea457d1182f56564bfe8b47e38bcc61f94b1c3940",
+    "writes_direct": [
+      "faturacao_recebimentos",
+      "faturacao"
+    ],
+    "internal_callers_captured": [],
+    "frontend_callers": [],
+    "target_scope": "obra_id resolved from locked existing entity; no client company parameter",
+    "baseline_company_guard": false,
+    "candidate_company_guard": "fn_financeiro_autorizar_obra actual obra vs active auth.uid() company",
+    "candidate_execute": [
+      "postgres",
+      "authenticated"
+    ],
+    "candidate_search_path": "pg_catalog, public, pg_temp"
+  }
+]

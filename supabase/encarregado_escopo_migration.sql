@@ -735,6 +735,1303 @@ END $function$;
 REVOKE ALL ON FUNCTION public.fn_ausencias_equipa_encarregado(date,date) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_ausencias_equipa_encarregado(date,date) TO authenticated;
 
+-- Sessão derivada de auth.uid(); não utiliza empresa enviada pelo cliente.
+CREATE FUNCTION public.fn_autorizacao_sessao_ativa()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.utilizadores u WHERE u.auth_user_id=auth.uid() AND u.ativo IS TRUE);
+$function$;
+ALTER FUNCTION public.fn_autorizacao_sessao_ativa() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_autorizacao_sessao_ativa() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_autorizacao_sessao_ativa() TO authenticated;
+
+-- Helper interno. A obra provém do registo bloqueado pela RPC, nunca de prova do cliente.
+CREATE FUNCTION public.fn_financeiro_autorizar_obra(p_obra_id uuid,p_pagamento boolean)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog
+AS $function$
+DECLARE u public.utilizadores; empresa uuid;
+BEGIN
+ SELECT * INTO u FROM public.utilizadores WHERE auth_user_id=auth.uid() AND ativo IS TRUE FOR SHARE;
+ IF u.id IS NULL OR u.empresa_id IS NULL THEN
+  RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+ END IF;
+ SELECT empresa_id INTO empresa FROM public.obras WHERE id=p_obra_id FOR SHARE;
+ IF empresa IS NULL OR empresa IS DISTINCT FROM u.empresa_id THEN
+  RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+ END IF;
+ IF p_pagamento IS DISTINCT FROM false AND NOT public.fn_e_financeiro() THEN
+  RAISE EXCEPTION 'FORBIDDEN: pagamento reservado ao papel autorizado.' USING ERRCODE='42501';
+ END IF;
+ RETURN u.id;
+END $function$;
+ALTER FUNCTION public.fn_financeiro_autorizar_obra(uuid,boolean) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_financeiro_autorizar_obra(uuid,boolean) FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE POLICY alertas_sessao_ativa ON public.alertas AS RESTRICTIVE FOR SELECT TO authenticated
+USING(public.fn_autorizacao_sessao_ativa());
+CREATE OR REPLACE FUNCTION public.fn_marcar_fatura_paga(p_fatura_id uuid, p_data_pagamento date DEFAULT CURRENT_DATE)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if not public.fn_e_financeiro() then
+    raise exception 'O pagamento está reservado ao papel Financeiro.' USING ERRCODE='42501';
+  end if;
+
+  select * into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,true);
+
+
+  if not found
+     or v_fatura.estado_aprovacao <> 'aprovado'
+     or v_fatura.estado_pagamento <> 'por_pagar' then
+    raise exception 'A fatura não está disponível para pagamento.';
+  end if;
+
+  update public.faturas
+  set estado_pagamento = 'pago',
+      pago_por = public.fn_utilizador_atual_id(),
+      data_pagamento = coalesce(p_data_pagamento, current_date)
+  where id = p_fatura_id
+  returning * into v_fatura;
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_marcar_fatura_paga(uuid,date) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_marcar_fatura_paga(uuid,date) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_marcar_fatura_paga(uuid,date) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_desmarcar_fatura_paga(p_fatura_id uuid)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if not public.fn_e_financeiro() then
+    raise exception
+      'A reversão do pagamento está reservada ao papel Financeiro.' USING ERRCODE='42501';
+  end if;
+
+  select *
+  into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,true);
+
+
+  if not found
+    or v_fatura.estado_aprovacao <> 'aprovado'
+    or v_fatura.estado_pagamento <> 'pago' then
+
+    raise exception 'Esta fatura não está marcada como paga.';
+  end if;
+
+  update public.faturas
+  set
+    estado_pagamento = 'por_pagar',
+    data_pagamento = null,
+    pago_por = null
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_desmarcar_fatura_paga(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_desmarcar_fatura_paga(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_desmarcar_fatura_paga(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_devolver_fatura_financeiro(p_fatura_id uuid, p_observacao text)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if not public.fn_e_financeiro() then
+    raise exception
+      'A devolução está reservada ao papel Financeiro.' USING ERRCODE='42501';
+  end if;
+
+  if nullif(btrim(p_observacao), '') is null then
+    raise exception
+      'A observação é obrigatória para devolver a fatura.';
+  end if;
+
+  select *
+  into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,true);
+
+
+  if not found
+    or v_fatura.estado_aprovacao <> 'aprovado'
+    or v_fatura.estado_pagamento <> 'por_pagar' then
+
+    raise exception
+      'Só pode devolver uma fatura aprovada que ainda não foi paga.';
+  end if;
+
+  update public.faturas
+  set
+    estado_aprovacao = 'pendente',
+    observacao_devolucao = btrim(p_observacao),
+    devolvido_por = public.fn_utilizador_atual_id(),
+    devolvido_em = now(),
+    aprovado_por = null,
+    data_aprovacao = null
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_devolver_fatura_financeiro(uuid,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_devolver_fatura_financeiro(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_devolver_fatura_financeiro(uuid,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_avancar_estado_fluxo_fatura(p_fatura_id uuid, p_novo_estado text, p_data_pagamento date DEFAULT NULL::date, p_observacao text DEFAULT NULL::text)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+  v_ordem constant text[] := array[
+    'recebida',
+    'em_validacao',
+    'aprovada_tecnicamente',
+    'enviada_financeiro',
+    'paga'
+  ];
+  v_sem_guia boolean := false;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select * into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,p_novo_estado = 'paga');
+
+
+  if not found then
+    raise exception 'Fatura não encontrada.';
+  end if;
+
+  if array_position(v_ordem, p_novo_estado) is null
+     or array_position(v_ordem, p_novo_estado)
+        <> array_position(v_ordem, v_fatura.estado_fluxo) + 1 then
+    raise exception 'A fatura deve seguir os cinco estados pela ordem definida.';
+  end if;
+
+  if p_novo_estado = 'paga' then
+    if not public.fn_e_financeiro() then
+      raise exception 'Só o Financeiro pode marcar a fatura como paga.'
+        using errcode = '42501';
+    end if;
+  elsif not (
+    public.fn_pode_editar_obra(v_fatura.obra_id)
+    or public.fn_e_admin()
+  ) then
+    raise exception 'Sem permissão para avançar a validação desta fatura.'
+      using errcode = '42501';
+  end if;
+
+  if p_novo_estado = 'aprovada_tecnicamente' then
+    v_sem_guia := not exists (
+      select 1
+      from public.faturas_guias
+      where fatura_id = p_fatura_id
+    );
+  end if;
+
+  update public.faturas
+  set
+    estado_fluxo = p_novo_estado,
+
+    estado_aprovacao = case
+      when p_novo_estado in (
+        'aprovada_tecnicamente',
+        'enviada_financeiro',
+        'paga'
+      ) then 'aprovado'
+      else 'pendente'
+    end,
+
+    estado_pagamento = case
+      when p_novo_estado = 'paga' then 'pago'
+      else 'por_pagar'
+    end,
+
+    data_aprovacao = case
+      when p_novo_estado = 'aprovada_tecnicamente' then now()
+      else data_aprovacao
+    end,
+
+    aprovado_por = case
+      when p_novo_estado = 'aprovada_tecnicamente'
+        then public.fn_utilizador_atual_id()
+      else aprovado_por
+    end,
+
+    observacao = case
+      when p_novo_estado = 'aprovada_tecnicamente'
+           and p_observacao is not null
+        then nullif(btrim(p_observacao), '')
+      else observacao
+    end,
+
+    aprovada_sem_guia = case
+      when p_novo_estado = 'aprovada_tecnicamente' then v_sem_guia
+      else aprovada_sem_guia
+    end,
+
+    data_pagamento = case
+      when p_novo_estado = 'paga'
+        then coalesce(p_data_pagamento, data_pagamento, current_date)
+      else data_pagamento
+    end
+
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_avancar_estado_fluxo_fatura(uuid,text,date,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_avancar_estado_fluxo_fatura(uuid,text,date,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_avancar_estado_fluxo_fatura(uuid,text,date,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_marcar_faturacao_auto_paga(p_faturacao_id uuid, p_data_pagamento date, p_valor_pago numeric)
+ RETURNS faturacao
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_faturacao public.faturacao;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if not public.fn_e_financeiro() then
+    raise exception 'O pagamento está reservado ao papel Financeiro.' USING ERRCODE='42501';
+  end if;
+
+  select * into v_faturacao
+  from public.faturacao
+  where id = p_faturacao_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_faturacao.obra_id,true);
+
+
+  if not found
+     or v_faturacao.estado_aprovacao <> 'aprovado'
+     or v_faturacao.estado_pagamento <> 'por_pagar' then
+    raise exception 'A fatura não está aprovada ou já foi paga.';
+  end if;
+
+  if coalesce(p_valor_pago, 0) <= 0 then
+    raise exception 'O valor pago tem de ser superior a zero.';
+  end if;
+
+  update public.faturacao
+  set estado_pagamento = 'pago',
+      pago_por = public.fn_utilizador_atual_id(),
+      data_pagamento = coalesce(p_data_pagamento, current_date),
+      data_recebimento = coalesce(p_data_pagamento, current_date),
+      valor_recebido = p_valor_pago
+  where id = p_faturacao_id
+  returning * into v_faturacao;
+
+  return v_faturacao;
+end;
+$function$;
+ALTER FUNCTION public.fn_marcar_faturacao_auto_paga(uuid,date,numeric) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_marcar_faturacao_auto_paga(uuid,date,numeric) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_marcar_faturacao_auto_paga(uuid,date,numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_registar_recebimento_parcial(p_version integer, p_faturacao_id uuid, p_data date, p_valor numeric, p_request_id text, p_valor_recebido_esperado numeric)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_faturacao public.faturacao%rowtype;
+  v_movimento public.faturacao_recebimentos%rowtype;
+  v_utilizador uuid;
+  v_obra_id uuid;
+  v_recebido_atual numeric(14,2);
+  v_novo_total numeric(14,2);
+BEGIN
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  IF p_version IS DISTINCT FROM 1 THEN
+    RAISE EXCEPTION 'VALIDATION_FAILED: versão de contrato inválida.';
+  END IF;
+
+  IF NOT public.fn_e_financeiro() THEN
+    RAISE EXCEPTION
+      'FORBIDDEN: operação reservada ao Financeiro.' USING ERRCODE='42501';
+  END IF;
+
+  IF p_faturacao_id IS NULL
+     OR p_data IS NULL
+     OR COALESCE(p_valor, 0) <= 0
+     OR NULLIF(btrim(p_request_id), '') IS NULL THEN
+    RAISE EXCEPTION
+      'VALIDATION_FAILED: faturação, data, valor e request_id são obrigatórios.';
+  END IF;
+
+  v_utilizador := public.fn_utilizador_atual_id();
+
+  SELECT obra_id INTO v_obra_id FROM public.faturacao WHERE id=p_faturacao_id FOR UPDATE;
+  PERFORM public.fn_financeiro_autorizar_obra(v_obra_id,true);
+
+  -- ----------------------------------------------------------
+  -- Idempotência:
+  -- se o mesmo request já foi aplicado com o mesmo conteúdo,
+  -- devolver sucesso sem criar nova parcela.
+  -- ----------------------------------------------------------
+  SELECT *
+  INTO v_movimento
+  FROM public.faturacao_recebimentos
+  WHERE request_id = p_request_id;
+
+  IF FOUND THEN
+    IF v_movimento.faturacao_id IS DISTINCT FROM p_faturacao_id
+       OR v_movimento.data_recebimento IS DISTINCT FROM p_data
+       OR v_movimento.valor IS DISTINCT FROM round(p_valor, 2) THEN
+      RAISE EXCEPTION
+        'IDEMPOTENCY_CONFLICT: request_id já utilizado com conteúdo diferente.';
+    END IF;
+
+    SELECT *
+    INTO v_faturacao
+    FROM public.faturacao
+    WHERE id = p_faturacao_id;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION
+        'VALIDATION_FAILED: faturação não encontrada.';
+    END IF;
+
+    RETURN jsonb_build_object(
+      'version', 1,
+      'committed', true,
+      'billing', to_jsonb(v_faturacao)
+    );
+  END IF;
+
+  -- ----------------------------------------------------------
+  -- Lock do documento
+  -- ----------------------------------------------------------
+  SELECT *
+  INTO v_faturacao
+  FROM public.faturacao
+  WHERE id = p_faturacao_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION
+      'VALIDATION_FAILED: faturação não encontrada.';
+  END IF;
+
+  IF v_faturacao.estado_aprovacao <> 'aprovado' THEN
+    RAISE EXCEPTION
+      'VALIDATION_FAILED: faturação ainda não está aprovada.';
+  END IF;
+
+  v_recebido_atual := round(COALESCE(v_faturacao.valor_recebido, 0), 2);
+
+  -- ----------------------------------------------------------
+  -- Concorrência otimista
+  -- ----------------------------------------------------------
+  IF v_recebido_atual IS DISTINCT FROM
+     round(COALESCE(p_valor_recebido_esperado, 0), 2) THEN
+    RAISE EXCEPTION
+      'STALE_REVISION: o valor já recebido foi alterado. Atualize a faturação.';
+  END IF;
+
+  v_novo_total :=
+    round(v_recebido_atual + round(p_valor, 2), 2);
+
+  IF v_novo_total > round(v_faturacao.valor, 2) THEN
+    RAISE EXCEPTION
+      'AMOUNT_EXCEEDS_BALANCE: a parcela excede o saldo por receber.';
+  END IF;
+
+  -- ----------------------------------------------------------
+  -- Movimento imutável
+  -- ----------------------------------------------------------
+  INSERT INTO public.faturacao_recebimentos (
+    faturacao_id,
+    request_id,
+    data_recebimento,
+    valor,
+    registado_por
+  )
+  VALUES (
+    p_faturacao_id,
+    p_request_id,
+    p_data,
+    round(p_valor, 2),
+    v_utilizador
+  )
+  RETURNING *
+  INTO v_movimento;
+
+  -- ----------------------------------------------------------
+  -- Mantém os campos agregados legados sincronizados,
+  -- mas a nova origem rastreável é a tabela de movimentos.
+  --
+  -- Parcial continua "por_pagar" porque o check atual da
+  -- faturacao só suporta por_pagar/pago.
+  -- ----------------------------------------------------------
+  UPDATE public.faturacao
+  SET
+    valor_recebido = v_novo_total,
+
+    data_recebimento = p_data,
+
+    estado_pagamento =
+      CASE
+        WHEN v_novo_total = round(valor, 2)
+          THEN 'pago'
+        ELSE 'por_pagar'
+      END,
+
+    estado =
+      CASE
+        WHEN v_novo_total = round(valor, 2)
+          THEN 'pago'
+        WHEN estado = 'pago'
+          THEN 'emitida'
+        ELSE estado
+      END,
+
+    data_pagamento =
+      CASE
+        WHEN v_novo_total = round(valor, 2)
+          THEN p_data
+        ELSE NULL
+      END,
+
+    pago_por =
+      CASE
+        WHEN v_novo_total = round(valor, 2)
+          THEN v_utilizador
+        ELSE NULL
+      END
+
+  WHERE id = p_faturacao_id
+  RETURNING *
+  INTO v_faturacao;
+
+  RETURN jsonb_build_object(
+    'version', 1,
+    'committed', true,
+    'billing', to_jsonb(v_faturacao)
+  );
+END;
+$function$;
+ALTER FUNCTION public.fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_resolver_alerta(p_alerta_id uuid)
+ RETURNS alertas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_alerta public.alertas;
+  v_utilizador_id uuid;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+    RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  v_utilizador_id := public.fn_utilizador_atual_id();
+
+  if v_utilizador_id is null then
+    raise exception 'Sessão autenticada sem utilizador associado.';
+  end if;
+
+  select *
+  into v_alerta
+  from public.alertas
+  where id = p_alerta_id
+  for update;
+
+  if not found then
+    raise exception 'Alerta não encontrado.';
+  end if;
+
+  if not (
+    public.fn_e_admin()
+    or public.fn_e_administrativo()
+    or (
+      public.fn_e_financeiro()
+      and v_alerta.destinatario_role in ('financeiro', 'tesouraria')
+    )
+    or (
+      v_alerta.obra_id is not null
+      and public.fn_pode_editar_obra(v_alerta.obra_id)
+    )
+  ) then
+    raise exception 'Sem permissão para resolver este alerta.';
+  end if;
+
+  if v_alerta.estado <> 'resolvido' then
+    update public.alertas
+    set estado = 'resolvido',
+        resolvido_por = v_utilizador_id,
+        resolvido_em = now()
+    where id = p_alerta_id
+    returning * into v_alerta;
+  end if;
+
+  return v_alerta;
+end;
+$function$;
+ALTER FUNCTION public.fn_resolver_alerta(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_resolver_alerta(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_resolver_alerta(uuid) TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.fn_decidir_fatura(p_fatura_id uuid, p_decisao text, p_observacao text DEFAULT NULL::text)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+  v_sem_guia boolean := false;
+  v_bloquear_sem_guia constant boolean := false;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if p_decisao not in ('aprovado', 'recusado') then
+    raise exception 'Decisão inválida.';
+  end if;
+
+  select *
+  into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,false);
+
+
+  if not found
+    or v_fatura.estado_aprovacao <> 'pendente' then
+    raise exception 'A fatura já não está pendente.';
+  end if;
+
+  if not public.fn_pode_editar_obra(v_fatura.obra_id) then
+    raise exception 'Sem permissão para decidir esta fatura.';
+  end if;
+
+  if p_decisao = 'aprovado' then
+    v_sem_guia := not exists (
+      select 1
+      from public.faturas_guias
+      where fatura_id = p_fatura_id
+    );
+  end if;
+
+  if v_bloquear_sem_guia
+    and p_decisao = 'aprovado'
+    and v_sem_guia then
+    raise exception
+      'É obrigatório anexar pelo menos uma guia antes da aprovação.';
+  end if;
+
+  update public.faturas
+  set
+    estado_aprovacao = p_decisao,
+    aprovado_por = null,
+    data_aprovacao = now(),
+    observacao = case
+      when p_observacao is null
+        then v_fatura.observacao
+      else nullif(btrim(p_observacao), '')
+    end,
+    aprovada_sem_guia = case
+      when p_decisao = 'aprovado'
+        then v_sem_guia
+      else false
+    end
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_decidir_fatura(uuid,text,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_decidir_fatura(uuid,text,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_decidir_fatura(uuid,text,text) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_decidir_faturacao_auto(p_faturacao_id uuid, p_decisao text)
+ RETURNS faturacao
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_faturacao public.faturacao;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if p_decisao not in ('aprovado', 'recusado') then
+    raise exception 'Decisão inválida.';
+  end if;
+
+  select * into v_faturacao
+  from public.faturacao
+  where id = p_faturacao_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_faturacao.obra_id,false);
+
+
+  if not found or v_faturacao.estado_aprovacao <> 'pendente' then
+    raise exception 'A fatura já não está pendente.';
+  end if;
+
+  if not public.fn_pode_editar_obra(v_faturacao.obra_id) then
+    raise exception 'Sem permissão para decidir esta fatura.';
+  end if;
+
+  update public.faturacao
+  set estado_aprovacao = p_decisao,
+      estado = case
+        when p_decisao = 'aprovado' then 'emitida'
+        else 'rascunho'
+      end,
+      aprovado_por = public.fn_utilizador_atual_id(),
+      data_aprovacao = now()
+  where id = p_faturacao_id
+  returning * into v_faturacao;
+
+  return v_faturacao;
+end;
+$function$;
+ALTER FUNCTION public.fn_decidir_faturacao_auto(uuid,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_decidir_faturacao_auto(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_decidir_faturacao_auto(uuid,text) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_devolver_fatura_administrativo(p_fatura_id uuid, p_observacao text)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+  v_funcao text;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select funcao into v_funcao
+  from public.utilizadores
+  where id = public.fn_utilizador_atual_id()
+    and coalesce(ativo, true);
+
+  select * into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,false);
+
+
+  if not found then
+    raise exception 'Fatura nÃ£o encontrada.' using errcode = 'P0002';
+  end if;
+  if not (public.fn_e_admin() or v_funcao in ('diretor_obra', 'adjunto'))
+     or not (public.fn_e_admin() or public.fn_pode_editar_obra(v_fatura.obra_id)) then
+    raise exception 'A devoluÃ§Ã£o estÃ¡ reservada ao Diretor ou Adjunto responsÃ¡vel pela obra.' using errcode = '42501';
+  end if;
+  if nullif(btrim(p_observacao), '') is null then
+    raise exception 'A nota Ã© obrigatÃ³ria para devolver a fatura.';
+  end if;
+  if v_fatura.estado_fluxo not in ('recebida', 'em_validacao', 'aprovada_tecnicamente')
+     or v_fatura.estado_pagamento = 'pago' then
+    raise exception 'Esta fatura jÃ¡ nÃ£o pode ser devolvida ao Administrativo.';
+  end if;
+
+  update public.faturas
+  set estado_fluxo = 'devolvida_administrativo',
+      estado_aprovacao = 'pendente',
+      estado_pagamento = 'por_pagar',
+      observacao_devolucao = btrim(p_observacao),
+      devolvido_por = public.fn_utilizador_atual_id(),
+      devolvido_em = now(),
+      aprovado_por = null,
+      data_aprovacao = null,
+      aprovada_sem_guia = false
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_devolver_fatura_administrativo(uuid,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_devolver_fatura_administrativo(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_devolver_fatura_administrativo(uuid,text) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_vincular_fatura_subempreitada(p_fatura_id uuid, p_subempreitada_id uuid)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select * into v_fatura
+  from public.faturas
+  where id = p_fatura_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,false);
+
+
+  if not found then
+    raise exception 'A fatura selecionada nÃ£o existe.';
+  end if;
+  if v_fatura.tipo_origem <> 'subempreitada' then
+    raise exception 'SÃ³ as faturas de subempreitada podem ser vinculadas a um trabalho.';
+  end if;
+  if v_fatura.estado_fluxo not in ('recebida', 'em_validacao') then
+    raise exception 'O vÃ­nculo sÃ³ pode ser alterado antes da aprovaÃ§Ã£o tÃ©cnica.';
+  end if;
+  if not (public.fn_pode_editar_obra(v_fatura.obra_id) or public.fn_e_admin()) then
+    raise exception 'SÃ³ a equipa tÃ©cnica responsÃ¡vel pela obra pode confirmar este vÃ­nculo.' using errcode = '42501';
+  end if;
+  if p_subempreitada_id is not null and not exists (
+    select 1
+    from public.subempreitadas s
+    where s.id = p_subempreitada_id
+      and s.obra_id = v_fatura.obra_id
+      and s.fornecedor_id = v_fatura.fornecedor_id
+  ) then
+    raise exception 'O trabalho selecionado nÃ£o pertence simultaneamente a esta obra e a este fornecedor.';
+  end if;
+
+  update public.faturas
+  set subempreitada_id = p_subempreitada_id
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_vincular_fatura_subempreitada(uuid,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_vincular_fatura_subempreitada(uuid,uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_vincular_fatura_subempreitada(uuid,uuid) TO authenticated;
+
+-- Fecha o mesmo efeito pelo REST direto; não altera SELECT financeiro legado.
+CREATE FUNCTION public.fn_financeiro_obra_da_empresa(p_obra_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog
+AS $function$
+ SELECT EXISTS(SELECT 1 FROM public.utilizadores u JOIN public.obras o ON o.empresa_id=u.empresa_id
+ WHERE u.auth_user_id=auth.uid() AND u.ativo IS TRUE AND o.id=p_obra_id);
+$function$;
+ALTER FUNCTION public.fn_financeiro_obra_da_empresa(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_financeiro_obra_da_empresa(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_financeiro_obra_da_empresa(uuid) TO authenticated;
+CREATE POLICY financeiro_empresa_insert ON public.faturas AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(public.fn_financeiro_obra_da_empresa(obra_id));
+CREATE POLICY financeiro_empresa_delete ON public.faturas AS RESTRICTIVE FOR DELETE TO authenticated
+USING(public.fn_financeiro_obra_da_empresa(obra_id));
+CREATE POLICY financeiro_empresa_insert ON public.faturacao AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(public.fn_financeiro_obra_da_empresa(obra_id));
+CREATE POLICY financeiro_empresa_delete ON public.faturacao AS RESTRICTIVE FOR DELETE TO authenticated
+USING(public.fn_financeiro_obra_da_empresa(obra_id));
+
+CREATE OR REPLACE FUNCTION public.fn_editar_fatura_pendente(p_fatura_id uuid, p_obra_id uuid, p_tipo_origem text, p_fornecedor_id uuid, p_subempreitada_id uuid, p_numero_doc text, p_data_fatura date, p_valor numeric, p_condicao_pagamento text, p_data_vencimento date, p_itens jsonb DEFAULT '[]'::jsonb)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+  v_utilizador_id uuid := public.fn_utilizador_atual_id();
+  v_item jsonb;
+  v_quantidade numeric;
+  v_valor_unitario numeric;
+  v_valor_total numeric;
+  v_desconto_percentual numeric;
+  v_valor_desconto numeric;
+  v_foi_devolvida boolean;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select * into v_fatura from public.faturas where id = p_fatura_id for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_fatura.obra_id,false);
+  PERFORM public.fn_financeiro_autorizar_obra(p_obra_id,false);
+  IF NOT EXISTS(SELECT 1 FROM public.fornecedores f JOIN public.obras o ON o.empresa_id=f.empresa_id WHERE f.id=p_fornecedor_id AND o.id=p_obra_id) THEN
+   RAISE EXCEPTION 'FORBIDDEN: fornecedor indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  if not found or v_fatura.estado_aprovacao <> 'pendente' then
+    raise exception 'A fatura jÃ¡ nÃ£o estÃ¡ pendente e nÃ£o pode ser editada.';
+  end if;
+  v_foi_devolvida := v_fatura.estado_fluxo = 'devolvida_administrativo';
+
+  if not public.fn_e_admin()
+     and not (public.fn_e_administrativo() and (
+       v_foi_devolvida or (v_fatura.criado_por is not null and v_fatura.criado_por = v_utilizador_id)
+     )) then
+    raise exception 'SÃ³ o Administrativo responsÃ¡vel pela correÃ§Ã£o ou a GerÃªncia pode editar esta fatura.';
+  end if;
+
+  if p_obra_id is null or p_fornecedor_id is null
+     or nullif(btrim(p_numero_doc), '') is null or p_data_fatura is null
+     or p_valor is null or p_valor <= 0 then
+    raise exception 'Preencha obra, fornecedor, nÃºmero, data e valor da fatura.';
+  end if;
+  if p_tipo_origem not in ('subempreitada', 'material', 'estaleiro') then
+    raise exception 'Tipo de despesa invÃ¡lido.';
+  end if;
+  if p_condicao_pagamento not in ('imediato', '15_dias', '30_dias', 'outra_data') then
+    raise exception 'CondiÃ§Ã£o de pagamento invÃ¡lida.';
+  end if;
+  if p_condicao_pagamento = 'outra_data' and p_data_vencimento is null then
+    raise exception 'Indique a data de vencimento para a opÃ§Ã£o Outra data.';
+  end if;
+  if p_condicao_pagamento <> 'outra_data' and p_data_vencimento is not null then
+    raise exception 'A data manual sÃ³ pode ser usada com a opÃ§Ã£o Outra data.';
+  end if;
+  if p_tipo_origem = 'subempreitada' and p_subempreitada_id is not null and not exists (
+    select 1 from public.subempreitadas s
+    where s.id = p_subempreitada_id and s.obra_id = p_obra_id
+      and s.fornecedor_id = p_fornecedor_id
+  ) then
+    raise exception 'A subempreitada nÃ£o corresponde Ã  obra e ao fornecedor selecionados.';
+  elsif p_tipo_origem <> 'subempreitada' and p_subempreitada_id is not null then
+    raise exception 'Faturas de material ou estaleiro nÃ£o podem ter subempreitada associada.';
+  end if;
+
+  update public.faturas
+  set obra_id = p_obra_id,
+      tipo_origem = p_tipo_origem,
+      fornecedor_id = p_fornecedor_id,
+      subempreitada_id = p_subempreitada_id,
+      numero_doc = btrim(p_numero_doc),
+      data_fatura = p_data_fatura,
+      valor = p_valor,
+      condicao_pagamento = p_condicao_pagamento,
+      data_vencimento = case when p_condicao_pagamento = 'outra_data' then p_data_vencimento else null end,
+      estado_fluxo = case when v_foi_devolvida then 'recebida' else estado_fluxo end,
+      observacao_devolucao = case when v_foi_devolvida then null else observacao_devolucao end,
+      devolvido_por = case when v_foi_devolvida then null else devolvido_por end,
+      devolvido_em = case when v_foi_devolvida then null else devolvido_em end
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  delete from public.faturas_itens where fatura_id = p_fatura_id;
+  if p_tipo_origem = 'material' then
+    if jsonb_typeof(coalesce(p_itens, '[]'::jsonb)) <> 'array'
+       or jsonb_array_length(coalesce(p_itens, '[]'::jsonb)) = 0 then
+      raise exception 'Uma fatura de material exige pelo menos um artigo.';
+    end if;
+    for v_item in select value from jsonb_array_elements(p_itens)
+    loop
+      v_quantidade := nullif(v_item ->> 'quantidade', '')::numeric;
+      v_valor_unitario := nullif(v_item ->> 'valor_unitario', '')::numeric;
+      v_valor_total := nullif(v_item ->> 'valor_total', '')::numeric;
+      v_desconto_percentual := nullif(v_item ->> 'desconto_percentual', '')::numeric;
+      v_valor_desconto := nullif(v_item ->> 'valor_desconto', '')::numeric;
+      if nullif(btrim(v_item ->> 'designacao'), '') is null
+         or nullif(btrim(v_item ->> 'unidade'), '') is null
+         or v_quantidade is null or v_quantidade <= 0
+         or v_valor_unitario is null or v_valor_unitario < 0
+         or v_valor_total is null or v_valor_total < 0
+         or (v_desconto_percentual is not null and (v_desconto_percentual < 0 or v_desconto_percentual > 100))
+         or (v_valor_desconto is not null and v_valor_desconto < 0) then
+        raise exception 'Existe um artigo de material incompleto ou invÃ¡lido.';
+      end if;
+      insert into public.faturas_itens (
+        fatura_id, designacao, unidade, quantidade, valor_unitario, valor_total,
+        desconto_percentual, valor_desconto
+      ) values (
+        p_fatura_id, btrim(v_item ->> 'designacao'), btrim(v_item ->> 'unidade'),
+        v_quantidade, v_valor_unitario, v_valor_total,
+        v_desconto_percentual, v_valor_desconto
+      );
+    end loop;
+  end if;
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_editar_fatura_pendente(p_fatura_id uuid, p_obra_id uuid, p_tipo_origem text, p_fornecedor_id uuid, p_subempreitada_id uuid, p_numero_doc text, p_data_fatura date, p_valor numeric, p_condicao_pagamento text, p_data_vencimento date, p_observacao text, p_itens jsonb DEFAULT '[]'::jsonb)
+ RETURNS faturas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_fatura public.faturas;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  v_fatura := public.fn_editar_fatura_pendente(
+    p_fatura_id,
+    p_obra_id,
+    p_tipo_origem,
+    p_fornecedor_id,
+    p_subempreitada_id,
+    p_numero_doc,
+    p_data_fatura,
+    p_valor,
+    p_condicao_pagamento,
+    p_data_vencimento,
+    p_itens
+  );
+
+  update public.faturas
+  set observacao = nullif(btrim(p_observacao), '')
+  where id = p_fatura_id
+  returning * into v_fatura;
+
+  return v_fatura;
+end;
+$function$;
+ALTER FUNCTION public.fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_apagar_guia_fatura(p_guia_id uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_path text; v_obra uuid;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select g.arquivo_url,f.obra_id into v_path,v_obra from public.faturas_guias g join public.faturas f on f.id=g.fatura_id where g.id=p_guia_id FOR UPDATE OF f;
+  PERFORM public.fn_financeiro_autorizar_obra(v_obra,false);
+
+  if not found then raise exception 'Guia não encontrada.'; end if;
+  if not (public.fn_pode_editar_obra(v_obra) or public.fn_e_admin() or public.fn_e_administrativo() or public.fn_e_financeiro()) then raise exception 'Sem permissão.' using errcode='42501'; end if;
+  delete from public.faturas_guias where id=p_guia_id;
+  return v_path;
+end;
+$function$;
+ALTER FUNCTION public.fn_apagar_guia_fatura(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_apagar_guia_fatura(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_apagar_guia_fatura(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_apagar_anexo_fatura(p_anexo_id uuid)
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_path text; v_obra uuid;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select a.arquivo_url,f.obra_id into v_path,v_obra from public.faturas_anexos a join public.faturas f on f.id=a.fatura_id where a.id=p_anexo_id FOR UPDATE OF f;
+  PERFORM public.fn_financeiro_autorizar_obra(v_obra,false);
+
+  if not found then raise exception 'Anexo não encontrado.'; end if;
+  if not (public.fn_pode_editar_obra(v_obra) or public.fn_e_admin() or public.fn_e_administrativo() or public.fn_e_financeiro()) then raise exception 'Sem permissão.' using errcode='42501'; end if;
+  delete from public.faturas_anexos where id=p_anexo_id;
+  return v_path;
+end;
+$function$;
+ALTER FUNCTION public.fn_apagar_anexo_fatura(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_apagar_anexo_fatura(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_fatura(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_eliminar_mapa_comparativo(p_mapa_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_obra_id uuid;
+  v_item_ids uuid[];
+  v_proposta_ids uuid[];
+  v_itens_antes integer;
+  v_propostas_antes integer;
+  v_precos_antes integer;
+  v_ajustes_antes integer;
+  v_mapas_depois integer;
+  v_itens_depois integer;
+  v_propostas_depois integer;
+  v_precos_depois integer;
+  v_ajustes_depois integer;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select obra_id into v_obra_id
+  from public.mapas_comparativos
+  where id = p_mapa_id
+  for update;
+  PERFORM public.fn_financeiro_autorizar_obra(v_obra_id,false);
+
+
+  if not found then
+    raise exception 'Mapa comparativo não encontrado.'
+      using errcode = 'P0002';
+  end if;
+
+  if not public.fn_pode_editar_obra(v_obra_id) then
+    raise exception 'Sem permissão para eliminar este mapa comparativo.'
+      using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1
+    from public.subempreitadas
+    where mapa_comparativo_id = p_mapa_id
+  ) then
+    raise exception 'Este mapa já originou uma subempreitada e não pode ser eliminado. O histórico da adjudicação deve ser preservado.'
+      using errcode = '23503';
+  end if;
+
+  select coalesce(array_agg(id), '{}'::uuid[]), count(*)
+  into v_item_ids, v_itens_antes
+  from public.comparativo_itens
+  where mapa_id = p_mapa_id;
+
+  select coalesce(array_agg(id), '{}'::uuid[]), count(*)
+  into v_proposta_ids, v_propostas_antes
+  from public.comparativo_propostas
+  where mapa_id = p_mapa_id;
+
+  select count(*) into v_precos_antes
+  from public.comparativo_itens_precos
+  where item_id = any(v_item_ids)
+     or proposta_id = any(v_proposta_ids);
+
+  select count(*) into v_ajustes_antes
+  from public.comparativo_ajustes
+  where mapa_id = p_mapa_id;
+
+  delete from public.mapas_comparativos
+  where id = p_mapa_id;
+
+  select count(*) into v_mapas_depois
+  from public.mapas_comparativos
+  where id = p_mapa_id;
+
+  select count(*) into v_itens_depois
+  from public.comparativo_itens
+  where id = any(v_item_ids);
+
+  select count(*) into v_propostas_depois
+  from public.comparativo_propostas
+  where id = any(v_proposta_ids);
+
+  select count(*) into v_precos_depois
+  from public.comparativo_itens_precos
+  where item_id = any(v_item_ids)
+     or proposta_id = any(v_proposta_ids);
+
+  select count(*) into v_ajustes_depois
+  from public.comparativo_ajustes
+  where mapa_id = p_mapa_id
+     or proposta_id = any(v_proposta_ids);
+
+  if v_mapas_depois <> 0
+     or v_itens_depois <> 0
+     or v_propostas_depois <> 0
+     or v_precos_depois <> 0
+     or v_ajustes_depois <> 0 then
+    raise exception 'A eliminação foi cancelada: existem registos relacionados com o mapa.';
+  end if;
+
+  return jsonb_build_object(
+    'mapa_id', p_mapa_id,
+    'itens_eliminados', v_itens_antes,
+    'propostas_eliminadas', v_propostas_antes,
+    'precos_eliminados', v_precos_antes,
+    'ajustes_eliminados', v_ajustes_antes,
+    'mapas_restantes', v_mapas_depois,
+    'itens_restantes', v_itens_depois,
+    'propostas_restantes', v_propostas_depois,
+    'precos_restantes', v_precos_depois,
+    'ajustes_restantes', v_ajustes_depois
+  );
+end;
+$function$;
+ALTER FUNCTION public.fn_eliminar_mapa_comparativo(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_eliminar_mapa_comparativo(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_eliminar_mapa_comparativo(uuid) TO authenticated;
+CREATE OR REPLACE FUNCTION public.fn_eliminar_item_comparativo(p_item_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_mapa_id uuid;
+  v_obra_id uuid;
+  v_precos_antes integer;
+  v_precos_depois integer;
+begin
+  IF NOT public.fn_autorizacao_sessao_ativa() THEN
+   RAISE EXCEPTION 'FORBIDDEN: sessão ou entidade indisponível.' USING ERRCODE='42501';
+  END IF;
+
+  select i.mapa_id, m.obra_id
+  into v_mapa_id, v_obra_id
+  from public.comparativo_itens i
+  join public.mapas_comparativos m on m.id = i.mapa_id
+  where i.id = p_item_id
+  for update of i;
+  PERFORM public.fn_financeiro_autorizar_obra(v_obra_id,false);
+
+
+  if not found then
+    raise exception 'Item do mapa comparativo não encontrado.'
+      using errcode = 'P0002';
+  end if;
+
+  if not public.fn_pode_editar_obra(v_obra_id) then
+    raise exception 'Sem permissão para eliminar itens desta obra.'
+      using errcode = '42501';
+  end if;
+
+  select count(*)
+  into v_precos_antes
+  from public.comparativo_itens_precos
+  where item_id = p_item_id;
+
+  delete from public.comparativo_itens
+  where id = p_item_id;
+
+  select count(*)
+  into v_precos_depois
+  from public.comparativo_itens_precos
+  where item_id = p_item_id;
+
+  if v_precos_depois <> 0 then
+    raise exception
+      'A eliminação foi cancelada: existem preços órfãos para o item.';
+  end if;
+
+  perform public.fn_atualizar_melhor_preco_comparativo(v_mapa_id);
+
+  return jsonb_build_object(
+    'item_id', p_item_id,
+    'precos_eliminados', v_precos_antes,
+    'precos_restantes', v_precos_depois
+  );
+end;
+$function$;
+ALTER FUNCTION public.fn_eliminar_item_comparativo(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_eliminar_item_comparativo(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_eliminar_item_comparativo(uuid) TO authenticated;
+CREATE POLICY financeiro_empresa_insert ON public.faturas_itens AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.faturas f WHERE f.id=fatura_id AND public.fn_financeiro_obra_da_empresa(f.obra_id)));
+CREATE POLICY financeiro_empresa_insert ON public.faturas_anexos AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.faturas f WHERE f.id=fatura_id AND public.fn_financeiro_obra_da_empresa(f.obra_id)));
+CREATE POLICY financeiro_empresa_insert ON public.faturas_guias AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.faturas f WHERE f.id=fatura_id AND public.fn_financeiro_obra_da_empresa(f.obra_id)));
+CREATE POLICY financeiro_empresa_update ON public.faturas_guias AS RESTRICTIVE FOR UPDATE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.faturas f WHERE f.id=fatura_id AND public.fn_financeiro_obra_da_empresa(f.obra_id)))
+WITH CHECK(EXISTS(SELECT 1 FROM public.faturas f WHERE f.id=fatura_id AND public.fn_financeiro_obra_da_empresa(f.obra_id)));
+CREATE POLICY financeiro_empresa_delete ON public.faturas_guias AS RESTRICTIVE FOR DELETE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.faturas f WHERE f.id=fatura_id AND public.fn_financeiro_obra_da_empresa(f.obra_id)));
+CREATE POLICY financeiro_empresa_insert ON public.mapas_comparativos AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(public.fn_financeiro_obra_da_empresa(obra_id));
+CREATE POLICY financeiro_empresa_update ON public.mapas_comparativos AS RESTRICTIVE FOR UPDATE TO authenticated
+USING(public.fn_financeiro_obra_da_empresa(obra_id))
+WITH CHECK(public.fn_financeiro_obra_da_empresa(obra_id));
+CREATE POLICY financeiro_empresa_delete ON public.mapas_comparativos AS RESTRICTIVE FOR DELETE TO authenticated
+USING(public.fn_financeiro_obra_da_empresa(obra_id));
+CREATE POLICY financeiro_empresa_insert ON public.comparativo_itens AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_update ON public.comparativo_itens AS RESTRICTIVE FOR UPDATE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)))
+WITH CHECK(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_delete ON public.comparativo_itens AS RESTRICTIVE FOR DELETE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_insert ON public.comparativo_propostas AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_update ON public.comparativo_propostas AS RESTRICTIVE FOR UPDATE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)))
+WITH CHECK(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_delete ON public.comparativo_propostas AS RESTRICTIVE FOR DELETE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_insert ON public.comparativo_ajustes AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_update ON public.comparativo_ajustes AS RESTRICTIVE FOR UPDATE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)))
+WITH CHECK(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_delete ON public.comparativo_ajustes AS RESTRICTIVE FOR DELETE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.mapas_comparativos m WHERE m.id=mapa_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_insert ON public.comparativo_itens_precos AS RESTRICTIVE FOR INSERT TO authenticated
+WITH CHECK(EXISTS(SELECT 1 FROM public.comparativo_itens i JOIN public.mapas_comparativos m ON m.id=i.mapa_id WHERE i.id=item_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_update ON public.comparativo_itens_precos AS RESTRICTIVE FOR UPDATE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.comparativo_itens i JOIN public.mapas_comparativos m ON m.id=i.mapa_id WHERE i.id=item_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)))
+WITH CHECK(EXISTS(SELECT 1 FROM public.comparativo_itens i JOIN public.mapas_comparativos m ON m.id=i.mapa_id WHERE i.id=item_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+CREATE POLICY financeiro_empresa_delete ON public.comparativo_itens_precos AS RESTRICTIVE FOR DELETE TO authenticated
+USING(EXISTS(SELECT 1 FROM public.comparativo_itens i JOIN public.mapas_comparativos m ON m.id=i.mapa_id WHERE i.id=item_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
+
 CREATE TABLE primeline_encarregado_20261004.instalacao(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton), catalogo jsonb NOT NULL);
 ALTER TABLE primeline_encarregado_20261004.instalacao ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE primeline_encarregado_20261004.instalacao FROM PUBLIC,anon,authenticated,service_role;

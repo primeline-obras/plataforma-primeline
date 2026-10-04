@@ -26,14 +26,14 @@ BEGIN
  -- Compara TODAS as tabelas, excetuando apenas as policies restritivas desta entrega.
  SELECT jsonb_agg(t||jsonb_build_object('policies',
   (SELECT jsonb_agg(p ORDER BY p->>'name') FROM jsonb_array_elements(nullif(t->'policies','null'::jsonb)) p
-   WHERE p->>'name' NOT IN('encarregado_sem_select_direto','encarregado_sem_dml_direto'))) ORDER BY t->>'name')
+   WHERE p->>'name' NOT IN('encarregado_sem_select_direto','encarregado_sem_dml_direto','alertas_sessao_ativa','financeiro_empresa_insert','financeiro_empresa_update','financeiro_empresa_delete'))) ORDER BY t->>'name')
  INTO x FROM jsonb_array_elements(live->'tables') t;
  SELECT jsonb_agg(t ORDER BY t->>'name') INTO y FROM jsonb_array_elements(b->'tables') t;
  IF x IS DISTINCT FROM y THEN RAISE EXCEPTION 'LEGACY_TABLE_CATALOG_CHANGED'; END IF;
  SELECT jsonb_agg(f ORDER BY f->>'signature') INTO x FROM jsonb_array_elements(live->'functions') f
- WHERE f->>'signature' NOT IN('fn_encarregado_acesso_direto_bloqueado()','fn_subempreitadas_operacionais_obra(uuid)','fn_ausencias_equipa_encarregado(date,date)','fn_quadro_contexto_v1(date,date)','fn_equipa_obra_encarregado(date,uuid)','fn_quadro_ferias_encarregado_global(date,date)','fn_ajustar_saida_prevista_mensal(uuid,date,numeric)','fn_atualizar_melhor_preco_comparativo(uuid)','fn_congelar_planeamento_baseline(uuid)','fn_verificar_congelamentos_pendentes()','fn_quadro_operar(text,jsonb,boolean,text)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid,uuid)','fn_custo_real_ligado(uuid,uuid,uuid)');
+ WHERE f->>'signature' NOT IN('fn_encarregado_acesso_direto_bloqueado()','fn_subempreitadas_operacionais_obra(uuid)','fn_ausencias_equipa_encarregado(date,date)','fn_quadro_contexto_v1(date,date)','fn_equipa_obra_encarregado(date,uuid)','fn_quadro_ferias_encarregado_global(date,date)','fn_ajustar_saida_prevista_mensal(uuid,date,numeric)','fn_atualizar_melhor_preco_comparativo(uuid)','fn_congelar_planeamento_baseline(uuid)','fn_verificar_congelamentos_pendentes()','fn_quadro_operar(text,jsonb,boolean,text)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid,uuid)','fn_custo_real_ligado(uuid,uuid,uuid)','fn_marcar_fatura_paga(uuid,date)','fn_desmarcar_fatura_paga(uuid)','fn_devolver_fatura_financeiro(uuid,text)','fn_avancar_estado_fluxo_fatura(uuid,text,date,text)','fn_marcar_faturacao_auto_paga(uuid,date,numeric)','fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric)','fn_resolver_alerta(uuid)','fn_autorizacao_sessao_ativa()','fn_financeiro_autorizar_obra(uuid,boolean)','fn_financeiro_obra_da_empresa(uuid)','fn_decidir_fatura(uuid,text,text)','fn_decidir_faturacao_auto(uuid,text)','fn_devolver_fatura_administrativo(uuid,text)','fn_vincular_fatura_subempreitada(uuid,uuid)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb)','fn_apagar_guia_fatura(uuid)','fn_apagar_anexo_fatura(uuid)','fn_eliminar_mapa_comparativo(uuid)','fn_eliminar_item_comparativo(uuid)');
  SELECT jsonb_agg(f ORDER BY f->>'signature') INTO y FROM jsonb_array_elements(b->'functions') f
- WHERE f->>'signature' NOT IN('fn_quadro_contexto_v1(date,date)','fn_equipa_obra_encarregado(date,uuid)','fn_quadro_ferias_encarregado_global(date,date)','fn_ajustar_saida_prevista_mensal(uuid,date,numeric)','fn_atualizar_melhor_preco_comparativo(uuid)','fn_congelar_planeamento_baseline(uuid)','fn_verificar_congelamentos_pendentes()','fn_quadro_operar(text,jsonb,boolean,text)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid,uuid)','fn_custo_real_ligado(uuid,uuid,uuid)');
+ WHERE f->>'signature' NOT IN('fn_quadro_contexto_v1(date,date)','fn_equipa_obra_encarregado(date,uuid)','fn_quadro_ferias_encarregado_global(date,date)','fn_ajustar_saida_prevista_mensal(uuid,date,numeric)','fn_atualizar_melhor_preco_comparativo(uuid)','fn_congelar_planeamento_baseline(uuid)','fn_verificar_congelamentos_pendentes()','fn_quadro_operar(text,jsonb,boolean,text)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid)','fn_verificar_fatura_semelhante(uuid,numeric,text,uuid,uuid)','fn_custo_real_ligado(uuid,uuid,uuid)','fn_marcar_fatura_paga(uuid,date)','fn_desmarcar_fatura_paga(uuid)','fn_devolver_fatura_financeiro(uuid,text)','fn_avancar_estado_fluxo_fatura(uuid,text,date,text)','fn_marcar_faturacao_auto_paga(uuid,date,numeric)','fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric)','fn_resolver_alerta(uuid)','fn_autorizacao_sessao_ativa()','fn_financeiro_autorizar_obra(uuid,boolean)','fn_financeiro_obra_da_empresa(uuid)','fn_decidir_fatura(uuid,text,text)','fn_decidir_faturacao_auto(uuid,text)','fn_devolver_fatura_administrativo(uuid,text)','fn_vincular_fatura_subempreitada(uuid,uuid)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb)','fn_apagar_guia_fatura(uuid)','fn_apagar_anexo_fatura(uuid)','fn_eliminar_mapa_comparativo(uuid)','fn_eliminar_item_comparativo(uuid)');
  IF x IS DISTINCT FROM y THEN RAISE EXCEPTION 'LEGACY_FUNCTION_CHANGED'; END IF;
  SELECT f INTO x FROM jsonb_array_elements(live->'functions') f WHERE f->>'signature'='fn_quadro_contexto_v1(date,date)';
  SELECT f||jsonb_build_object('definition',replace(f->>'definition',' OR u.funcao=''encarregado''','')) INTO y
@@ -92,4 +92,59 @@ BEGIN
  END LOOP;
  RAISE NOTICE 'POSTCHECK_ROLES_OK';
 END $roles$;
+
+DO $financial$
+DECLARE sig text; definition text;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.alertas'::regclass
+  AND polname='alertas_sessao_ativa' AND NOT polpermissive AND polcmd='r'
+  AND pg_get_expr(polqual,polrelid)='fn_autorizacao_sessao_ativa()') THEN
+  RAISE EXCEPTION 'ALERT_ACTIVE_GUARD_MISSING';
+ END IF;
+ FOREACH sig IN ARRAY ARRAY['fn_marcar_fatura_paga(uuid,date)','fn_desmarcar_fatura_paga(uuid)','fn_devolver_fatura_financeiro(uuid,text)','fn_avancar_estado_fluxo_fatura(uuid,text,date,text)','fn_marcar_faturacao_auto_paga(uuid,date,numeric)','fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric)','fn_resolver_alerta(uuid)','fn_decidir_fatura(uuid,text,text)','fn_decidir_faturacao_auto(uuid,text)','fn_devolver_fatura_administrativo(uuid,text)','fn_vincular_fatura_subempreitada(uuid,uuid)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb)','fn_apagar_guia_fatura(uuid)','fn_apagar_anexo_fatura(uuid)','fn_eliminar_mapa_comparativo(uuid)','fn_eliminar_item_comparativo(uuid)'] LOOP
+  SELECT pg_get_functiondef(sig::regprocedure) INTO definition;
+  IF position('fn_autorizacao_sessao_ativa()' in definition)=0
+   OR (sig NOT IN('fn_resolver_alerta(uuid)','fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb)') AND position('fn_financeiro_autorizar_obra' in definition)=0)
+   OR has_function_privilege('anon',sig,'EXECUTE')
+   OR NOT has_function_privilege('authenticated',sig,'EXECUTE')
+   OR has_function_privilege('service_role',sig,'EXECUTE') THEN
+   RAISE EXCEPTION 'FINANCIAL_RPC_GUARD_INVALID: %',sig;
+  END IF;
+  IF EXISTS(SELECT 1 FROM pg_proc WHERE oid=sig::regprocedure
+   AND (NOT prosecdef OR proowner<>'postgres'::regrole OR proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog, public, pg_temp'])) THEN
+   RAISE EXCEPTION 'FINANCIAL_RPC_OWNER_PATH_INVALID';
+  END IF;
+ END LOOP;
+ IF has_function_privilege('authenticated','public.fn_financeiro_autorizar_obra(uuid,boolean)','EXECUTE')
+ OR has_function_privilege('anon','public.fn_financeiro_autorizar_obra(uuid,boolean)','EXECUTE') THEN
+  RAISE EXCEPTION 'PRIVATE_AUTH_HELPER_EXPOSED';
+ END IF;
+ IF (SELECT count(*) FROM pg_policy WHERE polrelid IN('public.faturas'::regclass,'public.faturacao'::regclass,'public.faturas_itens'::regclass,'public.faturas_anexos'::regclass,'public.faturas_guias'::regclass,'public.mapas_comparativos'::regclass,'public.comparativo_itens'::regclass,'public.comparativo_propostas'::regclass,'public.comparativo_ajustes'::regclass,'public.comparativo_itens_precos'::regclass) AND polname IN('financeiro_empresa_insert','financeiro_empresa_update','financeiro_empresa_delete') AND NOT polpermissive)<>24 THEN RAISE EXCEPTION 'FINANCIAL_DML_GUARDS_MISSING'; END IF;
+ RAISE NOTICE 'POSTCHECK_FINANCIAL_STRUCTURAL_OK';
+END $financial$;
+
+-- Apenas SELECT: exercita as guardas puras com as identidades existentes.
+-- As RPCs de escrita NÃO são invocadas no postcheck real; provas de escrita/atomicidade são locais.
+DO $financial_scope$
+DECLARE u record; o record; expected boolean; actual boolean; n bigint;
+BEGIN
+ FOR u IN SELECT auth_user_id,empresa_id,ativo FROM public.utilizadores WHERE auth_user_id IS NOT NULL LOOP
+  PERFORM set_config('request.jwt.claim.sub',u.auth_user_id::text,true);
+  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',u.auth_user_id,'role','authenticated')::text,true);
+  IF public.fn_autorizacao_sessao_ativa() IS DISTINCT FROM (u.ativo IS TRUE) THEN RAISE EXCEPTION 'ACTIVE_SESSION_GUARD_INVALID'; END IF;
+  FOR o IN SELECT id,empresa_id FROM public.obras LOOP
+   expected:=u.ativo IS TRUE AND o.empresa_id IS NOT NULL AND o.empresa_id IS NOT DISTINCT FROM u.empresa_id;
+   SELECT public.fn_financeiro_obra_da_empresa(o.id) INTO actual;
+   IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FINANCIAL_COMPANY_GUARD_INVALID'; END IF;
+  END LOOP;
+  IF u.ativo IS NOT TRUE THEN
+   EXECUTE 'SET LOCAL ROLE authenticated';
+   SELECT count(*) INTO n FROM public.alertas;
+   IF n<>0 THEN RAISE EXCEPTION 'INACTIVE_ALERTS_EXPOSED'; END IF;
+   EXECUTE 'RESET ROLE';
+  END IF;
+ END LOOP;
+ RAISE NOTICE 'POSTCHECK_FINANCIAL_SCOPE_READONLY_OK';
+END $financial_scope$;
+
 ROLLBACK;
