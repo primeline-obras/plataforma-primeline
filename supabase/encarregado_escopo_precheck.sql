@@ -22,6 +22,14 @@ BEGIN
   IF to_regprocedure('public.'||sig) IS NULL THEN RAISE EXCEPTION 'ECONOMIC_WRITER_MISSING: %',sig; END IF;
  END LOOP;
 END $economic_inventory$;
+-- Segunda ronda: definições e ACLs já incluídas no snapshot integral.
+DO $economic_final_inventory$
+DECLARE sig text;
+BEGIN
+ FOREACH sig IN ARRAY ARRAY['fn_confirmar_compromisso_subempreitada(uuid)','fn_importar_orcamento_fases(uuid,jsonb,text)','fn_guardar_precos_candidato_subempreitada(uuid,jsonb)','fn_criar_consulta_subempreitada(uuid,uuid,text,uuid[])','fn_adjudicar_candidato_subempreitada(uuid,date,date,text)','fn_registar_aditamento_subempreitada(uuid,text,numeric,uuid)','fn_decidir_aditamento_subempreitada(uuid,text,text)','fn_concluir_subempreitada_com_avaliacao(uuid,integer,integer,integer,integer,text)','fn_importar_tees_xlsx(jsonb,text)','fn_importar_tees_revisoes(integer,uuid,jsonb,text)','fn_importar_subempreitadas_xlsx(jsonb,text)','fn_atualizar_venda_contrato_via_tee(uuid)','fn_definir_estado_mensal_v1(uuid,text,text,text,text)','fn_guardar_planeamento_lote(jsonb,text)','fn_importar_mapa_financeiro_xlsx(integer,jsonb,text)','fn_criar_obra_de_modelo(uuid,text,text,text,text,text,text,uuid,text,date,date,boolean)'] LOOP
+  IF to_regprocedure('public.'||sig) IS NULL THEN RAISE EXCEPTION 'ECONOMIC_WRITER_MISSING: %',sig; END IF;
+ END LOOP;
+END $economic_final_inventory$;
 
 
 ROLLBACK;
