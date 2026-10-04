@@ -72,7 +72,9 @@ export function createRncModule({ root, supabase, isConfigured, getWorks, getRol
       else {
         const [rows, phases, subs, permission] = await Promise.all([
           api(`rnc?select=*&obra_id=eq.${encodeURIComponent(state.workId)}&order=numero.desc`), api(`fases?select=id,codigo,descricao&obra_id=eq.${encodeURIComponent(state.workId)}&order=codigo`),
-          api(`subempreitadas?select=id,obra_id,fornecedor_id,especialidade&obra_id=eq.${encodeURIComponent(state.workId)}&order=especialidade`), api("rpc/fn_pode_editar_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) }),
+          getRole() === "encarregado"
+            ? api("rpc/fn_subempreitadas_operacionais_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) })
+            : api(`subempreitadas?select=id,obra_id,fornecedor_id,especialidade&obra_id=eq.${encodeURIComponent(state.workId)}&order=especialidade`), api("rpc/fn_pode_editar_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) }),
         ]);
         state.rows = rows; state.phases = phases; state.subcontracts = subs; state.canEdit = Boolean(permission);
         const usersResponse = await supabase("utilizadores?select=id,nome");

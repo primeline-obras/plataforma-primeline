@@ -1,0 +1,5623 @@
+{
+  "indexes": [
+    {
+      "name": "colaboradores_pkey",
+      "table": "colaboradores",
+      "definition": "CREATE UNIQUE INDEX colaboradores_pkey ON public.colaboradores USING btree (id)"
+    },
+    {
+      "name": "colaboradores_utilizador_uidx",
+      "table": "colaboradores",
+      "definition": "CREATE UNIQUE INDEX colaboradores_utilizador_uidx ON public.colaboradores USING btree (utilizador_id) WHERE (utilizador_id IS NOT NULL)"
+    },
+    {
+      "name": "subempreitadas_pkey",
+      "table": "subempreitadas",
+      "definition": "CREATE UNIQUE INDEX subempreitadas_pkey ON public.subempreitadas USING btree (id)"
+    },
+    {
+      "name": "subempreitadas_mapa_comparativo_uidx",
+      "table": "subempreitadas",
+      "definition": "CREATE UNIQUE INDEX subempreitadas_mapa_comparativo_uidx ON public.subempreitadas USING btree (mapa_comparativo_id) WHERE (mapa_comparativo_id IS NOT NULL)"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "trg_alertar_subempreitada_execucao_sem_aprovacao",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_alertar_subempreitada_execucao_sem_aprovacao AFTER INSERT OR UPDATE OF estado, estado_aprovacao_gerencia ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_alertar_subempreitada_execucao_sem_aprovacao()"
+    },
+    {
+      "name": "trg_auditoria_subempreitadas",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_auditoria_subempreitadas AFTER INSERT OR DELETE OR UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_conclusao",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_bloquear_conclusao BEFORE UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION bloquear_conclusao_sem_avaliacao()"
+    },
+    {
+      "name": "trg_definir_aprovacao_gerencia",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_definir_aprovacao_gerencia BEFORE INSERT ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION definir_necessidade_aprovacao_gerencia()"
+    },
+    {
+      "name": "trg_sincronizar_subempreitada_planeamento",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_sincronizar_subempreitada_planeamento AFTER INSERT OR UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_subempreitada_planeamento()"
+    },
+    {
+      "name": "trg_sincronizar_subempreitada_previsao",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_sincronizar_subempreitada_previsao AFTER INSERT OR DELETE OR UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_subempreitada_previsao()"
+    },
+    {
+      "name": "trg_auditoria_colaboradores",
+      "table": "colaboradores",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_auditoria_colaboradores AFTER INSERT OR DELETE OR UPDATE ON public.colaboradores FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_impedir_saida_colaborador_com_viaturas",
+      "table": "colaboradores",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_impedir_saida_colaborador_com_viaturas BEFORE UPDATE OF data_saida ON public.colaboradores FOR EACH ROW WHEN (((old.data_saida IS NULL) AND (new.data_saida IS NOT NULL))) EXECUTE FUNCTION fn_impedir_saida_colaborador_com_viaturas()"
+    },
+    {
+      "name": "trg_validar_colaborador_utilizador_empresa",
+      "table": "colaboradores",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER trg_validar_colaborador_utilizador_empresa BEFORE INSERT OR UPDATE OF utilizador_id, empresa_id ON public.colaboradores FOR EACH ROW EXECUTE FUNCTION fn_validar_colaborador_utilizador_empresa()"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "subempreitadas_aprovado_por_gerencia_fkey",
+      "table": "subempreitadas",
+      "definition": "FOREIGN KEY (aprovado_por_gerencia) REFERENCES utilizadores(id)"
+    },
+    {
+      "name": "subempreitadas_condicao_pagamento_check",
+      "table": "subempreitadas",
+      "definition": "CHECK (((condicao_pagamento IS NULL) OR (condicao_pagamento = ANY (ARRAY['imediato'::text, '15_dias'::text, '30_dias'::text]))))"
+    },
+    {
+      "name": "subempreitadas_consulta_id_fkey",
+      "table": "subempreitadas",
+      "definition": "FOREIGN KEY (consulta_id) REFERENCES consultas_subempreitada(id)"
+    },
+    {
+      "name": "subempreitadas_datas_previstas_check",
+      "table": "subempreitadas",
+      "definition": "CHECK (((data_inicio_prevista IS NULL) OR (data_fim_prevista IS NULL) OR (data_fim_prevista >= data_inicio_prevista)))"
+    },
+    {
+      "name": "subempreitadas_estado_aprovacao_gerencia_check",
+      "table": "subempreitadas",
+      "definition": "CHECK ((estado_aprovacao_gerencia = ANY (ARRAY['nao_aplicavel'::text, 'pendente'::text, 'aprovado'::text, 'recusado'::text])))"
+    },
+    {
+      "name": "subempreitadas_estado_check",
+      "table": "subempreitadas",
+      "definition": "CHECK ((estado = ANY (ARRAY['adjudicado'::text, 'em_execucao'::text, 'concluido'::text])))"
+    },
+    {
+      "name": "subempreitadas_fase_id_fkey",
+      "table": "subempreitadas",
+      "definition": "FOREIGN KEY (fase_id) REFERENCES fases(id)"
+    },
+    {
+      "name": "subempreitadas_fornecedor_id_fkey",
+      "table": "subempreitadas",
+      "definition": "FOREIGN KEY (fornecedor_id) REFERENCES fornecedores(id)"
+    },
+    {
+      "name": "subempreitadas_mapa_comparativo_id_fkey",
+      "table": "subempreitadas",
+      "definition": "FOREIGN KEY (mapa_comparativo_id) REFERENCES mapas_comparativos(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "subempreitadas_obra_id_fkey",
+      "table": "subempreitadas",
+      "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id)"
+    },
+    {
+      "name": "subempreitadas_pkey",
+      "table": "subempreitadas",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "subempreitadas_tipo_pagamento_check",
+      "table": "subempreitadas",
+      "definition": "CHECK ((tipo_pagamento = ANY (ARRAY['por_fase'::text, 'unico'::text, 'mensal'::text])))"
+    },
+    {
+      "name": "colaboradores_empresa_id_fkey",
+      "table": "colaboradores",
+      "definition": "FOREIGN KEY (empresa_id) REFERENCES empresas(id)"
+    },
+    {
+      "name": "colaboradores_pkey",
+      "table": "colaboradores",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "colaboradores_utilizador_id_fkey",
+      "table": "colaboradores",
+      "definition": "FOREIGN KEY (utilizador_id) REFERENCES utilizadores(id) ON DELETE SET NULL"
+    }
+  ],
+  "default_acl": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "type": "r",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": "{postgres=rwU/postgres,service_role=rwU/postgres}",
+      "type": "S",
+      "owner": "postgres",
+      "schema": "public"
+    }
+  ],
+  "effective_tables": [
+    {
+      "role": "anon",
+      "table": "_backup_alertas_viaturas_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_alertas_viaturas_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_alertas_viaturas_pre_validade_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_alteracoes_tee_itens_pre_revisoes_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_alteracoes_tee_itens_pre_revisoes_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_alteracoes_tee_itens_pre_revisoes_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_alteracoes_tee_pre_revisoes_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_alteracoes_tee_pre_revisoes_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_alteracoes_tee_pre_revisoes_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_colaboradores_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_colaboradores_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_colaboradores_pre_validade_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_consultas_planeamento_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_consultas_planeamento_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_consultas_planeamento_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_fases_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_fases_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_fases_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_planeamento_custos_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_planeamento_custos_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_planeamento_custos_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_planeamento_dependencias_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_planeamento_dependencias_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_planeamento_dependencias_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_planeamento_fases_resumo_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_planeamento_fases_resumo_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_planeamento_fases_resumo_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_planeamento_itens_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_planeamento_itens_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_planeamento_itens_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_planeamento_legacy_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_planeamento_legacy_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_planeamento_legacy_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_planeamento_tokens_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_planeamento_tokens_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_planeamento_tokens_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra118_tarefas_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra118_tarefas_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra118_tarefas_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra120_data_fim_prevista_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra120_data_fim_prevista_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra120_data_fim_prevista_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra120_data_inicio_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra120_data_inicio_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra120_data_inicio_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obra120_f051_estado_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obra120_f051_estado_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obra120_f051_estado_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_obras_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_obras_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_obras_pre_lote_20260928",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_planeamento_dependencias_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_planeamento_dependencias_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_planeamento_dependencias_pre_lote_20260928",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_planeamento_fases_resumo_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_planeamento_fases_resumo_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_planeamento_fases_resumo_pre_lote_20260928",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_planeamento_itens_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_planeamento_itens_pre_lote_20260928",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_planeamento_itens_pre_lote_20260928",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_viaturas_eventos_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_viaturas_eventos_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_viaturas_eventos_pre_validade_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "_backup_viaturas_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "_backup_viaturas_pre_validade_20260929",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "_backup_viaturas_pre_validade_20260929",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "administradores_plataforma",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "administradores_plataforma",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "administradores_plataforma",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "afetacao_semanal",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "afetacao_semanal",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "afetacao_semanal",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "ajustes_custo_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "ajustes_custo_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "ajustes_custo_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "alertas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "alertas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "alertas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "alteracoes_tee",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "alteracoes_tee",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "alteracoes_tee",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "alteracoes_tee_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "alteracoes_tee_itens",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "alteracoes_tee_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "alteracoes_tee_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "alteracoes_tee_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "alteracoes_tee_revisoes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "ausencias",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "ausencias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "ausencias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "ausencias_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "ausencias_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "ausencias_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "autos_medicao",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "autos_medicao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "autos_medicao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "autos_medicao_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "autos_medicao_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "autos_medicao_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "avaliacoes_subempreiteiro",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "avaliacoes_subempreiteiro",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "avaliacoes_subempreiteiro",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "avaliacoes_subempreiteiro_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "avaliacoes_subempreiteiro_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "avaliacoes_subempreiteiro_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "colaboradores",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "colaboradores",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "colaboradores",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "colaboradores_contratos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "colaboradores_contratos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "colaboradores_contratos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "colaboradores_rh_privado",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "colaboradores_rh_privado",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "colaboradores_rh_privado",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "comparativo_ajustes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "comparativo_ajustes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "comparativo_ajustes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "comparativo_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "comparativo_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "comparativo_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "comparativo_itens_precos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "comparativo_itens_precos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "comparativo_itens_precos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "comparativo_propostas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "comparativo_propostas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "comparativo_propostas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "compromissos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "compromissos",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "compromissos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "compromissos_participantes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "compromissos_participantes",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "compromissos_participantes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "consultas_pendentes_planeamento",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "consultas_pendentes_planeamento",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "consultas_pendentes_planeamento",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "consultas_subempreitada",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "consultas_subempreitada",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "consultas_subempreitada",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "consultas_subempreitada_candidatos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "consultas_subempreitada_candidatos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "consultas_subempreitada_candidatos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "consultas_subempreitada_candidatos_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "consultas_subempreitada_candidatos_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "consultas_subempreitada_candidatos_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "consultas_subempreitada_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "consultas_subempreitada_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "consultas_subempreitada_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "contratos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "contratos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "contratos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "debitos_diretos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "debitos_diretos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "debitos_diretos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "debitos_diretos_lancamentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "debitos_diretos_lancamentos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "debitos_diretos_lancamentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "desenhos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "desenhos",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "desenhos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "despesas_estaleiro",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "despesas_estaleiro",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "despesas_estaleiro",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "documentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "documentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "documentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "documentos_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "documentos_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "documentos_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "empresas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "empresas",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "empresas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "epis",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "epis",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "epis",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "especialidades",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "especialidades",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "especialidades",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "etapas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "etapas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "etapas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fases",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fases",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "fases",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturacao",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturacao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "faturacao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturacao_autos_medicao",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturacao_autos_medicao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "faturacao_autos_medicao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturacao_recebimentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturacao_recebimentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "faturacao_recebimentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "faturas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturas_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturas_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "faturas_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturas_eventos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturas_eventos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "faturas_eventos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturas_guias",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturas_guias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "faturas_guias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "faturas_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "faturas_itens",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "faturas_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fecho_mensal_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fecho_mensal_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "fecho_mensal_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "feriados_empresa",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "feriados_empresa",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "feriados_empresa",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "financeiro_estados_mensais",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "financeiro_estados_mensais",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "financeiro_estados_mensais",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "financeiro_estados_mensais_historico",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "financeiro_estados_mensais_historico",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "financeiro_estados_mensais_historico",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fornecedores",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fornecedores",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "fornecedores",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fornecedores_aliases",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fornecedores_aliases",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "fornecedores_aliases",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fornecedores_especialidades",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fornecedores_especialidades",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "fornecedores_especialidades",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fornecedores_mesclagens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fornecedores_mesclagens",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "fornecedores_mesclagens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "fornecedores_zonas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "fornecedores_zonas",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "fornecedores_zonas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "gestao_obras_lancamentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "gestao_obras_lancamentos",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "gestao_obras_lancamentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "horas_extraordinarias",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "horas_extraordinarias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "horas_extraordinarias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "imoveis_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "imoveis_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "imoveis_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "imoveis_empresa",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "imoveis_empresa",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "imoveis_empresa",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "imoveis_reunioes_condominio",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "imoveis_reunioes_condominio",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "imoveis_reunioes_condominio",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "impactos_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "impactos_obra",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "impactos_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "investimentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "investimentos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "investimentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "itens_orcamento",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "itens_orcamento",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "itens_orcamento",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "itens_tee",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "itens_tee",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "itens_tee",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "lancamentos_mao_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "lancamentos_mao_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "lancamentos_mao_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "lancamentos_materiais",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "lancamentos_materiais",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "lancamentos_materiais",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "log_auditoria",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "log_auditoria",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "log_auditoria",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "mapa_financeiro_ajustes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "mapa_financeiro_ajustes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "mapa_financeiro_ajustes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "mapas_comparativos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "mapas_comparativos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "mapas_comparativos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "medicina_alertas_historico",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "medicina_alertas_historico",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "medicina_alertas_historico",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "anon",
+      "table": "medicina_instalacao_snapshot",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "medicina_instalacao_snapshot",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "medicina_instalacao_snapshot",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "anon",
+      "table": "medicina_operacoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "medicina_operacoes",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "medicina_operacoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "anon",
+      "table": "medicina_trabalho",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "medicina_trabalho",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "medicina_trabalho",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "mgo_historico_mensal69_20260925_backup",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "mgo_historico_mensal69_20260925_backup",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "mgo_historico_mensal69_20260925_backup",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "mgo_historico_mensal69_20260925_controle",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "mgo_historico_mensal69_20260925_controle",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "mgo_historico_mensal69_20260925_controle",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "multas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "multas",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "multas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "multas_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "multas_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "multas_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "niveis_mao_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "niveis_mao_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "niveis_mao_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "objetivos_semana",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "objetivos_semana",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "objetivos_semana",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "objetivos_semana_atribuicoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "objetivos_semana_atribuicoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "objetivos_semana_atribuicoes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "objetivos_semana_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "objetivos_semana_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "objetivos_semana_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "obra_responsaveis",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "obra_responsaveis",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "obra_responsaveis",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "obras",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "obras",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "obras",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "orcamento_fases",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "orcamento_fases",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "orcamento_fases",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "orcamento_versoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "orcamento_versoes",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "orcamento_versoes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "orcamento_versoes_fontes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "orcamento_versoes_fontes",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "orcamento_versoes_fontes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "pagamentos_subempreitada",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "pagamentos_subempreitada",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "pagamentos_subempreitada",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "pames",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "pames",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "pames",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "parametros_operacionais",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "parametros_operacionais",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "parametros_operacionais",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "pedidos_orcamento",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "pedidos_orcamento",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "pedidos_orcamento",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "pedidos_orcamento_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "pedidos_orcamento_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "pedidos_orcamento_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "pedidos_orcamento_versoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "pedidos_orcamento_versoes",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "pedidos_orcamento_versoes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "pedidos_prorrogacao",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "pedidos_prorrogacao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "pedidos_prorrogacao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "permissoes_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "permissoes_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "permissoes_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "planeamento",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "planeamento",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "planeamento",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "planeamento_custos_componentes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "planeamento_custos_componentes",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "planeamento_custos_componentes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "planeamento_fases_resumo",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "planeamento_fases_resumo",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "planeamento_fases_resumo",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "planeamento_itens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "planeamento_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "planeamento_itens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "planeamento_itens_dependencias",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "planeamento_itens_dependencias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "planeamento_itens_dependencias",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "planeamento_lote_tokens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "planeamento_lote_tokens",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "planeamento_lote_tokens",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "ponto_pessoal_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "ponto_pessoal_obra",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "ponto_pessoal_obra",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "previsao_financeira_mensal",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "previsao_financeira_mensal",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "previsao_financeira_mensal",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "projetos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "projetos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "projetos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "quadro_dias_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_dias_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_dias_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "anon",
+      "table": "quadro_escrita_interna",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_escrita_interna",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_escrita_interna",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "anon",
+      "table": "quadro_operacoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_operacoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_operacoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "anon",
+      "table": "quadro_pessoal_20260928_v3_backup",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_pessoal_20260928_v3_backup",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_pessoal_20260928_v3_backup",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "quadro_pessoal_alocacao",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_pessoal_alocacao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_pessoal_alocacao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "quadro_pessoal_movimentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_pessoal_movimentos",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_pessoal_movimentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "quadro_pessoal_rpc_permit",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "quadro_pessoal_rpc_permit",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "quadro_pessoal_rpc_permit",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "reservas_salas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "reservas_salas",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "reservas_salas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "reservas_salas_participantes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "reservas_salas_participantes",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "reservas_salas_participantes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "reunioes_atas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "reunioes_atas",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "reunioes_atas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "rfis",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "rfis",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "rfis",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "rh_cadastro_auditoria",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "rh_cadastro_auditoria",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "rh_cadastro_auditoria",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "rh_correcao_ferias_202605_backup",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "rh_correcao_ferias_202605_backup",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "rh_correcao_ferias_202605_backup",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "rnc",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "rnc",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "rnc",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "rnc_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "rnc_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "rnc_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "salas_reuniao",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "salas_reuniao",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "salas_reuniao",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "seguranca_incidentes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "seguranca_incidentes",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "seguranca_incidentes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "seguranca_inspecoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "seguranca_inspecoes",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "seguranca_inspecoes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "subempreitada_aditamentos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "subempreitada_aditamentos",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "subempreitada_aditamentos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "subempreitadas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "subempreitadas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "subempreitadas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "tarefas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "tarefas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "tarefas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "tee_importacoes_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "tee_importacoes_revisoes",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "tee_importacoes_revisoes",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "utilizadores",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "utilizadores",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "utilizadores",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "viaturas",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "viaturas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "viaturas",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "viaturas_atribuicoes_historico",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "viaturas_atribuicoes_historico",
+      "delete": false,
+      "insert": false,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "viaturas_atribuicoes_historico",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "viaturas_eventos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "viaturas_eventos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "viaturas_eventos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "viaturas_sinistros",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "viaturas_sinistros",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "viaturas_sinistros",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "viaturas_sinistros_anexos",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "viaturas_sinistros_anexos",
+      "delete": false,
+      "insert": true,
+      "select": true,
+      "update": false,
+      "any_column_select": true
+    },
+    {
+      "role": "service_role",
+      "table": "viaturas_sinistros_anexos",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "vw_previsao_mensal",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "vw_previsao_mensal",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "vw_previsao_mensal",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    },
+    {
+      "role": "anon",
+      "table": "vw_tees_resumo",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "authenticated",
+      "table": "vw_tees_resumo",
+      "delete": false,
+      "insert": false,
+      "select": false,
+      "update": false,
+      "any_column_select": false
+    },
+    {
+      "role": "service_role",
+      "table": "vw_tees_resumo",
+      "delete": true,
+      "insert": true,
+      "select": true,
+      "update": true,
+      "any_column_select": true
+    }
+  ],
+  "role_memberships": null,
+  "effective_functions": [
+    {
+      "anon": true,
+      "signature": "bloquear_conclusao_sem_avaliacao()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "definir_necessidade_aprovacao_gerencia()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_adjudicar_candidato_subempreitada(uuid,date,date,text)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_ajustar_saida_prevista_mensal(uuid,date,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_alerta_fim_contrato()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_alerta_horas_extra()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_alerta_nova_fatura()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_alertar_subempreitada_execucao_sem_aprovacao()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_alertar_tarefa_impedida()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_anexo_fatura(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_anexo_imovel(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_anexo_pedido_orcamento(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_anexo_rnc(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_compromisso(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_documento_entidade(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_documento_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_guia_fatura(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_imovel_empresa(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_lancamento_gestao_obras(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_reserva_sala(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_reuniao_condominio(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_apagar_versao_pedido_orcamento(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date,text,numeric,text,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_atualizar_destinatario_alerta_viatura()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_atualizar_melhor_preco_comparativo(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_atualizar_tarefa_encarregado(uuid,boolean,boolean,text)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_atualizar_venda_contrato_via_tee(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_auditar_ciclos_planeamento()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_avancar_estado_fluxo_fatura(uuid,text,date,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_bloquear_alocacao_em_ausencia()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_bloquear_fatura_duplicada()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_bloquear_mao_obra_em_ausencia()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_bloquear_registo_em_ausencia()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_bloquear_reserva_sobreposta()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_bloquear_venda_contrato_direta()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_bloquear_verificacao_rnc()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_calcular_preco_item_comparativo()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_cancelar_pedido_orcamento(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_cancelar_rnc(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_colaborador_na_obra_atual_encarregado(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_concluir_custo_pl_fase(uuid,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_concluir_custo_pl(uuid,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_concluir_custos_pl_tarefa(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_concluir_subempreitada_com_avaliacao(uuid,integer,integer,integer,integer,text)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_confirmar_compromisso_subempreitada(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_confirmar_custo_real_pl(uuid,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_confirmar_remocao_custo_estimado_subempreitada(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_congelar_planeamento_baseline(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_alerta_reuniao_semanal(uuid,text,text,date)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_alerta_validade_viatura(uuid,text)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid,text,numeric,text,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_consulta_planeamento(uuid,uuid,text,uuid[],uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_consulta_subempreitada(uuid,uuid,text,uuid[])",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_especialidade_fornecedor(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_fornecedor_comparativo(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_lembretes_equipa_tecnica(date)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_obra_de_modelo(uuid,text,text,text,text,text,text,uuid,text,date,date,boolean)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_pedidos_horas_semanais(date)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_reserva_sala(text,date,time without time zone,time without time zone,uuid[])",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_rnc(uuid,date,uuid,text,text,text,uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_criar_subempreitada_do_comparativo(uuid,uuid,uuid,date,date,text)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_custo_real_ligado(uuid,uuid,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_decidir_aditamento_subempreitada(uuid,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_decidir_fatura(uuid,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_decidir_faturacao_auto(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_definir_acao_rnc(uuid,text,text,date)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_definir_canal_alerta()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_definir_estado_mensal_v1(uuid,text,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_definir_zonas_fornecedor(uuid,text[])",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_desmarcar_fatura_paga(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_devolver_fatura_administrativo(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_devolver_fatura_financeiro(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_disparar_recalculo_planeamento()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_e_admin()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_e_administrativo()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_e_diretor_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_e_encarregado_da_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_e_financeiro()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_e_gestao_plataforma()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_editar_fornecedor_diretorio_v2(uuid,text,text,text,text,text,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_editar_fornecedor_diretorio(uuid,text,text,text,text,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_editar_reserva_sala(uuid,text,date,time without time zone,time without time zone,uuid[])",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_editar_rnc_base(uuid,date,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_eliminar_fornecedor_duplicado(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_eliminar_item_comparativo(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_eliminar_mapa_comparativo(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_eliminar_proposta_comparativo(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_equipa_obra_encarregado(date,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_executar_rotinas_diarias()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_fechar_rnc(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_folha_ponto_mensal(date,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_gerir_registo_frota(text,uuid,text,jsonb)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_cadastro_fornecedor(uuid,text,text,text,text,text,text,text,text,text[],uuid[],text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_componente_custo(uuid,text,numeric,text,numeric,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_compromisso(uuid,text,date,time without time zone,time without time zone,boolean,text,uuid,uuid,text,text,text,integer,uuid[])",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_integridade_orcamento_fonte()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_integridade_orcamento_versao()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_planeamento_lote(jsonb,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_ponto_obra(uuid,uuid,date,text,time without time zone,time without time zone,time without time zone,time without time zone,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_precos_candidato_subempreitada(uuid,jsonb)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_impedir_saida_colaborador_com_viaturas()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_mapa_financeiro_xlsx(integer,jsonb,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_mapa_gestao(jsonb,boolean)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_orcamento_fases(uuid,jsonb,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_proposta_comparativo(uuid,uuid,jsonb,jsonb)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_subempreitadas_xlsx(jsonb,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_tees_revisoes(integer,uuid,jsonb,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_importar_tees_xlsx(jsonb,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_limite_contrato_subempreitada()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_listar_colegas_agenda()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_listar_participantes_reuniao()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_listar_ponto_obra(date,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_listar_rastreio_faturas()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_log_importacao_xlsx(text,text,integer,jsonb)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_mapa_gestao_obras_excel()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_mapa_gestao_obras()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_marcar_atualizacao_feriado()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_marcar_fatura_paga(uuid,date)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_marcar_faturacao_auto_paga(uuid,date,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_admissao_historico()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_anular_consulta(integer,uuid,integer,uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_atual(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_consultar_colaborador(integer,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_corrigir_consulta(integer,uuid,date,text,date,integer,uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_guardar_interno(integer,text,uuid,uuid,date,text,date,integer,uuid,text)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_pode_gerir(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_proteger_historico()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_proteger()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_reconciliar_alertas(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_medicina_registar_consulta(integer,uuid,date,text,date,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_mesclar_fornecedor(uuid,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_mgo_inserir_json_compativel(regclass,jsonb)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_mgo_validar_periodo_mao_obra(jsonb,uuid,uuid,uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_normalizar_estado_ausencia()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_normalizar_numero_tee(text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_parametro_operacional_dias(text,integer[])",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_parametro_operacional_numero(text,numeric)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_parametro_operacional_texto(text,text)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_planeamento_lote_preview_v1(jsonb)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_consultar_quadro()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_editar_documentos_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_editar_mapa_gestao_obras()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_editar_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_gerir_ausencias()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_pode_gerir_horas_extra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_gerir_quadro(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_ver_ausencia(uuid,date)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_ver_compromisso(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_ver_mapa_gestao_obras()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_ver_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_pode_ver_visao_consolidada()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_ponto_horas(time without time zone,time without time zone,time without time zone,time without time zone)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_preparar_destinatario_alerta_viatura()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_previsualizar_mesclagem_fornecedor(uuid,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_proteger_atribuicao_viatura()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_proteger_evento_validade_viatura()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_proteger_fatura_devolvida_administrativo()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_proteger_historico_atribuicao_viatura()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_proximo_numero_rnc(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_aplicar_interno(uuid,date,jsonb,jsonb,text,uuid,boolean)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_contexto_v1(date,date)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_criar_colaborador_interno(text,text,date,date,text,uuid,text,numeric,text,text,text,text,text)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_dia_explicito(uuid,date)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_ferias_encarregado_global(date,date)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_leitura_global_v1()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_ler_obra(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_lock_escrita_v1()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_minha_obra_v1(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_minha_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_notificar_controlado_v1(uuid,date,uuid,uuid,uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_notificar_movimentacao_encarregado()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_obras_destino()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_operar_v1(text,jsonb,boolean,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_operar(text,jsonb,boolean,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_pode_consultar_v1()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_pode_gerir_v1(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_proteger_escrita()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_renomear_interno(jsonb,boolean,text)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_quadro_resolver_data(date)",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_recalcular_mapa_apos_preco()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_recalcular_planeamento_cascata(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_recalcular_precos_quantidade()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_recalcular_venda_contrato_tee_trigger()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_aditamento_subempreitada(uuid,text,numeric,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_documento_obra(uuid,text,text,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_evento_financeiro_fatura()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_log_auditoria()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_movimento_quadro()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_percurso_fatura()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_relatorio_mensal_ponto(date)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_resolver_alerta(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_resumo_componentes_custo_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_resumo_controle_subempreitadas_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_resumo_custos_obra(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_resumo_mapa_comparativo(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_rh_consultar(uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_rh_empresa(boolean)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_rh_guardar_interno(jsonb,boolean,boolean)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_rh_guardar(jsonb,boolean)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_rh_importar(jsonb,boolean)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_rotear_fatura_aprovada()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_sincronizar_alerta_limite_subempreitada(uuid)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_sincronizar_alerta_validade_documento()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_componente_subempreitada()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_estado_fluxo_fatura()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_indice_documento()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_indices_documento_obra()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_pagamento_fatura()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_sincronizar_subempreitada_planeamento()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_subempreitada_previsao()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_tee_planeamento()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_sincronizar_tee_previsao()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_trigger_alerta_limite_subempreitada()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_utilizador_atual_id()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_validar_atualizacao_parametro_operacional()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_validar_autorizacao_horas_extra()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_validar_colaborador_utilizador_empresa()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_validar_conflito_quadro_pessoal()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_validar_dependencia_planeamento()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_validar_justificacao_ponto(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "fn_validar_tee_pedido_prorrogacao()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_validar_vinculo_fatura_subempreitada()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_valor_lancamento_custo(jsonb)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_alertas_fim_contrato()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_alertas_imoveis_orcamentos(date)",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_alertas_seguro_viaturas()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_alertas_vencimento()",
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "signature": "fn_verificar_congelamentos_pendentes()",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_fatura_semelhante(uuid,numeric,text,uuid,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_fatura_semelhante(uuid,numeric,text,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_limite_fatura_subempreitada(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_primeiras_consultas_medicina()",
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "signature": "fn_verificar_rnc(uuid,text)",
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "signature": "fn_vincular_fatura_subempreitada(uuid,uuid)",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "validar_aprovador_diretor_obra()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "validar_consumo_adiantamento()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "validar_soma_afetacao_diaria()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "validar_soma_pesos()",
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "signature": "validar_tipo_item_auto()",
+      "authenticated": true
+    }
+  ]
+}
