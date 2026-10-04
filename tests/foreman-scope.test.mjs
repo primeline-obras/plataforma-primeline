@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {loadForemanDirectory} from '../src/foreman-scope.js';
+import {loadForemanDirectory,loadForemanAbsences} from '../src/foreman-scope.js';
 test('scoped directory uses existing authorised works, deduplicates and separates Medicine permission',async()=>{
   const calls=[];
   const result=await loadForemanDirectory(async(path,options)=>{
@@ -16,4 +16,17 @@ test('scoped directory uses existing authorised works, deduplicates and separate
 test('unavailable scope fails closed, never falls back to company directory',async()=>{
   const calls=[];await assert.rejects(loadForemanDirectory(async path=>{calls.push(path);return new Response('{}',{status:403});},'2026-10-04'));
   assert.deepEqual(calls,['rpc/fn_listar_ponto_obra']);
+});
+
+test('absence RPC returns operational availability and filters vacation panel',async()=>{
+ const calls=[];const api=async(path,options)=>{calls.push({path,body:JSON.parse(options.body)});return Response.json([{id:'a',tipo:'ferias'},{id:'b',tipo:'ausencia'}]);};
+ assert.equal((await (await loadForemanAbsences(api,'2026-10-01','2026-10-31')).json()).length,2);
+ assert.deepEqual(await (await loadForemanAbsences(api,'2026-10-01','2026-10-31',true)).json(),[{id:'a',tipo:'ferias'}]);
+ assert.ok(calls.every(c=>c.path==='rpc/fn_ausencias_equipa_encarregado'));
+ assert.deepEqual(calls[0].body,{p_inicio:'2026-10-01',p_fim:'2026-10-31'});
+});
+
+test('absence RPC missing/denied/malformed fails closed without raw table fallback',async()=>{
+ for(const status of [403,404,500]){const calls=[];const r=await loadForemanAbsences(async path=>{calls.push(path);return new Response('{}',{status});},'2026-10-01','2026-10-31');assert.equal(r.status,status);assert.equal(calls.length,1);}
+ assert.equal((await loadForemanAbsences(async()=>Response.json({}), '2026-10-01','2026-10-31')).status,502);
 });

@@ -1,5 +1,7 @@
 # Encarregado — diagnóstico real e correção local dos dois P1
 
+> Registo do checkpoint anterior, preservado no commit `108a6e4ed9301f47236cb2bb6ab5c1adc025422a` e enviado à branch indicada abaixo. O estado final, a ampliação de âmbito e os scripts consolidados estão em [encarregado-autorizacao-final-20261004.md](encarregado-autorizacao-final-20261004.md). As indicações de alterações pendentes deste relatório descrevem o momento anterior ao checkpoint.
+
 ## Estado e limites
 
 Diagnóstico em 04/10/2026 no projeto `znttyadndpkxuekhjamd`, PostgreSQL **17.6**, através da aba Supabase autenticada existente. Todas as consultas remotas usaram `BEGIN READ ONLY` e a opção `read_only: true`. Não foram invocadas funções de escrita/alertas, nem executados backup, migration, marcador ou Fase B em produção. Nenhuma linha operacional foi exportada.

@@ -1,0 +1,1161 @@
+{
+  "triggers": [
+    {
+      "name": "trg_auditoria_administradores_plataforma",
+      "table": "administradores_plataforma",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_administradores_plataforma AFTER INSERT OR DELETE OR UPDATE ON public.administradores_plataforma FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_validar_afetacao_semanal",
+      "table": "afetacao_semanal",
+      "enabled": "O",
+      "function": "validar_soma_afetacao_diaria()",
+      "definition": "CREATE TRIGGER trg_validar_afetacao_semanal BEFORE INSERT OR UPDATE ON public.afetacao_semanal FOR EACH ROW EXECUTE FUNCTION validar_soma_afetacao_diaria()"
+    },
+    {
+      "name": "trg_auditoria_ajustes_custo_obra",
+      "table": "ajustes_custo_obra",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_ajustes_custo_obra AFTER INSERT OR DELETE OR UPDATE ON public.ajustes_custo_obra FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_definir_canal_alerta",
+      "table": "alertas",
+      "enabled": "O",
+      "function": "fn_definir_canal_alerta()",
+      "definition": "CREATE TRIGGER trg_definir_canal_alerta BEFORE INSERT OR UPDATE OF tipo, enviar_email ON public.alertas FOR EACH ROW EXECUTE FUNCTION fn_definir_canal_alerta()"
+    },
+    {
+      "name": "trg_preparar_destinatario_alerta_viatura",
+      "table": "alertas",
+      "enabled": "O",
+      "function": "fn_preparar_destinatario_alerta_viatura()",
+      "definition": "CREATE TRIGGER trg_preparar_destinatario_alerta_viatura BEFORE INSERT OR UPDATE OF entidade_tipo, entidade_id, tipo ON public.alertas FOR EACH ROW EXECUTE FUNCTION fn_preparar_destinatario_alerta_viatura()"
+    },
+    {
+      "name": "trg_auditoria_alteracoes_tee",
+      "table": "alteracoes_tee",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_alteracoes_tee AFTER INSERT OR DELETE OR UPDATE ON public.alteracoes_tee FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_recalcular_venda_contrato_tee",
+      "table": "alteracoes_tee",
+      "enabled": "O",
+      "function": "fn_recalcular_venda_contrato_tee_trigger()",
+      "definition": "CREATE TRIGGER trg_recalcular_venda_contrato_tee AFTER UPDATE OF estado_aprovacao_cliente ON public.alteracoes_tee FOR EACH ROW EXECUTE FUNCTION fn_recalcular_venda_contrato_tee_trigger()"
+    },
+    {
+      "name": "trg_sincronizar_tee_planeamento",
+      "table": "alteracoes_tee",
+      "enabled": "O",
+      "function": "fn_sincronizar_tee_planeamento()",
+      "definition": "CREATE TRIGGER trg_sincronizar_tee_planeamento AFTER INSERT OR UPDATE OF estado_aprovacao_cliente, fase_id, data_inicio_execucao, data_fim_execucao, numero, descricao ON public.alteracoes_tee FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_tee_planeamento()"
+    },
+    {
+      "name": "trg_sincronizar_tee_previsao",
+      "table": "alteracoes_tee",
+      "enabled": "O",
+      "function": "fn_sincronizar_tee_previsao()",
+      "definition": "CREATE TRIGGER trg_sincronizar_tee_previsao AFTER INSERT OR DELETE OR UPDATE ON public.alteracoes_tee FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_tee_previsao()"
+    },
+    {
+      "name": "trg_auditoria_ausencias",
+      "table": "ausencias",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_ausencias AFTER INSERT OR DELETE OR UPDATE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_normalizar_estado_ausencia",
+      "table": "ausencias",
+      "enabled": "O",
+      "function": "fn_normalizar_estado_ausencia()",
+      "definition": "CREATE TRIGGER trg_normalizar_estado_ausencia BEFORE INSERT OR UPDATE OF tipo, estado, comentario ON public.ausencias FOR EACH ROW EXECUTE FUNCTION fn_normalizar_estado_ausencia()"
+    },
+    {
+      "name": "trg_auditoria_ausencias_anexos",
+      "table": "ausencias_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_ausencias_anexos AFTER INSERT OR DELETE OR UPDATE ON public.ausencias_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_autos_medicao",
+      "table": "autos_medicao",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_autos_medicao AFTER INSERT OR DELETE OR UPDATE ON public.autos_medicao FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_validar_adiantamento",
+      "table": "autos_medicao",
+      "enabled": "O",
+      "function": "validar_consumo_adiantamento()",
+      "definition": "CREATE TRIGGER trg_validar_adiantamento BEFORE INSERT OR UPDATE ON public.autos_medicao FOR EACH ROW EXECUTE FUNCTION validar_consumo_adiantamento()"
+    },
+    {
+      "name": "trg_auditoria_autos_medicao_itens",
+      "table": "autos_medicao_itens",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_autos_medicao_itens AFTER INSERT OR DELETE OR UPDATE ON public.autos_medicao_itens FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_validar_tipo_item_auto",
+      "table": "autos_medicao_itens",
+      "enabled": "O",
+      "function": "validar_tipo_item_auto()",
+      "definition": "CREATE TRIGGER trg_validar_tipo_item_auto BEFORE INSERT ON public.autos_medicao_itens FOR EACH ROW EXECUTE FUNCTION validar_tipo_item_auto()"
+    },
+    {
+      "name": "trg_auditoria_colaboradores",
+      "table": "colaboradores",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_colaboradores AFTER INSERT OR DELETE OR UPDATE ON public.colaboradores FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_impedir_saida_colaborador_com_viaturas",
+      "table": "colaboradores",
+      "enabled": "O",
+      "function": "fn_impedir_saida_colaborador_com_viaturas()",
+      "definition": "CREATE TRIGGER trg_impedir_saida_colaborador_com_viaturas BEFORE UPDATE OF data_saida ON public.colaboradores FOR EACH ROW WHEN (((old.data_saida IS NULL) AND (new.data_saida IS NOT NULL))) EXECUTE FUNCTION fn_impedir_saida_colaborador_com_viaturas()"
+    },
+    {
+      "name": "trg_validar_colaborador_utilizador_empresa",
+      "table": "colaboradores",
+      "enabled": "O",
+      "function": "fn_validar_colaborador_utilizador_empresa()",
+      "definition": "CREATE TRIGGER trg_validar_colaborador_utilizador_empresa BEFORE INSERT OR UPDATE OF utilizador_id, empresa_id ON public.colaboradores FOR EACH ROW EXECUTE FUNCTION fn_validar_colaborador_utilizador_empresa()"
+    },
+    {
+      "name": "trg_auditoria_colaboradores_contratos",
+      "table": "colaboradores_contratos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_colaboradores_contratos AFTER INSERT OR DELETE OR UPDATE ON public.colaboradores_contratos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_comparativo_ajustes",
+      "table": "comparativo_ajustes",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_comparativo_ajustes AFTER INSERT OR DELETE OR UPDATE ON public.comparativo_ajustes FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_comparativo_itens",
+      "table": "comparativo_itens",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_comparativo_itens AFTER INSERT OR DELETE OR UPDATE ON public.comparativo_itens FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_recalcular_precos_quantidade",
+      "table": "comparativo_itens",
+      "enabled": "O",
+      "function": "fn_recalcular_precos_quantidade()",
+      "definition": "CREATE TRIGGER trg_recalcular_precos_quantidade AFTER UPDATE OF quantidade ON public.comparativo_itens FOR EACH ROW EXECUTE FUNCTION fn_recalcular_precos_quantidade()"
+    },
+    {
+      "name": "trg_auditoria_comparativo_itens_precos",
+      "table": "comparativo_itens_precos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_comparativo_itens_precos AFTER INSERT OR DELETE OR UPDATE ON public.comparativo_itens_precos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_calcular_preco_item_comparativo",
+      "table": "comparativo_itens_precos",
+      "enabled": "O",
+      "function": "fn_calcular_preco_item_comparativo()",
+      "definition": "CREATE TRIGGER trg_calcular_preco_item_comparativo BEFORE INSERT OR UPDATE OF item_id, proposta_id, preco_unitario ON public.comparativo_itens_precos FOR EACH ROW EXECUTE FUNCTION fn_calcular_preco_item_comparativo()"
+    },
+    {
+      "name": "trg_recalcular_mapa_apos_preco",
+      "table": "comparativo_itens_precos",
+      "enabled": "O",
+      "function": "fn_recalcular_mapa_apos_preco()",
+      "definition": "CREATE TRIGGER trg_recalcular_mapa_apos_preco AFTER INSERT OR DELETE OR UPDATE ON public.comparativo_itens_precos FOR EACH ROW EXECUTE FUNCTION fn_recalcular_mapa_apos_preco()"
+    },
+    {
+      "name": "trg_auditoria_comparativo_propostas",
+      "table": "comparativo_propostas",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_comparativo_propostas AFTER INSERT OR DELETE OR UPDATE ON public.comparativo_propostas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_compromissos",
+      "table": "compromissos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_compromissos AFTER INSERT OR DELETE OR UPDATE ON public.compromissos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_compromissos_participantes",
+      "table": "compromissos_participantes",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_compromissos_participantes AFTER INSERT OR DELETE OR UPDATE ON public.compromissos_participantes FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('compromisso_id')"
+    },
+    {
+      "name": "trg_auditoria_consultas_subempreitada",
+      "table": "consultas_subempreitada",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_consultas_subempreitada AFTER INSERT OR DELETE OR UPDATE ON public.consultas_subempreitada FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_consultas_subempreitada_candidatos",
+      "table": "consultas_subempreitada_candidatos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_consultas_subempreitada_candidatos AFTER INSERT OR DELETE OR UPDATE ON public.consultas_subempreitada_candidatos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_consultas_subempreitada_candidatos_itens",
+      "table": "consultas_subempreitada_candidatos_itens",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_consultas_subempreitada_candidatos_itens AFTER INSERT OR DELETE OR UPDATE ON public.consultas_subempreitada_candidatos_itens FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_consultas_subempreitada_itens",
+      "table": "consultas_subempreitada_itens",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_consultas_subempreitada_itens AFTER INSERT OR DELETE OR UPDATE ON public.consultas_subempreitada_itens FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_contratos",
+      "table": "contratos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_contratos AFTER INSERT OR DELETE OR UPDATE ON public.contratos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_venda_contrato_direta",
+      "table": "contratos",
+      "enabled": "O",
+      "function": "fn_bloquear_venda_contrato_direta()",
+      "definition": "CREATE TRIGGER trg_bloquear_venda_contrato_direta BEFORE UPDATE OF venda_contratual_inicial, venda_contratual_efetiva ON public.contratos FOR EACH ROW EXECUTE FUNCTION fn_bloquear_venda_contrato_direta()"
+    },
+    {
+      "name": "trg_auditoria_debitos_diretos",
+      "table": "debitos_diretos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_debitos_diretos AFTER INSERT OR DELETE OR UPDATE ON public.debitos_diretos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_debitos_diretos_lancamentos",
+      "table": "debitos_diretos_lancamentos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_debitos_diretos_lancamentos AFTER INSERT OR DELETE OR UPDATE ON public.debitos_diretos_lancamentos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_aprovador_despesas_estaleiro",
+      "table": "despesas_estaleiro",
+      "enabled": "O",
+      "function": "validar_aprovador_diretor_obra()",
+      "definition": "CREATE TRIGGER trg_aprovador_despesas_estaleiro BEFORE INSERT OR UPDATE ON public.despesas_estaleiro FOR EACH ROW EXECUTE FUNCTION validar_aprovador_diretor_obra()"
+    },
+    {
+      "name": "trg_auditoria_despesas_estaleiro",
+      "table": "despesas_estaleiro",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_despesas_estaleiro AFTER INSERT OR DELETE OR UPDATE ON public.despesas_estaleiro FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_documentos",
+      "table": "documentos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_documentos AFTER INSERT OR DELETE OR UPDATE ON public.documentos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_documentos_obra",
+      "table": "documentos_obra",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_documentos_obra AFTER INSERT OR DELETE OR UPDATE ON public.documentos_obra FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_sincronizar_indice_documento",
+      "table": "documentos_obra",
+      "enabled": "O",
+      "function": "fn_sincronizar_indice_documento()",
+      "definition": "CREATE TRIGGER trg_sincronizar_indice_documento AFTER INSERT ON public.documentos_obra FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_indice_documento()"
+    },
+    {
+      "name": "trg_sincronizar_indices_documento_obra",
+      "table": "documentos_obra",
+      "enabled": "O",
+      "function": "fn_sincronizar_indices_documento_obra()",
+      "definition": "CREATE TRIGGER trg_sincronizar_indices_documento_obra AFTER INSERT OR UPDATE OF tipo, numero_documento, revisao, descricao, data_emissao, enviado_em, data_resposta_indice, estado_indice, notas ON public.documentos_obra FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_indices_documento_obra()"
+    },
+    {
+      "name": "trg_auditoria_fases",
+      "table": "fases",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_fases AFTER INSERT OR DELETE OR UPDATE ON public.fases FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_validar_pesos",
+      "table": "fases",
+      "enabled": "O",
+      "function": "validar_soma_pesos()",
+      "definition": "CREATE TRIGGER trg_validar_pesos AFTER INSERT OR UPDATE ON public.fases FOR EACH ROW EXECUTE FUNCTION validar_soma_pesos()"
+    },
+    {
+      "name": "trg_auditoria_faturacao",
+      "table": "faturacao",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturacao AFTER INSERT OR DELETE OR UPDATE ON public.faturacao FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_faturacao_recebimentos",
+      "table": "faturacao_recebimentos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturacao_recebimentos AFTER INSERT OR DELETE OR UPDATE ON public.faturacao_recebimentos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_alerta_limite_fatura_subempreitada",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_trigger_alerta_limite_subempreitada()",
+      "definition": "CREATE TRIGGER trg_alerta_limite_fatura_subempreitada AFTER INSERT OR DELETE OR UPDATE OF estado_fluxo, estado_pagamento, valor, subempreitada_id ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_trigger_alerta_limite_subempreitada()"
+    },
+    {
+      "name": "trg_alerta_nova_fatura",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_alerta_nova_fatura()",
+      "definition": "CREATE TRIGGER trg_alerta_nova_fatura AFTER INSERT ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_alerta_nova_fatura()"
+    },
+    {
+      "name": "trg_auditoria_faturas",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturas AFTER INSERT OR DELETE OR UPDATE ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_eventos_financeiros_fatura",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_registar_evento_financeiro_fatura()",
+      "definition": "CREATE TRIGGER trg_eventos_financeiros_fatura AFTER UPDATE OF estado_aprovacao, estado_pagamento, estado_fluxo ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_registar_evento_financeiro_fatura()"
+    },
+    {
+      "name": "trg_proteger_fatura_devolvida_administrativo",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_proteger_fatura_devolvida_administrativo()",
+      "definition": "CREATE TRIGGER trg_proteger_fatura_devolvida_administrativo BEFORE UPDATE OF estado_fluxo, estado_aprovacao, estado_pagamento ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_proteger_fatura_devolvida_administrativo()"
+    },
+    {
+      "name": "trg_registar_percurso_fatura",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_registar_percurso_fatura()",
+      "definition": "CREATE TRIGGER trg_registar_percurso_fatura BEFORE INSERT OR UPDATE OF estado_aprovacao, estado_pagamento ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_registar_percurso_fatura()"
+    },
+    {
+      "name": "trg_rotear_fatura_aprovada",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_rotear_fatura_aprovada()",
+      "definition": "CREATE TRIGGER trg_rotear_fatura_aprovada AFTER UPDATE ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_rotear_fatura_aprovada()"
+    },
+    {
+      "name": "trg_sincronizar_estado_fluxo_fatura",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_sincronizar_estado_fluxo_fatura()",
+      "definition": "CREATE TRIGGER trg_sincronizar_estado_fluxo_fatura BEFORE INSERT OR UPDATE OF estado_aprovacao, estado_pagamento, estado_fluxo ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_estado_fluxo_fatura()"
+    },
+    {
+      "name": "trg_sincronizar_pagamento_fatura",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_sincronizar_pagamento_fatura()",
+      "definition": "CREATE TRIGGER trg_sincronizar_pagamento_fatura AFTER UPDATE ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_pagamento_fatura()"
+    },
+    {
+      "name": "trg_validar_vinculo_fatura_subempreitada",
+      "table": "faturas",
+      "enabled": "O",
+      "function": "fn_validar_vinculo_fatura_subempreitada()",
+      "definition": "CREATE TRIGGER trg_validar_vinculo_fatura_subempreitada BEFORE INSERT OR UPDATE OF tipo_origem, subempreitada_id, obra_id, fornecedor_id, estado_fluxo ON public.faturas FOR EACH ROW EXECUTE FUNCTION fn_validar_vinculo_fatura_subempreitada()"
+    },
+    {
+      "name": "trg_auditoria_faturas_anexos",
+      "table": "faturas_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturas_anexos AFTER INSERT OR DELETE OR UPDATE ON public.faturas_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_evento_anexo_fatura",
+      "table": "faturas_anexos",
+      "enabled": "O",
+      "function": "fn_registar_evento_financeiro_fatura()",
+      "definition": "CREATE TRIGGER trg_evento_anexo_fatura AFTER INSERT ON public.faturas_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_evento_financeiro_fatura()"
+    },
+    {
+      "name": "trg_auditoria_faturas_eventos",
+      "table": "faturas_eventos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturas_eventos AFTER INSERT OR DELETE OR UPDATE ON public.faturas_eventos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_faturas_guias",
+      "table": "faturas_guias",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturas_guias AFTER INSERT OR DELETE OR UPDATE ON public.faturas_guias FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_faturas_itens",
+      "table": "faturas_itens",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_faturas_itens AFTER INSERT OR DELETE OR UPDATE ON public.faturas_itens FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_marcar_atualizacao_feriado",
+      "table": "feriados_empresa",
+      "enabled": "O",
+      "function": "fn_marcar_atualizacao_feriado()",
+      "definition": "CREATE TRIGGER trg_marcar_atualizacao_feriado BEFORE INSERT OR UPDATE ON public.feriados_empresa FOR EACH ROW EXECUTE FUNCTION fn_marcar_atualizacao_feriado()"
+    },
+    {
+      "name": "trg_auditoria_fornecedores_zonas",
+      "table": "fornecedores_zonas",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_fornecedores_zonas AFTER INSERT OR DELETE OR UPDATE ON public.fornecedores_zonas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_gestao_obras_lancamentos",
+      "table": "gestao_obras_lancamentos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_gestao_obras_lancamentos AFTER INSERT OR DELETE OR UPDATE ON public.gestao_obras_lancamentos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_alerta_horas_extra",
+      "table": "horas_extraordinarias",
+      "enabled": "O",
+      "function": "fn_alerta_horas_extra()",
+      "definition": "CREATE TRIGGER trg_alerta_horas_extra AFTER INSERT ON public.horas_extraordinarias FOR EACH ROW EXECUTE FUNCTION fn_alerta_horas_extra()"
+    },
+    {
+      "name": "trg_auditoria_horas_extraordinarias",
+      "table": "horas_extraordinarias",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_horas_extraordinarias AFTER INSERT OR DELETE OR UPDATE ON public.horas_extraordinarias FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_horas_extra_ausencia",
+      "table": "horas_extraordinarias",
+      "enabled": "O",
+      "function": "fn_bloquear_registo_em_ausencia()",
+      "definition": "CREATE TRIGGER trg_bloquear_horas_extra_ausencia BEFORE INSERT OR UPDATE OF colaborador_id, data ON public.horas_extraordinarias FOR EACH ROW EXECUTE FUNCTION fn_bloquear_registo_em_ausencia()"
+    },
+    {
+      "name": "trg_validar_autorizacao_horas_extra",
+      "table": "horas_extraordinarias",
+      "enabled": "O",
+      "function": "fn_validar_autorizacao_horas_extra()",
+      "definition": "CREATE TRIGGER trg_validar_autorizacao_horas_extra BEFORE INSERT OR UPDATE OF obra_id, horas, autorizado_por ON public.horas_extraordinarias FOR EACH ROW EXECUTE FUNCTION fn_validar_autorizacao_horas_extra()"
+    },
+    {
+      "name": "trg_auditoria_imoveis_anexos",
+      "table": "imoveis_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_imoveis_anexos AFTER INSERT OR DELETE OR UPDATE ON public.imoveis_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_imoveis_empresa",
+      "table": "imoveis_empresa",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_imoveis_empresa AFTER INSERT OR DELETE OR UPDATE ON public.imoveis_empresa FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_imoveis_reunioes_condominio",
+      "table": "imoveis_reunioes_condominio",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_imoveis_reunioes_condominio AFTER INSERT OR DELETE OR UPDATE ON public.imoveis_reunioes_condominio FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_impactos_obra",
+      "table": "impactos_obra",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_impactos_obra AFTER INSERT OR DELETE OR UPDATE ON public.impactos_obra FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_investimentos",
+      "table": "investimentos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_investimentos AFTER INSERT OR DELETE OR UPDATE ON public.investimentos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_lancamentos_mao_obra",
+      "table": "lancamentos_mao_obra",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_lancamentos_mao_obra AFTER INSERT OR DELETE OR UPDATE ON public.lancamentos_mao_obra FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_mao_obra_ausencia",
+      "table": "lancamentos_mao_obra",
+      "enabled": "O",
+      "function": "fn_bloquear_mao_obra_em_ausencia()",
+      "definition": "CREATE TRIGGER trg_bloquear_mao_obra_ausencia BEFORE INSERT OR UPDATE OF colaborador_id, obra_id, data, horas, tipo_registo, mes_referencia ON public.lancamentos_mao_obra FOR EACH ROW EXECUTE FUNCTION fn_bloquear_mao_obra_em_ausencia()"
+    },
+    {
+      "name": "trg_validar_afetacao_realizada",
+      "table": "lancamentos_mao_obra",
+      "enabled": "O",
+      "function": "validar_soma_afetacao_diaria()",
+      "definition": "CREATE TRIGGER trg_validar_afetacao_realizada BEFORE INSERT OR UPDATE ON public.lancamentos_mao_obra FOR EACH ROW EXECUTE FUNCTION validar_soma_afetacao_diaria()"
+    },
+    {
+      "name": "trg_aprovador_lancamentos_materiais",
+      "table": "lancamentos_materiais",
+      "enabled": "O",
+      "function": "validar_aprovador_diretor_obra()",
+      "definition": "CREATE TRIGGER trg_aprovador_lancamentos_materiais BEFORE INSERT OR UPDATE ON public.lancamentos_materiais FOR EACH ROW EXECUTE FUNCTION validar_aprovador_diretor_obra()"
+    },
+    {
+      "name": "trg_auditoria_mapas_comparativos",
+      "table": "mapas_comparativos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_mapas_comparativos AFTER INSERT OR DELETE OR UPDATE ON public.mapas_comparativos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_medicina_alertas_proteger",
+      "table": "medicina_alertas_historico",
+      "enabled": "O",
+      "function": "fn_medicina_proteger_historico()",
+      "definition": "CREATE TRIGGER trg_medicina_alertas_proteger BEFORE INSERT OR DELETE OR UPDATE ON public.medicina_alertas_historico FOR EACH ROW EXECUTE FUNCTION fn_medicina_proteger_historico()"
+    },
+    {
+      "name": "trg_medicina_operacoes_proteger",
+      "table": "medicina_operacoes",
+      "enabled": "O",
+      "function": "fn_medicina_proteger_historico()",
+      "definition": "CREATE TRIGGER trg_medicina_operacoes_proteger BEFORE INSERT OR DELETE OR UPDATE ON public.medicina_operacoes FOR EACH ROW EXECUTE FUNCTION fn_medicina_proteger_historico()"
+    },
+    {
+      "name": "trg_medicina_admissao_historico",
+      "table": "medicina_trabalho",
+      "enabled": "O",
+      "function": "fn_medicina_admissao_historico()",
+      "definition": "CREATE TRIGGER trg_medicina_admissao_historico AFTER INSERT ON public.medicina_trabalho FOR EACH ROW EXECUTE FUNCTION fn_medicina_admissao_historico()"
+    },
+    {
+      "name": "trg_medicina_proteger",
+      "table": "medicina_trabalho",
+      "enabled": "O",
+      "function": "fn_medicina_proteger()",
+      "definition": "CREATE TRIGGER trg_medicina_proteger BEFORE INSERT OR DELETE OR UPDATE ON public.medicina_trabalho FOR EACH ROW EXECUTE FUNCTION fn_medicina_proteger()"
+    },
+    {
+      "name": "trg_auditoria_multas",
+      "table": "multas",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_multas AFTER INSERT OR DELETE OR UPDATE ON public.multas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_multas_anexos",
+      "table": "multas_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_multas_anexos AFTER INSERT OR DELETE OR UPDATE ON public.multas_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_obra_responsaveis",
+      "table": "obra_responsaveis",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_obra_responsaveis AFTER INSERT OR DELETE OR UPDATE ON public.obra_responsaveis FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_obras",
+      "table": "obras",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_obras AFTER INSERT OR DELETE OR UPDATE ON public.obras FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_orcamento_fases",
+      "table": "orcamento_fases",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_orcamento_fases AFTER INSERT OR DELETE OR UPDATE ON public.orcamento_fases FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria",
+      "table": "orcamento_versoes",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria AFTER INSERT OR DELETE OR UPDATE ON public.orcamento_versoes FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_integridade_orcamento_versao",
+      "table": "orcamento_versoes",
+      "enabled": "O",
+      "function": "fn_guardar_integridade_orcamento_versao()",
+      "definition": "CREATE TRIGGER trg_integridade_orcamento_versao BEFORE INSERT OR DELETE OR UPDATE ON public.orcamento_versoes FOR EACH ROW EXECUTE FUNCTION fn_guardar_integridade_orcamento_versao()"
+    },
+    {
+      "name": "trg_auditoria",
+      "table": "orcamento_versoes_fontes",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria AFTER INSERT OR DELETE OR UPDATE ON public.orcamento_versoes_fontes FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_integridade_orcamento_fonte",
+      "table": "orcamento_versoes_fontes",
+      "enabled": "O",
+      "function": "fn_guardar_integridade_orcamento_fonte()",
+      "definition": "CREATE TRIGGER trg_integridade_orcamento_fonte BEFORE INSERT OR DELETE OR UPDATE ON public.orcamento_versoes_fontes FOR EACH ROW EXECUTE FUNCTION fn_guardar_integridade_orcamento_fonte()"
+    },
+    {
+      "name": "trg_alerta_limite_pagamento_subempreitada",
+      "table": "pagamentos_subempreitada",
+      "enabled": "O",
+      "function": "fn_trigger_alerta_limite_subempreitada()",
+      "definition": "CREATE TRIGGER trg_alerta_limite_pagamento_subempreitada AFTER INSERT OR DELETE OR UPDATE OF valor, subempreitada_id ON public.pagamentos_subempreitada FOR EACH ROW EXECUTE FUNCTION fn_trigger_alerta_limite_subempreitada()"
+    },
+    {
+      "name": "trg_aprovador_pagamentos_subempreitada",
+      "table": "pagamentos_subempreitada",
+      "enabled": "O",
+      "function": "validar_aprovador_diretor_obra()",
+      "definition": "CREATE TRIGGER trg_aprovador_pagamentos_subempreitada BEFORE INSERT OR UPDATE ON public.pagamentos_subempreitada FOR EACH ROW EXECUTE FUNCTION validar_aprovador_diretor_obra()"
+    },
+    {
+      "name": "trg_auditoria_pagamentos_subempreitada",
+      "table": "pagamentos_subempreitada",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_pagamentos_subempreitada AFTER INSERT OR DELETE OR UPDATE ON public.pagamentos_subempreitada FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_parametros_operacionais_atualizacao",
+      "table": "parametros_operacionais",
+      "enabled": "O",
+      "function": "fn_validar_atualizacao_parametro_operacional()",
+      "definition": "CREATE TRIGGER trg_parametros_operacionais_atualizacao BEFORE INSERT OR UPDATE OF valor ON public.parametros_operacionais FOR EACH ROW EXECUTE FUNCTION fn_validar_atualizacao_parametro_operacional()"
+    },
+    {
+      "name": "trg_auditoria_pedidos_orcamento",
+      "table": "pedidos_orcamento",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_pedidos_orcamento AFTER INSERT OR DELETE OR UPDATE ON public.pedidos_orcamento FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_pedidos_orcamento_anexos",
+      "table": "pedidos_orcamento_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_pedidos_orcamento_anexos AFTER INSERT OR DELETE OR UPDATE ON public.pedidos_orcamento_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_pedidos_orcamento_versoes",
+      "table": "pedidos_orcamento_versoes",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_pedidos_orcamento_versoes AFTER INSERT OR DELETE OR UPDATE ON public.pedidos_orcamento_versoes FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_validar_tee_pedido_prorrogacao",
+      "table": "pedidos_prorrogacao",
+      "enabled": "O",
+      "function": "fn_validar_tee_pedido_prorrogacao()",
+      "definition": "CREATE TRIGGER trg_validar_tee_pedido_prorrogacao BEFORE INSERT OR UPDATE OF obra_id, tee_id ON public.pedidos_prorrogacao FOR EACH ROW EXECUTE FUNCTION fn_validar_tee_pedido_prorrogacao()"
+    },
+    {
+      "name": "trg_auditoria_planeamento_custos",
+      "table": "planeamento_custos_componentes",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_planeamento_custos AFTER INSERT OR DELETE OR UPDATE ON public.planeamento_custos_componentes FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_planeamento_fases_resumo",
+      "table": "planeamento_fases_resumo",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_planeamento_fases_resumo AFTER INSERT OR DELETE OR UPDATE ON public.planeamento_fases_resumo FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_alertar_tarefa_impedida",
+      "table": "planeamento_itens",
+      "enabled": "O",
+      "function": "fn_alertar_tarefa_impedida()",
+      "definition": "CREATE TRIGGER trg_alertar_tarefa_impedida AFTER UPDATE OF impedido ON public.planeamento_itens FOR EACH ROW WHEN (((old.impedido IS DISTINCT FROM true) AND (new.impedido IS TRUE))) EXECUTE FUNCTION fn_alertar_tarefa_impedida()"
+    },
+    {
+      "name": "trg_auditoria_planeamento_itens",
+      "table": "planeamento_itens",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_planeamento_itens AFTER INSERT OR DELETE OR UPDATE ON public.planeamento_itens FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_recalcular_planeamento",
+      "table": "planeamento_itens",
+      "enabled": "O",
+      "function": "fn_disparar_recalculo_planeamento()",
+      "definition": "CREATE TRIGGER trg_recalcular_planeamento AFTER UPDATE OF data_fim_real, data_fim_prevista ON public.planeamento_itens FOR EACH ROW EXECUTE FUNCTION fn_disparar_recalculo_planeamento()"
+    },
+    {
+      "name": "trg_sincronizar_componente_subempreitada",
+      "table": "planeamento_itens",
+      "enabled": "O",
+      "function": "fn_sincronizar_componente_subempreitada()",
+      "definition": "CREATE TRIGGER trg_sincronizar_componente_subempreitada AFTER INSERT OR UPDATE OF subempreitada_id, especialidade_id, estado ON public.planeamento_itens FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_componente_subempreitada()"
+    },
+    {
+      "name": "trg_auditoria_planeamento_itens_dependencias",
+      "table": "planeamento_itens_dependencias",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_planeamento_itens_dependencias AFTER INSERT OR DELETE OR UPDATE ON public.planeamento_itens_dependencias FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_validar_dependencia_planeamento",
+      "table": "planeamento_itens_dependencias",
+      "enabled": "O",
+      "function": "fn_validar_dependencia_planeamento()",
+      "definition": "CREATE TRIGGER trg_validar_dependencia_planeamento BEFORE INSERT OR UPDATE OF item_id, depende_de_item_id ON public.planeamento_itens_dependencias FOR EACH ROW EXECUTE FUNCTION fn_validar_dependencia_planeamento()"
+    },
+    {
+      "name": "trg_auditoria_ponto_pessoal_obra",
+      "table": "ponto_pessoal_obra",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_ponto_pessoal_obra AFTER INSERT OR DELETE OR UPDATE ON public.ponto_pessoal_obra FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_00_quadro_lock_escrita_v1",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_quadro_lock_escrita_v1()",
+      "definition": "CREATE TRIGGER trg_00_quadro_lock_escrita_v1 BEFORE INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH STATEMENT EXECUTE FUNCTION fn_quadro_lock_escrita_v1()"
+    },
+    {
+      "name": "trg_00_quadro_proteger_escrita",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_quadro_proteger_escrita()",
+      "definition": "CREATE TRIGGER trg_00_quadro_proteger_escrita BEFORE INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_quadro_proteger_escrita()"
+    },
+    {
+      "name": "trg_auditoria_quadro_pessoal_alocacao",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_quadro_pessoal_alocacao AFTER INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_quadro_pessoal_ausencia",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_bloquear_registo_em_ausencia()",
+      "definition": "CREATE TRIGGER trg_bloquear_quadro_pessoal_ausencia BEFORE INSERT OR UPDATE OF colaborador_id, data ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_bloquear_registo_em_ausencia()"
+    },
+    {
+      "name": "trg_quadro_notificar_movimentacao_encarregado",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_quadro_notificar_movimentacao_encarregado()",
+      "definition": "CREATE TRIGGER trg_quadro_notificar_movimentacao_encarregado AFTER INSERT OR UPDATE OF obra_id ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_quadro_notificar_movimentacao_encarregado()"
+    },
+    {
+      "name": "trg_quadro_pessoal_movimentos",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_registar_movimento_quadro()",
+      "definition": "CREATE TRIGGER trg_quadro_pessoal_movimentos AFTER INSERT OR DELETE OR UPDATE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_registar_movimento_quadro()"
+    },
+    {
+      "name": "trg_validar_conflito_quadro_pessoal",
+      "table": "quadro_pessoal_alocacao",
+      "enabled": "O",
+      "function": "fn_validar_conflito_quadro_pessoal()",
+      "definition": "CREATE TRIGGER trg_validar_conflito_quadro_pessoal BEFORE INSERT OR UPDATE OF colaborador_id, data, periodo, obra_id, tipo_alocacao, descricao_livre ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION fn_validar_conflito_quadro_pessoal()"
+    },
+    {
+      "name": "trg_bloquear_reserva_sobreposta",
+      "table": "reservas_salas",
+      "enabled": "O",
+      "function": "fn_bloquear_reserva_sobreposta()",
+      "definition": "CREATE TRIGGER trg_bloquear_reserva_sobreposta BEFORE INSERT OR UPDATE ON public.reservas_salas FOR EACH ROW EXECUTE FUNCTION fn_bloquear_reserva_sobreposta()"
+    },
+    {
+      "name": "trg_auditoria_rnc",
+      "table": "rnc",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_rnc AFTER INSERT OR DELETE OR UPDATE ON public.rnc FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_verificacao_rnc",
+      "table": "rnc",
+      "enabled": "O",
+      "function": "fn_bloquear_verificacao_rnc()",
+      "definition": "CREATE TRIGGER trg_bloquear_verificacao_rnc BEFORE UPDATE ON public.rnc FOR EACH ROW EXECUTE FUNCTION fn_bloquear_verificacao_rnc()"
+    },
+    {
+      "name": "trg_auditoria_rnc_anexos",
+      "table": "rnc_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_rnc_anexos AFTER INSERT OR DELETE OR UPDATE ON public.rnc_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_alerta_limite_aditamento_subempreitada",
+      "table": "subempreitada_aditamentos",
+      "enabled": "O",
+      "function": "fn_trigger_alerta_limite_subempreitada()",
+      "definition": "CREATE TRIGGER trg_alerta_limite_aditamento_subempreitada AFTER INSERT OR DELETE OR UPDATE OF valor, estado, subempreitada_id ON public.subempreitada_aditamentos FOR EACH ROW EXECUTE FUNCTION fn_trigger_alerta_limite_subempreitada()"
+    },
+    {
+      "name": "trg_alertar_subempreitada_execucao_sem_aprovacao",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "function": "fn_alertar_subempreitada_execucao_sem_aprovacao()",
+      "definition": "CREATE TRIGGER trg_alertar_subempreitada_execucao_sem_aprovacao AFTER INSERT OR UPDATE OF estado, estado_aprovacao_gerencia ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_alertar_subempreitada_execucao_sem_aprovacao()"
+    },
+    {
+      "name": "trg_auditoria_subempreitadas",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_subempreitadas AFTER INSERT OR DELETE OR UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_bloquear_conclusao",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "function": "bloquear_conclusao_sem_avaliacao()",
+      "definition": "CREATE TRIGGER trg_bloquear_conclusao BEFORE UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION bloquear_conclusao_sem_avaliacao()"
+    },
+    {
+      "name": "trg_definir_aprovacao_gerencia",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "function": "definir_necessidade_aprovacao_gerencia()",
+      "definition": "CREATE TRIGGER trg_definir_aprovacao_gerencia BEFORE INSERT ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION definir_necessidade_aprovacao_gerencia()"
+    },
+    {
+      "name": "trg_sincronizar_subempreitada_planeamento",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "function": "fn_sincronizar_subempreitada_planeamento()",
+      "definition": "CREATE TRIGGER trg_sincronizar_subempreitada_planeamento AFTER INSERT OR UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_subempreitada_planeamento()"
+    },
+    {
+      "name": "trg_sincronizar_subempreitada_previsao",
+      "table": "subempreitadas",
+      "enabled": "O",
+      "function": "fn_sincronizar_subempreitada_previsao()",
+      "definition": "CREATE TRIGGER trg_sincronizar_subempreitada_previsao AFTER INSERT OR DELETE OR UPDATE ON public.subempreitadas FOR EACH ROW EXECUTE FUNCTION fn_sincronizar_subempreitada_previsao()"
+    },
+    {
+      "name": "trg_auditoria_utilizadores",
+      "table": "utilizadores",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_utilizadores AFTER INSERT OR DELETE OR UPDATE ON public.utilizadores FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_atualizar_destinatario_alerta_viatura",
+      "table": "viaturas",
+      "enabled": "O",
+      "function": "fn_atualizar_destinatario_alerta_viatura()",
+      "definition": "CREATE TRIGGER trg_atualizar_destinatario_alerta_viatura AFTER UPDATE OF colaborador_atribuido_id ON public.viaturas FOR EACH ROW WHEN ((old.colaborador_atribuido_id IS DISTINCT FROM new.colaborador_atribuido_id)) EXECUTE FUNCTION fn_atualizar_destinatario_alerta_viatura()"
+    },
+    {
+      "name": "trg_auditoria_viaturas",
+      "table": "viaturas",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_viaturas AFTER INSERT OR DELETE OR UPDATE ON public.viaturas FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_proteger_atribuicao_viatura",
+      "table": "viaturas",
+      "enabled": "O",
+      "function": "fn_proteger_atribuicao_viatura()",
+      "definition": "CREATE TRIGGER trg_proteger_atribuicao_viatura BEFORE UPDATE OF colaborador_atribuido_id, atribuicao_revisao ON public.viaturas FOR EACH ROW EXECUTE FUNCTION fn_proteger_atribuicao_viatura()"
+    },
+    {
+      "name": "trg_auditoria_viaturas_atribuicoes_historico",
+      "table": "viaturas_atribuicoes_historico",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_viaturas_atribuicoes_historico AFTER INSERT ON public.viaturas_atribuicoes_historico FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_proteger_historico_atribuicao_viatura",
+      "table": "viaturas_atribuicoes_historico",
+      "enabled": "O",
+      "function": "fn_proteger_historico_atribuicao_viatura()",
+      "definition": "CREATE TRIGGER trg_proteger_historico_atribuicao_viatura BEFORE INSERT OR DELETE OR UPDATE ON public.viaturas_atribuicoes_historico FOR EACH ROW EXECUTE FUNCTION fn_proteger_historico_atribuicao_viatura()"
+    },
+    {
+      "name": "trg_auditoria_viaturas_eventos",
+      "table": "viaturas_eventos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_viaturas_eventos AFTER INSERT OR DELETE OR UPDATE ON public.viaturas_eventos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_proteger_evento_validade_viatura",
+      "table": "viaturas_eventos",
+      "enabled": "O",
+      "function": "fn_proteger_evento_validade_viatura()",
+      "definition": "CREATE TRIGGER trg_proteger_evento_validade_viatura BEFORE INSERT OR DELETE OR UPDATE ON public.viaturas_eventos FOR EACH ROW EXECUTE FUNCTION fn_proteger_evento_validade_viatura()"
+    },
+    {
+      "name": "trg_auditoria_viaturas_sinistros",
+      "table": "viaturas_sinistros",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_viaturas_sinistros AFTER INSERT OR DELETE OR UPDATE ON public.viaturas_sinistros FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    },
+    {
+      "name": "trg_auditoria_viaturas_sinistros_anexos",
+      "table": "viaturas_sinistros_anexos",
+      "enabled": "O",
+      "function": "fn_registar_log_auditoria()",
+      "definition": "CREATE TRIGGER trg_auditoria_viaturas_sinistros_anexos AFTER INSERT OR DELETE OR UPDATE ON public.viaturas_sinistros_anexos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "mapas_comparativos_criado_por_fkey",
+      "table": "mapas_comparativos",
+      "definition": "FOREIGN KEY (criado_por) REFERENCES utilizadores(id)"
+    },
+    {
+      "name": "mapas_comparativos_custo_estimado_orcamento_check",
+      "table": "mapas_comparativos",
+      "definition": "CHECK (((custo_estimado_orcamento IS NULL) OR (custo_estimado_orcamento >= (0)::numeric)))"
+    },
+    {
+      "name": "mapas_comparativos_especialidade_check",
+      "table": "mapas_comparativos",
+      "definition": "CHECK ((btrim(especialidade) <> ''::text))"
+    },
+    {
+      "name": "mapas_comparativos_melhor_preco_comparativo_check",
+      "table": "mapas_comparativos",
+      "definition": "CHECK ((melhor_preco_comparativo >= (0)::numeric))"
+    },
+    {
+      "name": "mapas_comparativos_obra_id_fkey",
+      "table": "mapas_comparativos",
+      "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "mapas_comparativos_pkey",
+      "table": "mapas_comparativos",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "mapas_comparativos_preco_venda_check",
+      "table": "mapas_comparativos",
+      "definition": "CHECK (((preco_venda IS NULL) OR (preco_venda >= (0)::numeric)))"
+    },
+    {
+      "name": "mapas_comparativos_valor_adjudicado_real_check",
+      "table": "mapas_comparativos",
+      "definition": "CHECK (((valor_adjudicado_real IS NULL) OR (valor_adjudicado_real >= (0)::numeric)))"
+    },
+    {
+      "name": "obras_diretor_obra_id_fkey",
+      "table": "obras",
+      "definition": "FOREIGN KEY (diretor_obra_id) REFERENCES utilizadores(id)"
+    },
+    {
+      "name": "obras_empresa_id_fkey",
+      "table": "obras",
+      "definition": "FOREIGN KEY (empresa_id) REFERENCES empresas(id)"
+    },
+    {
+      "name": "obras_empresa_id_numero_key",
+      "table": "obras",
+      "definition": "UNIQUE (empresa_id, numero)"
+    },
+    {
+      "name": "obras_modalidade_check",
+      "table": "obras",
+      "definition": "CHECK ((modalidade = ANY (ARRAY['cliente_externo'::text, 'investimento_proprio'::text])))"
+    },
+    {
+      "name": "obras_pkey",
+      "table": "obras",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "obras_projeto_id_fkey",
+      "table": "obras",
+      "definition": "FOREIGN KEY (projeto_id) REFERENCES projetos(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "obras_situacao_check",
+      "table": "obras",
+      "definition": "CHECK ((situacao = ANY (ARRAY['preparacao'::text, 'em_curso'::text, 'receb_provisoria'::text, 'fechada'::text])))"
+    },
+    {
+      "name": "obras_tipo_check",
+      "table": "obras",
+      "definition": "CHECK ((tipo = ANY (ARRAY['obra_raiz'::text, 'remodelacao_total'::text, 'remodelacao_parcial'::text])))"
+    },
+    {
+      "name": "planeamento_itens_arquivado_por_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (arquivado_por) REFERENCES utilizadores(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planeamento_itens_compromisso_confirmado_por_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (compromisso_confirmado_por) REFERENCES utilizadores(id)"
+    },
+    {
+      "name": "planeamento_itens_custo_pl_confirmado_por_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (custo_pl_confirmado_por) REFERENCES utilizadores(id)"
+    },
+    {
+      "name": "planeamento_itens_datas_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((data_fim_prevista IS NULL) OR (data_inicio_prevista IS NULL) OR (data_fim_prevista >= data_inicio_prevista)))"
+    },
+    {
+      "name": "planeamento_itens_duracao_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((duracao_dias IS NULL) OR (duracao_dias >= (0)::numeric)))"
+    },
+    {
+      "name": "planeamento_itens_especialidade_id_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (especialidade_id) REFERENCES especialidades(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planeamento_itens_estado_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((estado IS NULL) OR (estado = ANY (ARRAY['concluido'::text, 'em_execucao'::text, 'por_iniciar'::text]))))"
+    },
+    {
+      "name": "planeamento_itens_executado_por_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((executado_por IS NULL) OR (executado_por = ANY (ARRAY['PL'::text, 'subempreitada'::text, 'misto'::text]))))"
+    },
+    {
+      "name": "planeamento_itens_fase_id_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (fase_id) REFERENCES fases(id)"
+    },
+    {
+      "name": "planeamento_itens_impedimento_observacao_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((NOT impedido) OR (NULLIF(btrim(observacao_impedimento), ''::text) IS NOT NULL)))"
+    },
+    {
+      "name": "planeamento_itens_item_orcamento_id_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (item_orcamento_id) REFERENCES itens_orcamento(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planeamento_itens_percentual_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((percentual_executado >= (0)::numeric) AND (percentual_executado <= (100)::numeric)))"
+    },
+    {
+      "name": "planeamento_itens_pkey",
+      "table": "planeamento_itens",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "planeamento_itens_recalculado_por_item_id_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (recalculado_por_item_id) REFERENCES planeamento_itens(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planeamento_itens_subempreitada_id_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (subempreitada_id) REFERENCES subempreitadas(id)"
+    },
+    {
+      "name": "planeamento_itens_tee_id_fkey",
+      "table": "planeamento_itens",
+      "definition": "FOREIGN KEY (tee_id) REFERENCES alteracoes_tee(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "planeamento_itens_valor_orca_pl_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((valor_orca_pl IS NULL) OR (valor_orca_pl >= (0)::numeric)))"
+    },
+    {
+      "name": "planeamento_itens_valor_real_pl_check",
+      "table": "planeamento_itens",
+      "definition": "CHECK (((valor_real_pl IS NULL) OR (valor_real_pl >= (0)::numeric)))"
+    },
+    {
+      "name": "previsao_financeira_mensal_fechado_por_fkey",
+      "table": "previsao_financeira_mensal",
+      "definition": "FOREIGN KEY (fechado_por) REFERENCES utilizadores(id)"
+    },
+    {
+      "name": "previsao_financeira_mensal_obra_id_fkey",
+      "table": "previsao_financeira_mensal",
+      "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id)"
+    },
+    {
+      "name": "previsao_financeira_mensal_obra_id_mes_key",
+      "table": "previsao_financeira_mensal",
+      "definition": "UNIQUE (obra_id, mes)"
+    },
+    {
+      "name": "previsao_financeira_mensal_pkey",
+      "table": "previsao_financeira_mensal",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "previsao_financeira_mensal_tipo_check",
+      "table": "previsao_financeira_mensal",
+      "definition": "CHECK ((tipo = ANY (ARRAY['real'::text, 'previsao'::text])))"
+    }
+  ],
+  "cron_exists": true
+}

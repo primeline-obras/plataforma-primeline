@@ -1,0 +1,1748 @@
+{
+  "writer": {
+    "acl": null,
+    "anon": true,
+    "owner": "postgres",
+    "signature": "fn_ajustar_saida_prevista_mensal(uuid,date,numeric)",
+    "definition": "CREATE OR REPLACE FUNCTION public.fn_ajustar_saida_prevista_mensal(p_obra_id uuid, p_mes date, p_variacao numeric)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\ndeclare\r\n  v_mes date := date_trunc('month', p_mes)::date;\r\n  v_linhas integer := 0;\r\nbegin\r\n  if p_obra_id is null or p_mes is null or coalesce(p_variacao, 0) = 0 then\r\n    return;\r\n  end if;\r\n\r\n  -- Um mês fechado é histórico e nunca é reaberto por automação.\r\n  if exists (\r\n    select 1\r\n    from public.previsao_financeira_mensal p\r\n    where p.obra_id = p_obra_id\r\n      and p.mes = v_mes\r\n      and p.tipo = 'previsao'\r\n      and coalesce(p.fechado, false)\r\n  ) then\r\n    return;\r\n  end if;\r\n\r\n  update public.previsao_financeira_mensal p\r\n  set\r\n    saidas_previstas_sem_iva = greatest(0, coalesce(p.saidas_previstas_sem_iva, 0) + p_variacao),\r\n    -- Enquanto a origem não guardar uma taxa de IVA própria, o mesmo compromisso\r\n    -- é refletido nos dois totais para não desaparecer do cash flow previsto.\r\n    saidas_previstas_com_iva = greatest(0, coalesce(p.saidas_previstas_com_iva, 0) + p_variacao)\r\n  where p.obra_id = p_obra_id\r\n    and p.mes = v_mes\r\n    and p.tipo = 'previsao'\r\n    and coalesce(p.fechado, false) = false;\r\n\r\n  get diagnostics v_linhas = row_count;\r\n  if v_linhas > 0 or p_variacao < 0 then\r\n    return;\r\n  end if;\r\n\r\n  begin\r\n    insert into public.previsao_financeira_mensal (\r\n      obra_id, mes,\r\n      subempreitadas_real, materiais_real, mao_obra_real, estaleiro_real,\r\n      saidas_reais_sem_iva, saidas_reais_com_iva,\r\n      saidas_previstas_sem_iva, saidas_previstas_com_iva,\r\n      tipo, entradas_reais, entradas_previstas, fechado\r\n    )\r\n    values (\r\n      p_obra_id, v_mes,\r\n      0, 0, 0, 0,\r\n      0, 0,\r\n      greatest(0, p_variacao), greatest(0, p_variacao),\r\n      'previsao', 0, 0, false\r\n    );\r\n  exception when unique_violation then\r\n    update public.previsao_financeira_mensal p\r\n    set\r\n      saidas_previstas_sem_iva = greatest(0, coalesce(p.saidas_previstas_sem_iva, 0) + p_variacao),\r\n      saidas_previstas_com_iva = greatest(0, coalesce(p.saidas_previstas_com_iva, 0) + p_variacao)\r\n    where p.obra_id = p_obra_id\r\n      and p.mes = v_mes\r\n      and p.tipo = 'previsao'\r\n      and coalesce(p.fechado, false) = false;\r\n  end;\r\nend;\r\n$function$\n",
+    "search_path": [
+      "search_path=public"
+    ],
+    "service_role": true,
+    "authenticated": true,
+    "security_definer": true
+  },
+  "functions": [
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "bloquear_conclusao_sem_avaliacao()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "definir_necessidade_aprovacao_gerencia()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "subempreitadas",
+      "signature": "fn_adjudicar_candidato_subempreitada(uuid,date,date,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "void",
+      "signature": "fn_ajustar_saida_prevista_mensal(uuid,date,numeric)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_alerta_fim_contrato()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_alerta_horas_extra()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_alerta_nova_fatura()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_alertar_subempreitada_execucao_sem_aprovacao()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_alertar_tarefa_impedida()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_apagar_anexo_fatura(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_apagar_anexo_imovel(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_apagar_anexo_pedido_orcamento(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_apagar_anexo_rnc(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_apagar_compromisso(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_apagar_documento_entidade(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_apagar_documento_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_apagar_guia_fatura(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_apagar_imovel_empresa(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "uuid",
+      "signature": "fn_apagar_lancamento_gestao_obras(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_apagar_reserva_sala(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_apagar_reuniao_condominio(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_apagar_versao_pedido_orcamento(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_atualizar_colaborador_ciclo_vida(uuid,text,text,date,date,date,text,numeric,text,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_atualizar_destinatario_alerta_viatura()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "numeric",
+      "signature": "fn_atualizar_melhor_preco_comparativo(uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_atualizar_tarefa_encarregado(uuid,boolean,boolean,text)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "contratos",
+      "signature": "fn_atualizar_venda_contrato_via_tee(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "TABLE(item_origem uuid, caminho uuid[])",
+      "signature": "fn_auditar_ciclos_planeamento()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_avancar_estado_fluxo_fatura(uuid,text,date,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_bloquear_alocacao_em_ausencia()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_bloquear_fatura_duplicada()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_bloquear_mao_obra_em_ausencia()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_bloquear_registo_em_ausencia()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_bloquear_reserva_sobreposta()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_bloquear_venda_contrato_direta()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_bloquear_verificacao_rnc()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_calcular_preco_item_comparativo()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_cancelar_pedido_orcamento(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "rnc",
+      "signature": "fn_cancelar_rnc(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_colaborador_na_obra_atual_encarregado(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "planeamento_custos_componentes",
+      "signature": "fn_concluir_custo_pl(uuid,numeric)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "orcamento_fases",
+      "signature": "fn_concluir_custo_pl_fase(uuid,numeric)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "SETOF planeamento_custos_componentes",
+      "signature": "fn_concluir_custos_pl_tarefa(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "subempreitadas",
+      "signature": "fn_concluir_subempreitada_com_avaliacao(uuid,integer,integer,integer,integer,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "planeamento_itens",
+      "signature": "fn_confirmar_compromisso_subempreitada(uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "planeamento_itens",
+      "signature": "fn_confirmar_custo_real_pl(uuid,numeric)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "planeamento_custos_componentes",
+      "signature": "fn_confirmar_remocao_custo_estimado_subempreitada(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "void",
+      "signature": "fn_congelar_planeamento_baseline(uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "uuid",
+      "signature": "fn_criar_alerta_reuniao_semanal(uuid,text,text,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_criar_alerta_validade_viatura(uuid,text)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_criar_colaborador_com_alocacao(text,text,date,date,text,uuid,text,numeric,text,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "consultas_subempreitada",
+      "signature": "fn_criar_consulta_planeamento(uuid,uuid,text,uuid[],uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "consultas_subempreitada",
+      "signature": "fn_criar_consulta_subempreitada(uuid,uuid,text,uuid[])",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "especialidades",
+      "signature": "fn_criar_especialidade_fornecedor(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_criar_fornecedor_comparativo(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_criar_lembretes_equipa_tecnica(date)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_criar_obra_de_modelo(uuid,text,text,text,text,text,text,uuid,text,date,date,boolean)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_criar_pedidos_horas_semanais(date)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "reservas_salas",
+      "signature": "fn_criar_reserva_sala(text,date,time without time zone,time without time zone,uuid[])",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "rnc",
+      "signature": "fn_criar_rnc(uuid,date,uuid,text,text,text,uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "subempreitadas",
+      "signature": "fn_criar_subempreitada_do_comparativo(uuid,uuid,uuid,date,date,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "numeric",
+      "signature": "fn_custo_real_ligado(uuid,uuid,uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "subempreitada_aditamentos",
+      "signature": "fn_decidir_aditamento_subempreitada(uuid,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_decidir_fatura(uuid,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturacao",
+      "signature": "fn_decidir_faturacao_auto(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "rnc",
+      "signature": "fn_definir_acao_rnc(uuid,text,text,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_definir_canal_alerta()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_definir_estado_mensal_v1(uuid,text,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_definir_zonas_fornecedor(uuid,text[])",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_desmarcar_fatura_paga(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_devolver_fatura_administrativo(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_devolver_fatura_financeiro(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_disparar_recalculo_planeamento()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_e_admin()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_e_administrativo()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_e_diretor_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_e_encarregado_da_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_e_financeiro()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_e_gestao_plataforma()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,jsonb)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_editar_fatura_pendente(uuid,uuid,text,uuid,uuid,text,date,numeric,text,date,text,jsonb)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "fornecedores",
+      "signature": "fn_editar_fornecedor_diretorio(uuid,text,text,text,text,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "fornecedores",
+      "signature": "fn_editar_fornecedor_diretorio_v2(uuid,text,text,text,text,text,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "reservas_salas",
+      "signature": "fn_editar_reserva_sala(uuid,text,date,time without time zone,time without time zone,uuid[])",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "rnc",
+      "signature": "fn_editar_rnc_base(uuid,date,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_eliminar_fornecedor_duplicado(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_eliminar_item_comparativo(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_eliminar_mapa_comparativo(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_eliminar_proposta_comparativo(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_equipa_obra_encarregado(date,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_executar_rotinas_diarias()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "rnc",
+      "signature": "fn_fechar_rnc(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(data date, obra_id uuid, obra_numero text, obra_nome text, colaborador_id uuid, colaborador text, funcao text, estado text, periodos_alocados text[], entrada_manha time without time zone, saida_manha time without time zone, entrada_tarde time without time zone, saida_tarde time without time zone, horas numeric, observacao text, justificacao_estado text, registado_por text, atualizado_por text)",
+      "signature": "fn_folha_ponto_mensal(date,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_gerir_registo_frota(text,uuid,text,jsonb)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "fornecedores",
+      "signature": "fn_guardar_cadastro_fornecedor(uuid,text,text,text,text,text,text,text,text,text[],uuid[],text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "planeamento_custos_componentes",
+      "signature": "fn_guardar_componente_custo(uuid,text,numeric,text,numeric,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "compromissos",
+      "signature": "fn_guardar_compromisso(uuid,text,date,time without time zone,time without time zone,boolean,text,uuid,uuid,text,text,text,integer,uuid[])",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_guardar_integridade_orcamento_fonte()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_guardar_integridade_orcamento_versao()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "gestao_obras_lancamentos",
+      "signature": "fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_guardar_planeamento_lote(jsonb,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_guardar_ponto_obra(uuid,uuid,date,text,time without time zone,time without time zone,time without time zone,time without time zone,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "numeric",
+      "signature": "fn_guardar_precos_candidato_subempreitada(uuid,jsonb)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_impedir_saida_colaborador_com_viaturas()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_mapa_financeiro_xlsx(integer,jsonb,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_mapa_gestao(jsonb,boolean)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_orcamento_fases(uuid,jsonb,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_proposta_comparativo(uuid,uuid,jsonb,jsonb)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_subempreitadas_xlsx(jsonb,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_tees_revisoes(integer,uuid,jsonb,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_importar_tees_xlsx(jsonb,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "numeric",
+      "signature": "fn_limite_contrato_subempreitada()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(id uuid, nome text, funcao text)",
+      "signature": "fn_listar_colegas_agenda()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(id uuid, nome text, funcao text)",
+      "signature": "fn_listar_participantes_reuniao()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_listar_ponto_obra(date,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(id uuid, obra_id uuid, obra_numero text, obra_nome text, fornecedor_nome text, numero_doc text, valor numeric, estado_aprovacao text, estado_pagamento text, criado_em timestamp with time zone, criado_por uuid, criado_por_nome text, data_aprovacao timestamp with time zone, aprovado_por uuid, aprovado_por_nome text, data_pagamento date, pago_por uuid, pago_por_nome text, eventos jsonb)",
+      "signature": "fn_listar_rastreio_faturas()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_log_importacao_xlsx(text,text,integer,jsonb)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "TABLE(origem_id uuid, obra_id uuid, obra_numero text, obra_nome text, categoria text, data_lancamento date, entidade_nome text, descricao text, documento text, valor numeric)",
+      "signature": "fn_mapa_gestao_obras()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(origem_id uuid, obra_id uuid, obra_numero text, obra_nome text, categoria text, data_lancamento date, entidade_nome text, descricao text, documento text, unidade_medida text, quantidade numeric, valor_unitario numeric, data_pagamento date, valor numeric)",
+      "signature": "fn_mapa_gestao_obras_excel()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_marcar_atualizacao_feriado()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_marcar_fatura_paga(uuid,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturacao",
+      "signature": "fn_marcar_faturacao_auto_paga(uuid,date,numeric)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_medicina_admissao_historico()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_medicina_anular_consulta(integer,uuid,integer,uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "medicina_trabalho",
+      "signature": "fn_medicina_atual(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_medicina_consultar_colaborador(integer,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_medicina_corrigir_consulta(integer,uuid,date,text,date,integer,uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_medicina_guardar_interno(integer,text,uuid,uuid,date,text,date,integer,uuid,text)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_medicina_pode_gerir(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_medicina_proteger()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_medicina_proteger_historico()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_medicina_reconciliar_alertas(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_medicina_registar_consulta(integer,uuid,date,text,date,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_mesclar_fornecedor(uuid,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_mgo_inserir_json_compativel(regclass,jsonb)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_mgo_validar_periodo_mao_obra(jsonb,uuid,uuid,uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_normalizar_estado_ausencia()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "text",
+      "signature": "fn_normalizar_numero_tee(text)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "integer[]",
+      "signature": "fn_parametro_operacional_dias(text,integer[])",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "numeric",
+      "signature": "fn_parametro_operacional_numero(text,numeric)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "text",
+      "signature": "fn_parametro_operacional_texto(text,text)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_planeamento_lote_preview_v1(jsonb)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_consultar_quadro()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_editar_documentos_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_editar_mapa_gestao_obras()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_editar_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_gerir_ausencias()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "boolean",
+      "signature": "fn_pode_gerir_horas_extra(uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_gerir_quadro(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_ver_ausencia(uuid,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_ver_compromisso(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_ver_mapa_gestao_obras()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_ver_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_pode_ver_visao_consolidada()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "numeric",
+      "signature": "fn_ponto_horas(time without time zone,time without time zone,time without time zone,time without time zone)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_preparar_destinatario_alerta_viatura()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_previsualizar_mesclagem_fornecedor(uuid,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_proteger_atribuicao_viatura()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_proteger_evento_validade_viatura()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_proteger_fatura_devolvida_administrativo()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_proteger_historico_atribuicao_viatura()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_proximo_numero_rnc(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_aplicar_interno(uuid,date,jsonb,jsonb,text,uuid,boolean)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_contexto_v1(date,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_criar_colaborador_interno(text,text,date,date,text,uuid,text,numeric,text,text,text,text,text)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_dia_explicito(uuid,date)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_ferias_encarregado_global(date,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_quadro_leitura_global_v1()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_quadro_ler_obra(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_quadro_lock_escrita_v1()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_quadro_minha_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_quadro_minha_obra_v1(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_quadro_notificar_controlado_v1(uuid,date,uuid,uuid,uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_quadro_notificar_movimentacao_encarregado()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "TABLE(id uuid, numero text, nome text)",
+      "signature": "fn_quadro_obras_destino()",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_operar(text,jsonb,boolean,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_operar_v1(text,jsonb,boolean,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_quadro_pode_consultar_v1()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "boolean",
+      "signature": "fn_quadro_pode_gerir_v1(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_quadro_proteger_escrita()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_quadro_renomear_interno(jsonb,boolean,text)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "SETOF quadro_pessoal_alocacao",
+      "signature": "fn_quadro_resolver_data(date)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_recalcular_mapa_apos_preco()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_recalcular_planeamento_cascata(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_recalcular_precos_quantidade()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_recalcular_venda_contrato_tee_trigger()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "subempreitada_aditamentos",
+      "signature": "fn_registar_aditamento_subempreitada(uuid,text,numeric,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "documentos_obra",
+      "signature": "fn_registar_documento_obra(uuid,text,text,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_registar_evento_financeiro_fatura()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_registar_log_auditoria()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_registar_movimento_quadro()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_registar_percurso_fatura()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_registar_recebimento_parcial(integer,uuid,date,numeric,text,numeric)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(colaborador_id uuid, colaborador text, funcao text, obra_id uuid, obra_numero text, obra_nome text, horas numeric, dias_com_ponto bigint, faltas_com_justificacao bigint, faltas_sem_justificacao bigint)",
+      "signature": "fn_relatorio_mensal_ponto(date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "alertas",
+      "signature": "fn_resolver_alerta(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_resumo_componentes_custo_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(subempreitada_id uuid, valor_contratual numeric, aditamentos_aprovados numeric, total_aprovado numeric, total_faturado numeric, total_pago numeric, saldo numeric, ultrapassagem_faturada numeric, ultrapassagem_paga numeric, aditamentos jsonb)",
+      "signature": "fn_resumo_controle_subempreitadas_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_resumo_custos_obra(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_resumo_mapa_comparativo(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_rh_consultar(uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "uuid",
+      "signature": "fn_rh_empresa(boolean)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_rh_guardar(jsonb,boolean)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_rh_guardar_interno(jsonb,boolean,boolean)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_rh_importar(jsonb,boolean)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_rotear_fatura_aprovada()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_sincronizar_alerta_limite_subempreitada(uuid)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_sincronizar_alerta_validade_documento()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_componente_subempreitada()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_estado_fluxo_fatura()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_indice_documento()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_indices_documento_obra()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_pagamento_fatura()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_sincronizar_subempreitada_planeamento()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_subempreitada_previsao()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_tee_planeamento()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_sincronizar_tee_previsao()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_trigger_alerta_limite_subempreitada()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "uuid",
+      "signature": "fn_utilizador_atual_id()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_validar_atualizacao_parametro_operacional()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_validar_autorizacao_horas_extra()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_validar_colaborador_utilizador_empresa()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_validar_conflito_quadro_pessoal()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_validar_dependencia_planeamento()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_validar_justificacao_ponto(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "fn_validar_tee_pedido_prorrogacao()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "trigger",
+      "signature": "fn_validar_vinculo_fatura_subempreitada()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "numeric",
+      "signature": "fn_valor_lancamento_custo(jsonb)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "void",
+      "signature": "fn_verificar_alertas_fim_contrato()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_verificar_alertas_imoveis_orcamentos(date)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_verificar_alertas_seguro_viaturas()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_verificar_alertas_vencimento()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": true,
+      "result": "void",
+      "signature": "fn_verificar_congelamentos_pendentes()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(id uuid, obra_id uuid, obra_numero text, numero_doc text, valor numeric, data_fatura date, estado_aprovacao text, estado_pagamento text, tipo_correspondencia text)",
+      "signature": "fn_verificar_fatura_semelhante(uuid,numeric,text,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "TABLE(id uuid, obra_id uuid, obra_numero text, numero_doc text, valor numeric, data_fatura date, estado_aprovacao text, estado_pagamento text, tipo_correspondencia text, outra_obra boolean)",
+      "signature": "fn_verificar_fatura_semelhante(uuid,numeric,text,uuid,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "jsonb",
+      "signature": "fn_verificar_limite_fatura_subempreitada(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "integer",
+      "signature": "fn_verificar_primeiras_consultas_medicina()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "anon": false,
+      "result": "rnc",
+      "signature": "fn_verificar_rnc(uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": false,
+      "result": "faturas",
+      "signature": "fn_vincular_fatura_subempreitada(uuid,uuid)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "validar_aprovador_diretor_obra()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "validar_consumo_adiantamento()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "validar_soma_afetacao_diaria()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "validar_soma_pesos()",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "anon": true,
+      "result": "trigger",
+      "signature": "validar_tipo_item_auto()",
+      "service_role": true,
+      "authenticated": true
+    }
+  ],
+  "catalog_hash": "ad93cec96f207f7e622c41821eb38cf0",
+  "server_version": "17.6"
+}

@@ -1,7 +1,7 @@
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=3";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, isSessionTransitioning, onSessionReset, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=8";
 import { installSessionBoundary } from "./session-boundary.js?v=1";
-import { loadForemanDirectory } from "./foreman-scope.js?v=1";
+import { loadForemanDirectory, loadForemanAbsences } from "./foreman-scope.js?v=2";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=24";
 import { createPlanningModule } from "./planning.js?v=16";
@@ -2558,7 +2558,7 @@ async function loadTeamData(force = false) {
   const vacationBounds = vacationMonthBounds();
   const results = await Promise.all([
     canReadWorkforce() ? supabase("rpc/fn_quadro_contexto_v1", { method: "POST", body: JSON.stringify({ p_inicio: boardStart, p_fim: boardEnd }) }) : Promise.resolve(Response.json({ version: 1, allocations: [], revisions: [], can_manage_global: false, read_work_ids: [], edit_work_ids: [], people: [], works: [] })),
-    supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
+    effectiveRole() === "encarregado" ? loadForemanAbsences(supabase, boardStart, boardEnd) : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&data=gte.${boardStart}&data=lte.${boardEnd}&order=data`),
     canManageAbsences() ? supabase("ausencias_anexos?select=id,ausencia_id,arquivo_url,nome_arquivo,criado_em&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores_contratos?select=id,colaborador_id,tipo_contrato,data_inicio,data_fim_prevista,estado&estado=eq.ativo") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageOvertime() ? supabase("horas_extraordinarias?select=id,colaborador_id,obra_id,data,horas,motivo,autorizado_por,estado_pagamento&estado_pagamento=eq.por_pagar&order=data.desc") : Promise.resolve(new Response("[]", { status: 200 })),
@@ -2568,7 +2568,7 @@ async function loadTeamData(force = false) {
     (canManageTeam() || effectiveRole() === "encarregado") ? medicineClient.list(effectiveRole() === "encarregado" ? collaborators.filter(person => foremanMedicineIds.has(person.id)) : collaborators).then(rows=>Response.json(rows)) : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome", { includeInactiveCollaborators: true }) : Promise.resolve(new Response("[]", { status: 200 })),
-    supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
+    effectiveRole() === "encarregado" ? loadForemanAbsences(supabase, vacationBounds.start, vacationBounds.end, true) : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
     supabase(`feriados_empresa?select=id,data,nome,ambito,municipio,folga&folga=eq.true&data=gte.${boardStart < vacationBounds.start ? boardStart : vacationBounds.start}&data=lte.${boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end}&order=data`),
   ]);
   const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias", "feriados"];

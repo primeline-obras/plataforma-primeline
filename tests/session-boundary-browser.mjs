@@ -106,6 +106,8 @@ try{
    assert.ok(!(await page.locator('#team-medicine').textContent()).includes('OUTSIDE_TEAM_PERSON'));
    assert.ok(!calls.some(c=>c.identity==='B'&&c.resource==='colaboradores'));
    assert.ok(!calls.some(c=>c.identity==='B'&&c.resource==='subempreitadas'));
+   assert.ok(!calls.some(c=>c.identity==='B'&&c.resource==='ausencias'));
+   assert.ok(calls.some(c=>c.identity==='B'&&c.resource==='rpc/fn_ausencias_equipa_encarregado'));
    assert.ok(!calls.some(c=>c.identity==='B'&&c.resource==='rpc/fn_medicina_consultar_colaborador'&&c.body.p_colaborador_id!=='p1'));
   }
   assert.deepEqual(errors,[],label+' console');console.log('PASS '+label);passes++;

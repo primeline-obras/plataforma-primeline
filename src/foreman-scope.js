@@ -1,5 +1,4 @@
-// Temporary frontend minimisation using existing read-only RPCs. This does NOT
-// replace RLS: the broad colaboradores/subempreitadas policies need a separate fix.
+// Operational projections; the corresponding backend authorization is mandatory.
 export async function loadForemanDirectory(supabase, date) {
   const call = async (name, body) => {
     const response = await supabase(`rpc/${name}`, {method:'POST', body:JSON.stringify(body)});
@@ -23,4 +22,14 @@ export async function loadForemanDirectory(supabase, date) {
     if (await call('fn_colaborador_na_obra_atual_encarregado', {p_colaborador_id:person.id}) === true) medicineIds.add(person.id);
   }
   return {people:[...people.values()],medicineIds};
+}
+
+export async function loadForemanAbsences(supabase, start, end, vacationsOnly = false) {
+  const response = await supabase('rpc/fn_ausencias_equipa_encarregado', {
+    method: 'POST', body: JSON.stringify({p_inicio:start,p_fim:end}),
+  });
+  if (!response.ok) return response; // Never retry against the raw RH table.
+  const rows = await response.json();
+  if (!Array.isArray(rows)) return Response.json({message:'Resposta de disponibilidade inválida.'}, {status:502});
+  return Response.json(vacationsOnly ? rows.filter(row=>row.tipo==='ferias') : rows);
 }

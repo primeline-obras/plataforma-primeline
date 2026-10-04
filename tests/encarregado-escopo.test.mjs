@@ -1,3 +1,5 @@
+import {authorizationCases} from './encarregado-autorizacao-cases.mjs';
+import {restCases} from './encarregado-autorizacao-rest.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,mkdtemp} from 'node:fs/promises';
@@ -10,13 +12,14 @@ const require=createRequire(import.meta.url);
 const bin=process.env.QUADRO_PG_BIN, deps=process.env.QUADRO_TEST_DEPS;
 const read=async p=>(await readFile(new URL(p,import.meta.url),'utf8')).replace(/^\uFEFF/,'');
 const fixture=JSON.parse(await read('./fixtures/encarregado-catalogo-real-20261004.json'));
+const integrity=JSON.parse(await read('./fixtures/encarregado-autorizacao-integridade-20261004.json'));
 const snapshotQuery=await read('./fixtures/encarregado-catalogo-snapshot-query.sql');
 const scripts=Object.fromEntries(await Promise.all(['precheck','backup','migration','postcheck','rollback'].map(async k=>[k,await read('../supabase/encarregado_escopo_'+k+'.sql')])));
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const qi=s=>'"'+s.replaceAll('"','""')+'"';
 function run(name,args){const r=spawnSync(join(bin,name+(process.platform==='win32'?'.exe':'')),args,{encoding:'utf8',timeout:60000,windowsHide:true,stdio:name==='pg_ctl'?'ignore':'pipe'});assert.equal(r.status,0,name+': '+(r.error?.message||r.stderr));return r.stdout;}
 test('PostgreSQL local: catálogo real, RLS, RPCs, perfis e reversão',{timeout:240000,skip:!bin||!deps?'Definir QUADRO_PG_BIN e QUADRO_TEST_DEPS':false},async t=>{
- assert.match(run('postgres',['--version']),/PostgreSQL\) 17\./);
+ assert.match(run('postgres',['--version']),/PostgreSQL\) 17\.6\b/);
  const {Client,types}=require(join(deps,'pg'));types.setTypeParser(1082,v=>v);
  const folder=await mkdtemp(join(tmpdir(),'primeline-escopo-')),data=join(folder,'data');
  const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
@@ -27,7 +30,7 @@ test('PostgreSQL local: catálogo real, RLS, RPCs, perfis e reversão',{timeout:
   db=new Client({host:'127.0.0.1',port,user:'postgres',database:'postgres',password:'',ssl:false});await db.connect();const q=(s,p=[])=>db.query(s,p);
   await q(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
    CREATE SCHEMA auth; GRANT USAGE ON SCHEMA auth,public TO anon,authenticated,service_role;
-   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT coalesce(nullif(current_setting('request.jwt.claim.sub',true),''),nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub')::uuid $$;
    SET check_function_bodies=off;`);
   // Reproduz TODOS os tipos, policies, grants, views e funções do catálogo real.
   // Sem linhas reais, defaults/triggers/FKs operacionais não são disparados nesta fixture.
@@ -55,13 +58,15 @@ test('PostgreSQL local: catálogo real, RLS, RPCs, perfis e reversão',{timeout:
    for(const p of table.policies||[])await q('CREATE POLICY '+qi(p.name)+' ON '+name+' AS '+(p.permissive?'PERMISSIVE':'RESTRICTIVE')+' FOR '+({r:'SELECT',a:'INSERT',w:'UPDATE',d:'DELETE','*':'ALL'}[p.cmd])+' TO '+p.roles.map(r=>r==='PUBLIC'?'PUBLIC':qi(r)).join(',')+(p.using?' USING ('+p.using+')':'')+(p.check?' WITH CHECK ('+p.check+')':''));
   }
   await q('SET check_function_bodies=on');
+  // Install the real triggers reached by the P0 UPDATE reproductions. No production rows.
+  for(const trigger of integrity.triggers.filter(x=>['obras','mapas_comparativos','planeamento_itens','previsao_financeira_mensal'].includes(x.table)))await q(trigger.definition);
   const rebuilt=(await q(snapshotQuery)).rows[0].jsonb_build_object;
   for(const a of rebuilt.tables){
    const original=fixture.catalog.tables.find(t=>t.name===a.name);
    const expected={...original,columns:original.columns.map(({name,type,acl})=>({name,type,acl}))};
    assert.deepEqual(a,expected,'catálogo da tabela '+a.name);
   }
-  for(const a of rebuilt.functions){const f=fixture.catalog.functions.find(f=>f.signature===a.signature);assert.deepEqual(a,{signature:f.signature,owner:f.owner,acl:f.acl,definition:fixture.details.definitions[f.signature].replaceAll('\r','')},a.signature);}
+  for(const a of rebuilt.functions){const f=fixture.catalog.functions.find(f=>f.signature===a.signature);assert.deepEqual(a,{signature:f.signature,owner:f.owner,acl:'{'+(f.acl||'{=X/postgres,postgres=X/postgres}').slice(1,-1).split(',').sort().join(',')+'}',definition:fixture.details.definitions[f.signature].replaceAll('\r','')},a.signature);}
   await t.test('precheck exato contra catálogo real reconstruído',async()=>{await q(scripts.precheck);});
   const before=(await q(snapshotQuery)).rows[0].jsonb_build_object;
   const snapshot=async()=>(await q(snapshotQuery)).rows[0].jsonb_build_object;
@@ -92,8 +97,13 @@ test('PostgreSQL local: catálogo real, RLS, RPCs, perfis e reversão',{timeout:
   const counts=async n=>[...(await asRole(n,'SELECT count(*)::int n FROM colaboradores')).rows.map(x=>x.n),...(await asRole(n,'SELECT count(*)::int n FROM subempreitadas')).rows.map(x=>x.n)];
   const rolesBefore=new Map();for(let n=11;n<=17;n++)rolesBefore.set(n,await counts(n));
   await t.test('reproduz P1 no catálogo anterior',async()=>{assert.deepEqual(await counts(10),[5,4]);});
+  await authorizationCases({t,q,asRole,stage:'before'});
+  const allData=async()=>{const result={};for(const table of fixture.catalog.tables.filter(x=>x.kind==='r'))result[table.name]=(await q('SELECT jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text) v FROM public.'+qi(table.name)+' t')).rows[0].v;return result;};
+  const allDataBefore=await allData();
   const dataBefore=(await q("SELECT jsonb_build_object('c',(SELECT jsonb_agg(to_jsonb(c)) FROM colaboradores c),'s',(SELECT jsonb_agg(to_jsonb(s)) FROM subempreitadas s),'q',(SELECT jsonb_agg(to_jsonb(q)) FROM quadro_pessoal_alocacao q)) v")).rows[0].v;
   await q(scripts.migration);await q(scripts.postcheck);
+  await authorizationCases({t,q,asRole,stage:'after'});
+  await restCases({t,port});
   await t.test('Encarregado: SELECT direto, PII e económico vazio',async()=>{
    assert.deepEqual(await counts(10),[0,0]);
    for(const sql of ['SELECT nif,morada,valor_hora FROM colaboradores','SELECT valor_adjudicado,tipo_pagamento,condicao_pagamento FROM subempreitadas','SELECT * FROM pagamentos_subempreitada'])assert.equal((await asRole(10,sql)).rowCount,0);
@@ -133,8 +143,9 @@ test('PostgreSQL local: catálogo real, RLS, RPCs, perfis e reversão',{timeout:
    assert.equal((await q("SELECT has_function_privilege('anon','fn_subempreitadas_operacionais_obra(uuid)','EXECUTE') v")).rows[0].v,false);
   });
   await t.test('demais sete perfis mantêm exatamente contagens anteriores',async()=>{for(let n=11;n<=17;n++)assert.deepEqual(await counts(n),rolesBefore.get(n),'perfil '+n);});
-  await t.test('novos P1 não corrigidos silenciosamente: avaliações globais',async()=>{assert.equal((await asRole(10,'SELECT * FROM avaliacoes_subempreiteiro')).rowCount,4);});
+  await t.test('avaliações internas sem exposição global',async()=>{assert.equal((await asRole(10,'SELECT * FROM avaliacoes_subempreiteiro')).rowCount,0);});
   await t.test('linhas operacionais intactas',async()=>{assert.deepEqual((await q("SELECT jsonb_build_object('c',(SELECT jsonb_agg(to_jsonb(c)) FROM colaboradores c),'s',(SELECT jsonb_agg(to_jsonb(s)) FROM subempreitadas s),'q',(SELECT jsonb_agg(to_jsonb(q)) FROM quadro_pessoal_alocacao q)) v")).rows[0].v,dataBefore);});
+  await t.test('todas as tabelas operacionais sintéticas intactas após SQL/REST',async()=>{assert.deepEqual(await allData(),allDataBefore);});
   await t.test('postcheck recusa drift posterior',async()=>{await q('BEGIN; GRANT SELECT ON colaboradores TO anon');await assert.rejects(()=>q(scripts.postcheck.replace('BEGIN READ ONLY;','')),/POSTCHECK_CATALOG_DRIFT/);await q('ROLLBACK');});
   await t.test('rollback restaura exatamente catálogo e acesso anteriores',async()=>{await q(scripts.rollback);assert.deepEqual(await snapshot(),before);assert.deepEqual(await counts(10),[5,4]);});
  }finally{if(db)await db.end();if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}
