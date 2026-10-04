@@ -16,6 +16,15 @@ BEGIN
 ));
  IF md5(v::text) <> '2be961099e9694bdd29ba95d3cc10173' THEN RAISE EXCEPTION 'CATALOG_DRIFT: interromper e repetir diagnóstico'; END IF;
 END $check$;
+-- O snapshot integral inclui os 12 writers e as respetivas definições/ACLs anteriores.
+DO $economic_inventory$
+DECLARE sig text;
+BEGIN
+ FOREACH sig IN ARRAY ARRAY['fn_concluir_custo_pl(uuid,numeric)','fn_concluir_custo_pl_fase(uuid,numeric)','fn_concluir_custos_pl_tarefa(uuid)','fn_confirmar_custo_real_pl(uuid,numeric)','fn_confirmar_remocao_custo_estimado_subempreitada(uuid)','fn_guardar_componente_custo(uuid,text,numeric,text,numeric,uuid)','fn_eliminar_proposta_comparativo(uuid)','fn_criar_fornecedor_comparativo(uuid,text)','fn_importar_proposta_comparativo(uuid,uuid,jsonb,jsonb)','fn_criar_subempreitada_do_comparativo(uuid,uuid,uuid,date,date,text)','fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric)','fn_apagar_lancamento_gestao_obras(uuid)'] LOOP
+  IF to_regprocedure('public.'||sig) IS NULL THEN RAISE EXCEPTION 'ECONOMIC_WRITER_MISSING: %',sig; END IF;
+ END LOOP;
+END $economic_inventory$;
+
 
 CREATE SCHEMA primeline_encarregado_20261004 AUTHORIZATION postgres;
 REVOKE ALL ON SCHEMA primeline_encarregado_20261004 FROM PUBLIC,anon,authenticated,service_role;

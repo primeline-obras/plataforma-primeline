@@ -1,0 +1,132 @@
+{
+  "scope": "Focused static review: economic writers using the four legacy authorization helpers; no new dynamic proofs.",
+  "source": "encarregado-catalogo-real-20261004.json",
+  "residual": [
+    {
+      "signature": "fn_confirmar_compromisso_subempreitada(uuid)",
+      "owner": "postgres",
+      "acl": "{=X/postgres,postgres=X/postgres}",
+      "definition_sha256": "b2371152640f2ad6d0d75000c49766c8506a853ae98cc7d2b00c365c82385144",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_importar_orcamento_fases(uuid,jsonb,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "1f11ce52e230cb9510d047d59c318ff59a32341a2c2941fab2ba88ba9deb7eff",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_guardar_precos_candidato_subempreitada(uuid,jsonb)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "922b9f329a644b6cca74dbcdba9b46a45e75d57fc4f5795ec41756ba3e8177ce",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_criar_consulta_subempreitada(uuid,uuid,text,uuid[])",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "8d1954b427990f67cdb318125392663bbe32a4458c7831734fe2d958c0a7841b",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_adjudicar_candidato_subempreitada(uuid,date,date,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "12c12e2faf39136c61bcc8d8c935479c93d2a5ba18e38d9da93290910cb520eb",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_registar_aditamento_subempreitada(uuid,text,numeric,uuid)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "61030838271bf1a77c6fd40832001ea4939ddc0e106952d385d189a0c4fe524b",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_decidir_aditamento_subempreitada(uuid,text,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "cce6df151bab63b1952631e6251620e64c0a4f2b2a126a18aceb13572d24bd9b",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_concluir_subempreitada_com_avaliacao(uuid,integer,integer,integer,integer,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "63aa529aadb3141bdaf3b1e9e840928e1ffc23055f0b16608064821ec45d59e3",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_importar_tees_xlsx(jsonb,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "b128463803a75051e97cb6dc8f8582700882f0176bc8c6af8db53d2815c7b1aa",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_importar_tees_revisoes(integer,uuid,jsonb,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "e9df86033fab10cfd8e41a66623ea8220d6ba15ed69e8df932e3d4565152ed1e",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_importar_subempreitadas_xlsx(jsonb,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "47474dad3dde9f9b8dbedd677d18034b371c6c01f5a5e9b28cadb48a85dec4e1",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_atualizar_venda_contrato_via_tee(uuid)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "f279526da42469dd17bc6e85b68c2d8affcc9f2c54fdba6471f22f0ebc3191bc",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_importar_mapa_financeiro_xlsx(integer,jsonb,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "9f18382f26b4d6f29a05313c0cbde51d8184b14986d32ce7aaae4c81837f568f",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    },
+    {
+      "signature": "fn_definir_estado_mensal_v1(uuid,text,text,text,text)",
+      "owner": "postgres",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "9793ef5d0408661f596bf03f9856886c892c611b9b449f49a2c175fdde8b3ed8",
+      "classification": "P1_STATIC_TENANT_GUARD_MISSING",
+      "dynamic_validation": "NOT_RUN",
+      "changed_in_this_task": false
+    }
+  ]
+}

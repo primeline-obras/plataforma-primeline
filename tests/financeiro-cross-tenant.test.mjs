@@ -1,5 +1,6 @@
 import {authorizationCases} from './financeiro-regression-cases.mjs';
 import {financialCases} from './financeiro-cross-tenant-cases.mjs';
+import {economicWriterCases} from './writers-economicos-cases.mjs';
 import {restCases} from './encarregado-autorizacao-rest.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -106,6 +107,7 @@ test('PostgreSQL local: catálogo real, RLS, RPCs, perfis e reversão',{timeout:
   await q(scripts.migration);await q(scripts.postcheck);
   await authorizationCases({t,q,asRole,stage:'after'});
   await financialCases({t,q,port,stage:'after'});
+  await economicWriterCases({t,q,connect:async()=>{const c=new Client({host:'127.0.0.1',port,user:'postgres',database:'postgres',password:'',ssl:false});await c.connect();return c;}});
   await restCases({t,port});
   await t.test('Encarregado: SELECT direto, PII e económico vazio',async()=>{
    assert.deepEqual(await counts(10),[0,0]);

@@ -2032,6 +2032,610 @@ WITH CHECK(EXISTS(SELECT 1 FROM public.comparativo_itens i JOIN public.mapas_com
 CREATE POLICY financeiro_empresa_delete ON public.comparativo_itens_precos AS RESTRICTIVE FOR DELETE TO authenticated
 USING(EXISTS(SELECT 1 FROM public.comparativo_itens i JOIN public.mapas_comparativos m ON m.id=i.mapa_id WHERE i.id=item_id AND public.fn_financeiro_obra_da_empresa(m.obra_id)));
 
+-- Writers económicos: tenant antes do papel, recursos relacionados bloqueados.
+CREATE OR REPLACE FUNCTION public.fn_concluir_custo_pl(p_componente_id uuid, p_valor_real numeric DEFAULT NULL::numeric)
+ RETURNS planeamento_custos_componentes
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_obra_id uuid; v_row public.planeamento_custos_componentes%rowtype;
+begin
+  select f.obra_id into v_obra_id
+  from public.planeamento_custos_componentes c
+  join public.planeamento_itens pi on pi.id=c.planeamento_item_id
+  join public.fases f on f.id=pi.fase_id
+  where c.id=p_componente_id and c.tipo='PL' for update of c for share of pi,f;
+  if not found then raise exception 'Componente PL não encontrado.'; end if;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_e_diretor_obra(v_obra_id) then
+    raise exception 'A conclusão está reservada ao Diretor de Obra ou Gerência.' using errcode='42501';
+  end if;
+  update public.planeamento_custos_componentes
+  set valor_real_pl=greatest(coalesce(p_valor_real,valor_orcamentado),0),
+      estado_custo='concluido', concluido_confirmado_em=now(),
+      concluido_confirmado_por=public.fn_utilizador_atual_id(), atualizado_em=now()
+  where id=p_componente_id returning * into v_row;
+  return v_row;
+end;
+$function$
+;
+ALTER FUNCTION public.fn_concluir_custo_pl(uuid,numeric) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_concluir_custo_pl(uuid,numeric) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_concluir_custo_pl(uuid,numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_concluir_custo_pl_fase(p_orcamento_fase_id uuid, p_valor_real numeric DEFAULT NULL::numeric)
+ RETURNS orcamento_fases
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare row_out public.orcamento_fases;
+begin
+  select * into row_out from public.orcamento_fases where id=p_orcamento_fase_id for update;
+  if not found then raise exception 'Orçamento de fase não encontrado.'; end if;
+  perform public.fn_financeiro_autorizar_obra(row_out.obra_id,false);
+  if not (public.fn_e_gestao_plataforma() or public.fn_e_diretor_obra(row_out.obra_id)) then raise exception 'Conclusão reservada à Gestão da Plataforma ou Diretor de Obra.' using errcode='42501'; end if;
+  update public.orcamento_fases set valor_real_pl=greatest(coalesce(p_valor_real,custo_total_estimado),0),estado_custo='concluido',concluido_por=public.fn_utilizador_atual_id(),concluido_em=now()
+  where id=p_orcamento_fase_id returning * into row_out; return row_out;
+end $function$
+;
+ALTER FUNCTION public.fn_concluir_custo_pl_fase(uuid,numeric) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_concluir_custo_pl_fase(uuid,numeric) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_concluir_custo_pl_fase(uuid,numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_concluir_custos_pl_tarefa(p_planeamento_item_id uuid)
+ RETURNS SETOF planeamento_custos_componentes
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_obra_id uuid;
+begin
+  select f.obra_id into v_obra_id from public.planeamento_itens pi join public.fases f on f.id=pi.fase_id where pi.id=p_planeamento_item_id for update of pi for share of f;
+  if not found then raise exception 'Tarefa não encontrada.'; end if;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_pode_editar_obra(v_obra_id) then raise exception 'Sem permissão para concluir esta tarefa.' using errcode='42501'; end if;
+  return query update public.planeamento_custos_componentes
+    set valor_real_pl=coalesce(valor_real_pl,valor_orcamentado),estado_custo='concluido',
+      concluido_confirmado_em=coalesce(concluido_confirmado_em,now()),
+      concluido_confirmado_por=coalesce(concluido_confirmado_por,public.fn_utilizador_atual_id()),atualizado_em=now()
+    where planeamento_item_id=p_planeamento_item_id and tipo='PL' and estado_custo<>'cancelado' returning *;
+end;
+$function$
+;
+ALTER FUNCTION public.fn_concluir_custos_pl_tarefa(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_concluir_custos_pl_tarefa(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_concluir_custos_pl_tarefa(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_confirmar_custo_real_pl(p_planeamento_item_id uuid, p_valor_real numeric DEFAULT NULL::numeric)
+ RETURNS planeamento_itens
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_item public.planeamento_itens; v_obra_id uuid; v_utilizador_id uuid; v_valor numeric;
+begin
+  select pi.* into v_item from public.planeamento_itens pi
+  where pi.id=p_planeamento_item_id for update;
+  if not found then raise exception 'Tarefa/pacote PL não encontrado.'; end if;
+  select f.obra_id into v_obra_id from public.fases f where f.id=v_item.fase_id for share;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_pode_editar_obra(v_obra_id) then
+    raise exception 'Só a equipa técnica responsável pode confirmar o custo PL.' using errcode='42501';
+  end if;
+  if coalesce(v_item.executado_por,'PL') not in ('PL','misto') then
+    raise exception 'Esta tarefa não possui uma componente executada pela Primeline.';
+  end if;
+  if v_item.estado<>'concluido' then
+    raise exception 'A componente PL só pode passar a Custo Real quando a tarefa estiver concluída.';
+  end if;
+  v_valor:=coalesce(p_valor_real,v_item.valor_orca_pl,v_item.valor_estimado);
+  if v_valor is null or v_valor<0 then raise exception 'Indique um Valor Real PL válido.'; end if;
+  select id into v_utilizador_id from public.utilizadores where auth_user_id=auth.uid() limit 1;
+  update public.planeamento_itens set valor_real_pl=v_valor,custo_pl_confirmado=true,
+    custo_pl_confirmado_por=v_utilizador_id,custo_pl_confirmado_em=now(),custo_estado='concluido'
+  where id=p_planeamento_item_id returning * into v_item;
+  return v_item;
+end;$function$
+;
+ALTER FUNCTION public.fn_confirmar_custo_real_pl(uuid,numeric) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_confirmar_custo_real_pl(uuid,numeric) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_confirmar_custo_real_pl(uuid,numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_confirmar_remocao_custo_estimado_subempreitada(p_subempreitada_id uuid)
+ RETURNS planeamento_custos_componentes
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_obra_id uuid; v_row public.planeamento_custos_componentes%rowtype;
+begin
+  select obra_id into v_obra_id from public.subempreitadas where id=p_subempreitada_id for update;
+  if not found then raise exception 'Subempreitada não encontrada.'; end if;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  perform 1 from public.planeamento_custos_componentes c where c.subempreitada_id=p_subempreitada_id and c.tipo='subempreitada' for update;
+  perform 1 from public.planeamento_custos_componentes c
+  join public.planeamento_itens pi on pi.id=c.planeamento_item_id join public.fases f on f.id=pi.fase_id
+  where c.subempreitada_id=p_subempreitada_id and c.tipo='subempreitada' for share of pi,f;
+  if exists(select 1 from public.planeamento_custos_componentes c
+    left join public.planeamento_itens pi on pi.id=c.planeamento_item_id left join public.fases f on f.id=pi.fase_id
+    where c.subempreitada_id=p_subempreitada_id and c.tipo='subempreitada' and f.obra_id is distinct from v_obra_id) then
+    raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501';
+  end if;
+  if not public.fn_e_diretor_obra(v_obra_id) then raise exception 'A confirmação está reservada ao Diretor de Obra ou Gerência.' using errcode='42501'; end if;
+  update public.planeamento_custos_componentes set remocao_estimado_confirmada_em=now(),remocao_estimado_confirmada_por=public.fn_utilizador_atual_id(),
+    estado_custo=case when estado_custo='orcamentado_nao_comprometido' then 'adjudicado' else estado_custo end,atualizado_em=now()
+  where subempreitada_id=p_subempreitada_id and tipo='subempreitada' returning * into v_row;
+  if not found then raise exception 'Componente de custo da subempreitada não encontrado.'; end if; return v_row;
+end; $function$
+;
+ALTER FUNCTION public.fn_confirmar_remocao_custo_estimado_subempreitada(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_confirmar_remocao_custo_estimado_subempreitada(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_confirmar_remocao_custo_estimado_subempreitada(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_guardar_componente_custo(p_planeamento_item_id uuid, p_tipo text, p_valor_orcamentado numeric, p_estado_custo text, p_valor_real_pl numeric, p_item_orcamento_id uuid)
+ RETURNS planeamento_custos_componentes
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare v_obra_id uuid; v_item public.planeamento_itens%rowtype; v_row public.planeamento_custos_componentes%rowtype;
+begin
+  select * into v_item from public.planeamento_itens where id=p_planeamento_item_id for update;
+  if not found then raise exception 'Tarefa de planeamento não encontrada.'; end if;
+  select obra_id into v_obra_id from public.fases where id=v_item.fase_id for share;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_e_diretor_obra(v_obra_id) then raise exception 'A composição do custo só pode ser alterada pelo Diretor de Obra ou Gerência.' using errcode='42501'; end if;
+  if p_item_orcamento_id is not null then
+    perform 1 from public.itens_orcamento i join public.fases f on f.id=i.fase_id
+    where i.id=p_item_orcamento_id and f.obra_id=v_obra_id for share of i,f;
+    if not found then raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501'; end if;
+  end if;
+  if p_tipo='subempreitada' and v_item.subempreitada_id is not null then
+    perform 1 from public.subempreitadas s where s.id=v_item.subempreitada_id and s.obra_id=v_obra_id for share;
+    if not found then raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501'; end if;
+  end if;
+  if p_tipo not in ('PL','subempreitada') then raise exception 'Tipo de componente inválido.'; end if;
+  if p_estado_custo not in ('orcamentado_nao_comprometido','em_consulta','adjudicado','em_execucao','concluido','cancelado') then raise exception 'Estado de custo inválido.'; end if;
+
+  if p_item_orcamento_id is null then
+    insert into public.planeamento_custos_componentes(planeamento_item_id,especialidade_id,tipo,item_orcamento_id,subempreitada_id,valor_orcamentado,valor_real_pl,estado_custo)
+    values(v_item.id,v_item.especialidade_id,p_tipo,null,case when p_tipo='subempreitada' then v_item.subempreitada_id end,greatest(coalesce(p_valor_orcamentado,0),0),case when p_tipo='PL' then p_valor_real_pl end,p_estado_custo)
+    on conflict (planeamento_item_id,tipo) where item_orcamento_id is null
+    do update set especialidade_id=excluded.especialidade_id,subempreitada_id=excluded.subempreitada_id,
+      valor_orcamentado=excluded.valor_orcamentado,valor_real_pl=excluded.valor_real_pl,
+      estado_custo=excluded.estado_custo,atualizado_em=now() returning * into v_row;
+  else
+    insert into public.planeamento_custos_componentes(planeamento_item_id,especialidade_id,tipo,item_orcamento_id,subempreitada_id,valor_orcamentado,valor_real_pl,estado_custo)
+    values(v_item.id,v_item.especialidade_id,p_tipo,p_item_orcamento_id,case when p_tipo='subempreitada' then v_item.subempreitada_id end,greatest(coalesce(p_valor_orcamentado,0),0),case when p_tipo='PL' then p_valor_real_pl end,p_estado_custo)
+    on conflict (planeamento_item_id,tipo,item_orcamento_id) where item_orcamento_id is not null
+    do update set especialidade_id=excluded.especialidade_id,subempreitada_id=excluded.subempreitada_id,
+      valor_orcamentado=excluded.valor_orcamentado,valor_real_pl=excluded.valor_real_pl,
+      estado_custo=excluded.estado_custo,atualizado_em=now() returning * into v_row;
+  end if;
+  return v_row;
+end;
+$function$
+;
+ALTER FUNCTION public.fn_guardar_componente_custo(uuid,text,numeric,text,numeric,uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_guardar_componente_custo(uuid,text,numeric,text,numeric,uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_guardar_componente_custo(uuid,text,numeric,text,numeric,uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_eliminar_proposta_comparativo(p_proposta_id uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_mapa_id uuid;
+  v_obra_id uuid;
+  v_precos_antes integer;
+  v_ajustes_antes integer;
+  v_precos_depois integer;
+  v_ajustes_depois integer;
+begin
+  select p.mapa_id, m.obra_id
+  into v_mapa_id, v_obra_id
+  from public.comparativo_propostas p
+  join public.mapas_comparativos m on m.id = p.mapa_id
+  where p.id = p_proposta_id
+  for update of p for share of m;
+
+  if not found then
+    raise exception 'Proposta do mapa comparativo não encontrada.'
+      using errcode = 'P0002';
+  end if;
+
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_pode_editar_obra(v_obra_id) then
+    raise exception 'Sem permissão para eliminar propostas desta obra.'
+      using errcode = '42501';
+  end if;
+
+  select count(*)
+  into v_precos_antes
+  from public.comparativo_itens_precos
+  where proposta_id = p_proposta_id;
+
+  select count(*)
+  into v_ajustes_antes
+  from public.comparativo_ajustes
+  where proposta_id = p_proposta_id;
+
+  delete from public.comparativo_propostas
+  where id = p_proposta_id;
+
+  select count(*)
+  into v_precos_depois
+  from public.comparativo_itens_precos
+  where proposta_id = p_proposta_id;
+
+  select count(*)
+  into v_ajustes_depois
+  from public.comparativo_ajustes
+  where proposta_id = p_proposta_id;
+
+  if v_precos_depois <> 0 or v_ajustes_depois <> 0 then
+    raise exception
+      'A eliminação foi cancelada: existem preços ou ajustes órfãos para a proposta.';
+  end if;
+
+  perform public.fn_atualizar_melhor_preco_comparativo(v_mapa_id);
+
+  return jsonb_build_object(
+    'proposta_id', p_proposta_id,
+    'precos_eliminados', v_precos_antes,
+    'ajustes_eliminados', v_ajustes_antes,
+    'precos_restantes', v_precos_depois,
+    'ajustes_restantes', v_ajustes_depois
+  );
+end;
+$function$
+;
+ALTER FUNCTION public.fn_eliminar_proposta_comparativo(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_eliminar_proposta_comparativo(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_eliminar_proposta_comparativo(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_criar_fornecedor_comparativo(p_mapa_id uuid, p_nome text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_obra_id uuid; v_empresa_id uuid; v_nome text; v_chave text; v_fornecedor public.fornecedores; v_ja_existia boolean := false;
+begin
+  v_nome := regexp_replace(btrim(coalesce(p_nome,'')), '\s+', ' ', 'g');
+  if length(v_nome) < 2 then raise exception 'Indique o nome do fornecedor.' using errcode='23514'; end if;
+  v_chave := lower(regexp_replace(regexp_replace(v_nome,'\y(unipessoal|unip|lda|sa|ltda)\y\.?','','gi'),'[^[:alnum:]]+','','g'));
+
+  select m.obra_id,o.empresa_id into v_obra_id,v_empresa_id
+  from public.mapas_comparativos m join public.obras o on o.id=m.obra_id where m.id=p_mapa_id for share of m,o;
+  if v_obra_id is null then raise exception 'Mapa comparativo não encontrado.' using errcode='P0002'; end if;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_pode_editar_obra(v_obra_id) then
+    raise exception 'Sem permissão para criar fornecedores nesta obra.' using errcode='42501';
+  end if;
+
+  select * into v_fornecedor from public.fornecedores
+  where empresa_id=v_empresa_id
+    and lower(regexp_replace(regexp_replace(nome,'\y(unipessoal|unip|lda|sa|ltda)\y\.?','','gi'),'[^[:alnum:]]+','','g'))=v_chave
+  order by id limit 1;
+  if found then
+    v_ja_existia := true;
+  else
+    insert into public.fornecedores(empresa_id,nome,tipo_entidade,estado_confianca)
+    values(v_empresa_id,v_nome,'subempreiteiro','nao_avaliado') returning * into v_fornecedor;
+  end if;
+
+  return jsonb_build_object('id',v_fornecedor.id,'nome',v_fornecedor.nome,
+    'tipo_entidade',v_fornecedor.tipo_entidade,'estado_confianca',v_fornecedor.estado_confianca,
+    'ja_existia',v_ja_existia);
+end $function$
+;
+ALTER FUNCTION public.fn_criar_fornecedor_comparativo(uuid,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_criar_fornecedor_comparativo(uuid,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_criar_fornecedor_comparativo(uuid,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_importar_proposta_comparativo(p_mapa_id uuid, p_fornecedor_id uuid, p_dados jsonb, p_linhas jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_obra_id uuid; v_empresa_id uuid; v_proposta_id uuid; v_linha jsonb; v_item_id uuid;
+  v_numero text; v_quantidade numeric; v_unitario numeric; v_total_original numeric;
+  v_criados integer := 0; v_existente integer;
+begin
+  select m.obra_id,o.empresa_id into v_obra_id,v_empresa_id
+  from public.mapas_comparativos m join public.obras o on o.id=m.obra_id where m.id=p_mapa_id for share of m,o;
+  if v_obra_id is null then raise exception 'Mapa comparativo não encontrado.' using errcode='P0002'; end if;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_pode_editar_obra(v_obra_id) then raise exception 'Sem permissão para importar nesta obra.' using errcode='42501'; end if;
+  perform 1 from public.fornecedores where id=p_fornecedor_id and empresa_id=v_empresa_id for share;
+  if not found then
+    raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501';
+  end if;
+  if jsonb_typeof(coalesce(p_linhas,'[]'::jsonb)) <> 'array' or jsonb_array_length(coalesce(p_linhas,'[]'::jsonb))=0 then
+    raise exception 'Selecione pelo menos uma linha da proposta.' using errcode='23514';
+  end if;
+  select count(*) into v_existente from public.comparativo_propostas where mapa_id=p_mapa_id and fornecedor_id=p_fornecedor_id;
+  if v_existente>0 then raise exception 'Este fornecedor já tem uma proposta neste mapa. Edite a proposta existente.' using errcode='23505'; end if;
+
+  insert into public.comparativo_propostas(
+    mapa_id,fornecedor_id,data_proposta,prazo_validade,condicoes_pagamento,exclusoes_ambito,
+    fornecedor_nome_extraido,referencia_proposta,total_original,documento_url,documento_nome,extracao_dados,
+    estado_revisao,prazo_entrega,prazo_montagem,garantia,validade_dias,outras_informacoes
+  ) values (
+    p_mapa_id,p_fornecedor_id,nullif(p_dados->>'proposalDate','')::date,nullif(p_dados->>'validityDate','')::date,
+    nullif(p_dados->>'paymentTerms',''),nullif(p_dados->>'exclusions',''),nullif(p_dados->>'supplierName',''),
+    nullif(p_dados->>'reference',''),nullif(p_dados->>'officialTotal','')::numeric,nullif(p_dados->>'documentPath',''),nullif(p_dados->>'documentName',''),
+    coalesce(p_dados,'{}'::jsonb) - 'fullText' - 'lines','revisto',nullif(p_dados->>'deliveryTerms',''),
+    nullif(p_dados->>'assemblyTerms',''),nullif(p_dados->>'warranty',''),nullif(p_dados->>'validityDays','')::integer,
+    nullif(p_dados->>'reviewNotes','')
+  ) returning id into v_proposta_id;
+
+  for v_linha in select value from jsonb_array_elements(p_linhas) loop
+    v_item_id := nullif(v_linha->>'itemId','')::uuid;
+    if v_item_id is not null then
+      perform 1 from public.comparativo_itens where id=v_item_id and mapa_id=p_mapa_id for share;
+      if not found then raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501'; end if;
+    end if;
+    v_quantidade := greatest(coalesce(nullif(v_linha->>'normalizedQuantity','')::numeric,1),0.0001);
+    v_total_original := nullif(v_linha->>'originalTotal','')::numeric;
+    v_unitario := nullif(v_linha->>'unitPrice','')::numeric;
+    if v_unitario is null and v_total_original is not null then v_unitario := round(v_total_original/v_quantidade,4); end if;
+    if v_unitario is null or v_unitario<0 then raise exception 'Todas as linhas selecionadas precisam de valor.' using errcode='23514'; end if;
+
+    if v_item_id is null then
+      v_numero := nullif(btrim(v_linha->>'number'),'');
+      if v_numero is null then
+        select 'PDF-'||(count(*)+1)::text into v_numero from public.comparativo_itens where mapa_id=p_mapa_id;
+      end if;
+      while exists(select 1 from public.comparativo_itens where mapa_id=p_mapa_id and numero=v_numero) loop
+        v_numero := v_numero||'-'||(v_criados+1)::text;
+      end loop;
+      insert into public.comparativo_itens(mapa_id,numero,designacao,unidade,quantidade)
+      values(p_mapa_id,v_numero,coalesce(nullif(btrim(v_linha->>'normalizedDescription'),''),'Item importado'),
+        coalesce(nullif(btrim(v_linha->>'unit'),''),'un'),v_quantidade) returning id into v_item_id;
+    end if;
+
+    insert into public.comparativo_itens_precos(
+      item_id,proposta_id,preco_unitario,observacoes,descricao_original,quantidade_original,
+      unidade_original,preco_total_original,estado_ambito,comparavel,origem_pagina,confianca_extracao
+    ) values (
+      v_item_id,v_proposta_id,v_unitario,nullif(v_linha->>'notes',''),nullif(v_linha->>'originalDescription',''),
+      nullif(v_linha->>'originalQuantity','')::numeric,nullif(v_linha->>'originalUnit',''),v_total_original,
+      coalesce(nullif(v_linha->>'scopeStatus',''),'incluido'),coalesce((v_linha->>'comparable')::boolean,false),
+      nullif(v_linha->>'sourcePage','')::integer,nullif(v_linha->>'confidence','')::numeric
+    );
+    v_criados := v_criados+1;
+  end loop;
+
+  return jsonb_build_object('proposta_id',v_proposta_id,'linhas_criadas',v_criados);
+end $function$
+;
+ALTER FUNCTION public.fn_importar_proposta_comparativo(uuid,uuid,jsonb,jsonb) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_importar_proposta_comparativo(uuid,uuid,jsonb,jsonb) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_importar_proposta_comparativo(uuid,uuid,jsonb,jsonb) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_criar_subempreitada_do_comparativo(p_mapa_id uuid, p_proposta_id uuid, p_fase_id uuid, p_data_inicio_prevista date, p_data_fim_prevista date, p_condicao_pagamento text DEFAULT NULL::text)
+ RETURNS subempreitadas
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  v_mapa public.mapas_comparativos;
+  v_proposta public.comparativo_propostas;
+  v_sub public.subempreitadas;
+begin
+  select *
+  into v_mapa
+  from public.mapas_comparativos
+  where id = p_mapa_id
+  for update;
+
+  if not found then
+    raise exception 'Mapa comparativo não encontrado.';
+  end if;
+
+  perform public.fn_financeiro_autorizar_obra(v_mapa.obra_id,false);
+  if not public.fn_pode_editar_obra(v_mapa.obra_id) then
+    raise exception 'Sem permissão para adjudicar nesta obra.'
+      using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1
+    from public.subempreitadas
+    where mapa_comparativo_id = p_mapa_id
+  ) then
+    raise exception 'Este mapa já originou uma subempreitada.'
+      using errcode = '23505';
+  end if;
+
+  if v_mapa.valor_adjudicado_real is null then
+    raise exception
+      'Preencha o Valor Adjudicado Real antes de criar a subempreitada.'
+      using errcode = '23514';
+  end if;
+
+  select *
+  into v_proposta
+  from public.comparativo_propostas
+  where id = p_proposta_id
+    and mapa_id = p_mapa_id for share;
+
+  if not found then
+    raise exception 'A proposta não pertence a este mapa.'
+      using errcode = '23514';
+  end if;
+
+  perform 1 from public.fornecedores s join public.obras o on o.id=v_mapa.obra_id
+  where s.id=v_proposta.fornecedor_id and s.empresa_id=o.empresa_id for share of s;
+  if not found then raise exception 'FORBIDDEN: recurso relacionado indisponível.' using errcode='42501'; end if;
+
+  perform 1 from public.fases where id=p_fase_id and obra_id=v_mapa.obra_id for share;
+  if not found then
+    raise exception 'A fase não pertence a esta obra.'
+      using errcode = '23514';
+  end if;
+
+  insert into public.subempreitadas (
+    obra_id,
+    fase_id,
+    fornecedor_id,
+    especialidade,
+    valor_adjudicado,
+    estado,
+    data_inicio_prevista,
+    data_fim_prevista,
+    condicao_pagamento,
+    mapa_comparativo_id
+  )
+  values (
+    v_mapa.obra_id,
+    p_fase_id,
+    v_proposta.fornecedor_id,
+    v_mapa.especialidade,
+    v_mapa.valor_adjudicado_real,
+    'em_execucao',
+    p_data_inicio_prevista,
+    p_data_fim_prevista,
+    p_condicao_pagamento,
+    p_mapa_id
+  )
+  returning * into v_sub;
+
+  return v_sub;
+end;
+$function$
+;
+ALTER FUNCTION public.fn_criar_subempreitada_do_comparativo(uuid,uuid,uuid,date,date,text) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_criar_subempreitada_do_comparativo(uuid,uuid,uuid,date,date,text) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_criar_subempreitada_do_comparativo(uuid,uuid,uuid,date,date,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_guardar_lancamento_gestao_obras(p_id uuid, p_obra_id uuid, p_categoria text, p_data_lancamento date, p_entidade_nome text, p_descricao text, p_documento text, p_unidade_medida text, p_quantidade numeric, p_valor_unitario numeric, p_data_pagamento date, p_valor numeric)
+ RETURNS gestao_obras_lancamentos
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare
+  row_out public.gestao_obras_lancamentos;
+begin
+  if p_id is not null then
+    select * into row_out from public.gestao_obras_lancamentos where id=p_id for update;
+    if not found then raise exception 'Lançamento não encontrado.' using errcode='P0002'; end if;
+  perform public.fn_financeiro_autorizar_obra(row_out.obra_id,false);
+  end if;
+  perform public.fn_financeiro_autorizar_obra(p_obra_id,false);
+  if not public.fn_pode_editar_mapa_gestao_obras() then
+    raise exception
+      'Só o Administrativo e a Gestão da Plataforma podem alterar lançamentos.'
+      using errcode='42501';
+  end if;
+
+  if p_categoria not in ('materiais','mao_obra','estaleiro') then
+    raise exception 'Categoria não editável neste ecrã.';
+  end if;
+
+  if not exists(select 1 from public.obras where id=p_obra_id) then
+    raise exception 'Obra não encontrada.';
+  end if;
+
+  if p_quantidade is not null and p_quantidade<0 then
+    raise exception 'A quantidade não pode ser negativa.';
+  end if;
+
+  if p_valor_unitario is not null and p_valor_unitario<0 then
+    raise exception 'O valor unitário não pode ser negativo.';
+  end if;
+
+  if p_id is null then
+    insert into public.gestao_obras_lancamentos(
+      obra_id,
+      categoria,
+      data_lancamento,
+      entidade_nome,
+      descricao,
+      documento,
+      unidade_medida,
+      quantidade,
+      valor_unitario,
+      data_pagamento,
+      valor
+    )
+    values(
+      p_obra_id,
+      p_categoria,
+      p_data_lancamento,
+      btrim(p_entidade_nome),
+      btrim(p_descricao),
+      nullif(btrim(p_documento),''),
+      nullif(btrim(p_unidade_medida),''),
+      p_quantidade,
+      p_valor_unitario,
+      p_data_pagamento,
+      greatest(coalesce(p_valor,0),0)
+    )
+    returning * into row_out;
+  else
+    update public.gestao_obras_lancamentos
+    set
+      obra_id=p_obra_id,
+      categoria=p_categoria,
+      data_lancamento=p_data_lancamento,
+      entidade_nome=btrim(p_entidade_nome),
+      descricao=btrim(p_descricao),
+      documento=nullif(btrim(p_documento),''),
+      unidade_medida=nullif(btrim(p_unidade_medida),''),
+      quantidade=p_quantidade,
+      valor_unitario=p_valor_unitario,
+      data_pagamento=p_data_pagamento,
+      valor=greatest(coalesce(p_valor,0),0),
+      atualizado_por=public.fn_utilizador_atual_id(),
+      atualizado_em=now()
+    where id=p_id
+    returning * into row_out;
+
+    if not found then
+      raise exception 'Lançamento não encontrado.';
+    end if;
+  end if;
+
+  return row_out;
+end $function$
+;
+ALTER FUNCTION public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_guardar_lancamento_gestao_obras(uuid,uuid,text,date,text,text,text,text,numeric,numeric,date,numeric) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.fn_apagar_lancamento_gestao_obras(p_id uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'pg_temp'
+AS $function$
+declare deleted_id uuid; v_obra_id uuid;
+begin
+  select obra_id into v_obra_id from public.gestao_obras_lancamentos where id=p_id for update;
+  if not found then raise exception 'Lançamento não encontrado.' using errcode='P0002'; end if;
+  perform public.fn_financeiro_autorizar_obra(v_obra_id,false);
+  if not public.fn_pode_editar_mapa_gestao_obras() then raise exception 'Sem permissão para apagar este lançamento.' using errcode='42501'; end if;
+  delete from public.gestao_obras_lancamentos where id=p_id returning id into deleted_id;
+  if deleted_id is null then raise exception 'Lançamento não encontrado.'; end if;
+  return deleted_id;
+end $function$
+;
+ALTER FUNCTION public.fn_apagar_lancamento_gestao_obras(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.fn_apagar_lancamento_gestao_obras(uuid) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_apagar_lancamento_gestao_obras(uuid) TO authenticated;
+
 CREATE TABLE primeline_encarregado_20261004.instalacao(singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton), catalogo jsonb NOT NULL);
 ALTER TABLE primeline_encarregado_20261004.instalacao ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE primeline_encarregado_20261004.instalacao FROM PUBLIC,anon,authenticated,service_role;
