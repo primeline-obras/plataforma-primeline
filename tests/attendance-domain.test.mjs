@@ -1,8 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {analyseSheet,intervalFacts,exactAllocations,normalIntervals,correctionAllowed,vacationSelection,overtimeTransition,payrollFacts,payrollTransition,activePlanningTasks,activeOn,localClock} from '../src/attendance-domain.js';
+import {analyseSheet,intervalFacts,exactAllocations,normalIntervals,correctionAllowed,vacationSelection,overtimeTransition,payrollFacts,payrollTransition,activePlanningTasks,activeOn,localClock,daySummary} from '../src/attendance-domain.js';
 import {createSheetClient} from '../src/attendance-client.js';
 const day='2026-10-05', full=[{start:'09:00',end:'13:00'},{start:'14:00',end:'18:00'}];
+test('resumo deriva pendências/abertos, ausência válida e DIA COMPLETO sem fecho',()=>{
+ const rows=[{sheet:{intervals:full},expected_minutes:480},{absence:{tipo:'ferias'}},{absence:{tipo:'ausencia'}}];
+ assert.deepEqual(daySummary(rows),{people:3,registered:1,open:0,pending:0,complete:true});
+ assert.equal(daySummary([...rows,{sheet:null}]).complete,false);
+ assert.equal(daySummary([{sheet:{intervals:[{start:'09:00',end:null}]}}]).open,1);
+ assert.equal(daySummary([{absence:{tipo:'ferias'},conflict:'LEGACY_CONFLICT'}]).pending,1);
+});
+test('HE compara carga configurada também em jornadas parciais',()=>{
+ assert.equal(analyseSheet({sheet:{intervals:[{start:'09:00',end:'13:00'}]},expectedMinutes:240}).overtime,'none');
+ assert.equal(analyseSheet({sheet:{intervals:[{start:'09:00',end:'14:00'}]},expectedMinutes:240}).overtime,'potential');
+});
 test('sem folha não inventa presença nem horas',()=>assert.equal(analyseSheet({}).state,'none'));
 test('entrada sem saída fica em aberto; sem hora de saída inventada',()=>{const r=analyseSheet({sheet:{intervals:[{start:'08:00',end:null}]},expectedMinutes:480});assert.equal(r.state,'open');assert.equal(r.minutes,0);});
 test('8h deslocadas são normais, não HE',()=>{const r=analyseSheet({sheet:{intervals:full},expectedMinutes:480});assert.equal(r.state,'registered');assert.equal(r.overtime,'none');});
@@ -12,9 +23,9 @@ test('intervalos negativos, inválidos e sobrepostos são recusados',()=>{for(co
 test('horas em falta, férias e ausência/trabalho não são corrigidos silenciosamente',()=>{assert.equal(analyseSheet({sheet:{intervals:[{start:'08:00',end:'12:00'}]},expectedMinutes:480}).state,'missing');const vacation=analyseSheet({absence:{tipo:'ferias'},expectedMinutes:480});assert.equal(vacation.expectedMinutes,0);assert.equal(vacation.overtime,'none');assert.equal(analyseSheet({absence:{tipo:'ferias'},sheet:{intervals:full}}).state,'regularization');assert.equal(analyseSheet({absence:{tipo:'ausencia'}}).state,'absence');});
 test('sem horário esperado não inventa horas em falta nem folha válida',()=>assert.equal(analyseSheet({sheet:{intervals:full}}).state,'regularization'));
 test('mais de 8h de obra são potencial HE; escritório e dia especial não têm regra automática',()=>{const sheet={intervals:[{start:'08:00',end:'18:00'}]};assert.equal(analyseSheet({sheet,expectedMinutes:480}).overtime,'potential');assert.equal(analyseSheet({sheet,workType:'escritorio'}).overtime,'none');assert.equal(analyseSheet({sheet,specialDay:true}).overtime,'pending_rule');});
-test('correção é parametrizada; nenhum dia seguinte assumido',()=>{assert.equal(correctionAllowed({role:'encarregado',date:day,today:day}),false);assert.equal(correctionAllowed({role:'encarregado',date:day,today:'2026-10-06',days:1}),true);assert.equal(correctionAllowed({role:'encarregado',date:day,today:'2026-10-07',days:1}),false);assert.equal(correctionAllowed({role:'administrativo',date:day,today:'2026-10-07'}),true);});
+test('correção é parametrizada; nenhum dia seguinte assumido',()=>{assert.equal(correctionAllowed({role:'encarregado',date:day,today:day}),true);assert.equal(correctionAllowed({role:'encarregado',date:day,today:'2026-10-06',days:1}),true);assert.equal(correctionAllowed({role:'encarregado',date:day,today:'2026-10-07',days:1}),false);assert.equal(correctionAllowed({role:'administrativo',date:day,today:'2026-10-07'}),true);});
 test('alocação exata não herda dia anterior; histórico de inativo permanece datado',()=>{assert.deepEqual(exactAllocations([{colaborador_id:'p',data:'2026-10-04'}],'p',day),[]);assert.equal(activeOn({data_admissao:'2026-01-01',data_saida:'2026-09-30'},'2026-09-25'),true);assert.equal(activeOn({data_admissao:'2026-01-01',data_saida:'2026-09-30'},day),false);});
-test('férias suportam seleção não contígua, intervalos e remoção, sem consumir dia especial por inferência',()=>{const r=vacationSelection({selected:['2026-10-05','2026-10-07'],from:'2026-10-09',to:'2026-10-11',remove:['2026-10-10']});assert.deepEqual(r.dates,['2026-10-05','2026-10-07','2026-10-09','2026-10-11']);assert.equal(r.pendingRule,true);assert.equal(r.consumedDays,null);assert.equal(vacationSelection({selected:[day]}).consumedDays,1);});
+test('férias suportam seleção não contígua, intervalos e remoção, sem consumir dia especial por inferência',()=>{const r=vacationSelection({selected:['2026-10-05','2026-10-07'],from:'2026-10-09',to:'2026-10-11',remove:['2026-10-10']});assert.deepEqual(r.dates,['2026-10-05','2026-10-07','2026-10-09','2026-10-11']);assert.equal(r.pendingRule,true);assert.equal(r.consumedDays,null);assert.equal(vacationSelection({selected:[day],calendarVerified:true}).consumedDays,1);});
 test('HE segue Diretor/Adjunto → Administrativo, sem pagamento implícito',()=>{for(const role of ['diretor_obra','adjunto'])assert.equal(overtimeTransition('potential','approve',role),'pending_validation');assert.equal(overtimeTransition('potential','reject','diretor_obra'),'rejected');assert.equal(overtimeTransition('pending_validation','validate','administrativo'),'validated_pending_rule');assert.throws(()=>overtimeTransition('potential','approve','encarregado'));});
 test('vencimentos agregam factos e exigem regra/modelo para fechar e exportar',()=>{assert.equal(payrollFacts([{date:day,intervals:full}]).workedMinutes,480);assert.equal(payrollFacts().financialEffect,false);assert.equal(payrollTransition('draft','validate',{canAdmin:true}),'validated');assert.throws(()=>payrollTransition('validated','close',{canAdmin:true,unresolved:1}));assert.throws(()=>payrollTransition('closed','export',{canAdmin:true}));});
 test('conclusão final vem do Planeamento, não de 100% isoladamente',()=>assert.deepEqual(activePlanningTasks([{id:'a',estado:'concluido'},{id:'b',estado:'em_execucao',percentual_executado:100},{id:'c',arquivado_em:day}]).map(x=>x.id),['b']));

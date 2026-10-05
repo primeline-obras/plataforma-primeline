@@ -12,7 +12,7 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
   }
   async function context(date,workId=null) {
     const j=await rpc(FOLHA_RPCS.context,{p_data:date,p_obra_id:workId});
-    if(j?.version!==2 || !Array.isArray(j.works) || !Array.isArray(j.rows) || !Array.isArray(j.external_rows) || !j.permissions || j.date!==date || (workId && j.work_id!==workId))throw new Error('Resposta da Folha inválida.');
+    if(j?.version!==2 || !Array.isArray(j.works) || !Array.isArray(j.rows) || !Array.isArray(j.external_rows) || !j.permissions || ['write','external_write','allocation_write'].some(k=>typeof j.permissions[k]!=='boolean') || j.date!==date || (workId && j.work_id!==workId))throw new Error('Resposta da Folha inválida.');
     return j;
   }
   async function operate(action,data) {
@@ -26,7 +26,7 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
       if(preview?.version!==2 || preview.committed!==false || typeof preview.versao!=='string' || !preview.versao)throw new Error('Pré-visualização inválida.');
       if(!await confirm(preview.summary || 'Confirmar esta alteração?')) {pending=null;return null;}
       const result=await rpc(FOLHA_RPCS.operate,{p_acao:action,p_dados:body,p_confirmar:true,p_versao:preview.versao});
-      const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.items?.map(x=>x.key.person_id);
+      const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.external_id?[data.external_id]:data.items?.map(x=>x.key.person_id);
       const validKeys=Array.isArray(result?.changed_keys) && result.changed_keys.length>0 && result.changed_keys.every(k=>
         k && ['primeline','external'].includes(k.kind) && typeof k.person_id==='string' && k.person_id &&
         k.date===data.date && [data.work_id,data.source_work_id].filter(Boolean).includes(k.work_id) &&
@@ -47,4 +47,25 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
     const j=await rpc(FOLHA_RPCS.history,{p_chave:key});
     if(j?.version!==2 || !Array.isArray(j.events))throw new Error('Histórico inválido.');return j.events;
   }};
+}
+export function createAttendanceManagementClient({supabase,confirm,requestId=()=>crypto.randomUUID()}) {
+  let pending=null,busy=false;
+  async function call(name,body){const r=await supabase(`rpc/${name}`,{method:'POST',body:JSON.stringify(body)});const j=await r.json().catch(()=>null);if(!r.ok){const e=new Error(r.status===404?'A gestão da Folha ainda não está disponível.':j?.message||'Operação recusada.');e.code=j?.code||String(r.status);throw e;}return j;}
+  return {
+    context:async({workId=null,personId=null,month=null}={})=>{const j=await call('fn_folha_gestao_contexto_v2',{p_obra_id:workId,p_colaborador_id:personId,p_competencia:month});if(j?.version!==2||!Array.isArray(j.vacations)||!Number.isInteger(j.vacation_revision))throw new Error('Contexto administrativo inválido.');return j;},
+    execute:async(action,data)=>{
+      if(busy)throw new Error('Aguarde a operação em curso.');busy=true;
+      const fingerprint=JSON.stringify({action,data});if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};
+      const body={...data,version:2,request_id:pending.id};
+      try{
+        const p=await call('fn_folha_gestao_v2',{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
+        if(p?.version!==2||p.committed!==false||typeof p.versao!=='string'||!p.versao)throw new Error('Pré-visualização inválida.');
+        const message=action==='vacation_replace'?`Confirmar os ${data.dates.length} dias de férias selecionados? Os dias desmarcados deste período serão retirados.`:'Confirmar esta alteração?';
+        if(!await confirm(message)){pending=null;return null;}
+        const r=await call('fn_folha_gestao_v2',{p_acao:action,p_dados:body,p_confirmar:true,p_versao:p.versao});
+        if(r?.version!==2||r.committed!==true||r.request_id!==body.request_id||r.revision!==data.expected_revision+1)throw new Error('Gravação não confirmada. Recarregue antes de repetir.');
+        pending=null;return r;
+      }catch(e){if(['40001','42501','STALE_REVISION'].includes(e.code))pending=null;throw e;}finally{busy=false;}
+    }
+  };
 }

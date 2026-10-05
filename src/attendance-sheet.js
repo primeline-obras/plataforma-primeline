@@ -1,5 +1,5 @@
-import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals } from './attendance-domain.js?v=1';
-import { createSheetClient } from './attendance-client.js?v=1';
+import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary } from './attendance-domain.js?v=2';
+import { createSheetClient } from './attendance-client.js?v=2';
 import { platformConfirm } from './platform-dialogs.js?v=1';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:'CONFIRMAR'})}) {
@@ -7,16 +7,18 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
   const state={date:localClock(now()).date,workId:null,context:null,loading:false,error:'',editor:null,candidates:null,busy:false,history:null};
   let epoch=0;
   function key(row,external=false) {return {kind:external?'external':'primeline',person_id:row.person_id,work_id:state.workId,date:state.date};}
-  function facts(row){return analyseSheet({sheet:row.sheet,absence:row.absence,expectedMinutes:row.expected_minutes,workType:'obra',specialDay:state.context.special_day});}
+  function facts(row){const f=analyseSheet({sheet:row.sheet,absence:row.absence,expectedMinutes:row.expected_minutes,workType:'obra',specialDay:state.context.special_day});return row.conflict?{...f,state:'regularization'}:f;}
   function rowHtml(row,external=false) {
     const f=facts(row), can=state.context.permissions.write===true && row.can_write===true;
-    return `<article class="sheet-person"><div><strong>${esc(row.name)}</strong><span>${esc(external?row.provider_name:row.role)}</span><b>${SHEET_STATES[f.state]}</b>${f.overtime!=='none'?'<em>'+({potential:'Potencial HE',pending_rule:'Dia especial · regra pendente',pending_validation:'Regularização pendente'}[f.overtime]||'Pendente')+'</em>':''}</div><div class="sheet-actions">${can?`<button data-sheet-edit="${esc(row.person_id)}" data-external="${external}">${row.sheet?'EDITAR':'REGISTAR'}</button>`:''}<button data-sheet-history="${esc(row.person_id)}" data-external="${external}">HISTÓRICO</button></div></article>`;
+    if(row.overtime?.estado)f.overtime=row.overtime.estado;
+    return `<article class="sheet-person"><div><strong>${esc(row.name)}</strong><span>${esc(external?row.provider_name:row.role)}</span><b>${SHEET_STATES[f.state]}</b>${f.overtime!=='none'?'<em>'+({potential:'Potencial HE',pending_rule:'Dia especial · regra pendente',pending_validation:'HE · validação administrativa pendente',rejected:'HE rejeitada',validated_pending_rule:'HE validada · regra financeira pendente'}[f.overtime]||'Pendente')+'</em>':''}</div><div class="sheet-actions">${can?`<button data-sheet-edit="${esc(row.person_id)}" data-external="${external}">${row.sheet?'EDITAR':'REGISTAR'}</button>`:''}${can&&!external?`<button data-sheet-remove="${esc(row.person_id)}">RETIRAR DA EQUIPA DE HOJE</button>`:""}<button data-sheet-history="${esc(row.person_id)}" data-external="${external}">HISTÓRICO</button></div></article>`;
   }
   function render() {
     const c=state.context;
+    const summary=c?daySummary([...c.rows,...c.external_rows],{specialDay:c.special_day}):null;
     root.innerHTML=`<div class="sheet-v2"><div class="sheet-toolbar"><label>OBRA<select data-sheet-work><option value="">Selecionar obra</option>${(c?.works||[]).map(w=>`<option value="${esc(w.id)}" ${w.id===state.workId?'selected':''}>Obra ${esc(w.number)} · ${esc(w.name)}</option>`).join('')}</select></label><label>DATA<input data-sheet-date type="date" value="${state.date}"></label><button data-sheet-refresh>ATUALIZAR</button></div>
     <p role="status">${state.loading?'A carregar…':esc(state.error)}</p>
-    ${c && state.workId?`<h3>PESSOAL PRIMELINE</h3>${c.permissions.write?`<div class="sheet-actions"><button data-sheet-add>+ ADICIONAR PESSOA À OBRA</button><button data-sheet-bulk="start" ${!c.schedule?'disabled':''}>MARCAR EQUIPA PRESENTE</button><button data-sheet-bulk="finish" ${!c.schedule?'disabled':''}>COMPLETAR EQUIPA</button></div>`:''}<div class="sheet-list">${c.rows.map(r=>rowHtml(r)).join('')||'<p>Sem pessoas alocadas neste dia.</p>'}</div><h3>MÃO DE OBRA EXTERNA</h3><div class="sheet-list">${c.external_rows.map(r=>rowHtml(r,true)).join('')||'<p>Sem registos externos neste dia.</p>'}</div>${c.permissions.external_write?'<button data-sheet-add-external>+ REGISTAR TRABALHADOR EXTERNO</button>':''}`:''}
+    ${c && state.workId?`<p class="sheet-summary" data-sheet-summary>${summary.people} pessoas · ${summary.registered} registadas · ${summary.open} em aberto · ${summary.pending} pendentes${summary.complete ? " · DIA COMPLETO ✓" : ""}</p>${c.overtime_generation==="disabled_pending_compatibility"?"<p>Geração automática de HE desativada até validar calendário e compatibilidade com lançamentos manuais.</p>":""}<h3>PESSOAL PRIMELINE</h3>${c.permissions.write?`<div class="sheet-actions">${c.permissions.allocation_write===true?"<button data-sheet-add>+ ADICIONAR PESSOA À OBRA</button>":""}<button data-sheet-bulk="start" ${!c.schedule?'disabled':''}>MARCAR EQUIPA PRESENTE</button><button data-sheet-bulk="finish" ${!c.schedule?'disabled':''}>COMPLETAR EQUIPA</button></div>`:''}<div class="sheet-list">${c.rows.map(r=>rowHtml(r)).join('')||'<p>Sem pessoas alocadas neste dia.</p>'}</div><h3>MÃO DE OBRA EXTERNA</h3><div class="sheet-list">${c.external_rows.map(r=>rowHtml(r,true)).join('')||'<p>Sem registos externos neste dia.</p>'}</div>${c.permissions.external_write?'<button data-sheet-add-external>+ REGISTAR TRABALHADOR EXTERNO</button>':''}`:''}
     <div data-sheet-detail></div></div>`;
     root.querySelectorAll('button,input,select').forEach(e=>{if(state.busy)e.disabled=true;});
   }
@@ -37,7 +39,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
     state.editor={row,external};
     const intervals=row.sheet?.intervals||[];
     const slots=Array.from({length:Math.max(2,intervals.length)},(_,i)=>intervals[i]||{});
-    root.querySelector('[data-sheet-detail]').innerHTML=`<form data-sheet-form><h3>${esc(row.name)}</h3><p>Registe apenas as horas já realizadas. Deixe a saída vazia enquanto estiver a trabalhar.</p>${row.absence?'<p>Existe uma ausência neste dia. O trabalho registado será enviado para regularização.</p>':''}<div class="sheet-intervals">${slots.map((x,i)=>`<label>ENTRADA ${i+1}<input type="time" name="start${i}" value="${esc(x.start)}"></label><label>SAÍDA ${i+1}<input type="time" name="end${i}" value="${esc(x.end)}"></label>`).join('')}</div><label>OBSERVAÇÃO OPERACIONAL<textarea name="note" maxlength="1000">${esc(row.sheet?.note||'')}</textarea></label>${row.sheet?'<label>MOTIVO DA CORREÇÃO<input name="reason" required maxlength="1000"></label>':''}<button type="submit">GUARDAR</button><p role="alert" data-sheet-error></p></form>`;
+    root.querySelector('[data-sheet-detail]').innerHTML=`<form data-sheet-form><h3>${esc(row.name)}</h3><p>Registe apenas as horas já realizadas. Deixe a saída vazia enquanto estiver a trabalhar.</p>${row.absence?'<p>Existe uma ausência neste dia. O trabalho registado será enviado para regularização.</p>':''}<div class="sheet-intervals">${slots.map((x,i)=>`<label>ENTRADA ${i+1}<input type="time" name="start${i}" value="${esc(x.start)}"></label><label>SAÍDA ${i+1}<input type="time" name="end${i}" value="${esc(x.end)}"></label>`).join('')}</div><label>OBSERVAÇÃO OPERACIONAL<textarea name="note" maxlength="1000">${esc(row.sheet?.note||'')}</textarea></label>${row.sheet?'<label>MOTIVO DA CORREÇÃO (OPCIONAL)<input name="reason" maxlength="1000"></label>':''}<button type="submit">GUARDAR</button><p role="alert" data-sheet-error></p></form>`;
   }
   async function write(action,data) {
     if(state.busy)return;
@@ -52,6 +54,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
     finally{state.busy=false;controls.forEach(([e,disabled])=>{if(e.isConnected)e.disabled=disabled;});if(!state.editor&&!state.loading)render();}
   }
   root.addEventListener('change',e=>{
+    if(e.target.matches('[name=external_id]')){const f=e.target.form,p=state.context.external_people?.find(x=>x.id===e.target.value);f.elements.name.value=p?.name||'';if(p)f.elements.provider_id.value=p.provider_id;f.elements.name.readOnly=!!p;}
     if(e.target.matches('[data-sheet-date]')){state.date=e.target.value;load();}
     if(e.target.matches('[data-sheet-work]')){state.workId=e.target.value||null;load();}
   });
@@ -59,7 +62,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
     if(e.target.matches('[data-sheet-external-form]')){
       e.preventDefault();const f=e.target;
       if(!state.context.permissions.external_write||!state.context.providers?.some(p=>p.id===f.elements.provider_id.value))return;
-      return write('external_register',{provider_id:f.elements.provider_id.value,name:f.elements.name.value.trim(),note:f.elements.note.value.trim()});
+      return write('external_register',{external_id:f.elements.external_id.value||null,provider_id:f.elements.provider_id.value,name:f.elements.name.value.trim(),note:f.elements.note.value.trim()});
     }
     if(!e.target.matches('[data-sheet-form]'))return;e.preventDefault();
     const {row,external}=state.editor, form=e.target;
@@ -73,20 +76,22 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
     try {
       if(b.hasAttribute('data-sheet-refresh'))return load();
       if(b.dataset.sheetEdit){const row=find(b.dataset.sheetEdit,b.dataset.external==='true');if(!row?.can_write||!state.context.permissions.write)return;return openEditor(row,b.dataset.external==='true');}
+      if(b.dataset.sheetRemove){const row=find(b.dataset.sheetRemove,false);if(!row?.can_write)return;if(row.sheet||row.absence||row.conflict)throw new Error("Regularize a Folha, ausência ou conflito antes de retirar esta pessoa.");return write("remove_from_day",{person_id:row.person_id,expected_allocation_revision:row.allocation_revision,ids:row.allocation_ids});}
       if(b.dataset.sheetHistory){const row=find(b.dataset.sheetHistory,b.dataset.external==='true'),token=epoch;const events=await client.history(key(row,b.dataset.external==='true'));if(token!==epoch)return;root.querySelector('[data-sheet-detail]').innerHTML=`<h3>HISTÓRICO</h3>${events.map(x=>`<p>${esc(x.at)} · ${esc(x.action)} · ${esc(x.reason)}</p>`).join('')||'<p>Sem alterações registadas.</p>'}`;return;}
       if(b.dataset.sheetBulk){
-        const action=b.dataset.sheetBulk;
+        const action=b.dataset.sheetBulk,clock=localClock(now());
+        if(state.date!==clock.date)throw new Error('Use a ação coletiva apenas no próprio dia; trate datas anteriores individualmente.');
         const rows=state.context.rows.filter(r=>r.can_write&&!r.absence&&(action==='start'?!r.sheet:facts(r).open));
         if(!rows.length)return toast('Não existem pessoas elegíveis para esta ação.');
         const items=rows.map(row=>{
           let intervals;
           if(action==='start')intervals=[{start:localClock(now()).time,end:null}];
-          else{const normal=normalIntervals(state.context.schedule,row.period||'dia_inteiro');intervals=(row.sheet.intervals||[]).map(x=>{if(x.end)return {...x};const slot=normal.find(s=>x.start>=s.start&&x.start<s.end);if(!slot)throw new Error('Complete individualmente as entradas fora do horário normal.');return {...x,end:slot.end};});}
+          else intervals=(row.sheet.intervals||[]).map(x=>({...x,end:x.end||clock.time}));
           if(action==='start'&&state.date!==localClock(now()).date)throw new Error('Marque a chegada coletiva apenas no próprio dia.');
           intervalFacts(intervals,{date:state.date,now:localClock(now())});
           return {key:key(row),expected_revision:row.revision,intervals};
         });
-        return write('bulk',{items});
+        return write('bulk',{items,operation:action,effective_time:clock.time});
       }
       if(b.hasAttribute('data-sheet-add')){
         const token=epoch;const people=await client.candidates(state.date,state.workId);if(token!==epoch)return;state.candidates=people;
@@ -96,7 +101,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
       if(b.dataset.sheetCandidate){const person=state.candidates.find(p=>p.person_id===b.dataset.sheetCandidate);if(person.current_work && (person.current_work.type!=='obra'||person.can_transfer!==true))throw new Error('Esta transferência necessita de intervenção do Administrativo.');if(!person.current_work && person.can_allocate!==true)throw new Error('Esta pessoa não está disponível para alocação.');return write(person.current_work?'transfer':'allocate',{person_id:person.person_id,period:root.querySelector('[data-sheet-period]').value,expected_allocation_revision:person.allocation_revision,source_work_id:person.current_work?.id||null});}
       if(b.hasAttribute('data-sheet-add-external')){
         if(!state.context.permissions.external_write)return;
-        root.querySelector('[data-sheet-detail]').innerHTML=`<form data-sheet-external-form><h3>MÃO DE OBRA EXTERNA</h3><label>FORNECEDOR<select name="provider_id" required><option value="">Selecionar fornecedor</option>${(state.context.providers||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label><label>NOME DO TRABALHADOR<input name="name" required maxlength="160"></label><label>OBSERVAÇÃO OPERACIONAL<textarea name="note" maxlength="1000"></textarea></label><p>Registo operacional separado do cadastro Primeline. Sem cálculo de pagamento.</p><button type="submit">REGISTAR EXTERNO</button><p role="alert" data-sheet-error></p></form>`;
+        root.querySelector('[data-sheet-detail]').innerHTML=`<form data-sheet-external-form><h3>MÃO DE OBRA EXTERNA</h3><label>PESSOA<select name="external_id"><option value="">Novo trabalhador</option>${(state.context.external_people||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("")}</select></label><label>FORNECEDOR<select name="provider_id" required><option value="">Selecionar fornecedor</option>${(state.context.providers||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label><label>NOME DO TRABALHADOR<input name="name" required maxlength="160"></label><label>OBSERVAÇÃO OPERACIONAL<textarea name="note" maxlength="1000"></textarea></label><p>Registo operacional separado do cadastro Primeline. Sem cálculo de pagamento.</p><button type="submit">REGISTAR EXTERNO</button><p role="alert" data-sheet-error></p></form>`;
       }
     }catch(error){toast(error.message,'error');}
   });

@@ -25,7 +25,8 @@ import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceModule } from "./attendance-sheet.js?v=1";
+import { createAttendanceManagementClient } from "./attendance-client.js?v=2";
+import { createAttendanceModule } from "./attendance-sheet.js?v=2";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -2472,14 +2473,22 @@ async function removeWorkforceAllocation() {
   finally { workforceSaving = false; }
 }
 
-function openVacationDaysDialog(personId, week) {
+const attendanceManagementClient = createAttendanceManagementClient({supabase,confirm:message=>platformConfirm(message,{title:'Férias',confirmLabel:'CONFIRMAR'})});
+let vacationDialogGeneration=0;
+async function openVacationDaysDialog(personId, week) {
+  if(!canManageTeam())return toast('A gestão de férias está reservada ao Administrativo e à Gerência.','error');
+  const generation=++vacationDialogGeneration;
+  let context;
+  try {if(!isSupabaseConfigured)throw new Error('As férias necessitam de ligação segura.');context=await attendanceManagementClient.context({personId});}
+  catch(error){toast(error.message,'error');return;}
+  if(generation!==vacationDialogGeneration)return;
   const person = collaborators.find(item => item.id === personId);
   if (!person) return;
   const dates = Array.from({ length: 5 }, (_, index) => addDaysIso(week, index));
-  const existing = new Set(teamData.absences.filter(item => item.colaborador_id === personId && isVacation(item)).map(item => item.data));
+  const existing = new Set(context.vacations.map(item=>item.data));
   const weekdayNames = ["SEGUNDA", "TERÇA", "QUARTA", "QUINTA", "SEXTA"];
   $("#workflow-dialog-title").textContent = "EDITAR FÉRIAS";
-  $("#workflow-dialog-content").innerHTML = `<form id="workforce-vacation-form" data-person-id="${personId}" data-week="${week}">
+  $("#workflow-dialog-content").innerHTML = `<form id="workforce-vacation-form" data-person-id="${personId}" data-week="${week}" data-revision="${context.vacation_revision}">
     <p class="dialog-copy"><strong>${safeText(shortPersonName(person.nome))}</strong><br>Marque apenas os dias em que estará de férias.</p>
     <div class="vacation-days-picker">${dates.map((date, index) => `<label><input type="checkbox" name="vacation_date" value="${date}" ${existing.has(date) ? "checked" : ""}><span><b>${weekdayNames[index]}</b><small>${prettyDate.format(new Date(`${date}T12:00:00`))}</small></span></label>`).join("")}</div>
     <p class="vacation-help">Pode desmarcar dias já registados. Se não marcar nenhum, as férias desta semana serão removidas.</p>
@@ -2497,33 +2506,15 @@ async function saveVacationDays(event) {
   const person = collaborators.find(item => item.id === personId);
   const weekDates = Array.from({ length: 5 }, (_, index) => addDaysIso(week, index));
   const desired = new Set(new FormData(formElement).getAll("vacation_date"));
-  const existingRows = teamData.absences.filter(item => item.colaborador_id === personId && isVacation(item) && weekDates.includes(item.data));
-  const existingDates = new Set(existingRows.map(item => item.data));
-  const missing = [...desired].filter(date => !existingDates.has(date));
-  const removeIds = existingRows.filter(item => !desired.has(item.data)).map(item => item.id);
   const button = formElement.querySelector('button[type="submit"]');
   const errorElement = formElement.querySelector(".form-error");
   button.disabled = true;
   errorElement.textContent = "";
   try {
-    if (isSupabaseConfigured && missing.length) {
-      const response = await supabase("ausencias", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify(missing.map(data => ({ colaborador_id: personId, data, tipo: "ferias" }))),
-      });
-      if (!response.ok) throw new Error(await response.text());
-    }
-    if (isSupabaseConfigured && removeIds.length) {
-      const response = await supabase(`ausencias?id=in.(${removeIds.map(encodeURIComponent).join(",")})`, { method: "DELETE" });
-      if (!response.ok) throw new Error(await response.text());
-    }
-    if (!isSupabaseConfigured) {
-      teamData.absences = teamData.absences.filter(item => !removeIds.includes(item.id));
-      teamData.absences.push(...missing.map(data => ({ id: crypto.randomUUID(), colaborador_id: personId, data, tipo: "ferias" })));
-    } else {
-      await loadTeamData(true);
-    }
+    if(!isSupabaseConfigured)throw new Error('As férias necessitam de ligação segura.');
+    const result=await attendanceManagementClient.execute('vacation_replace',{person_id:personId,dates:[...desired].sort(),scope_dates:weekDates,expected_revision:Number(formElement.dataset.revision),reason:null,admin_override:false});
+    if(!result)return;
+    await loadTeamData(true);
     closeWorkflowDialog();
     renderTeam();
     $("#workforce-edit-message").textContent = `${shortPersonName(person?.nome || "")} continua selecionado. Pode editar outra semana.`;

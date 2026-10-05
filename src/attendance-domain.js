@@ -33,7 +33,7 @@ export function analyseSheet({ sheet = null, absence = null, expectedMinutes = n
   if (absence && facts.started) return {state:'regularization',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'pending_validation'};
   if (absence) return {state:absence.tipo==='ferias'?'vacation':'absence',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'none'};
   const state = !sheet || !facts.started ? 'none' : facts.open ? 'open' : expectedMinutes == null ? 'regularization' : facts.minutes < expectedMinutes ? 'missing' : 'registered';
-  const overtime = specialDay && facts.started ? 'pending_rule' : workType==='obra' && !facts.open && facts.minutes>480 ? 'potential' : 'none';
+  const overtime = specialDay && facts.started ? 'pending_rule' : workType==='obra' && expectedMinutes != null && !facts.open && facts.minutes>expectedMinutes ? 'potential' : 'none';
   return {state,expectedMinutes,...facts,overtime};
 }
 export function exactAllocations(rows, personId, date) {
@@ -42,7 +42,7 @@ export function exactAllocations(rows, personId, date) {
 }
 export function activeOn(person,date) {
   assertDate(date);
-  return !!person.data_admissao && person.data_admissao<=date && (!person.data_saida || person.data_saida>=date);
+  return !!person.data_admissao && person.data_admissao<=date && (!person.data_saida || person.data_saida>date);
 }
 export function normalIntervals(schedule, period = 'dia_inteiro') {
   if (!schedule || !Array.isArray(schedule.intervals)) throw new Error('Defina primeiro o horário normal da obra.');
@@ -56,10 +56,12 @@ export function correctionAllowed({ role, date, today, days = null }) {
   assertDate(date);assertDate(today);
   if (date>today) return false;
   if (['administrativo','gestao_plataforma','gerencia'].includes(role)) return true;
-  if (role !== 'encarregado' || !Number.isInteger(days) || days<0) return false;
+  if (role !== 'encarregado') return false;
+  if (date===today) return true;
+  if (!Number.isInteger(days) || days<0) return false;
   return (Date.parse(`${today}T12:00:00Z`)-Date.parse(`${date}T12:00:00Z`))/86400000<=days;
 }
-export function vacationSelection({ selected=[], from, to, remove=[], weekendRule=null, holidays=[] }) {
+export function vacationSelection({ selected=[], from, to, remove=[], weekendRule=null, holidays=[], calendarVerified=false }) {
   const dates=new Set(selected.map(assertDate));
   if (from || to) {
     assertDate(from);assertDate(to);if(to<from)throw new Error('Intervalo inválido.');
@@ -69,7 +71,8 @@ export function vacationSelection({ selected=[], from, to, remove=[], weekendRul
   remove.forEach(d=>dates.delete(assertDate(d)));
   const result=[...dates].sort();
   const unresolved=result.filter(d=>[0,6].includes(new Date(`${d}T12:00:00Z`).getUTCDay())||holidays.includes(d));
-  return {dates:result,pendingRule:weekendRule==null && unresolved.length>0,consumedDays:weekendRule==null && unresolved.length?null:result.filter(d=>weekendRule==='all'||!unresolved.includes(d)).length};
+  const pendingRule=!calendarVerified || weekendRule==null && unresolved.length>0;
+  return {dates:result,pendingRule,consumedDays:pendingRule?null:result.filter(d=>weekendRule==='all'||!unresolved.includes(d)).length};
 }
 export function overtimeTransition(state,action,role) {
   const director=['diretor_obra','adjunto'].includes(role), admin=['administrativo','gestao_plataforma','gerencia'].includes(role);
@@ -88,3 +91,8 @@ export function payrollTransition(state,action,{canAdmin=false,unresolved=0,offi
   throw new Error('Resolva as pendências e confirme o modelo antes de fechar/exportar.');
 }
 export function activePlanningTasks(items) {return items.filter(x=>x.estado!=='concluido' && !x.arquivado_em);}
+export function daySummary(rows, options={}) {
+  const states=rows.map(row=>row.conflict?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,expectedMinutes:row.expected_minutes,...options}).state);
+  const pending=states.filter(s=>!['registered','vacation','absence'].includes(s)).length;
+  return {people:states.length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:pending===0};
+}

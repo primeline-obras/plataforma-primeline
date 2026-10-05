@@ -8,6 +8,7 @@
 .sheet-toolbar label { flex:1 1 240px; }
 .sheet-intervals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
 .sheet-list { display:grid; gap:12px; }
+.sheet-summary { padding:12px; border:1px solid var(--card-border); border-radius:8px; overflow-wrap:anywhere; }
 .sheet-person { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding:16px; border:1px solid var(--card-border); border-radius:10px; }
 .sheet-person > div:first-child { display:grid; gap:6px; flex:1 1 200px; }
 .sheet-person em,.sheet-person span { color:var(--text-secondary); }
