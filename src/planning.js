@@ -3,6 +3,11 @@ import { platformConfirm } from "./platform-dialogs.js?v=1";
 import { activeTask, phaseProgress, workProgress, workDates, weightSummary, redistributeWeights } from "./planning-operational.js?v=1";
 import { planningChanges, batchPreview, requestPlanningBatch } from "./planning-batch.js?v=1";
 
+// Matches the existing cost reader's roles; backend work authorization remains mandatory.
+export function canReadPlanningCosts(role) {
+  return ["gestao_plataforma", "gerencia", "administrativo", "financeiro", "diretor_obra", "adjunto", "preparador"].includes(role);
+}
+const OPERATIONAL_ITEM_FIELDS = "id,fase_id,codigo,descricao,responsavel,duracao_dias,data_inicio_prevista,data_fim_prevista,data_fim_real,peso_percentual,percentual_executado,percentual_ponderado,estado,causa_atraso,impacto,recalculado_automaticamente,recalculado_em,recalculado_por_item_id,criado_em,impedido,observacao_impedimento,data_inicio_baseline,data_fim_baseline,data_inicio_real,especialidade_id,executado_por,arquivado_em,arquivado_por,motivo_arquivo";
 const DAY_MS = 86400000;
 const PLANNING_WORK_KEY = "primeline_planning_work_id";
 
@@ -79,7 +84,7 @@ function isPastDay(date, today = new Date()) {
 export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks, getRole = () => "", toast, onCommitted = () => {} }) {
   const state = {
     workId: "", work: null, phases: [], items: [], dependencies: [], dependenciesLoaded: false, specialties: [],
-    expanded: new Set(), expandedTasks: new Set(), collapsedEditorPhases: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: {}, budgetItems: [],
+    expanded: new Set(), expandedTasks: new Set(), collapsedEditorPhases: new Set(), loaded: false, view: "effective", costs: new Map(), costSummary: null, budgetItems: [],
     importOpen: false, importRows: [], importErrors: [], saving: new Set(), controlMode: "baseline-planned",
     original: [], originalDependencies: [], batchSaving: false, preview: null, workDataOpen: false,
   };
@@ -88,6 +93,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   const content = document.querySelector("#planning-content");
   const dependencyError = "As dependências não foram carregadas. Pode consultar e editar localmente, mas o preview e a gravação estão bloqueados até recarregar com sucesso.";
   const readOnly = () => getRole() === "encarregado";
+  const canReadCosts = () => canReadPlanningCosts(getRole());
 
   function renderWorkOptions(workId = state.workId) {
     const works = getWorks().slice().sort((a, b) =>
@@ -261,12 +267,13 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
       <output data-weighted>${weighted.toFixed(2)}%</output>
       <input name="estado" type="hidden" value="${escapeHtml(status)}"><output data-derived-state><span class="planning-state ${escapeHtml(status)}">${stateLabel(status)}</span></output>
       <div class="planning-row-actions ${readOnly() ? "readonly" : ""}"><button type="button" class="details" data-toggle-task="${item.id}" aria-expanded="${detailsOpen}">${detailsOpen ? "FECHAR" : "DETALHES"}</button>${readOnly() ? "" : `<button type="button" class="remove" data-remove-task="${item.id}" ${state.batchSaving ? "disabled" : ""}>${item._new ? "CANCELAR" : item._archive ? "DESFAZER RETIRADA" : "RETIRAR"}</button>${item._archive ? "<strong>A REMOVER</strong>" : ""}`}</div>
-      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id" ${locked}>${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id" ${locked}>${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por" ${locked}><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}" ${locked}></label><label>ESTADO CUSTO<select name="custo_estado" ${locked}>${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id" ${locked}><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00" ${locked}></label><div class="planning-cost-reference">${cost ? `<b>ADJ. ${euro.format(cost.valor_adjudicado)}</b><span>REAL ${euro.format(cost.custo_real)}</span><span>COMP. ${euro.format(cost.compromisso_remanescente)}</span><span>FAT. ${cost.percentual_faturado == null ? "—" : `${cost.percentual_faturado.toFixed(1)}%`} · PAGO ${cost.percentual_pago == null ? "—" : `${cost.percentual_pago.toFixed(1)}%`}</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}` : `<span>${state.costSummary ? "SEM COMPONENTES DE CUSTO ASSOCIADOS À TAREFA" : "CUSTOS INDISPONÍVEIS"}</span>`}</div><label class="planning-detail-wide">CAUSA DO ATRASO<textarea name="causa_atraso" rows="2" placeholder="Sem causa registada" ${locked}>${escapeHtml(item.causa_atraso || "")}</textarea></label><label class="planning-detail-wide">IMPACTO<textarea name="impacto" rows="2" placeholder="Sem impacto registado" ${locked}>${escapeHtml(item.impacto || "")}</textarea></label>${renderDependencies(item)}</section>
+      <section class="planning-editor-details" ${detailsOpen ? "" : "hidden"}><label>FASE<select name="fase_id" ${locked}>${phaseOptions(item.fase_id)}</select></label><label>ESPECIALIDADE<select name="especialidade_id" ${locked}>${specialtyOptions(item.especialidade_id)}</select></label><label>EXECUTADO POR<select name="executado_por" ${locked}><option value="">Por definir</option><option value="PL" ${item.executado_por === "PL" ? "selected" : ""}>Primeline</option><option value="subempreitada" ${item.executado_por === "subempreitada" ? "selected" : ""}>Subempreitada</option><option value="misto" ${item.executado_por === "misto" ? "selected" : ""}>Misto · PL + Subempreitada</option></select></label><label>INÍCIO REAL<input name="data_inicio_real" type="date" value="${isoDate(item.data_inicio_real)}" ${locked}></label>${canReadCosts() ? `<label>ESTADO CUSTO<select name="custo_estado" ${locked}>${["orcamentado","em_consulta","adjudicado","em_execucao","concluido","cancelado"].map(value => `<option value="${value}" ${String(item.custo_estado || "orcamentado") === value ? "selected" : ""}>${costStateLabel(value)}</option>`).join("")}</select></label><label>DETALHE ORÇAMENTO<select name="item_orcamento_id" ${locked}><option value="">PACOTE / ESPECIALIDADE</option>${state.budgetItems.filter(row => row.fase_id === item.fase_id).map(row => `<option value="${row.id}" ${row.id === item.item_orcamento_id ? "selected" : ""}>${escapeHtml(row.codigo || row.designacao || row.descricao || "Linha do orçamento")}</option>`).join("")}</select></label><label>VALOR ORÇA PL €<input name="valor_orca_pl" type="number" min="0" step="0.01" value="${item.valor_orca_pl ?? item.valor_estimado ?? ""}" placeholder="0,00" ${locked}></label><div class="planning-cost-reference">${cost ? `<b>ADJ. ${euro.format(cost.valor_adjudicado)}</b><span>REAL ${euro.format(cost.custo_real)}</span><span>COMP. ${euro.format(cost.compromisso_remanescente)}</span><span>FAT. ${cost.percentual_faturado == null ? "—" : `${cost.percentual_faturado.toFixed(1)}%`} · PAGO ${cost.percentual_pago == null ? "—" : `${cost.percentual_pago.toFixed(1)}%`}</span>${cost.confirmacao_pendente ? `<small>CONFIRMAÇÃO PENDENTE NO CARD “COMPOSIÇÃO AUDITÁVEL DO CUSTO” DA OBRA</small>` : ""}` : `<span>${state.costSummary ? "SEM COMPONENTES DE CUSTO ASSOCIADOS À TAREFA" : "CUSTOS INDISPONÍVEIS"}</span>`}</div>` : ""}<label class="planning-detail-wide">CAUSA DO ATRASO<textarea name="causa_atraso" rows="2" placeholder="Sem causa registada" ${locked}>${escapeHtml(item.causa_atraso || "")}</textarea></label><label class="planning-detail-wide">IMPACTO<textarea name="impacto" rows="2" placeholder="Sem impacto registado" ${locked}>${escapeHtml(item.impacto || "")}</textarea></label>${renderDependencies(item)}</section>
     </article>`; }).join("") || `<div class="planning-phase-empty">SEM TAREFAS NESTA FASE</div>`}</div></section>`;
     }).join("")}</div>`;
   }
 
   function renderCostSummary() {
+    if (!canReadCosts()) return "";
     if (!state.costSummary) return '<div class="planning-cost-summary">CUSTOS INDISPONÍVEIS</div>';
     const real = state.costSummary.real || {};
     const remaining = state.costSummary.por_concluir || {};
@@ -669,6 +676,9 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   async function load(workId = state.workId) {
     if (dirtyCount() && !await platformConfirm("Existem alterações locais por guardar. Descartar e carregar os dados?", { title: "Alterações por guardar", confirmLabel: "DESCARTAR" })) { workSelect.value = state.workId; return; }
     state.preview = null;
+    state.costSummary = null;
+    state.costs = new Map();
+    state.budgetItems = [];
     renderWorkOptions(workId);
     if (!state.workId) { state.loaded = true; state.phases = []; render(); return; }
     workSelect.value = state.workId;
@@ -691,53 +701,55 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     state.specialties = specialtiesResponse.ok ? await specialtiesResponse.json() : [];
     const phaseIds = state.phases.map(phase => phase.id);
     if (!phaseIds.length) {
-      state.items = []; state.dependencies = []; state.costs = new Map(); state.costSummary = {}; state.budgetItems = [];
+      state.items = []; state.dependencies = []; state.costs = new Map(); state.costSummary = null; state.budgetItems = [];
     } else {
       const ids = phaseIds.map(encodeURIComponent).join(",");
-      const itemsResponse = await supabase(`planeamento_itens?select=*&fase_id=in.(${ids})&order=codigo,criado_em`);
+      const itemsResponse = await supabase(`planeamento_itens?select=${canReadCosts() ? "*" : OPERATIONAL_ITEM_FIELDS}&fase_id=in.(${ids})&order=codigo,criado_em`);
       if (!itemsResponse.ok) {
         toast(`Não foi possível carregar as tarefas: ${await itemsResponse.text()}`, "error");
         state.items = []; state.dependencies = [];
       } else {
         state.items = await itemsResponse.json();
-        const budgetResponse = await supabase(`itens_orcamento?select=*&fase_id=in.(${ids})`);
-        state.budgetItems = budgetResponse.ok ? await budgetResponse.json() : [];
-        state.costSummary = null;
-        state.costs = new Map();
-        try {
-          const costsResponse = await supabase("rpc/fn_resumo_custos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) });
-          if (!costsResponse.ok) throw new Error("Resumo de custos indisponível");
-          const summary = await costsResponse.json();
-          if (!summary?.real || !summary?.por_concluir || summary.componentes == null) throw new Error("Resumo de custos inválido");
-          const components = Array.isArray(summary.componentes) ? summary.componentes : summary.componentes.pacotes;
-          if (!Array.isArray(components)) throw new Error("Componentes de custo inválidos");
-          const costs = new Map();
-          for (const row of components) {
-            if (!row.planeamento_item_id) continue;
-            const key = String(row.planeamento_item_id);
-            const cost = costs.get(key) || { valor_adjudicado: 0, custo_real: 0, compromisso_remanescente: 0, pago: 0, faturado: 0, faturadoDisponivel: true, confirmacao_pendente: false };
-            const subcontract = row.tipo === "subempreitada";
-            const actual = Number(row.valor_real ?? row.valor_real_pl ?? 0);
-            cost.custo_real += subcontract || row.estado_custo === "concluido" ? actual : 0;
-            cost.compromisso_remanescente += Number(row.compromisso_remanescente || 0);
-            if (subcontract) {
-              const contract = Number(row.total_aprovado ?? row.valor_adjudicado ?? 0);
-              cost.valor_adjudicado += contract;
-              cost.pago += actual;
-              if (row.percentual_faturado == null) cost.faturadoDisponivel = false;
-              else cost.faturado += contract * Number(row.percentual_faturado) / 100;
+        if (canReadCosts()) {
+          const budgetResponse = await supabase(`itens_orcamento?select=*&fase_id=in.(${ids})`);
+          state.budgetItems = budgetResponse.ok ? await budgetResponse.json() : [];
+          state.costSummary = null;
+          state.costs = new Map();
+          try {
+            const costsResponse = await supabase("rpc/fn_resumo_custos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: state.workId }) });
+            if (!costsResponse.ok) throw new Error("Resumo de custos indisponível");
+            const summary = await costsResponse.json();
+            if (!summary?.real || !summary?.por_concluir || summary.componentes == null) throw new Error("Resumo de custos inválido");
+            const components = Array.isArray(summary.componentes) ? summary.componentes : summary.componentes.pacotes;
+            if (!Array.isArray(components)) throw new Error("Componentes de custo inválidos");
+            const costs = new Map();
+            for (const row of components) {
+              if (!row.planeamento_item_id) continue;
+              const key = String(row.planeamento_item_id);
+              const cost = costs.get(key) || { valor_adjudicado: 0, custo_real: 0, compromisso_remanescente: 0, pago: 0, faturado: 0, faturadoDisponivel: true, confirmacao_pendente: false };
+              const subcontract = row.tipo === "subempreitada";
+              const actual = Number(row.valor_real ?? row.valor_real_pl ?? 0);
+              cost.custo_real += subcontract || row.estado_custo === "concluido" ? actual : 0;
+              cost.compromisso_remanescente += Number(row.compromisso_remanescente || 0);
+              if (subcontract) {
+                const contract = Number(row.total_aprovado ?? row.valor_adjudicado ?? 0);
+                cost.valor_adjudicado += contract;
+                cost.pago += actual;
+                if (row.percentual_faturado == null) cost.faturadoDisponivel = false;
+                else cost.faturado += contract * Number(row.percentual_faturado) / 100;
+              }
+              cost.confirmacao_pendente ||= Boolean(row.pl_confirmacao_pendente || row.sub_confirmacao_pendente || (subcontract && !row.remocao_confirmada && row.estado_custo !== "cancelado"));
+              costs.set(key, cost);
             }
-            cost.confirmacao_pendente ||= Boolean(row.pl_confirmacao_pendente || row.sub_confirmacao_pendente || (subcontract && !row.remocao_confirmada && row.estado_custo !== "cancelado"));
-            costs.set(key, cost);
+            for (const cost of costs.values()) {
+              cost.percentual_pago = cost.valor_adjudicado > 0 ? cost.pago * 100 / cost.valor_adjudicado : null;
+              cost.percentual_faturado = cost.valor_adjudicado > 0 && cost.faturadoDisponivel ? cost.faturado * 100 / cost.valor_adjudicado : null;
+            }
+            state.costSummary = summary;
+            state.costs = costs;
+          } catch {
+            toast("Não foi possível carregar os custos da obra. Os valores estão indisponíveis.", "error");
           }
-          for (const cost of costs.values()) {
-            cost.percentual_pago = cost.valor_adjudicado > 0 ? cost.pago * 100 / cost.valor_adjudicado : null;
-            cost.percentual_faturado = cost.valor_adjudicado > 0 && cost.faturadoDisponivel ? cost.faturado * 100 / cost.valor_adjudicado : null;
-          }
-          state.costSummary = summary;
-          state.costs = costs;
-        } catch {
-          toast("Não foi possível carregar os custos da obra. Os valores estão indisponíveis.", "error");
         }
         const itemIds = state.items.map(item => item.id);
         state.dependencies = [];
