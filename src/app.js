@@ -11,7 +11,7 @@ import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDeb
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
 import { createComparativeMapModule } from "./comparative-map.js?v=6";
-import { createActionPlanModule } from "./action-plan.js?v=5";
+import { createActionPlanModule } from "./action-plan.js?v=6";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=5";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
@@ -25,7 +25,7 @@ import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceModule } from "./attendance.js?v=2";
+import { createAttendanceModule } from "./attendance-sheet.js?v=1";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -341,7 +341,7 @@ document.querySelector("#root").innerHTML = `
         <nav class="team-tabs">
           <button class="active" data-team-tab="collaborators">COLABORADORES</button>
           <button data-team-tab="vacations">MAPA DE FÉRIAS</button>
-          <button data-team-tab="attendance">PONTO DE OBRA</button>
+          <button data-team-tab="attendance">FOLHA DE PONTO</button>
           <button data-team-tab="absences">AUSÊNCIAS</button>
           <button data-team-tab="contracts">CONTRATOS</button>
           <button data-team-tab="overtime">HORAS EXTRA</button>
@@ -352,7 +352,7 @@ document.querySelector("#root").innerHTML = `
           <div id="team-vacations"></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="attendance" hidden>
-          <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE EM OBRA</p><h2>PONTO DIÁRIO</h2></div><span>ALOCAÇÃO → REGISTO → VALIDAÇÃO</span></div>
+          <div class="team-section-head"><div><p class="eyebrow">ASSIDUIDADE EM OBRA</p><h2>FOLHA DE PONTO</h2></div><span>REGISTO DIÁRIO DA EQUIPA</span></div>
           <div id="team-attendance"></div>
         </section>
         <section class="panel team-tab-panel" data-team-panel="absences" hidden>
@@ -2084,7 +2084,7 @@ function renderTeam() {
   if ($("#team-kpis")) $("#team-kpis").hidden = vacationOnly;
   if ($("#team-alert-summary")) $("#team-alert-summary").hidden = vacationOnly;
   if ($("#team-page-description")) $("#team-page-description").textContent = vacationOnly
-    ? "Mapa de Férias, ponto diário da equipa em obra e medicina do trabalho."
+    ? "Mapa de Férias, Folha de Ponto da equipa em obra e medicina do trabalho."
     : "Colaboradores, frota, documentos, ausências e contratos.";
   const workforceSearch = ($("#team-search")?.value || "").trim().toLocaleLowerCase("pt-PT");
   const directorySearch = ($("#team-directory-search")?.value || "").trim().toLocaleLowerCase("pt-PT");

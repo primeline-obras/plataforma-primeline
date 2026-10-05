@@ -1,0 +1,50 @@
+export const FOLHA_RPCS = Object.freeze({ context:'fn_folha_contexto_v2', candidates:'fn_folha_pessoas_v2', operate:'fn_folha_operar_v2', history:'fn_folha_historico_v2' });
+export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(), confirm }) {
+  let pending=null, busy=false;
+  async function rpc(name,body) {
+    const r=await supabase(`rpc/${name}`,{method:'POST',body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>null);
+    if(!r.ok) {
+      const error=new Error(r.status===404?'A Folha de Ponto ainda não está disponível.':j?.message||'Não foi possível concluir a operação.');
+      error.code=j?.code||String(r.status);throw error;
+    }
+    return j;
+  }
+  async function context(date,workId=null) {
+    const j=await rpc(FOLHA_RPCS.context,{p_data:date,p_obra_id:workId});
+    if(j?.version!==2 || !Array.isArray(j.works) || !Array.isArray(j.rows) || !Array.isArray(j.external_rows) || !j.permissions || j.date!==date || (workId && j.work_id!==workId))throw new Error('Resposta da Folha inválida.');
+    return j;
+  }
+  async function operate(action,data) {
+    if(busy)throw new Error('Aguarde a operação em curso.');
+    busy=true;
+    const fingerprint=JSON.stringify({action,data});
+    if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};
+    const body={...data,version:2,request_id:pending.id};
+    try {
+      const preview=await rpc(FOLHA_RPCS.operate,{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
+      if(preview?.version!==2 || preview.committed!==false || typeof preview.versao!=='string' || !preview.versao)throw new Error('Pré-visualização inválida.');
+      if(!await confirm(preview.summary || 'Confirmar esta alteração?')) {pending=null;return null;}
+      const result=await rpc(FOLHA_RPCS.operate,{p_acao:action,p_dados:body,p_confirmar:true,p_versao:preview.versao});
+      const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.items?.map(x=>x.key.person_id);
+      const validKeys=Array.isArray(result?.changed_keys) && result.changed_keys.length>0 && result.changed_keys.every(k=>
+        k && ['primeline','external'].includes(k.kind) && typeof k.person_id==='string' && k.person_id &&
+        k.date===data.date && [data.work_id,data.source_work_id].filter(Boolean).includes(k.work_id) &&
+        (!data.key || k.kind===data.key.kind) && (action!=='external_register' || k.kind==='external') &&
+        (!people || people.includes(k.person_id))) &&
+        (!people || people.every(id=>result.changed_keys.some(k=>k.person_id===id&&k.work_id===data.work_id)));
+      if(result?.version!==2 || result.committed!==true || result.request_id!==body.request_id || !validKeys)throw new Error('Gravação não confirmada. Recarregue antes de repetir.');
+      pending=null;return result;
+    } catch(error) {
+      if(['STALE_REVISION','40001','42501'].includes(error.code))pending=null;
+      throw error;
+    } finally {busy=false;}
+  }
+  return {context,operate,candidates:async(date,workId)=>{
+    const j=await rpc(FOLHA_RPCS.candidates,{p_data:date,p_obra_id:workId});
+    if(j?.version!==2 || !Array.isArray(j.people))throw new Error('Lista de pessoas inválida.');return j.people;
+  },history:async(key)=>{
+    const j=await rpc(FOLHA_RPCS.history,{p_chave:key});
+    if(j?.version!==2 || !Array.isArray(j.events))throw new Error('Histórico inválido.');return j.events;
+  }};
+}

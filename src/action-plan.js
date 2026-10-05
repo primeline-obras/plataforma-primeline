@@ -1,4 +1,5 @@
 import { platformPrompt } from "./platform-dialogs.js?v=1";
+import { activePlanningTasks } from "./attendance-domain.js?v=1";
 
 const DAY_MS = 86400000;
 
@@ -97,10 +98,10 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
     const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
     const weekStart = monday(today);
     const weekEnd = addDays(weekStart, 6);
-    const open = state.items.filter(item => item.estado !== "concluido");
+    const open = activePlanningTasks(state.items);
     const overdue = open.filter(item => utcDate(item.data_fim_prevista) && utcDate(item.data_fim_prevista) < today)
       .sort((a, b) => String(a.data_fim_prevista).localeCompare(String(b.data_fim_prevista)));
-    const weekly = state.items.filter(item => {
+    const weekly = open.filter(item => {
       const date = taskDate(item);
       return date && date >= weekStart && date <= weekEnd && !overdue.includes(item);
     }).sort((a, b) => taskDate(a) - taskDate(b));
@@ -124,9 +125,9 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
     state.phases = await phasesResponse.json();
     const phaseIds = state.phases.map(phase => phase.id);
     if (!phaseIds.length) { state.loading = false; state.items = []; render(); return; }
-    const response = await supabase(`planeamento_itens?select=id,fase_id,codigo,descricao,responsavel,data_inicio_prevista,data_fim_prevista,data_fim_real,estado,percentual_executado,impedido,observacao_impedimento&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=data_fim_prevista,codigo`);
+    const response = await supabase(`planeamento_itens?select=id,fase_id,codigo,descricao,responsavel,data_inicio_prevista,data_fim_prevista,data_fim_real,estado,percentual_executado,impedido,observacao_impedimento,arquivado_em&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=data_fim_prevista,codigo`);
     state.loading = false;
-    if (!response.ok) { state.error = `Execute primeiro plano_acao_encarregado.sql no Supabase: ${await response.text()}`; render(); return; }
+    if (!response.ok) { state.error = 'Não foi possível carregar as tarefas. Contacte a gestão da plataforma.'; render(); return; }
     state.items = await response.json(); render();
   }
 
