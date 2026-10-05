@@ -25,8 +25,8 @@ import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceManagementClient } from "./attendance-client.js?v=2";
-import { createAttendanceModule } from "./attendance-sheet.js?v=2";
+import { createAttendanceManagementClient } from "./attendance-client.js?v=3";
+import { createAttendanceModule } from "./attendance-sheet.js?v=3";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -825,6 +825,7 @@ const subcontractorsModule = createSubcontractorsModule({
 });
 const attendanceModule = createAttendanceModule({
   root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast,
+  navigatePlanning: workId => switchView("planning", {workId,view:"summary"}),
 });
 
 function renderUser() {
@@ -880,6 +881,7 @@ function canManageWorkforceWork(workId, destinationType = "obra") {
 function canOpenTeamTab(tab) {
   if (canManageTeam()) return true;
   if (effectiveRole() === "encarregado") return ["vacations", "attendance", "medicine"].includes(tab);
+  if (["diretor_obra","adjunto","preparador"].includes(effectiveRole()) && tab === "attendance") return true;
   return tab === "vacations";
 }
 

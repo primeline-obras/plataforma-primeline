@@ -96,3 +96,15 @@ export function daySummary(rows, options={}) {
   const pending=states.filter(s=>!['registered','vacation','absence'].includes(s)).length;
   return {people:states.length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:pending===0};
 }
+export function normalDaySelection(rows,{schedule,date,now,admin=false,correctionDays=null}={}) {
+ const eligible=[],excluded=[];
+ let scheduleError=null;try{intervalFacts(normalIntervals(schedule),{date,now});}catch(e){scheduleError=e.message;}
+ for(const row of rows){let reason=null,intervals;
+  if(row.absence)reason='Férias/ausência';else if(row.conflict)reason='Conflito';else if(row.sheet)reason='Folha já registada';else if(scheduleError)reason=scheduleError;
+  else if(!row.can_write)reason='Sem autorização ou fora da janela';
+  else if(!admin&&!correctionAllowed({role:'encarregado',date,today:now.date,days:correctionDays}))reason='Fora da janela de correção';
+  else {try{intervals=normalIntervals(schedule,row.period||'dia_inteiro');intervalFacts(intervals,{date,now});}catch(e){reason=e.message;}}
+  if(reason)excluded.push({person_id:row.person_id,reason});else eligible.push({row,intervals});
+ }
+ return {eligible,excluded};
+}

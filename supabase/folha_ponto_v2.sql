@@ -24,6 +24,7 @@ CREATE SCHEMA folha_privado;
 REVOKE ALL ON SCHEMA folha_privado FROM PUBLIC,anon,authenticated,service_role;
 CREATE TABLE public.folha_config_empresa(
  empresa_id uuid PRIMARY KEY REFERENCES public.empresas(id),
+ office_expected_minutes integer NOT NULL DEFAULT 480 CHECK(office_expected_minutes BETWEEN 1 AND 1440),
  correction_days integer CHECK(correction_days>=0),
  overtime_enabled boolean NOT NULL DEFAULT false,
  holiday_dates date[] NOT NULL DEFAULT '{}',
@@ -39,7 +40,7 @@ CREATE TABLE public.folha_horarios(
 );
 CREATE TABLE public.folha_externos(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL REFERENCES public.empresas(id),
- fornecedor_id uuid NOT NULL REFERENCES public.fornecedores(id), obra_id uuid NOT NULL REFERENCES public.obras(id),
+ fornecedor_id uuid NOT NULL REFERENCES public.fornecedores(id),
  nome text NOT NULL CHECK(length(btrim(nome)) BETWEEN 1 AND 160), ativo boolean NOT NULL DEFAULT true,
  criado_por uuid NOT NULL REFERENCES public.utilizadores(id), criado_em timestamptz NOT NULL DEFAULT now(),
  origem_request uuid NOT NULL
@@ -50,9 +51,10 @@ CREATE TABLE public.folha_externos_dias(
  criado_por uuid NOT NULL REFERENCES public.utilizadores(id), criado_em timestamptz NOT NULL DEFAULT now(), request_id uuid NOT NULL,
  PRIMARY KEY(externo_id,obra_id,data)
 );
+CREATE UNIQUE INDEX folha_externos_identidade ON public.folha_externos(empresa_id,fornecedor_id,lower(btrim(nome)));
 CREATE TABLE public.folha_registos(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL REFERENCES public.empresas(id),
- obra_id uuid NOT NULL REFERENCES public.obras(id), data date NOT NULL,
+ obra_id uuid REFERENCES public.obras(id), tipo_local text NOT NULL DEFAULT 'obra' CHECK(tipo_local IN('obra','escritorio')), data date NOT NULL,
  colaborador_id uuid REFERENCES public.colaboradores(id), externo_id uuid REFERENCES public.folha_externos(id),
  intervals jsonb NOT NULL CHECK(jsonb_typeof(intervals)='array' AND jsonb_array_length(intervals)>0),
  minutes integer NOT NULL CHECK(minutes>=0), estado text NOT NULL CHECK(estado IN('open','registered','missing','regularization')),
@@ -60,11 +62,14 @@ CREATE TABLE public.folha_registos(
  criado_por uuid NOT NULL REFERENCES public.utilizadores(id), atualizado_por uuid NOT NULL REFERENCES public.utilizadores(id),
  criado_em timestamptz NOT NULL DEFAULT now(), atualizado_em timestamptz NOT NULL DEFAULT now(), request_id uuid NOT NULL,
  CHECK(num_nonnulls(colaborador_id,externo_id)=1),
- UNIQUE(colaborador_id,obra_id,data), UNIQUE(externo_id,obra_id,data)
+ CHECK((tipo_local='obra' AND obra_id IS NOT NULL) OR (tipo_local='escritorio' AND obra_id IS NULL AND externo_id IS NULL)),
+ CONSTRAINT folha_local_check CHECK(tipo_local<>'escritorio' OR colaborador_id IS NOT NULL)
 );
+CREATE UNIQUE INDEX folha_primeline_facto ON public.folha_registos(colaborador_id,obra_id,data) NULLS NOT DISTINCT WHERE colaborador_id IS NOT NULL;
+CREATE UNIQUE INDEX folha_externo_facto ON public.folha_registos(externo_id,obra_id,data) WHERE externo_id IS NOT NULL;
 CREATE INDEX folha_registos_dia ON public.folha_registos(empresa_id,data,obra_id);
 CREATE TABLE public.folha_historico(
- id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL, obra_id uuid NOT NULL,
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL, obra_id uuid, tipo_local text NOT NULL DEFAULT 'obra' CHECK((tipo_local='obra' AND obra_id IS NOT NULL) OR (tipo_local='escritorio' AND obra_id IS NULL)),
  person_id uuid NOT NULL, kind text NOT NULL CHECK(kind IN('primeline','external')), data date NOT NULL,
  action text NOT NULL, antes jsonb, depois jsonb, revision integer NOT NULL,
  ator_id uuid NOT NULL REFERENCES public.utilizadores(id), at timestamptz NOT NULL DEFAULT now(),
@@ -98,7 +103,7 @@ BEGIN
  IF x->>'obra_id' IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.obras WHERE id=(x->>'obra_id')::uuid AND empresa_id=company)
  OR x->>'colaborador_id' IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.colaboradores WHERE id=(x->>'colaborador_id')::uuid AND empresa_id=company)
  OR x->>'fornecedor_id' IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.fornecedores WHERE id=(x->>'fornecedor_id')::uuid AND empresa_id=company)
- OR x->>'externo_id' IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.folha_externos WHERE id=(x->>'externo_id')::uuid AND empresa_id=company AND obra_id=(x->>'obra_id')::uuid)
+ OR x->>'externo_id' IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.folha_externos WHERE id=(x->>'externo_id')::uuid AND empresa_id=company)
  THEN RAISE EXCEPTION 'TENANT_INTEGRITY_CONFLICT' USING ERRCODE='42501'; END IF;
  RETURN NEW;
 END $$;
@@ -125,6 +130,25 @@ BEGIN
  IF escrita THEN PERFORM 1 FROM public.obra_responsaveis WHERE obra_id=p AND utilizador_id=u.id AND papel=u.funcao FOR SHARE;
  ELSE PERFORM 1 FROM public.obra_responsaveis WHERE obra_id=p AND utilizador_id=u.id AND papel=u.funcao; END IF;
  IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: responsabilidade' USING ERRCODE='42501'; END IF;
+END $$;
+CREATE FUNCTION folha_privado.local(p uuid,w uuid,escrita boolean DEFAULT false) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u public.utilizadores; linked uuid; n integer;
+BEGIN
+ u:=folha_privado.ator();
+ IF w IS NOT NULL THEN PERFORM folha_privado.obra(w,escrita); RETURN; END IF;
+ IF escrita THEN SELECT * INTO u FROM public.utilizadores WHERE id=u.id AND ativo FOR SHARE; IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501'; END IF; END IF;
+ IF folha_privado.admin() THEN
+  IF p IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND empresa_id=u.empresa_id) THEN RAISE EXCEPTION 'PERMISSION_DENIED: pessoa' USING ERRCODE='42501'; END IF;
+  RETURN;
+ END IF;
+ IF escrita THEN
+  PERFORM 1 FROM public.colaboradores c WHERE c.id=p AND c.utilizador_id=u.id AND c.empresa_id=u.empresa_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: ligação própria alterada' USING ERRCODE='42501'; END IF;
+ END IF;
+ SELECT count(*),min(c.id::text)::uuid INTO n,linked FROM public.colaboradores c WHERE c.utilizador_id=u.id AND c.empresa_id=u.empresa_id;
+ IF u.funcao NOT IN('diretor_obra','adjunto','preparador') OR n<>1 OR (p IS NOT NULL AND p<>linked)
+ THEN RAISE EXCEPTION 'PERMISSION_DENIED: apenas a própria Folha de escritório' USING ERRCODE='42501'; END IF;
 END $$;
 CREATE FUNCTION folha_privado.quadro_autorizado(p uuid,d date,b jsonb,a jsonb) RETURNS boolean
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -214,7 +238,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; nome text; papel text; fornecedor text; s public.folha_registos;
  a jsonb; expected integer; conf text; rev integer; ids jsonb; period text;
 BEGIN
- u:=folha_privado.ator(); PERFORM folha_privado.obra(w);
+ u:=folha_privado.ator(); PERFORM folha_privado.local(p,w);
  IF k='primeline' THEN
   SELECT c.nome,c.funcao INTO nome,papel FROM public.colaboradores c WHERE c.id=p AND c.empresa_id=u.empresa_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: pessoa' USING ERRCODE='42501'; END IF;
@@ -227,26 +251,36 @@ BEGIN
   SELECT coalesce(revisao,0) INTO rev FROM public.quadro_dias_revisoes WHERE colaborador_id=p AND data=d;
  ELSE
   SELECT e.nome,f.nome INTO nome,fornecedor FROM public.folha_externos e JOIN public.fornecedores f ON f.id=e.fornecedor_id
-   WHERE e.id=p AND e.empresa_id=u.empresa_id AND e.obra_id=w;
+   WHERE e.id=p AND e.empresa_id=u.empresa_id AND f.empresa_id=u.empresa_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: externo' USING ERRCODE='42501'; END IF;
  END IF;
- SELECT * INTO s FROM public.folha_registos WHERE obra_id=w AND data=d AND (CASE WHEN k='primeline' THEN colaborador_id=p ELSE externo_id=p END);
+ SELECT * INTO s FROM public.folha_registos WHERE obra_id IS NOT DISTINCT FROM w AND data=d AND (CASE WHEN k='primeline' THEN colaborador_id=p ELSE externo_id=p END);
  SELECT CASE WHEN period IN('manha','tarde') THEN
   (SELECT sum((extract(epoch from ((x->>'end')::time-(x->>'start')::time))/60)::integer) FROM jsonb_array_elements(h.intervals) x WHERE x->>'period'=period)
  ELSE h.expected_minutes END INTO expected FROM public.folha_horarios h WHERE h.obra_id=w;
- RETURN jsonb_build_object('person_id',p,'name',nome,'role',papel,'provider_name',fornecedor,
+ IF w IS NULL THEN
+  expected:=coalesce((SELECT office_expected_minutes FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),480);
+  IF EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao WHERE colaborador_id=p AND data=d AND obra_id IS NOT NULL) THEN conf:='ALLOCATION_CONFLICT'; END IF;
+ END IF;
+ RETURN jsonb_build_object('tipo_local',CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,'person_id',p,'name',nome,'role',papel,'provider_name',fornecedor,
   'sheet',CASE WHEN s.id IS NULL THEN NULL ELSE jsonb_build_object('id',s.id,'intervals',s.intervals,'note',s.note,'state',s.estado) END,
   'absence',a,'conflict',conf,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
   'allocation_ids',coalesce(ids,'[]'),'period',coalesce(period,'dia_inteiro'),'expected_minutes',CASE WHEN a->>'tipo'='ferias' THEN 0 ELSE expected END,
+  'can_remove',w IS NOT NULL AND conf IS NULL AND s.id IS NULL AND a IS NULL AND NOT EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=p AND data=d) AND jsonb_array_length(coalesce(ids,'[]'))=1
+   AND EXISTS(SELECT 1 FROM public.obras WHERE id=w AND situacao='em_curso')
+   AND EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d))
+   AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),
   'overtime',(SELECT to_jsonb(h) FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),
-  'can_write',conf IS NULL AND (folha_privado.admin() OR u.funcao='encarregado') AND (k='external' OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
+  'can_write',conf IS NULL AND d<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND (d=(now() AT TIME ZONE 'Europe/Lisbon')::date OR folha_privado.admin() OR d>=(now() AT TIME ZONE 'Europe/Lisbon')::date-(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id)) AND (w IS NULL OR folha_privado.admin() OR u.funcao='encarregado') AND ((k='external' AND EXISTS(SELECT 1 FROM public.folha_externos WHERE id=p AND empresa_id=u.empresa_id AND ativo)) OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
 END $$;
 CREATE FUNCTION public.fn_folha_contexto_v2(p_data date,p_obra_id uuid DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; works jsonb; rows jsonb:='[]'; ext jsonb:='[]'; sched jsonb; providers jsonb:='[]'; x record; special boolean;
- summary jsonb; r jsonb; registered integer:=0; opened integer:=0; pending integer:=0; total integer; worked integer; status text;
+ office boolean:=false; self_id uuid; summary jsonb; r jsonb; registered integer:=0; opened integer:=0; pending integer:=0; total integer; worked integer; status text;
 BEGIN
  u:=folha_privado.ator();
+ SELECT min(c.id::text)::uuid INTO self_id FROM public.colaboradores c WHERE c.utilizador_id=u.id AND c.empresa_id=u.empresa_id HAVING count(*)=1;
+ office:=folha_privado.admin() OR (u.funcao IN('diretor_obra','adjunto','preparador') AND self_id IS NOT NULL);
  IF p_data IS NULL THEN RAISE EXCEPTION 'VALIDATION_ERROR: data'; END IF;
  SELECT coalesce(jsonb_agg(jsonb_build_object('id',o.id,'number',o.numero,'name',o.nome) ORDER BY o.numero),'[]') INTO works
  FROM public.obras o WHERE o.empresa_id=u.empresa_id AND
@@ -257,7 +291,7 @@ BEGIN
    UNION SELECT colaborador_id FROM public.folha_registos WHERE obra_id=p_obra_id AND data=p_data AND colaborador_id IS NOT NULL LOOP
    rows:=rows||jsonb_build_array(folha_privado.linha(x.colaborador_id,p_obra_id,p_data,'primeline'));
   END LOOP;
-  FOR x IN SELECT e.id FROM public.folha_externos e WHERE e.obra_id=p_obra_id AND e.empresa_id=u.empresa_id
+  FOR x IN SELECT e.id FROM public.folha_externos e WHERE e.empresa_id=u.empresa_id
    AND (EXISTS(SELECT 1 FROM public.folha_externos_dias ed WHERE ed.externo_id=e.id AND ed.obra_id=p_obra_id AND ed.data=p_data)
    OR EXISTS(SELECT 1 FROM public.folha_registos f WHERE f.externo_id=e.id AND f.data=p_data AND f.obra_id=p_obra_id)) LOOP
    ext:=ext||jsonb_build_array(folha_privado.linha(x.id,p_obra_id,p_data,'external'));
@@ -265,6 +299,12 @@ BEGIN
   SELECT jsonb_build_object('intervals',h.intervals,'expected_minutes',h.expected_minutes,'revision',h.revision) INTO sched FROM public.folha_horarios h WHERE h.obra_id=p_obra_id;
   SELECT coalesce(jsonb_agg(jsonb_build_object('id',f.id,'name',f.nome)),'[]') INTO providers FROM public.fornecedores f
    WHERE f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id));
+ ELSIF office THEN
+  PERFORM folha_privado.local(self_id,NULL);
+  FOR x IN SELECT c.id colaborador_id FROM public.colaboradores c WHERE c.empresa_id=u.empresa_id AND (c.id=self_id OR folha_privado.admin() AND (EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao q WHERE q.colaborador_id=c.id AND q.data=p_data AND q.tipo_alocacao='escritorio') OR EXISTS(SELECT 1 FROM public.folha_registos f WHERE f.colaborador_id=c.id AND f.obra_id IS NULL AND f.data=p_data))) LOOP
+   rows:=rows||jsonb_build_array(folha_privado.linha(x.colaborador_id,NULL,p_data,'primeline'));
+  END LOOP;
+  sched:=jsonb_build_object('intervals','[]'::jsonb,'expected_minutes',coalesce((SELECT office_expected_minutes FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),480));
  END IF;
  special:=extract(isodow FROM p_data)>5 OR EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND p_data=ANY(holiday_dates));
  FOR r IN SELECT value FROM jsonb_array_elements(rows||ext) LOOP
@@ -281,12 +321,13 @@ BEGIN
  END LOOP;
  summary:=jsonb_build_object('people',jsonb_array_length(rows||ext),'registered',registered,'open',opened,'pending',pending,'complete',pending=0);
  RETURN jsonb_build_object('version',2,'date',p_data,'work_id',p_obra_id,'works',works,'rows',rows,'external_rows',ext,
-  'summary',summary,'schedule',sched,'special_day',special,'providers',providers,
-  'external_people',coalesce((SELECT jsonb_agg(jsonb_build_object('id',e.id,'name',e.nome,'provider_id',e.fornecedor_id)) FROM public.folha_externos e WHERE e.empresa_id=u.empresa_id AND e.obra_id=p_obra_id AND e.ativo
+  'tipo_local',CASE WHEN p_obra_id IS NULL THEN 'escritorio' ELSE 'obra' END,'office_available',office,'self_person_id',self_id,'correction_days',(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),'admin',folha_privado.admin(),'summary',summary,'schedule',sched,'special_day',special,'providers',providers,
+  'external_people',coalesce((SELECT jsonb_agg(jsonb_build_object('id',e.id,'name',e.nome,'provider_id',e.fornecedor_id)) FROM public.folha_externos e WHERE e.empresa_id=u.empresa_id AND e.ativo AND EXISTS(SELECT 1 FROM public.fornecedores f WHERE f.id=e.fornecedor_id AND f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id)))
    AND NOT EXISTS(SELECT 1 FROM public.folha_externos_dias ed WHERE ed.externo_id=e.id AND ed.data=p_data AND ed.obra_id=p_obra_id)),'[]'),
+  'management',folha_privado.admin() OR p_obra_id IS NOT NULL AND u.funcao IN('encarregado','diretor_obra','adjunto'),
   'calendar_verified',coalesce((SELECT calendar_complete FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),false),
   'overtime_generation',CASE WHEN EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND overtime_enabled AND calendar_complete) THEN 'enabled' ELSE 'disabled_pending_compatibility' END,
-  'permissions',jsonb_build_object('write',folha_privado.admin() OR u.funcao='encarregado','allocation_write',public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado','external_write',folha_privado.admin() OR u.funcao='encarregado'));
+  'permissions',jsonb_build_object('write',CASE WHEN p_obra_id IS NULL THEN office ELSE folha_privado.admin() OR u.funcao='encarregado' END,'allocation_write',p_obra_id IS NOT NULL AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),'external_write',p_obra_id IS NOT NULL AND (folha_privado.admin() OR u.funcao='encarregado')));
 END $$;
 CREATE FUNCTION public.fn_folha_pessoas_v2(p_data date,p_obra_id uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -314,14 +355,14 @@ DECLARE u public.utilizadores; w uuid:=(p_chave->>'work_id')::uuid; p uuid:=(p_c
 BEGIN
  u:=folha_privado.ator(); PERFORM folha_privado.linha(p,w,d,k);
  -- Pessoa sem alocação só é consultável pelo responsável se existir histórico naquela obra.
- IF NOT folha_privado.admin() AND NOT EXISTS(SELECT 1 FROM public.folha_historico WHERE obra_id=w AND person_id=p AND data=d AND kind=k)
+ IF w IS NOT NULL AND NOT folha_privado.admin() AND NOT EXISTS(SELECT 1 FROM public.folha_historico WHERE obra_id=w AND person_id=p AND data=d AND kind=k)
  AND NOT EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao WHERE obra_id=w AND colaborador_id=p AND data=d)
- AND NOT EXISTS(SELECT 1 FROM public.folha_externos WHERE obra_id=w AND id=p)
+ AND NOT EXISTS(SELECT 1 FROM public.folha_externos_dias WHERE obra_id=w AND externo_id=p AND data=d)
  THEN RAISE EXCEPTION 'PERMISSION_DENIED: histórico fora da equipa' USING ERRCODE='42501'; END IF;
  SELECT coalesce(jsonb_agg(to_jsonb(h) ORDER BY h.at,h.id),'[]') INTO events FROM public.folha_historico h
- WHERE empresa_id=u.empresa_id AND obra_id=w AND person_id=p AND data=d AND kind=k;
+ WHERE empresa_id=u.empresa_id AND obra_id IS NOT DISTINCT FROM w AND person_id=p AND data=d AND kind=k;
  SELECT coalesce(jsonb_agg(to_jsonb(h) ORDER BY h.criado_em,h.id),'[]') INTO legacy FROM public.ponto_pessoal_obra h
- WHERE empresa_id=u.empresa_id AND obra_id=w AND colaborador_id=p AND data=d AND k='primeline';
+ WHERE empresa_id=u.empresa_id AND obra_id IS NOT DISTINCT FROM w AND colaborador_id=p AND data=d AND k='primeline';
  RETURN jsonb_build_object('version',2,'events',events,'legacy',legacy,'legacy_interpretation','original');
 END $$;
 CREATE FUNCTION folha_privado.save(p jsonb,w uuid,d date,req uuid,confirmar boolean) RETURNS jsonb
@@ -329,21 +370,22 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; person uuid:=(p->'key'->>'person_id')::uuid; kind text:=p->'key'->>'kind'; old public.folha_registos;
  row jsonb; f jsonb; state text; expected integer; window_days integer; special boolean; result public.folha_registos;
 BEGIN
- u:=folha_privado.ator(); PERFORM folha_privado.obra(w,true); PERFORM folha_privado.lock_dia(person,d);
+ u:=folha_privado.ator(); PERFORM folha_privado.local(person,w,true); PERFORM folha_privado.lock_dia(person,d);
  IF p->'key'->>'work_id' IS DISTINCT FROM w::text OR p->'key'->>'date' IS DISTINCT FROM d::text OR kind IS NULL OR kind NOT IN('primeline','external')
  THEN RAISE EXCEPTION 'VALIDATION_ERROR: chave'; END IF;
  row:=folha_privado.linha(person,w,d,kind);
  IF kind='primeline' THEN
   PERFORM 1 FROM public.colaboradores WHERE id=person AND empresa_id=u.empresa_id AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d) FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: colaborador indisponível' USING ERRCODE='42501'; END IF;
-  IF NOT EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao WHERE colaborador_id=person AND data=d AND obra_id=w) THEN RAISE EXCEPTION 'ALLOCATION_REQUIRED'; END IF;
+  IF w IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao WHERE colaborador_id=person AND data=d AND obra_id=w) THEN RAISE EXCEPTION 'ALLOCATION_REQUIRED'; END IF;
  ELSE
-  PERFORM 1 FROM public.folha_externos WHERE id=person AND obra_id=w AND empresa_id=u.empresa_id AND ativo FOR UPDATE;
+  PERFORM 1 FROM public.folha_externos WHERE id=person AND empresa_id=u.empresa_id AND ativo FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: externo indisponível' USING ERRCODE='42501'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.folha_externos e JOIN public.fornecedores f ON f.id=e.fornecedor_id WHERE e.id=person AND f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=w))) THEN RAISE EXCEPTION 'PERMISSION_DENIED: fornecedor não autorizado' USING ERRCODE='42501'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.folha_externos_dias WHERE externo_id=person AND obra_id=w AND data=d AND empresa_id=u.empresa_id) THEN RAISE EXCEPTION 'EXTERNAL_DAY_REQUIRED'; END IF;
  END IF;
  IF row->>'conflict' IS NOT NULL THEN RAISE EXCEPTION '%',row->>'conflict'; END IF;
- SELECT * INTO old FROM public.folha_registos WHERE obra_id=w AND data=d AND CASE WHEN kind='primeline' THEN colaborador_id=person ELSE externo_id=person END FOR UPDATE;
+ SELECT * INTO old FROM public.folha_registos WHERE obra_id IS NOT DISTINCT FROM w AND data=d AND CASE WHEN kind='primeline' THEN colaborador_id=person ELSE externo_id=person END FOR UPDATE;
  IF (p->>'expected_revision')::integer IS DISTINCT FROM coalesce(old.revision,0) THEN RAISE EXCEPTION 'STALE_REVISION' USING ERRCODE='40001'; END IF;
  IF d<(now() AT TIME ZONE 'Europe/Lisbon')::date AND NOT folha_privado.admin() THEN
   SELECT correction_days INTO window_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id;
@@ -353,7 +395,7 @@ BEGIN
  f:=folha_privado.facts(p->'intervals',d); expected:=(row->>'expected_minutes')::integer;
  special:=extract(isodow FROM d)>5 OR EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND d=ANY(holiday_dates));
  IF EXISTS(SELECT 1 FROM public.folha_registos other,jsonb_array_elements(other.intervals) x,jsonb_array_elements(p->'intervals') y
- WHERE other.data=d AND other.obra_id<>w AND (CASE WHEN kind='primeline' THEN other.colaborador_id=person ELSE other.externo_id=person END)
+ WHERE other.data=d AND other.obra_id IS DISTINCT FROM w AND (CASE WHEN kind='primeline' THEN other.colaborador_id=person ELSE other.externo_id=person END)
  AND (x->>'start')::time<coalesce((y->>'end')::time,'24:00'::time) AND (y->>'start')::time<coalesce((x->>'end')::time,'24:00'::time))
  THEN RAISE EXCEPTION 'INTERVAL_CONFLICT: outra obra'; END IF;
  state:=CASE WHEN row->'absence'<>'null'::jsonb THEN 'regularization' WHEN (f->>'open')::boolean THEN 'open' WHEN expected IS NULL THEN 'regularization' WHEN (f->>'minutes')::integer<expected THEN 'missing' ELSE 'registered' END;
@@ -362,19 +404,32 @@ BEGIN
  UPDATE public.folha_registos SET intervals=p->'intervals',minutes=(f->>'minutes')::integer,estado=state,special_day=special,
  revision=old.revision+1,note=p->>'note',atualizado_por=u.id,atualizado_em=now(),request_id=req WHERE id=old.id RETURNING * INTO result;
  ELSE
- INSERT INTO public.folha_registos(empresa_id,obra_id,data,colaborador_id,externo_id,intervals,minutes,estado,special_day,revision,note,criado_por,atualizado_por,request_id)
- VALUES(u.empresa_id,w,d,CASE WHEN kind='primeline' THEN person END,CASE WHEN kind='external' THEN person END,p->'intervals',(f->>'minutes')::integer,state,special,coalesce(old.revision,0)+1,p->>'note',u.id,u.id,req)
+ INSERT INTO public.folha_registos(empresa_id,obra_id,tipo_local,data,colaborador_id,externo_id,intervals,minutes,estado,special_day,revision,note,criado_por,atualizado_por,request_id)
+ VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,d,CASE WHEN kind='primeline' THEN person END,CASE WHEN kind='external' THEN person END,p->'intervals',(f->>'minutes')::integer,state,special,coalesce(old.revision,0)+1,p->>'note',u.id,u.id,req)
  RETURNING * INTO result;
  END IF;
- INSERT INTO public.folha_historico(empresa_id,obra_id,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
- VALUES(u.empresa_id,w,person,kind,d,'save',to_jsonb(old),to_jsonb(result),result.revision,u.id,req,p->>'reason');
+ INSERT INTO public.folha_historico(empresa_id,obra_id,tipo_local,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
+ VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,person,kind,d,'save',to_jsonb(old),to_jsonb(result),result.revision,u.id,req,p->>'reason');
  UPDATE public.folha_he SET estado='superseded',revision=revision+1 WHERE folha_id=result.id AND estado<>'superseded';
- IF kind='primeline' AND NOT special AND state='registered' AND expected IS NOT NULL AND result.minutes>expected
+ IF w IS NOT NULL AND kind='primeline' AND NOT special AND state='registered' AND expected IS NOT NULL AND result.minutes>expected
  AND EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND overtime_enabled AND calendar_complete)
  AND NOT EXISTS(SELECT 1 FROM public.horas_extraordinarias WHERE colaborador_id=person AND data=d)
  THEN INSERT INTO public.folha_he(empresa_id,obra_id,folha_id,folha_revision,minutes,estado)
  VALUES(u.empresa_id,w,result.id,result.revision,result.minutes-expected,'potential'); END IF;
  RETURN jsonb_build_object('result',to_jsonb(result));
+END $$;
+CREATE FUNCTION folha_privado.normal(p uuid,w uuid,d date) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r jsonb; xs jsonb; full_day jsonb;
+BEGIN
+ r:=folha_privado.linha(p,w,d,'primeline');
+ SELECT intervals INTO full_day FROM public.folha_horarios WHERE obra_id=w;
+ IF full_day IS NULL THEN RAISE EXCEPTION 'SCHEDULE_REQUIRED'; END IF;
+ PERFORM folha_privado.facts(full_day,d);
+ SELECT jsonb_agg(jsonb_build_object('start',x->>'start','end',x->>'end') ORDER BY x->>'start') INTO xs
+ FROM public.folha_horarios h,jsonb_array_elements(h.intervals) x WHERE h.obra_id=w AND (r->>'period'='dia_inteiro' OR x->>'period'=r->>'period');
+ IF xs IS NULL THEN RAISE EXCEPTION 'SCHEDULE_REQUIRED'; END IF;
+ PERFORM folha_privado.facts(xs,d); RETURN xs;
 END $$;
 CREATE FUNCTION folha_privado.alocar(p_acao text,p jsonb,w uuid,d date,req uuid,confirmar boolean) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -413,8 +468,8 @@ BEGIN
  -- Origin chosen only here. Private core independently verifies tenant and destinations.
  result:=public.fn_quadro_aplicar_interno(person,d,b,a,'folha_v2',req,NOT confirmar);
  IF confirmar THEN
- INSERT INTO public.folha_historico(empresa_id,obra_id,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
- VALUES(u.empresa_id,w,person,'primeline',d,p_acao,b,a,(result->>'revision')::integer,u.id,req,p->>'reason');
+ INSERT INTO public.folha_historico(empresa_id,obra_id,tipo_local,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
+ VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,person,'primeline',d,p_acao,b,a,(result->>'revision')::integer,u.id,req,p->>'reason');
  END IF;
  RETURN jsonb_build_object('before',b,'after',a,'allocation_revision',coalesce(rev,0),'result',result);
 END $$;
@@ -427,7 +482,10 @@ BEGIN
  PERFORM pg_advisory_xact_lock(61001,1);
  SELECT * INTO u FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id() AND ativo IS TRUE FOR SHARE;
  IF u.id IS NULL OR u.empresa_id IS NULL THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501'; END IF;
- PERFORM folha_privado.obra(w,true);
+ IF w IS NULL THEN
+  IF p_acao<>'save' OR p_dados->'key'->>'kind' IS DISTINCT FROM 'primeline' THEN RAISE EXCEPTION 'PERMISSION_DENIED: escritório apenas Folha própria' USING ERRCODE='42501'; END IF;
+  PERFORM folha_privado.local((p_dados->'key'->>'person_id')::uuid,w,true);
+ ELSE PERFORM folha_privado.obra(w,true); END IF;
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF;
  IF p_confirmar IS NULL OR req IS NULL OR d IS NULL OR (p_dados->>'version')::integer IS DISTINCT FROM 2 OR p_acao IS NULL OR p_acao NOT IN('save','bulk','allocate','transfer','remove_from_day','external_register') THEN RAISE EXCEPTION 'VALIDATION_ERROR: contrato'; END IF;
  payload:=jsonb_build_object('action',p_acao,'data',p_dados);
@@ -443,13 +501,16 @@ BEGIN
  IF p_acao IN('save','bulk') THEN
   IF p_acao='save' THEN preview:=jsonb_build_array(folha_privado.save(p_dados,w,d,req,false));
   ELSE
-   IF d<>(now() AT TIME ZONE 'Europe/Lisbon')::date OR p_dados->>'effective_time' IS NULL OR p_dados->>'effective_time' !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'
-   OR p_dados->>'operation' IS NULL OR p_dados->>'operation' NOT IN('start','finish') OR jsonb_typeof(p_dados->'items') IS DISTINCT FROM 'array' OR jsonb_array_length(p_dados->'items') NOT BETWEEN 1 AND 200
+   IF (p_dados->>'operation' IS DISTINCT FROM 'normal' AND (d<>(now() AT TIME ZONE 'Europe/Lisbon')::date OR p_dados->>'effective_time' IS NULL OR p_dados->>'effective_time' !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'))
+   OR p_dados->>'operation' IS NULL OR p_dados->>'operation' NOT IN('start','finish','normal') OR jsonb_typeof(p_dados->'items') IS DISTINCT FROM 'array' OR jsonb_array_length(p_dados->'items') NOT BETWEEN 1 AND 200
    OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_dados->'items') x GROUP BY x->'key'->>'person_id' HAVING count(*)>1) THEN RAISE EXCEPTION 'VALIDATION_ERROR: bulk'; END IF;
    FOR item IN SELECT value FROM jsonb_array_elements(p_dados->'items') ORDER BY value->'key'->>'person_id' LOOP
     IF item->'key'->>'kind'<>'primeline' OR EXISTS(SELECT 1 FROM public.ausencias WHERE colaborador_id=(item->'key'->>'person_id')::uuid AND data=d) THEN RAISE EXCEPTION 'ABSENCE_CONFLICT'; END IF;
     person:=(item->'key'->>'person_id')::uuid;
-    IF p_dados->>'operation'='start' THEN
+    IF p_dados->>'operation'='normal' THEN
+     IF EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=person AND obra_id=w AND data=d)
+      OR item->'intervals' IS DISTINCT FROM folha_privado.normal(person,w,d) THEN RAISE EXCEPTION 'NORMAL_DAY_CONFLICT'; END IF;
+    ELSIF p_dados->>'operation'='start' THEN
      IF d<>(now() AT TIME ZONE 'Europe/Lisbon')::date OR EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=person AND data=d)
       OR jsonb_array_length(item->'intervals')<>1 OR item->'intervals'->0->>'end' IS NOT NULL OR item->'intervals'->0->>'start' IS DISTINCT FROM p_dados->>'effective_time' THEN RAISE EXCEPTION 'BULK_START_CONFLICT'; END IF;
     ELSE
@@ -470,15 +531,17 @@ BEGIN
   IF NOT FOUND OR (NOT folha_privado.admin() AND NOT EXISTS(SELECT 1 FROM public.subempreitadas WHERE obra_id=w AND fornecedor_id=provider)) THEN RAISE EXCEPTION 'PERMISSION_DENIED: fornecedor' USING ERRCODE='42501'; END IF;
   IF length(btrim(coalesce(p_dados->>'name',''))) NOT BETWEEN 1 AND 160 THEN RAISE EXCEPTION 'VALIDATION_ERROR: nome'; END IF;
   person:=coalesce((p_dados->>'external_id')::uuid,req);
+  IF p_dados->>'external_id' IS NULL AND EXISTS(SELECT 1 FROM public.folha_externos WHERE empresa_id=u.empresa_id AND fornecedor_id=provider AND lower(btrim(nome))=lower(btrim(p_dados->>'name')))
+  THEN RAISE EXCEPTION 'EXTERNAL_IDENTITY_EXISTS: reutilize a identidade existente; homónimos precisam de identificação operacional distinta'; END IF;
   IF p_dados->>'external_id' IS NOT NULL THEN
-   PERFORM 1 FROM public.folha_externos WHERE id=person AND empresa_id=u.empresa_id AND obra_id=w AND fornecedor_id=provider AND ativo AND nome=btrim(p_dados->>'name') FOR UPDATE;
+   PERFORM 1 FROM public.folha_externos WHERE id=person AND empresa_id=u.empresa_id AND fornecedor_id=provider AND ativo AND nome=btrim(p_dados->>'name') FOR UPDATE;
    IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: identidade externa' USING ERRCODE='42501'; END IF;
   END IF;
   IF EXISTS(SELECT 1 FROM public.folha_externos_dias WHERE externo_id=person AND obra_id=w AND data=d) THEN RAISE EXCEPTION 'EXTERNAL_DAY_EXISTS'; END IF;
   preview:=jsonb_build_object('provider',provider,'work',w,'person_id',person);
  END IF;
  token:=encode(sha256(convert_to(jsonb_build_object('payload',payload,'snapshot',preview)::text,'UTF8')),'hex');
- IF NOT p_confirmar THEN RETURN jsonb_build_object('version',2,'committed',false,'versao',token,'summary',CASE WHEN p_acao='remove_from_day' THEN 'Retirar exclusivamente esta pessoa da equipa deste dia? O histórico será preservado.' WHEN p_acao='transfer' THEN 'Transferir da obra indicada para esta obra? O movimento e eventuais alertas serão preservados.' ELSE 'Confirmar estes factos na Folha de Ponto?' END,'preview',preview); END IF;
+ IF NOT p_confirmar THEN RETURN jsonb_build_object('version',2,'committed',false,'versao',token,'summary',CASE WHEN p_acao='bulk' THEN format('Registar %s pessoas; %s excluídas. Exclusões: férias/ausências, conflitos, sem autorização ou ponto não elegível para esta ação. Confirmar?',jsonb_array_length(p_dados->'items'),jsonb_array_length(public.fn_folha_contexto_v2(d,w)->'rows')-jsonb_array_length(p_dados->'items')) WHEN p_acao='remove_from_day' THEN 'Retirar exclusivamente esta pessoa da equipa deste dia? O histórico será preservado.' WHEN p_acao='transfer' THEN 'Transferir da obra indicada para esta obra? O movimento e eventuais alertas serão preservados.' ELSE 'Confirmar estes factos na Folha de Ponto?' END,'preview',preview); END IF;
  IF p_versao IS DISTINCT FROM token THEN RAISE EXCEPTION 'STALE_PREVIEW' USING ERRCODE='40001'; END IF;
  IF p_acao IN('save','bulk') THEN
   FOR item IN SELECT value FROM jsonb_array_elements(CASE WHEN p_acao='save' THEN jsonb_build_array(p_dados) ELSE p_dados->'items' END) ORDER BY value->'key'->>'person_id' LOOP
@@ -489,12 +552,12 @@ BEGIN
   keys:=jsonb_build_array(jsonb_build_object('kind','primeline','person_id',p_dados->>'person_id','work_id',w,'date',d));
  ELSE
   IF p_dados->>'external_id' IS NULL THEN
-   INSERT INTO public.folha_externos(id,empresa_id,fornecedor_id,obra_id,nome,criado_por,origem_request)
-   VALUES(person,u.empresa_id,provider,w,btrim(p_dados->>'name'),u.id,req);
+   INSERT INTO public.folha_externos(id,empresa_id,fornecedor_id,nome,criado_por,origem_request)
+   VALUES(person,u.empresa_id,provider,btrim(p_dados->>'name'),u.id,req);
   END IF;
   INSERT INTO public.folha_externos_dias VALUES(person,u.empresa_id,w,d,u.id,now(),req);
-  INSERT INTO public.folha_historico(empresa_id,obra_id,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
-   VALUES(u.empresa_id,w,person,'external',d,p_acao,NULL,jsonb_build_object('name',p_dados->>'name','provider_id',provider),0,u.id,req,NULL);
+  INSERT INTO public.folha_historico(empresa_id,obra_id,tipo_local,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
+   VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,person,'external',d,p_acao,NULL,jsonb_build_object('name',p_dados->>'name','provider_id',provider),0,u.id,req,NULL);
   keys:=jsonb_build_array(jsonb_build_object('kind','external','person_id',person,'work_id',w,'date',d));
  END IF;
  result:=jsonb_build_object('version',2,'committed',true,'request_id',req,'changed_keys',keys,'result',result);

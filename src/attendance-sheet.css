@@ -17,4 +17,8 @@
 .sheet-candidate { display:block; width:100%; text-align:left; margin:8px 0; }
 .sheet-candidate[hidden] { display:none; }
 .sheet-v2 [role=alert] { color:var(--neg-text); }
+.sheet-v2 [data-sheet-management] { margin-top:24px; border-top:1px solid var(--card-border); padding-top:16px; }
+.sheet-v2 [data-sheet-management] form { display:grid; gap:12px; margin:16px 0; }
+.sheet-v2 pre { white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; }
+.sheet-v2 details { overflow-wrap:anywhere; padding:8px 0; }
 @media(max-width:600px) { .sheet-toolbar { display:grid; grid-template-columns:minmax(0,1fr); }.sheet-person { display:block; }.sheet-person .sheet-actions { margin-top:12px; }.sheet-actions button { flex:1 1 130px; } }

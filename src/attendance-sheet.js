@@ -1,25 +1,29 @@
-import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary } from './attendance-domain.js?v=2';
-import { createSheetClient } from './attendance-client.js?v=2';
+import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary, normalDaySelection } from './attendance-domain.js?v=3';
+import { createSheetClient } from './attendance-client.js?v=3';
 import { platformConfirm } from './platform-dialogs.js?v=1';
+import {createAttendanceManagementModule} from './attendance-management.js?v=1';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:'CONFIRMAR'})}) {
+export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:'CONFIRMAR'}),navigatePlanning}) {
   const client=createSheetClient({supabase,confirm});
+  const management=createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning});
   const state={date:localClock(now()).date,workId:null,context:null,loading:false,error:'',editor:null,candidates:null,busy:false,history:null};
   let epoch=0;
   function key(row,external=false) {return {kind:external?'external':'primeline',person_id:row.person_id,work_id:state.workId,date:state.date};}
-  function facts(row){const f=analyseSheet({sheet:row.sheet,absence:row.absence,expectedMinutes:row.expected_minutes,workType:'obra',specialDay:state.context.special_day});return row.conflict?{...f,state:'regularization'}:f;}
+  function facts(row){const f=analyseSheet({sheet:row.sheet,absence:row.absence,expectedMinutes:row.expected_minutes,workType:state.context.tipo_local||'obra',specialDay:state.context.special_day});return row.conflict?{...f,state:'regularization'}:f;}
   function rowHtml(row,external=false) {
     const f=facts(row), can=state.context.permissions.write===true && row.can_write===true;
     if(row.overtime?.estado)f.overtime=row.overtime.estado;
-    return `<article class="sheet-person"><div><strong>${esc(row.name)}</strong><span>${esc(external?row.provider_name:row.role)}</span><b>${SHEET_STATES[f.state]}</b>${f.overtime!=='none'?'<em>'+({potential:'Potencial HE',pending_rule:'Dia especial · regra pendente',pending_validation:'HE · validação administrativa pendente',rejected:'HE rejeitada',validated_pending_rule:'HE validada · regra financeira pendente'}[f.overtime]||'Pendente')+'</em>':''}</div><div class="sheet-actions">${can?`<button data-sheet-edit="${esc(row.person_id)}" data-external="${external}">${row.sheet?'EDITAR':'REGISTAR'}</button>`:''}${can&&!external?`<button data-sheet-remove="${esc(row.person_id)}">RETIRAR DA EQUIPA DE HOJE</button>`:""}<button data-sheet-history="${esc(row.person_id)}" data-external="${external}">HISTÓRICO</button></div></article>`;
+    return `<article class="sheet-person"><div><strong>${esc(row.name)}</strong><span>${esc(external?row.provider_name:row.role)}</span><b>${SHEET_STATES[f.state]}</b>${f.overtime!=='none'?'<em>'+({potential:'Potencial HE',pending_rule:'Dia especial · regra pendente',pending_validation:'HE · validação administrativa pendente',rejected:'HE rejeitada',validated_pending_rule:'HE validada · regra financeira pendente'}[f.overtime]||'Pendente')+'</em>':''}</div><div class="sheet-actions">${can?`<button data-sheet-edit="${esc(row.person_id)}" data-external="${external}">${row.sheet?'EDITAR':'REGISTAR'}</button>`:''}${!external&&state.workId&&row.can_remove===true?`<button data-sheet-remove="${esc(row.person_id)}">RETIRAR DA EQUIPA DE HOJE</button>`:""}<button data-sheet-history="${esc(row.person_id)}" data-external="${external}">HISTÓRICO</button></div></article>`;
   }
   function render() {
     const c=state.context;
-    const summary=c?daySummary([...c.rows,...c.external_rows],{specialDay:c.special_day}):null;
-    root.innerHTML=`<div class="sheet-v2"><div class="sheet-toolbar"><label>OBRA<select data-sheet-work><option value="">Selecionar obra</option>${(c?.works||[]).map(w=>`<option value="${esc(w.id)}" ${w.id===state.workId?'selected':''}>Obra ${esc(w.number)} · ${esc(w.name)}</option>`).join('')}</select></label><label>DATA<input data-sheet-date type="date" value="${state.date}"></label><button data-sheet-refresh>ATUALIZAR</button></div>
+    const summary=c?daySummary([...c.rows,...c.external_rows],{specialDay:c.special_day,workType:c.tipo_local}):null;
+    const normal=c&&state.workId?normalDaySelection(c.rows,{schedule:c.schedule,date:state.date,now:localClock(now()),admin:c.admin,correctionDays:c.correction_days}):null;
+    root.innerHTML=`<div class="sheet-v2"><div class="sheet-toolbar"><label>LOCAL<select data-sheet-work><option value="">${c?.office_available?"ESCRITÓRIO — PRÓPRIA FOLHA":"Selecionar obra"}</option>${(c?.works||[]).map(w=>`<option value="${esc(w.id)}" ${w.id===state.workId?'selected':''}>Obra ${esc(w.number)} · ${esc(w.name)}</option>`).join('')}</select></label><label>DATA<input data-sheet-date type="date" value="${state.date}"></label><button data-sheet-refresh>ATUALIZAR</button></div>
     <p role="status">${state.loading?'A carregar…':esc(state.error)}</p>
-    ${c && state.workId?`<p class="sheet-summary" data-sheet-summary>${summary.people} pessoas · ${summary.registered} registadas · ${summary.open} em aberto · ${summary.pending} pendentes${summary.complete ? " · DIA COMPLETO ✓" : ""}</p>${c.overtime_generation==="disabled_pending_compatibility"?"<p>Geração automática de HE desativada até validar calendário e compatibilidade com lançamentos manuais.</p>":""}<h3>PESSOAL PRIMELINE</h3>${c.permissions.write?`<div class="sheet-actions">${c.permissions.allocation_write===true?"<button data-sheet-add>+ ADICIONAR PESSOA À OBRA</button>":""}<button data-sheet-bulk="start" ${!c.schedule?'disabled':''}>MARCAR EQUIPA PRESENTE</button><button data-sheet-bulk="finish" ${!c.schedule?'disabled':''}>COMPLETAR EQUIPA</button></div>`:''}<div class="sheet-list">${c.rows.map(r=>rowHtml(r)).join('')||'<p>Sem pessoas alocadas neste dia.</p>'}</div><h3>MÃO DE OBRA EXTERNA</h3><div class="sheet-list">${c.external_rows.map(r=>rowHtml(r,true)).join('')||'<p>Sem registos externos neste dia.</p>'}</div>${c.permissions.external_write?'<button data-sheet-add-external>+ REGISTAR TRABALHADOR EXTERNO</button>':''}`:''}
-    <div data-sheet-detail></div></div>`;
+    ${c && (state.workId||c.office_available)?`<p class="sheet-summary" data-sheet-summary>${summary.people} pessoas · ${summary.registered} registadas · ${summary.open} em aberto · ${summary.pending} pendentes${summary.complete ? " · DIA COMPLETO ✓" : ""}</p>${c.overtime_generation==="disabled_pending_compatibility"?"<p>Geração automática de HE desativada até validar calendário e compatibilidade com lançamentos manuais.</p>":""}<h3>PESSOAL PRIMELINE</h3>${c.permissions.write&&state.workId?`<div class="sheet-actions">${c.permissions.allocation_write===true?"<button data-sheet-add>+ ADICIONAR PESSOA À OBRA</button>":""}<button data-sheet-bulk="start" ${!c.schedule?'disabled':''}>MARCAR EQUIPA PRESENTE</button><button data-sheet-bulk="finish" ${!c.schedule?'disabled':''}>COMPLETAR EQUIPA</button><button data-sheet-bulk="normal" ${!normal?.eligible.length?'disabled':''}>REGISTAR EQUIPA — DIA NORMAL</button></div>`:''}<div class="sheet-list">${c.rows.map(r=>rowHtml(r)).join('')||'<p>Sem pessoas alocadas neste dia.</p>'}</div><h3>MÃO DE OBRA EXTERNA</h3><div class="sheet-list">${c.external_rows.map(r=>rowHtml(r,true)).join('')||'<p>Sem registos externos neste dia.</p>'}</div>${c.permissions.external_write?'<button data-sheet-add-external>+ REGISTAR TRABALHADOR EXTERNO</button>':''}`:''}
+    <div data-sheet-detail></div><section data-sheet-management></section></div>`;
+    if(c?.management&&!state.loading&&!state.busy)management.show(root.querySelector('[data-sheet-management]'),{workId:state.workId,date:state.date,schedule:c.schedule});else management.reset();
     root.querySelectorAll('button,input,select').forEach(e=>{if(state.busy)e.disabled=true;});
   }
   async function load() {
@@ -28,7 +32,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
       if(!isConfigured)throw new Error('A Folha de Ponto necessita de ligação segura.');
       let c=await client.context(state.date,state.workId);
       if(token!==epoch)return;
-      if(!state.workId && c.works.length===1){state.workId=c.works[0].id;c=await client.context(state.date,state.workId);}
+      if(!state.workId && !c.office_available && c.works.length===1){state.workId=c.works[0].id;c=await client.context(state.date,state.workId);}
       if(token!==epoch)return;
       if(state.workId && !c.works.some(w=>w.id===state.workId))throw new Error('Obra indisponível para esta sessão.');
       state.context=c;
@@ -76,10 +80,11 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
     try {
       if(b.hasAttribute('data-sheet-refresh'))return load();
       if(b.dataset.sheetEdit){const row=find(b.dataset.sheetEdit,b.dataset.external==='true');if(!row?.can_write||!state.context.permissions.write)return;return openEditor(row,b.dataset.external==='true');}
-      if(b.dataset.sheetRemove){const row=find(b.dataset.sheetRemove,false);if(!row?.can_write)return;if(row.sheet||row.absence||row.conflict)throw new Error("Regularize a Folha, ausência ou conflito antes de retirar esta pessoa.");return write("remove_from_day",{person_id:row.person_id,expected_allocation_revision:row.allocation_revision,ids:row.allocation_ids});}
-      if(b.dataset.sheetHistory){const row=find(b.dataset.sheetHistory,b.dataset.external==='true'),token=epoch;const events=await client.history(key(row,b.dataset.external==='true'));if(token!==epoch)return;root.querySelector('[data-sheet-detail]').innerHTML=`<h3>HISTÓRICO</h3>${events.map(x=>`<p>${esc(x.at)} · ${esc(x.action)} · ${esc(x.reason)}</p>`).join('')||'<p>Sem alterações registadas.</p>'}`;return;}
+      if(b.dataset.sheetRemove){const row=find(b.dataset.sheetRemove,false);if(!row||row.can_remove!==true)return;if(row.sheet||row.absence||row.conflict)throw new Error("Regularize a Folha, ausência ou conflito antes de retirar esta pessoa.");return write("remove_from_day",{person_id:row.person_id,expected_allocation_revision:row.allocation_revision,ids:row.allocation_ids});}
+      if(b.dataset.sheetHistory){const row=find(b.dataset.sheetHistory,b.dataset.external==='true'),token=epoch;const events=await client.history(key(row,b.dataset.external==='true'));if(token!==epoch)return;root.querySelector('[data-sheet-detail]').innerHTML=`<h3>HISTÓRICO</h3>${events.map(x=>`<p>${esc(x.at)} · ${esc(x.action)} · ${esc(x.reason)} · autor ${esc(x.ator_id)}</p><details><summary>VER ALTERAÇÃO</summary><pre>Antes: ${esc(JSON.stringify(x.antes))}\nDepois: ${esc(JSON.stringify(x.depois))}</pre></details>`).join('')||'<p>Sem alterações registadas.</p>'}`;return;}
       if(b.dataset.sheetBulk){
         const action=b.dataset.sheetBulk,clock=localClock(now());
+        if(action==='normal'){const chosen=normalDaySelection(state.context.rows,{schedule:state.context.schedule,date:state.date,now:clock,admin:state.context.admin,correctionDays:state.context.correction_days});if(!chosen.eligible.length)return toast('Nenhuma pessoa elegível para dia normal.');return write('bulk',{operation:'normal',items:chosen.eligible.map(({row,intervals})=>({key:key(row),expected_revision:row.revision,intervals}))});}
         if(state.date!==clock.date)throw new Error('Use a ação coletiva apenas no próprio dia; trate datas anteriores individualmente.');
         const rows=state.context.rows.filter(r=>r.can_write&&!r.absence&&(action==='start'?!r.sheet:facts(r).open));
         if(!rows.length)return toast('Não existem pessoas elegíveis para esta ação.');

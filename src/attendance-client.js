@@ -29,7 +29,7 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
       const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.external_id?[data.external_id]:data.items?.map(x=>x.key.person_id);
       const validKeys=Array.isArray(result?.changed_keys) && result.changed_keys.length>0 && result.changed_keys.every(k=>
         k && ['primeline','external'].includes(k.kind) && typeof k.person_id==='string' && k.person_id &&
-        k.date===data.date && [data.work_id,data.source_work_id].filter(Boolean).includes(k.work_id) &&
+        k.date===data.date && (k.work_id===data.work_id || data.source_work_id&&k.work_id===data.source_work_id) &&
         (!data.key || k.kind===data.key.kind) && (action!=='external_register' || k.kind==='external') &&
         (!people || people.includes(k.person_id))) &&
         (!people || people.every(id=>result.changed_keys.some(k=>k.person_id===id&&k.work_id===data.work_id)));
@@ -52,7 +52,7 @@ export function createAttendanceManagementClient({supabase,confirm,requestId=()=
   let pending=null,busy=false;
   async function call(name,body){const r=await supabase(`rpc/${name}`,{method:'POST',body:JSON.stringify(body)});const j=await r.json().catch(()=>null);if(!r.ok){const e=new Error(r.status===404?'A gestão da Folha ainda não está disponível.':j?.message||'Operação recusada.');e.code=j?.code||String(r.status);throw e;}return j;}
   return {
-    context:async({workId=null,personId=null,month=null}={})=>{const j=await call('fn_folha_gestao_contexto_v2',{p_obra_id:workId,p_colaborador_id:personId,p_competencia:month});if(j?.version!==2||!Array.isArray(j.vacations)||!Number.isInteger(j.vacation_revision))throw new Error('Contexto administrativo inválido.');return j;},
+    context:async({workId=null,personId=null,month=null}={})=>{const j=await call('fn_folha_gestao_contexto_v2',{p_obra_id:workId,p_colaborador_id:personId,p_competencia:month});if(j?.version!==2||!['people','tasks','overtime','vacations','entitlements','payroll','history'].every(k=>Array.isArray(j[k]))||!Number.isInteger(j.vacation_revision)||!j.permissions||!['admin','he_review','task_report','task_review'].every(k=>typeof j.permissions[k]==='boolean'))throw new Error('Contexto administrativo inválido.');return j;},
     execute:async(action,data)=>{
       if(busy)throw new Error('Aguarde a operação em curso.');busy=true;
       const fingerprint=JSON.stringify({action,data});if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};

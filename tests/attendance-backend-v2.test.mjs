@@ -32,6 +32,7 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
  for(const [n,role,company] of [[10,'administrativo',1],[11,'gerencia',1],[12,'gestao_plataforma',1],[13,'encarregado',1],[14,'diretor_obra',1],[15,'adjunto',1],[16,'preparador',1],[17,'administrativo',2],[18,'encarregado',1]])
   await q('INSERT INTO utilizadores(id,empresa_id,nome,email,funcao,ativo,auth_user_id) VALUES($1,$2,$3,$4,$5,true,$1)',[id(n),id(company),'Perfil sintético '+n,'user'+n+'@synthetic.test',role]);
  for(let n=20;n<=49;n++)await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao) VALUES($1,$2,$3,'Pedreiro','2026-01-01')",[id(n),id(n===49?2:1),'Pessoa sintética '+n]);
+ for(const [n,user] of [[60,14],[61,15],[62,16]])await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao,utilizador_id) VALUES($1,$2,$3,'Cargo formal distinto','2026-01-01',$4)",[id(n),id(1),'Próprio sintético '+n,id(user)]);
  for(const [n,company] of [[100,1],[101,1],[102,1],[103,2]])await q("INSERT INTO obras(id,empresa_id,numero,nome,tipo) VALUES($1,$2,$3,$4,'reabilitacao')",[id(n),id(company),n,'Destino sintético '+n]);
  for(const [user,role,work] of [[13,'encarregado',100],[13,'encarregado',101],[18,'encarregado',102],[14,'diretor_obra',100],[15,'adjunto',100],[16,'preparador',100]])await q('INSERT INTO obra_responsaveis(obra_id,utilizador_id,papel) VALUES($1,$2,$3)',[id(work),id(user),role]);
  for(let n=0;n<227;n++)await q("INSERT INTO quadro_pessoal_alocacao(id,colaborador_id,obra_id,semana_inicio,data,periodo,criado_por) VALUES($1,$2,$3,'2026-01-01','2026-01-01'::date+$4::integer,'dia_inteiro',$5)",[id(1000+n),id(20),id(100),n,id(10)]);
@@ -82,6 +83,30 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   await assert.rejects(as(a,10,'INSERT INTO folha_registos DEFAULT VALUES'),/permission denied/);
   await assert.rejects(as(a,10,"SELECT folha_privado.ator() v"),/permission denied/);
  });
+ await t.test('Escritório: Diretor/Adjunto/Preparador próprios, identidade ligada e cargo formal preservado',async()=>{
+  for(const [user,person] of [[14,60],[15,61],[16,62]]){
+   const c=await as(a,user,'SELECT fn_folha_contexto_v2($1,NULL) v',[today]);assert.equal(c.rows.length,1);assert.equal(c.rows[0].person_id,id(person));assert.equal(c.rows[0].expected_minutes,480);
+   const d={...sheet(person,today),work_id:null,key:{...key(person,today),work_id:null},intervals:[{start:'00:00',end:null}]};
+   await perform(user,'save',d);const h=await as(a,user,'SELECT fn_folha_historico_v2($1) v',[d.key]);assert.equal(h.events.length,1);
+   await assert.rejects(call(a,user,'save',{...d,request_id:id(seq++),key:{...d.key,person_id:id(30)}}),e=>e.code==='42501');
+   await assert.rejects(call(a,user,'save',{...d,request_id:id(seq++),key:{...d.key,person_id:id(49)}}),e=>e.code==='42501');
+  }
+  await assert.rejects(call(a,13,'save',{...sheet(60,today),work_id:null,key:{...key(60,today),work_id:null}}),e=>e.code==='42501');
+  await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(14)]);
+  await assert.rejects(call(a,14,'save',{...sheet(60,today),work_id:null,key:{...key(60,today),work_id:null}}),e=>e.code==='42501');await q('UPDATE utilizadores SET ativo=true WHERE id=$1',[id(14)]);
+  await q('UPDATE colaboradores SET data_saida=$2 WHERE id=$1',[id(60),today]);await assert.rejects(call(a,14,'save',{...sheet(60,today),work_id:null,key:{...key(60,today),work_id:null},expected_revision:1}),e=>e.code==='42501');await q('UPDATE colaboradores SET data_saida=NULL WHERE id=$1',[id(60)]);
+  await q('UPDATE colaboradores SET utilizador_id=NULL WHERE id=$1',[id(62)]);await assert.rejects(call(a,16,'save',{...sheet(62,today),work_id:null,key:{...key(62,today),work_id:null},expected_revision:1}),e=>e.code==='42501');await q('UPDATE colaboradores SET utilizador_id=$2 WHERE id=$1',[id(62),id(16)]);
+ });
+ await t.test('Escritório flexível: 8h deslocadas, acima sem HE, abaixo missing, unicidade NULL',async()=>{
+  const d={...sheet(60),work_id:null,key:{...key(60),work_id:null},intervals:[{start:'09:15',end:'13:00'},{start:'14:00',end:'18:15'}]};
+  await perform(10,'save',d);assert.equal((await q('SELECT minutes,estado FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(60),day])).rows[0].minutes,480);
+  await q('UPDATE folha_config_empresa SET overtime_enabled=true,calendar_complete=true');
+  await perform(10,'save',{...d,request_id:id(seq++),expected_revision:1,intervals:[{start:'09:00',end:'18:00'}]});assert.equal((await q('SELECT count(*)::int n FROM folha_he h JOIN folha_registos f ON f.id=h.folha_id WHERE f.colaborador_id=$1',[id(60)])).rows[0].n,0);
+  await q('UPDATE folha_config_empresa SET overtime_enabled=false,calendar_complete=false');
+  await perform(10,'save',{...d,request_id:id(seq++),expected_revision:2,intervals:[{start:'09:00',end:'12:00'}]});assert.equal((await q('SELECT estado FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(60),day])).rows[0].estado,'missing');
+  assert.equal((await q('SELECT count(*)::int n FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(60),day])).rows[0].n,1);
+  await assert.rejects(call(a,14,'save',{...d,request_id:id(seq++),expected_revision:3}),/CORRECTION_WINDOW_UNCONFIGURED/);
+ });
  await t.test('contexto sem alocação anterior herdada; âmbito Encarregado',async()=>{
   const c=await as(a,13,'SELECT fn_folha_contexto_v2($1,$2) v',[day,id(100)]);assert.equal(c.rows.length,0);assert.equal(c.works.length,2);assert.equal(c.schedule.expected_minutes,480);
   await assert.rejects(as(a,13,'SELECT fn_folha_contexto_v2($1,$2) v',[day,id(103)]),/PERMISSION_DENIED/);
@@ -101,11 +126,11 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   const d=sheet();const r=await perform(10,'save',d);assert.equal(r.committed,true);
   const n=await count('folha_historico');const replay=await perform(10,'save',d);assert.deepEqual(replay,r);assert.equal(await count('folha_historico'),n);
   await assert.rejects(call(a,10,'save',{...d,note:'diferente'}),/IDEMPOTENCY_CONFLICT/);
-  const row=(await q('SELECT * FROM folha_registos')).rows[0];assert.equal(row.minutes,480);assert.equal(row.estado,'registered');assert.equal(await count('folha_he'),0);
+  const row=(await q('SELECT * FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(30),day])).rows[0];assert.equal(row.minutes,480);assert.equal(row.estado,'registered');assert.equal(await count('folha_he'),0);
  });
  await t.test('correção preserva UUID, autoria, antes/depois e aumenta revisão',async()=>{
-  const old=(await q('SELECT * FROM folha_registos')).rows[0];const d={...sheet(),expected_revision:1,intervals:[{start:'09:00',end:'18:00'}]};await perform(10,'save',d);
-  const row=(await q('SELECT * FROM folha_registos')).rows[0];assert.equal(row.id,old.id);assert.equal(row.revision,2);assert.equal(row.criado_por,old.criado_por);
+  const old=(await q('SELECT * FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(30),day])).rows[0];const d={...sheet(),expected_revision:1,intervals:[{start:'09:00',end:'18:00'}]};await perform(10,'save',d);
+  const row=(await q('SELECT * FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(30),day])).rows[0];assert.equal(row.id,old.id);assert.equal(row.revision,2);assert.equal(row.criado_por,old.criado_por);
   const h=await as(a,13,'SELECT fn_folha_historico_v2($1) v',[key()]);assert.equal(h.events.length,3);assert.equal(h.events.at(-1).reason,null);assert.ok(h.events.at(-1).antes);
   await assert.rejects(q('DELETE FROM folha_historico'),/HISTORY_IMMUTABLE/);
  });
@@ -119,6 +144,21 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   await perform(13,'transfer',{...alloc(32),expected_allocation_revision:1,source_work_id:id(102)});
   assert.equal((await q('SELECT obra_id FROM quadro_pessoal_alocacao WHERE colaborador_id=$1 AND data=$2',[id(32),day])).rows[0].obra_id,id(100));
  });
+ await t.test('dia normal: horário real, janela, sem futuro/sobrescrita e tudo atómico',async()=>{
+  for(const n of [63,64,65])await q("INSERT INTO colaboradores(id,empresa_id,nome,data_admissao) VALUES($1,$2,'Normal sintético','2026-01-01')",[id(n),id(1)]);
+  for(const n of [63,64])await perform(13,'allocate',alloc(n));
+  const d={...alloc(63),operation:'normal',items:[{...sheet(63),intervals:[{start:'09:00',end:'13:00'},{start:'14:00',end:'18:00'}]},{...sheet(64),expected_revision:99}]};
+  await assert.rejects(call(a,13,'bulk',d),/CORRECTION_WINDOW_UNCONFIGURED/);
+  await assert.rejects(call(a,10,'bulk',d),/STALE_REVISION/);assert.equal((await q('SELECT count(*)::int n FROM folha_registos WHERE colaborador_id IN($1,$2)',[id(63),id(64)])).rows[0].n,0);
+  d.items[1].expected_revision=0;const p=await call(a,10,'bulk',d);assert.match(p.summary,/2 pessoas/);await call(a,10,'bulk',d,true,p.versao);
+  await assert.rejects(call(a,10,'bulk',{...d,request_id:id(seq++)}),/NORMAL_DAY_CONFLICT/);
+  await perform(13,'allocate',alloc(65,today));const future={...alloc(65,today),operation:'normal',items:[sheet(65,today)]};
+  await q("UPDATE folha_horarios SET intervals='[{\"period\":\"manha\",\"start\":\"23:00\",\"end\":\"23:15\"},{\"period\":\"tarde\",\"start\":\"23:20\",\"end\":\"23:59\"}]'");
+  await assert.rejects(call(a,13,'bulk',future),/FUTURE_TIME/);
+  await q("UPDATE folha_horarios SET intervals='[{\"period\":\"manha\",\"start\":\"08:00\",\"end\":\"12:00\"},{\"period\":\"tarde\",\"start\":\"13:00\",\"end\":\"17:00\"}]'");
+  const past={...alloc(65),operation:'normal',items:[{...sheet(65),intervals:[{start:'08:00',end:'12:00'},{start:'13:00',end:'17:00'}]}]};await perform(13,'allocate',alloc(65));await perform(10,'bulk',past);
+  await q("UPDATE folha_horarios SET intervals='[{\"period\":\"manha\",\"start\":\"09:00\",\"end\":\"13:00\"},{\"period\":\"tarde\",\"start\":\"14:00\",\"end\":\"18:00\"}]'");
+ });
  await t.test('obra/pessoa/fornecedor de outra empresa, inativo e papel errado recusados',async()=>{
   await assert.rejects(call(a,13,'allocate',{...alloc(33),work_id:id(103)}),/PERMISSION_DENIED/);
   await assert.rejects(call(a,13,'allocate',alloc(49)),/PERMISSION_DENIED/);
@@ -127,12 +167,27 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(18)]);await assert.rejects(call(a,18,'allocate',alloc(33)),/PERMISSION_DENIED/);
   await assert.rejects(call(a,13,'external_register',{...alloc(),provider_id:id(301),name:'Sintético'}),/PERMISSION_DENIED/);
  });
+ await t.test('dia normal exclui ausência, não permite escrita parcial e respeita janela configurada',async()=>{
+  for(const n of [66,67,68]){await q("INSERT INTO colaboradores(id,empresa_id,nome,data_admissao) VALUES($1,$2,'Normal janela','2026-01-01')",[id(n),id(1)]);await perform(13,'allocate',alloc(n));}
+  await q("INSERT INTO ausencias(colaborador_id,data,tipo) VALUES($1,$2,'ferias')",[id(67),day]);
+  const d={...alloc(66),operation:'normal',items:[sheet(66),sheet(67)]};await assert.rejects(call(a,10,'bulk',d),/ABSENCE_CONFLICT/);
+  assert.equal((await q('SELECT count(*)::int n FROM folha_registos WHERE colaborador_id IN($1,$2)',[id(66),id(67)])).rows[0].n,0);
+  await q('UPDATE folha_config_empresa SET correction_days=30');await perform(13,'bulk',{...alloc(68),operation:'normal',items:[sheet(68)]});await q('UPDATE folha_config_empresa SET correction_days=NULL');
+ });
  await t.test('externo separado, folha/histórico, não entra em colaboradores',async()=>{
   const n=await count('colaboradores');const d={...alloc(),provider_id:id(300),name:'Externo sintético'};await perform(13,'external_register',d);
   await perform(10,'save',{...sheet(),key:{...key(),kind:'external',person_id:d.request_id}});assert.equal(await count('colaboradores'),n);assert.equal(await count('folha_externos'),1);
   const c=await as(a,13,'SELECT fn_folha_contexto_v2($1,$2) v',['2026-09-26',id(100)]);assert.equal(c.external_rows.length,0);
   await perform(13,'external_register',{...alloc(30,'2026-09-26'),provider_id:id(300),name:'Externo sintético',external_id:d.request_id});
   assert.equal(await count('folha_externos'),1);assert.equal((await as(a,13,'SELECT fn_folha_contexto_v2($1,$2) v',['2026-09-26',id(100)])).external_rows.length,1);
+  await q('INSERT INTO subempreitadas VALUES($1,$2,$3)',[id(303),id(101),id(300)]);
+  await perform(13,'external_register',{...alloc(30,'2026-09-27'),work_id:id(101),provider_id:id(300),name:'Externo sintético',external_id:d.request_id});
+  assert.equal(await count('folha_externos'),1);assert.equal((await as(a,13,'SELECT fn_folha_contexto_v2($1,$2) v',['2026-09-27',id(101)])).external_rows[0].person_id,d.request_id);
+  await assert.rejects(call(a,13,'external_register',{...alloc(30,'2026-09-28'),work_id:id(101),provider_id:id(300),name:'Externo sintético'}),/EXTERNAL_IDENTITY_EXISTS/);
+  await assert.rejects(call(a,13,'external_register',{...alloc(30,'2026-09-28'),provider_id:id(301),name:'Externo sintético',external_id:d.request_id}),e=>e.code==='42501');
+  await perform(10,'save',{...sheet(),work_id:id(101),date:'2026-09-27',key:{...key(30,'2026-09-27','external',101),person_id:d.request_id}});
+  assert.equal((await as(a,13,'SELECT fn_folha_historico_v2($1) v',[{...key(30,'2026-09-27','external',101),person_id:d.request_id}])).events.length,2);
+  await q('UPDATE folha_externos SET ativo=false WHERE id=$1',[d.request_id]);assert.equal((await as(a,10,'SELECT fn_folha_contexto_v2($1,$2) v',['2026-09-27',id(101)])).external_rows[0].can_write,false);await q('UPDATE folha_externos SET ativo=true WHERE id=$1',[d.request_id]);
  });
  await t.test('férias e trabalho são regularização, não removem ausência',async()=>{
   await perform(13,'allocate',alloc(34));await q("INSERT INTO ausencias(colaborador_id,data,tipo) VALUES($1,$2,'ferias')",[id(34),day]);
@@ -220,6 +275,7 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
    const d=JSON.parse(options.body);try{const value=path.endsWith('contexto_v2')?await as(a,10,'SELECT fn_folha_gestao_contexto_v2($1,$2,$3) v',[d.p_obra_id,d.p_colaborador_id,d.p_competencia]):await aux(10,d.p_acao,d.p_dados,d.p_confirmar,d.p_versao);return Response.json(value);}catch(e){return Response.json({code:e.code,message:e.message},{status:409});}
   }});
   const c=await client.context({personId:id(41)});assert.equal(c.vacation_revision,2);assert.equal(c.entitlements[0].dias,17);
+  const scoped=await client.context({workId:id(100),personId:id(41)});assert.ok(scoped.history.some(x=>x.action==='vacation_set'));assert.ok(scoped.history.some(x=>x.action==='vacation_entitlement'));
   await client.execute('vacation_replace',{person_id:id(41),expected_revision:2,dates:['2026-09-26'],scope_dates:['2026-09-25','2026-09-26','2026-09-27'],reason:null});
   const rows=(await q('SELECT data::text FROM ausencias WHERE colaborador_id=$1',[id(41)])).rows;assert.deepEqual(rows.map(x=>x.data),['2026-09-26']);
   await assert.rejects(as(a,13,'SELECT fn_folha_gestao_contexto_v2(NULL,$1,NULL) v',[id(41)]),/PERMISSION_DENIED/);
@@ -241,7 +297,9 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   await auxDo(13,'task_report',auxData({task_id:id(501),work_id:id(100)}));assert.equal((await q('SELECT estado FROM planeamento_itens WHERE id=$1',[id(501)])).rows[0].estado,'em_execucao');
   const d=auxData({task_id:id(501),work_id:id(100),expected_revision:1});await assert.rejects(aux(14,'task_confirm',d),/PLANNING_CONFIRMATION_REQUIRED/);
   await q("SELECT set_config('test.actor',$1,false)",[id(14)]);await q("UPDATE planeamento_itens SET estado='concluido' WHERE id=$1",[id(501)]);
-  await auxDo(14,'task_confirm',d);assert.equal((await q('SELECT estado FROM folha_tarefas_reportes')).rows[0].estado,'confirmed');
+  assert.equal((await q('SELECT estado FROM folha_tarefas_reportes')).rows[0].estado,'confirmed');
+  assert.equal((await q('SELECT revision FROM folha_tarefas_reportes')).rows[0].revision,2);
+  const context=await as(a,14,'SELECT fn_folha_gestao_contexto_v2($1,NULL,NULL) v',[id(100)]);assert.ok(!context.tasks.some(x=>x.id===id(501)));assert.equal(context.task_reports.find(x=>x.tarefa_id===id(501)).estado,'confirmed');
   const rows=(await q("SELECT estado FROM alertas WHERE tipo='folha_conclusao_reportada'")).rows;assert.equal(rows.length,2);assert.ok(rows.every(x=>x.estado==='resolvido'));
  });
  await t.test('contrato frontend real contra as quatro RPCs PostgreSQL',async()=>{

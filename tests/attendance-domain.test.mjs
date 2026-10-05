@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {analyseSheet,intervalFacts,exactAllocations,normalIntervals,correctionAllowed,vacationSelection,overtimeTransition,payrollFacts,payrollTransition,activePlanningTasks,activeOn,localClock,daySummary} from '../src/attendance-domain.js';
+import {analyseSheet,intervalFacts,exactAllocations,normalIntervals,correctionAllowed,vacationSelection,overtimeTransition,payrollFacts,payrollTransition,activePlanningTasks,activeOn,localClock,daySummary,normalDaySelection} from '../src/attendance-domain.js';
 import {createSheetClient} from '../src/attendance-client.js';
 const day='2026-10-05', full=[{start:'09:00',end:'13:00'},{start:'14:00',end:'18:00'}];
 test('resumo deriva pendências/abertos, ausência válida e DIA COMPLETO sem fecho',()=>{
@@ -34,6 +34,11 @@ test('cliente usa preview/confirmação com mesmo request_id e nenhum DML direto
 test('falha ambígua reutiliza request_id; stale exige recarregar e nova operação',async()=>{let fail=true,stale=false,ids=0;const seen=[];const client=createSheetClient({requestId:()=>String(++ids),confirm:async()=>true,supabase:async(_,o)=>{const b=JSON.parse(o.body);seen.push(b.p_dados.request_id);if(stale)return Response.json({code:'STALE_REVISION',message:'Recarregue'},{status:409});if(!b.p_confirmar)return Response.json({version:2,committed:false,versao:'v'});if(fail)throw new Error('Ligação interrompida');return Response.json({version:2,committed:true,request_id:b.p_dados.request_id,changed_keys:[{kind:'primeline',person_id:'p',date:day,work_id:'own'}]});}});await assert.rejects(()=>client.operate('save',{date:day,work_id:'own'}));fail=false;await client.operate('save',{date:day,work_id:'own'});assert.deepEqual(new Set(seen),new Set(['1']));stale=true;await assert.rejects(()=>client.operate('save',{date:day,work_id:'own'}),/Recarregue/);stale=false;await client.operate('save',{date:day,work_id:'own'});assert.equal(ids,3);});
 test('RPC ausente/recusa/resposta incompleta não simula sucesso nem usa legado',async()=>{for(const status of [404,403,500]){const calls=[];const c=createSheetClient({confirm:async()=>true,supabase:async p=>{calls.push(p);return Response.json({message:'Recusado'},{status});}});await assert.rejects(()=>c.context(day));assert.equal(calls.length,1);assert.equal(calls[0],'rpc/fn_folha_contexto_v2');}const c=createSheetClient({confirm:async()=>true,supabase:async()=>Response.json({})});await assert.rejects(()=>c.context(day),/inválida/);});
 test('contexto de outra obra/data é recusado',async()=>{const c=createSheetClient({supabase:async()=>Response.json({version:2,date:'2026-10-06',work_id:'other',works:[],rows:[],external_rows:[],permissions:{}})});await assert.rejects(()=>c.context(day,'own'),/inválida/);});
+test('cliente aceita chave Escritório NULL e não confunde destino obra',async()=>{
+ const key={kind:'primeline',person_id:'self',date:day,work_id:null};
+ const c=createSheetClient({requestId:()=> 'r',confirm:async()=>true,supabase:async(_,o)=>{const b=JSON.parse(o.body);return Response.json(b.p_confirmar?{version:2,committed:true,request_id:'r',changed_keys:[key]}:{version:2,committed:false,versao:'v'});}});
+ assert.equal((await c.operate('save',{date:day,work_id:null,key})).committed,true);
+});
 
 test('confirmação sem chaves válidas ou com pessoa/obra/data diferente não simula sucesso',async()=>{
   const valid={kind:'primeline',person_id:'p',date:day,work_id:'own'};
@@ -43,4 +48,12 @@ test('confirmação sem chaves válidas ou com pessoa/obra/data diferente não s
     }});
     await assert.rejects(()=>c.operate('save',{date:day,work_id:'own',key:valid,expected_revision:0}),/não confirmada/);
   }
+});
+
+test('dia normal exige fim da jornada completa, exclui ausências/conflitos/folhas e respeita retroativos',()=>{
+ const schedule={intervals:[{period:'manha',start:'09:00',end:'13:00'},{period:'tarde',start:'14:00',end:'18:00'}]};
+ const rows=[{person_id:'ok',can_write:true,period:'manha'},{person_id:'v',can_write:true,absence:{}},{person_id:'c',can_write:true,conflict:'CONFLICT'},{person_id:'s',can_write:true,sheet:{}}];
+ const choose=(time,extra={})=>normalDaySelection(rows,{schedule,date:day,now:{date:day,time},...extra});
+ assert.equal(choose('17:59').eligible.length,0);const done=choose('18:00');assert.equal(done.eligible.length,1);assert.equal(done.excluded.length,3);assert.deepEqual(done.eligible[0].intervals,[{start:'09:00',end:'13:00'}]);
+ assert.equal(choose('18:00',{date:'2026-10-04'}).eligible.length,0);assert.equal(choose('18:00',{date:'2026-10-04',correctionDays:1}).eligible.length,1);assert.equal(choose('18:00',{date:'2026-10-04',admin:true}).eligible.length,1);
 });

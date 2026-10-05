@@ -46,6 +46,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  FROM public.folha_registos f WHERE f.colaborador_id=p AND f.data>=m AND f.data<(m+interval '1 month')::date),'[]'),
  'absences',coalesce((SELECT jsonb_agg(jsonb_build_object('id',a.id,'date',a.data,'type',a.tipo,'state',a.estado) ORDER BY a.data,a.id)
  FROM public.ausencias a WHERE a.colaborador_id=p AND a.data>=m AND a.data<(m+interval '1 month')::date),'[]'),
+ 'pending_days',coalesce((SELECT jsonb_agg(data ORDER BY data) FROM (SELECT DISTINCT q.data FROM public.quadro_pessoal_alocacao q WHERE q.colaborador_id=p AND q.data>=m AND q.data<(m+interval '1 month')::date AND q.data<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND NOT EXISTS(SELECT 1 FROM public.folha_registos f WHERE f.colaborador_id=p AND f.data=q.data AND f.obra_id IS NOT DISTINCT FROM q.obra_id) AND NOT EXISTS(SELECT 1 FROM public.ausencias a WHERE a.colaborador_id=p AND a.data=q.data)) missing),'[]'),
+ 'legacy_days',coalesce((SELECT jsonb_agg(DISTINCT data ORDER BY data) FROM public.ponto_pessoal_obra WHERE colaborador_id=p AND data>=m AND data<(m+interval '1 month')::date),'[]'),
  'financial_effect',false,'legacy_not_converted',true)
 $$;
 CREATE FUNCTION public.fn_folha_gestao_v2(p_acao text,p_dados jsonb,p_confirmar boolean DEFAULT false,p_versao text DEFAULT NULL) RETURNS jsonb
@@ -77,7 +79,8 @@ BEGIN
  IF p_acao='configure_company' THEN
   before:=to_jsonb(cfg); entity:=u.empresa_id; rev:=coalesce(cfg.revision,0);
   IF p_dados ? 'correction_days' AND (p_dados->>'correction_days')::integer<0 THEN RAISE EXCEPTION 'VALIDATION_ERROR: janela'; END IF;
-  after:=jsonb_build_object('correction_days',(p_dados->>'correction_days')::integer,'overtime_enabled',coalesce((p_dados->>'overtime_enabled')::boolean,false),
+  IF p_dados ? 'office_expected_minutes' AND coalesce((p_dados->>'office_expected_minutes')::integer,0) NOT BETWEEN 1 AND 1440 THEN RAISE EXCEPTION 'VALIDATION_ERROR: carga escritório'; END IF;
+  after:=jsonb_build_object('office_expected_minutes',coalesce((p_dados->>'office_expected_minutes')::integer,cfg.office_expected_minutes,480),'correction_days',(p_dados->>'correction_days')::integer,'overtime_enabled',coalesce((p_dados->>'overtime_enabled')::boolean,false),
     'calendar_complete',coalesce((p_dados->>'calendar_complete')::boolean,false),'holiday_dates',coalesce(p_dados->'holiday_dates','[]'),
     'payroll_rules_ready',coalesce((p_dados->>'payroll_rules_ready')::boolean,false),'official_template_hash',p_dados->>'official_template_hash');
   IF after->>'official_template_hash' IS NOT NULL AND after->>'official_template_hash' !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'VALIDATION_ERROR: hash'; END IF;
@@ -146,7 +149,7 @@ BEGIN
    IF v.id IS NULL OR v.factos<>facts THEN RAISE EXCEPTION 'STALE_SOURCE' USING ERRCODE='40001'; END IF;
    IF p_acao='payroll_validate' AND v.estado='draft' THEN after:=jsonb_build_object('estado','validated','facts',facts,'manual',v.manuais);
    ELSIF p_acao='payroll_close' AND v.estado='validated' THEN
-    IF NOT coalesce(cfg.payroll_rules_ready,false) OR EXISTS(SELECT 1 FROM jsonb_array_elements(facts->'sheets') x WHERE x->>'state' IN('open','missing','regularization') OR (x->>'special_day')::boolean)
+    IF NOT coalesce(cfg.payroll_rules_ready,false) OR jsonb_array_length(facts->'pending_days')>0 OR jsonb_array_length(facts->'legacy_days')>0 OR EXISTS(SELECT 1 FROM jsonb_array_elements(facts->'sheets') x WHERE x->>'state' IN('open','missing','regularization') OR (x->>'special_day')::boolean)
     THEN RAISE EXCEPTION 'PAYROLL_RULES_REQUIRED'; END IF;
     after:=jsonb_build_object('estado','closed','facts',facts,'manual',v.manuais);
    ELSIF p_acao='payroll_export' THEN RAISE EXCEPTION 'OFFICIAL_EXPORTER_REQUIRED: modelo e exportador oficial ainda não instalados';
@@ -171,10 +174,10 @@ BEGIN
  IF NOT p_confirmar THEN RETURN jsonb_build_object('version',2,'committed',false,'versao',token,'preview',after); END IF;
  IF p_versao IS DISTINCT FROM token THEN RAISE EXCEPTION 'STALE_PREVIEW' USING ERRCODE='40001'; END IF;
  IF p_acao='configure_company' THEN
-  INSERT INTO public.folha_config_empresa(empresa_id,correction_days,overtime_enabled,calendar_complete,holiday_dates,payroll_rules_ready,official_template_hash,revision)
-   VALUES(u.empresa_id,(after->>'correction_days')::integer,(after->>'overtime_enabled')::boolean,(after->>'calendar_complete')::boolean,
+  INSERT INTO public.folha_config_empresa(empresa_id,office_expected_minutes,correction_days,overtime_enabled,calendar_complete,holiday_dates,payroll_rules_ready,official_template_hash,revision)
+   VALUES(u.empresa_id,(after->>'office_expected_minutes')::integer,(after->>'correction_days')::integer,(after->>'overtime_enabled')::boolean,(after->>'calendar_complete')::boolean,
     ARRAY(SELECT x::date FROM jsonb_array_elements_text(after->'holiday_dates') x),(after->>'payroll_rules_ready')::boolean,after->>'official_template_hash',rev+1)
-   ON CONFLICT(empresa_id) DO UPDATE SET correction_days=excluded.correction_days,overtime_enabled=excluded.overtime_enabled,calendar_complete=excluded.calendar_complete,
+   ON CONFLICT(empresa_id) DO UPDATE SET office_expected_minutes=excluded.office_expected_minutes,correction_days=excluded.correction_days,overtime_enabled=excluded.overtime_enabled,calendar_complete=excluded.calendar_complete,
     holiday_dates=excluded.holiday_dates,payroll_rules_ready=excluded.payroll_rules_ready,official_template_hash=excluded.official_template_hash,revision=excluded.revision;
  ELSIF p_acao='configure_schedule' THEN
   INSERT INTO public.folha_horarios VALUES(w,u.empresa_id,after->'intervals',(after->>'expected_minutes')::integer,rev+1)
@@ -214,18 +217,20 @@ BEGIN
 END $$;
 CREATE FUNCTION folha_privado.tarefa_concluida() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE w uuid; u public.utilizadores; ids jsonb;
+DECLARE w uuid; u public.utilizadores; ids jsonb; report_before public.folha_tarefas_reportes; report_after public.folha_tarefas_reportes;
 BEGIN
  IF NEW.estado IS NOT DISTINCT FROM OLD.estado OR NEW.estado<>'concluido' THEN RETURN NEW; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.folha_tarefas_reportes WHERE tarefa_id=NEW.id AND estado='reported') THEN RETURN NEW; END IF;
  SELECT obra_id INTO w FROM public.fases WHERE id=NEW.fase_id;
  BEGIN u:=folha_privado.ator(); PERFORM folha_privado.obra(w); EXCEPTION WHEN insufficient_privilege THEN RETURN NEW; END;
  IF NOT folha_privado.admin() AND u.funcao NOT IN('diretor_obra','adjunto') THEN RETURN NEW; END IF;
+ SELECT * INTO report_before FROM public.folha_tarefas_reportes WHERE tarefa_id=NEW.id AND estado='reported' FOR UPDATE;
+ UPDATE public.folha_tarefas_reportes SET estado='confirmed',confirmado_por=u.id,confirmado_em=now(),revision=revision+1 WHERE tarefa_id=NEW.id AND estado='reported' RETURNING * INTO report_after;
  SELECT coalesce(jsonb_agg(id ORDER BY id),'[]') INTO ids FROM public.alertas WHERE obra_id=w AND empresa_id=u.empresa_id AND entidade_id=NEW.id AND entidade_tipo='planeamento_item' AND tipo='folha_conclusao_reportada' AND estado='pendente';
  UPDATE public.alertas SET estado='resolvido',resolvido_por=u.id,resolvido_em=now()
  WHERE obra_id=w AND empresa_id=u.empresa_id AND entidade_id=NEW.id AND entidade_tipo='planeamento_item' AND tipo='folha_conclusao_reportada' AND estado='pendente';
- IF ids<>'[]'::jsonb THEN INSERT INTO public.folha_gestao_historico(empresa_id,obra_id,action,entidade_id,antes,depois,ator_id,request_id,origem)
- VALUES(u.empresa_id,w,'planning_concluded_alerts_resolved',NEW.id,to_jsonb(OLD),jsonb_build_object('task',to_jsonb(NEW),'resolved_alert_ids',ids),u.id,gen_random_uuid(),'planeamento'); END IF;
+ IF report_after.id IS NOT NULL THEN INSERT INTO public.folha_gestao_historico(empresa_id,obra_id,action,entidade_id,antes,depois,ator_id,request_id,origem)
+ VALUES(u.empresa_id,w,'planning_concluded_alerts_resolved',NEW.id,jsonb_build_object('task',jsonb_build_object('id',OLD.id,'estado',OLD.estado),'report',to_jsonb(report_before)),jsonb_build_object('task',jsonb_build_object('id',NEW.id,'estado',NEW.estado),'report',to_jsonb(report_after),'resolved_alert_ids',ids),u.id,gen_random_uuid(),'planeamento'); END IF;
  RETURN NEW;
 END $$;
 CREATE TRIGGER folha_tarefa_concluida AFTER UPDATE OF estado ON public.planeamento_itens FOR EACH ROW EXECUTE FUNCTION folha_privado.tarefa_concluida();
@@ -244,13 +249,18 @@ BEGIN
   SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.competencia),'[]') INTO payroll FROM public.folha_vencimentos x WHERE colaborador_id=p_colaborador_id AND empresa_id=u.empresa_id AND (p_competencia IS NULL OR competencia=p_competencia);
  END IF;
  SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.at,x.id),'[]') INTO history FROM public.folha_gestao_historico x
- WHERE empresa_id=u.empresa_id AND (p_obra_id IS NULL OR obra_id=p_obra_id)
+ WHERE empresa_id=u.empresa_id AND (p_obra_id IS NULL OR obra_id=p_obra_id OR (folha_privado.admin() AND p_colaborador_id IS NOT NULL))
  AND (p_colaborador_id IS NULL OR entidade_id=p_colaborador_id OR entidade_id IN(SELECT id FROM public.folha_vencimentos WHERE colaborador_id=p_colaborador_id));
  RETURN jsonb_build_object('version',2,
+ 'schedule',(SELECT to_jsonb(h) FROM public.folha_horarios h WHERE h.obra_id=p_obra_id),
+ 'permissions',jsonb_build_object('admin',folha_privado.admin(),'he_review',u.funcao IN('diretor_obra','adjunto'),'task_report',u.funcao='encarregado','task_review',u.funcao IN('diretor_obra','adjunto')),
+ 'people',CASE WHEN folha_privado.admin() THEN coalesce((SELECT jsonb_agg(jsonb_build_object('id',c.id,'name',c.nome) ORDER BY c.nome,c.id) FROM public.colaboradores c WHERE empresa_id=u.empresa_id),'[]') ELSE '[]'::jsonb END,
+ 'live_facts',CASE WHEN folha_privado.admin() AND p_colaborador_id IS NOT NULL AND p_competencia IS NOT NULL THEN folha_privado.payroll_facts(p_colaborador_id,p_competencia) END,
+ 'tasks',coalesce((SELECT jsonb_agg(jsonb_build_object('id',p.id,'codigo',to_jsonb(p)->'codigo','descricao',to_jsonb(p)->'descricao','estado',p.estado,'report',(SELECT to_jsonb(r) FROM public.folha_tarefas_reportes r WHERE r.tarefa_id=p.id)) ORDER BY p.id) FROM public.planeamento_itens p JOIN public.fases fase ON fase.id=p.fase_id JOIN public.obras o ON o.id=fase.obra_id WHERE o.empresa_id=u.empresa_id AND p_obra_id IS NOT NULL AND fase.obra_id=p_obra_id AND p.arquivado_em IS NULL AND p.estado<>'concluido'),'[]'),
  'config',CASE WHEN folha_privado.admin() THEN (SELECT to_jsonb(x) FROM public.folha_config_empresa x WHERE empresa_id=u.empresa_id) END,
  'vacation_revision',coalesce((SELECT revision FROM public.folha_ferias_revisoes WHERE colaborador_id=p_colaborador_id AND empresa_id=u.empresa_id),0),
  'entitlements',coalesce(rights,'[]'),'vacations',coalesce(vacations,'[]'),'payroll',coalesce(payroll,'[]'),'history',history,
- 'overtime',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY x.id) FROM public.folha_he x WHERE empresa_id=u.empresa_id AND (p_obra_id IS NOT NULL AND obra_id=p_obra_id)),'[]'),
+ 'overtime',coalesce((SELECT jsonb_agg(to_jsonb(x)||jsonb_build_object('sheet',(SELECT jsonb_build_object('person_id',f.colaborador_id,'date',f.data,'intervals',f.intervals,'revision',f.revision) FROM public.folha_registos f WHERE f.id=x.folha_id),'person_name',(SELECT c.nome FROM public.folha_registos f JOIN public.colaboradores c ON c.id=f.colaborador_id WHERE f.id=x.folha_id)) ORDER BY x.id) FROM public.folha_he x WHERE empresa_id=u.empresa_id AND (folha_privado.admin() AND p_obra_id IS NULL OR obra_id=p_obra_id)),'[]'),
  'task_reports',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY x.id) FROM public.folha_tarefas_reportes x WHERE empresa_id=u.empresa_id AND (p_obra_id IS NOT NULL AND obra_id=p_obra_id)),'[]'));
 END $$;
 DO $$ DECLARE t text; BEGIN
