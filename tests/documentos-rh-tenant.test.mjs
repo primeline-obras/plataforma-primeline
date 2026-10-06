@@ -15,6 +15,15 @@ test('RH documents: independent PostgreSQL RLS and main-compatible scripts',{ski
  for(const tipo of ['colaborador','viatura']){const ent=tipo==='colaborador'?n:n+10;await q("INSERT INTO documentos(empresa_id,entidade_tipo,entidade_id,nome_arquivo) VALUES($1,$2,$3,'Synthetic')",[id(c),tipo,id(ent)]);await q("INSERT INTO storage.objects(bucket_id,name) VALUES('documentos',$1)",['rh/'+tipo+'/'+id(ent)+'/synthetic.pdf']);}}
  await q('INSERT INTO autos_medicao VALUES($1,$2)',[id(80),id(50)]);await q("INSERT INTO documentos(empresa_id,entidade_tipo,entidade_id) VALUES($1,'auto_medicao',$2)",[id(1),id(80)]);await q("INSERT INTO storage.objects(bucket_id,name) VALUES('documentos',$1)",[id(50)+'/work.pdf']);
  await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
+ await t.test('readiness evidence: documentary postcheck accepts a restrictive guard with wrong expression',async()=>{
+  await q('ALTER POLICY rh_empresa_guard ON public.documentos USING(false) WITH CHECK(false)');
+  try {
+   await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
+   assert.equal((await as(10,'SELECT * FROM documentos')).rowCount,0);
+  } finally {
+   await q("ALTER POLICY rh_empresa_guard ON public.documentos USING(primeline_documentos_rh_privado.empresa(empresa_id) AND (entidade_tipo NOT IN('colaborador','viatura') OR primeline_documentos_rh_privado.entidade(entidade_tipo,entidade_id,empresa_id))) WITH CHECK(primeline_documentos_rh_privado.empresa(empresa_id) AND (entidade_tipo NOT IN('colaborador','viatura') OR primeline_documentos_rh_privado.entidade(entidade_tipo,entidade_id,empresa_id)))");
+  }
+ });
  await t.test('all eight preserved permissive metadata policies guarded, including pl_admin_total',async()=>{assert.equal((await q("SELECT count(*)::int n FROM pg_policies WHERE tablename='documentos'")).rows[0].n,9);for(const n of [10,13])assert.equal((await as(n,'SELECT * FROM documentos')).rowCount,3);assert.equal((await as(11,'SELECT * FROM documentos')).rowCount,2);assert.equal((await as(12,"SELECT * FROM documentos WHERE entidade_tipo IN('colaborador','viatura')")).rowCount,0);});
  for(const [tipo,n] of [['colaborador',20],['viatura',30]])await t.test(tipo+': A/B SELECT INSERT UPDATE DELETE and wrong entity/company refused',async()=>{
   assert.equal((await as(10,'SELECT * FROM documentos WHERE entidade_id=$1',[id(n+1)])).rowCount,0);
@@ -36,6 +45,7 @@ test('RH documents: independent PostgreSQL RLS and main-compatible scripts',{ski
   assert.equal((await as(13,'UPDATE storage.objects SET name=name WHERE name=$1',[own])).rowCount,1);
  }finally{await q('DROP POLICY synthetic_admin_all ON storage.objects');}});
  await t.test('absence attachments require company of source; work documents remain available',async()=>{assert.equal((await as(10,'SELECT * FROM ausencias_anexos')).rowCount,1);assert.equal((await as(11,'SELECT * FROM ausencias_anexos')).rowCount,1);await assert.rejects(as(10,"INSERT INTO ausencias_anexos(ausencia_id,arquivo_url) VALUES($1,'synthetic')",[id(61)]),e=>e.code==='42501');assert.equal((await as(12,"SELECT * FROM documentos WHERE entidade_tipo='auto_medicao'")).rowCount,1);assert.equal((await as(12,'SELECT * FROM storage.objects WHERE name=$1',[id(50)+'/work.pdf'])).rowCount,1);});
+ await (await import('./audit-security-document-cases.mjs')).auditDocumentCases(t,{q,as,id});
  await t.test('rollback restores exact policy inventory and retains bytes/rows; no Pacote 2 dependency',async()=>{await q(await read('../supabase/documentos_rh_tenant_rollback.sql'));const current=(await q("SELECT * FROM pg_policies WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename='objects') ORDER BY schemaname,tablename,policyname")).rows;const old=(await q('SELECT * FROM primeline_documentos_rh_backup.policies ORDER BY schemaname,tablename,policyname')).rows;assert.deepEqual(current,old);assert.equal((await as(10,'SELECT * FROM ausencias_anexos')).rowCount,2);assert.equal((await q("SELECT to_regclass('folha_registos') r")).rows[0].r,null);});
  }finally{for(const c of clients)await c.end().catch(()=>{});if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}
 });

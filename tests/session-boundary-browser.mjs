@@ -31,7 +31,7 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const origin=`http://127.0.0.1:${server.address().port}`;
 const browser=await chromium.launch({channel:'msedge',headless:true});
-const roles={A:'gestao_plataforma',B:'encarregado',C:'diretor_obra'};
+const roles={A:'gestao_plataforma',B:'encarregado',C:'diretor_obra',D:'administrativo'};
 const work={id:'w1',numero:'120',nome:'Obra permitida',situacao:'em_curso'};
 const person={id:'p1',nome:'Pessoa autorizada',funcao:'Pedreiro',data_saida:null};
 let passes=0;
@@ -40,6 +40,8 @@ try{
   ['Gestão → Encarregado / Quadro','A','B','board','logout'],
   ['Encarregado → Gestão / Quadro','B','A','board','logout'],
   ['Diretor → Encarregado / Obra','C','B','work','logout'],
+  ['Admin → Diretor / Quadro','D','C','board','logout'],
+  ['Admin → Encarregado / Quadro','D','B','board','logout'],
   ['Logout Medicina','A','B','medicine','logout'],
   ['Logout Obra','A','B','work','logout'],
   ['Sessão expirada','A','B','board','expire'],
