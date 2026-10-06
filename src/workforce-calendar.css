@@ -201,3 +201,6 @@ main::-webkit-scrollbar-thumb {
 #team-board .workforce-vacation-box { margin-left: 8px; margin-right: 8px; }
 #team-board .workforce-day-labels { margin-left: 0; margin-right: 0; }
 #team-board .workforce-day-cell { min-height: 48px; overflow: hidden; }
+
+.workforce-day-cell.absence-pending, .workforce-day-cell.absence-absence { box-shadow: inset 0 0 0 3px rgba(107, 104, 95, .36); }
+.workforce-absence-badge.pending, .workforce-absence-badge.absence { background: #6b685f; color: #fff; }

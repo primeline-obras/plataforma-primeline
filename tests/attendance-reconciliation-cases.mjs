@@ -12,7 +12,7 @@ export async function reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id}) {
  };
  const save=async(p,d,intervals=full,w=work)=>{
   const current=await read(p,d);
-  if(w && !current){const data={version:2,request_id:request(),work_id:w,date:d,person_id:id(p),period:'dia_inteiro',expected_allocation_revision:0};const preview=await call(a,10,'allocate',data);await call(a,10,'allocate',data,true,preview.versao);}
+  if(w && !current && !(await q('SELECT 1 FROM quadro_pessoal_alocacao WHERE colaborador_id=$1 AND data=$2 AND obra_id=$3',[id(p),d,w])).rowCount){const data={version:2,request_id:request(),work_id:w,date:d,person_id:id(p),period:'dia_inteiro',expected_allocation_revision:0};const preview=await call(a,10,'allocate',data);await call(a,10,'allocate',data,true,preview.versao);}
   const data={version:2,request_id:request(),work_id:w,date:d,key:{kind:'primeline',person_id:id(p),work_id:w,date:d},expected_revision:current?.revision||0,intervals};
   const preview=await call(a,10,'save',data);await call(a,10,'save',data,true,preview.versao);return read(p,d);
  };
@@ -22,7 +22,7 @@ export async function reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id}) {
   assert.equal(analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes}).state,state);
   const monthly=await as(a,10,'SELECT fn_folha_gestao_contexto_v2(NULL,$1,$2) v',[id(p),d.slice(0,7)+'-01']);
   assert.equal(monthly.live_facts.sheets.find(x=>x.id===stored.id).state,state);
-  assert.equal(daySummary([row]).complete,state==='registered');return stored;
+  assert.equal(daySummary([row]).complete,state==='registered'&&!row.special_review_pending);return stored;
  };
 
  await t.test('reconciliação: cenário exato da auditoria, remover férias restaura 8h e paridade',async()=>{
@@ -106,7 +106,9 @@ export async function reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id}) {
   }
  });
  await t.test('reconciliação F: Vencimentos guardado invalida validação e conserva factos/manuais',async()=>{
-  const p=32,d='2026-09-22',month='2026-09-01';let data={version:2,request_id:request(),person_id:id(p),month,expected_revision:0,manual:{premium:0,km:2,allowance:0,note:'Synthetic'}};
+  const p=32,d='2026-09-22',month='2026-09-01';let data={version:2,request_id:request(),person_id:id(p),month,expected_revision:0,manual:{km:2,allowance:0,note:'Synthetic'}};
+  await save(p,'2026-09-25'); // Resolve the allocation seeded by the transfer regression before validating this month.
+  await q('UPDATE folha_config_empresa SET calendar_complete=true,calendar_validated_years=ARRAY[2026] WHERE empresa_id=$1',[id(1)]);
   await auxDo(10,'payroll_save',data);await auxDo(10,'payroll_validate',{...data,request_id:request(),expected_revision:1});
   await vacation(p,'vacation_set',[d]);let v=(await q('SELECT * FROM folha_vencimentos WHERE colaborador_id=$1',[id(p)])).rows[0];
   assert.equal(v.estado,'draft');assert.equal(v.factos.sheets.find(s=>s.date===d).state,'regularization');assert.equal(v.manuais.km,2);
@@ -114,7 +116,7 @@ export async function reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id}) {
   assert.ok((await q("SELECT 1 FROM folha_gestao_historico WHERE entidade_id=$1 AND action='payroll_reconcile'",[v.id])).rowCount);
  });
  await t.test('reconciliação F: alocação e legado sincronizam fotografia mensal sem pendência fictícia duplicada',async()=>{
-  const p=47,d='2026-09-21',allocation=request(),legacy=request();await auxDo(10,'payroll_save',{version:2,request_id:request(),person_id:id(p),month:'2026-09-01',expected_revision:0,manual:{premium:0,km:0,allowance:0,note:'Synthetic'}});
+  const p=47,d='2026-09-21',allocation=request(),legacy=request();await auxDo(10,'payroll_save',{version:2,request_id:request(),person_id:id(p),month:'2026-09-01',expected_revision:0,manual:{km:0,allowance:0,note:'Synthetic'}});
   const facts=async()=> (await q('SELECT factos FROM folha_vencimentos WHERE colaborador_id=$1',[id(p)])).rows[0].factos;
   await q("SELECT set_config('test.actor',$1,false)",[id(10)]);
   await q("INSERT INTO quadro_pessoal_alocacao(id,colaborador_id,obra_id,data,periodo,semana_inicio,tipo_alocacao) VALUES($1,$2,$3,$4,'dia_inteiro','2026-09-21','obra')",[allocation,id(p),work,d]);assert.ok((await facts()).pending_days.includes(d));

@@ -1,5 +1,5 @@
-// Facts only. Payroll rates, holiday consumption and correction windows are not defaults.
-export const SHEET_STATES = Object.freeze({ none: 'Não registado', open: 'Em aberto', registered: 'Registado', legacy: 'REGISTO LEGADO', missing: 'Horas em falta', vacation: 'Férias', absence: 'Ausência', absence_pending: 'Ausência · JUSTIFICAÇÃO PENDENTE', regularization: 'Regularização' });
+// Administrative rules are explicit; monetary rates and unverified calendars are not inferred.
+export const SHEET_STATES = Object.freeze({ none: 'Não registado', open: 'Em aberto', registered: 'Registado', legacy: 'REGISTO LEGADO', missing: 'HORAS EM FALTA — REQUER REGULARIZAÇÃO', vacation: 'Férias', absence: 'Ausência', absence_pending: 'Ausência · JUSTIFICAÇÃO PENDENTE', regularization: 'Regularização' });
 export function assertDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '') || new Date(`${value}T12:00:00Z`).toISOString().slice(0,10) !== value) throw new Error('Data inválida.');
   return value;
@@ -60,16 +60,16 @@ export function normalIntervals(schedule, period = 'dia_inteiro') {
   intervalFacts(selected);
   return selected;
 }
-export function correctionAllowed({ role, date, today, days = null }) {
+export function correctionAllowed({ role, date, today, days = 1 }) {
   assertDate(date);assertDate(today);
   if (date>today) return false;
   if (['administrativo','gestao_plataforma','gerencia'].includes(role)) return true;
   if (role !== 'encarregado') return false;
   if (date===today) return true;
   if (!Number.isInteger(days) || days<0) return false;
-  return (Date.parse(`${today}T12:00:00Z`)-Date.parse(`${date}T12:00:00Z`))/86400000<=days;
+  return (Date.parse(`${today}T12:00:00Z`)-Date.parse(`${date}T12:00:00Z`))/86400000<=Math.min(days,1);
 }
-export function vacationSelection({ selected=[], from, to, remove=[], weekendRule=null, holidays=[], calendarVerified=false }) {
+export function vacationSelection({ selected=[], from, to, remove=[], holidays=[], calendarVerified=false }) {
   const dates=new Set(selected.map(assertDate));
   if (from || to) {
     assertDate(from);assertDate(to);if(to<from)throw new Error('Intervalo inválido.');
@@ -77,13 +77,14 @@ export function vacationSelection({ selected=[], from, to, remove=[], weekendRul
     for(let d=from;d<=to;d=new Date(Date.parse(`${d}T12:00:00Z`)+86400000).toISOString().slice(0,10)) dates.add(d);
   }
   remove.forEach(d=>dates.delete(assertDate(d)));
-  const result=[...dates].sort();
-  const unresolved=result.filter(d=>[0,6].includes(new Date(`${d}T12:00:00Z`).getUTCDay())||holidays.includes(d));
-  const pendingRule=!calendarVerified || weekendRule==null && unresolved.length>0;
-  return {dates:result,pendingRule,consumedDays:pendingRule?null:result.filter(d=>weekendRule==='all'||!unresolved.includes(d)).length};
+  const allDates=[...dates].sort();
+  const excluded=allDates.filter(d=>[0,6].includes(new Date(`${d}T12:00:00Z`).getUTCDay())||holidays.includes(d));
+  const result=allDates.filter(d=>!excluded.includes(d));
+  const calendarPending=!calendarVerified;
+  return {dates:result,excluded,pendingRule:false,calendarPending,consumedDays:calendarPending?null:result.length};
 }
 export function overtimeTransition(state,action,role) {
-  const director=['diretor_obra','adjunto'].includes(role), admin=['administrativo','gestao_plataforma','gerencia'].includes(role);
+  const director=['diretor_obra','adjunto'].includes(role), admin=role==='administrativo';
   if(state==='potential' && director && ['approve','reject'].includes(action))return action==='approve'?'pending_validation':'rejected';
   if(state==='pending_validation' && admin && action==='validate')return 'validated_pending_rule';
   throw new Error('Transição de horas extraordinárias não autorizada.');
@@ -93,7 +94,8 @@ export function payrollFacts(sheets = [], absences = []) {
 }
 export function payrollTransition(state,action,{canAdmin=false,unresolved=0,officialTemplate=false}={}) {
   if(!canAdmin)throw new Error('Operação reservada ao Administrativo.');
-  if(state==='draft' && action==='validate')return 'validated';
+  if(state==='draft' && action==='validate' && !unresolved)return 'validated';
+  if(['validated','closed'].includes(state) && action==='reopen')return 'draft';
   if(state==='validated' && action==='close' && !unresolved)return 'closed';
   if(state==='closed' && action==='export' && officialTemplate)return 'exported';
   throw new Error('Resolva as pendências e confirme o modelo antes de fechar/exportar.');
@@ -101,14 +103,14 @@ export function payrollTransition(state,action,{canAdmin=false,unresolved=0,offi
 export function activePlanningTasks(items) {return items.filter(x=>x.estado!=='concluido' && !x.arquivado_em);}
 export function daySummary(rows, options={}) {
   const states=rows.map(row=>row.conflict&&!row.sheet?.state&&!row.sheet?.estado?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,...options}).state);
-  const pending=states.filter(s=>!['registered','vacation','absence','legacy'].includes(s)).length;
+  const pending=states.filter((s,i)=>!['registered','vacation','absence','legacy'].includes(s)||rows[i].special_review_pending===true).length;
   return {people:states.length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:pending===0};
 }
-export function normalDaySelection(rows,{schedule,date,now,admin=false,correctionDays=null}={}) {
+export function normalDaySelection(rows,{schedule,date,now,admin=false,correctionDays=1,specialDay=false}={}) {
  const eligible=[],excluded=[];
  let scheduleError=null;try{intervalFacts(normalIntervals(schedule),{date,now});}catch(e){scheduleError=e.message;}
  for(const row of rows){let reason=null,intervals;
-   if(row.absence)reason='Férias/ausência';else if(row.conflict)reason='Conflito';else if(row.legacy)reason='Registo legado';else if(row.sheet)reason='Folha já registada';else if(scheduleError)reason=scheduleError;
+   if([0,6].includes(new Date(`${date}T12:00:00Z`).getUTCDay())||row.special_day||schedule?.holiday_dates?.includes(date)||specialDay)reason='Dia especial — registe horários reais';else if(row.absence)reason='Férias/ausência';else if(row.conflict)reason='Conflito';else if(row.legacy)reason='Registo legado';else if(row.sheet)reason='Folha já registada';else if(scheduleError)reason=scheduleError;
   else if(!row.can_write)reason='Sem autorização ou fora da janela';
   else if(!admin&&!correctionAllowed({role:'encarregado',date,today:now.date,days:correctionDays}))reason='Fora da janela de correção';
   else {try{intervals=normalIntervals(schedule,row.period||'dia_inteiro');intervalFacts(intervals,{date,now});}catch(e){reason=e.message;}}

@@ -7,9 +7,9 @@ export async function payloadRegressionCases(t,{q,a,as,call,aux,auxDo,id}) {
  const data=extra=>({version:2,request_id:id(seq++),expected_revision:0,...extra});
  await t.test('P1: payroll com obra recusado antes de escrita; administrativo legítimo preservado',async()=>{
   const before=(await q('SELECT count(*)::int n FROM folha_gestao_historico')).rows[0].n;
-  await assert.rejects(aux(10,'payroll_save',data({work_id:id(100),person_id:id(42),month:'2026-09-01',manual:{premium:123,km:456,allowance:789,note:'SALARY_SENTINEL'}})),e=>e.code==='22023');
+  await assert.rejects(aux(10,'payroll_save',data({work_id:id(100),person_id:id(42),month:'2026-09-01',manual:{km:456,allowance:789,note:'SALARY_SENTINEL'}})),e=>e.code==='22023');
   assert.equal((await q('SELECT count(*)::int n FROM folha_gestao_historico')).rows[0].n,before);
-  const payrollRequest=data({person_id:id(42),month:'2026-09-01',manual:{premium:123,km:456,allowance:789,note:'SALARY_SENTINEL'}});
+  const payrollRequest=data({person_id:id(42),month:'2026-09-01',manual:{km:456,allowance:789,note:'SALARY_SENTINEL'}});
   const replay=await auxDo(10,'payroll_save',payrollRequest);
   await q("UPDATE utilizadores SET funcao='encarregado' WHERE id=$1",[id(10)]);
   try{await assert.rejects(aux(10,'payroll_save',payrollRequest,true,'unused'),e=>e.code==='42501');}
@@ -21,7 +21,7 @@ export async function payloadRegressionCases(t,{q,a,as,call,aux,auxDo,id}) {
  });
  await t.test('P1: JSON operacional não contém blocos administrativos, inclusive histórico antigo com obra',async()=>{
   // Only the local synthetic owner can create this deliberately mis-scoped historical row.
-  await q("INSERT INTO folha_gestao_historico(empresa_id,obra_id,action,entidade_id,depois,ator_id,request_id) VALUES($1,$2,'payroll_save',$3,$4,$5,$6)",[id(1),id(100),id(42),{premium:123,km:456,allowance:789,note:'SALARY_SENTINEL'},id(10),id(seq++)]);
+  await q("INSERT INTO folha_gestao_historico(empresa_id,obra_id,action,entidade_id,depois,ator_id,request_id) VALUES($1,$2,'payroll_save',$3,$4,$5,$6)",[id(1),id(100),id(42),{km:456,allowance:789,note:'SALARY_SENTINEL'},id(10),id(seq++)]);
   for(const user of [13,14,15]) {
    const c=await as(a,user,'SELECT fn_folha_gestao_contexto_v2($1,NULL,NULL) v',[id(100)]);
    for(const field of ['payroll','live_facts','entitlements','vacations','vacation_revision','people','config'])assert.equal(Object.hasOwn(c,field),false,field);

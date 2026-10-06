@@ -5,6 +5,21 @@ import { readFile } from "node:fs/promises";
 const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
 const styles = await readFile(new URL("../src/workforce-calendar.css", import.meta.url), "utf8");
 
+test("baixas e justificação pendente não recebem a marcação de férias", () => {
+  const start = app.indexOf("function workforceAbsencePresentation(");
+  const end = app.indexOf("function vacationMonthBounds(", start);
+  const presentation = new Function("workforceAbsenceLabels", "shortPersonName", app.slice(start, end) + "; return workforceAbsencePresentation;")({}, p => p);
+  const effective = [{person:{id:"synthetic",nome:"Synthetic"}}];
+  for (const tipo of ["baixa_doenca", "baixa_maternidade", "baixa_parental"]) {
+    const result = presentation([{colaborador_id:"synthetic",data:"2026-10-06",tipo,estado:"confirmada"}], effective, "2026-10-06");
+    assert.equal(result.visualType, "absence");
+    assert.equal(result.badge, "A");
+  }
+  const pending = presentation([{colaborador_id:"synthetic",data:"2026-10-06",tipo:"baixa_doenca",estado:"ausente_pendente"}], effective, "2026-10-06");
+  assert.equal(pending.badge, "?");
+  assert.match(pending.tooltip, /JUSTIFICAÇÃO PENDENTE/);
+});
+
 test("o quadro associa ausências à pessoa e ao dia da célula", () => {
   assert.match(app, /function workforceAbsencePresentation\(absences, effective, date\)/);
   assert.match(app, /item\.data === date && names\.has\(item\.colaborador_id\)/);

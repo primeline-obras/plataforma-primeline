@@ -35,8 +35,9 @@ REVOKE ALL ON SCHEMA folha_privado FROM PUBLIC,anon,authenticated,service_role;
 CREATE TABLE public.folha_config_empresa(
  empresa_id uuid PRIMARY KEY REFERENCES public.empresas(id),
  office_expected_minutes integer NOT NULL DEFAULT 480 CHECK(office_expected_minutes BETWEEN 1 AND 1440),
- correction_days integer CHECK(correction_days>=0),
+ correction_days integer NOT NULL DEFAULT 1 CHECK(correction_days=1),
  overtime_enabled boolean NOT NULL DEFAULT false,
+ he_eligible_roles text[] NOT NULL DEFAULT ARRAY['pedreiro','servente'],
  holiday_dates date[] NOT NULL DEFAULT '{}',
  calendar_complete boolean NOT NULL DEFAULT false,
  revision integer NOT NULL DEFAULT 1 CHECK(revision>0)
@@ -68,7 +69,7 @@ CREATE TABLE public.folha_registos(
  colaborador_id uuid REFERENCES public.colaboradores(id), externo_id uuid REFERENCES public.folha_externos(id),
  intervals jsonb NOT NULL CHECK(jsonb_typeof(intervals)='array' AND jsonb_array_length(intervals)>0),
  minutes integer NOT NULL CHECK(minutes>=0), estado text NOT NULL CHECK(estado IN('open','registered','missing','regularization')),
- special_day boolean NOT NULL, expected_minutes integer CHECK(expected_minutes>0), revision integer NOT NULL CHECK(revision>0), note text CHECK(length(note)<=1000),
+ special_day boolean NOT NULL, special_reviewed_by uuid REFERENCES public.utilizadores(id), special_reviewed_at timestamptz, expected_minutes integer CHECK(expected_minutes>0), revision integer NOT NULL CHECK(revision>0), note text CHECK(length(note)<=1000),
  criado_por uuid NOT NULL REFERENCES public.utilizadores(id), atualizado_por uuid NOT NULL REFERENCES public.utilizadores(id),
  criado_em timestamptz NOT NULL DEFAULT now(), atualizado_em timestamptz NOT NULL DEFAULT now(), request_id uuid NOT NULL,
  CHECK(num_nonnulls(colaborador_id,externo_id)=1),
@@ -284,14 +285,14 @@ BEGIN
  IF s.id IS NOT NULL THEN expected:=s.expected_minutes; END IF;
  RETURN jsonb_build_object('tipo_local',CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,'person_id',p,'name',nome,'role',papel,'provider_name',fornecedor,
   'sheet',CASE WHEN s.id IS NULL THEN NULL ELSE jsonb_build_object('id',s.id,'intervals',s.intervals,'note',s.note,'state',s.estado) END,
-  'absence',a,'legacy',legacy,'conflict',conf,'special_day',s.special_day,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
+  'absence',a,'legacy',legacy,'conflict',conf,'special_day',s.special_day,'special_review_pending',s.special_day AND s.special_reviewed_at IS NULL,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
   'allocation_ids',coalesce(ids,'[]'),'period',coalesce(period,'dia_inteiro'),'expected_minutes',expected,
   'can_remove',w IS NOT NULL AND NOT legacy AND conf IS NULL AND s.id IS NULL AND a IS NULL AND NOT EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=p AND data=d) AND jsonb_array_length(coalesce(ids,'[]'))=1
    AND EXISTS(SELECT 1 FROM public.obras WHERE id=w AND situacao='em_curso')
    AND EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d))
    AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),
   'overtime',CASE WHEN s.id IS NOT NULL THEN jsonb_build_object('estado',coalesce((SELECT h.estado FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),CASE WHEN s.special_day AND s.estado<>'regularization' THEN 'pending_rule' ELSE 'none' END)) END,
-  'can_write',NOT legacy AND conf IS NULL AND d<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND (d=(now() AT TIME ZONE 'Europe/Lisbon')::date OR folha_privado.admin() OR d>=(now() AT TIME ZONE 'Europe/Lisbon')::date-(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id)) AND (w IS NULL OR folha_privado.admin() OR u.funcao='encarregado') AND ((k='external' AND EXISTS(SELECT 1 FROM public.folha_externos WHERE id=p AND empresa_id=u.empresa_id AND ativo)) OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
+  'can_write',NOT legacy AND conf IS NULL AND d<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND (d=(now() AT TIME ZONE 'Europe/Lisbon')::date OR folha_privado.admin() OR d>=(now() AT TIME ZONE 'Europe/Lisbon')::date-1) AND (w IS NULL OR folha_privado.admin() OR u.funcao='encarregado') AND ((k='external' AND EXISTS(SELECT 1 FROM public.folha_externos WHERE id=p AND empresa_id=u.empresa_id AND ativo)) OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
 END $$;
 CREATE FUNCTION folha_privado.estado_efetivo(minutos integer,aberto boolean,esperado integer,ausencia boolean,conflito boolean) RETURNS text
 LANGUAGE sql IMMUTABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -304,7 +305,8 @@ BEGIN
  UPDATE public.folha_he SET estado='superseded',revision=revision+1 WHERE folha_id=f.id AND estado<>'superseded';
  IF f.obra_id IS NOT NULL AND f.colaborador_id IS NOT NULL AND NOT f.special_day AND f.estado='registered'
  AND f.expected_minutes IS NOT NULL AND f.minutes>f.expected_minutes
- AND EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=f.empresa_id AND overtime_enabled AND calendar_complete AND NOT f.data=ANY(holiday_dates))
+ AND EXISTS(SELECT 1 FROM public.colaboradores c JOIN public.folha_config_empresa cfg ON cfg.empresa_id=c.empresa_id WHERE c.id=f.colaborador_id AND lower(btrim(c.funcao))=ANY(cfg.he_eligible_roles))
+ AND EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=f.empresa_id AND overtime_enabled AND calendar_complete AND extract(year FROM f.data)::integer=ANY(calendar_validated_years) AND NOT f.data=ANY(holiday_dates))
  AND extract(isodow FROM f.data)<6
  AND NOT EXISTS(SELECT 1 FROM public.horas_extraordinarias WHERE colaborador_id=f.colaborador_id AND data=f.data)
  THEN INSERT INTO public.folha_he(empresa_id,obra_id,folha_id,folha_revision,minutes,estado)
@@ -394,16 +396,16 @@ BEGIN
    status:=CASE WHEN r->>'expected_minutes' IS NULL THEN 'regularization' WHEN worked<(r->>'expected_minutes')::integer THEN 'missing' ELSE 'registered' END;
   END IF;
   registered:=registered+CASE WHEN status='registered' THEN 1 ELSE 0 END; opened:=opened+CASE WHEN status='open' THEN 1 ELSE 0 END;
-  pending:=pending+CASE WHEN status IN('registered','absence','legacy') THEN 0 ELSE 1 END;
+  pending:=pending+CASE WHEN status IN('registered','absence','legacy') AND NOT coalesce((r->>'special_review_pending')::boolean,false) THEN 0 ELSE 1 END;
  END LOOP;
  summary:=jsonb_build_object('people',jsonb_array_length(rows||ext),'registered',registered,'open',opened,'pending',pending,'complete',pending=0);
  RETURN jsonb_build_object('version',2,'date',p_data,'work_id',p_obra_id,'works',works,'rows',rows,'external_rows',ext,
-  'tipo_local',CASE WHEN p_obra_id IS NULL THEN 'escritorio' ELSE 'obra' END,'office_available',office,'self_person_id',self_id,'correction_days',(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),'admin',folha_privado.admin(),'summary',summary,'schedule',sched,'special_day',special,'providers',providers,
+  'tipo_local',CASE WHEN p_obra_id IS NULL THEN 'escritorio' ELSE 'obra' END,'office_available',office,'self_person_id',self_id,'correction_days',1,'admin',folha_privado.admin(),'summary',summary,'schedule',sched,'special_day',special,'providers',providers,
   'external_people',coalesce((SELECT jsonb_agg(jsonb_build_object('id',e.id,'name',e.nome,'provider_id',e.fornecedor_id)) FROM public.folha_externos e WHERE e.empresa_id=u.empresa_id AND e.ativo AND (folha_privado.admin() OR u.funcao='encarregado') AND EXISTS(SELECT 1 FROM public.fornecedores f WHERE f.id=e.fornecedor_id AND f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id)))
    AND NOT EXISTS(SELECT 1 FROM public.folha_externos_dias ed WHERE ed.externo_id=e.id AND ed.data=p_data AND ed.obra_id=p_obra_id)),'[]'),
   'management',folha_privado.admin() OR p_obra_id IS NOT NULL AND u.funcao IN('encarregado','diretor_obra','adjunto'),
   'calendar_verified',coalesce((SELECT calendar_complete FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),false),
-  'overtime_generation',CASE WHEN EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND overtime_enabled AND calendar_complete) THEN 'enabled' ELSE 'disabled_pending_compatibility' END,
+  'overtime_generation',CASE WHEN EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND overtime_enabled AND calendar_complete AND extract(year FROM p_data)::integer=ANY(calendar_validated_years)) THEN 'enabled' ELSE 'disabled_pending_compatibility' END,
   'permissions',jsonb_build_object('write',CASE WHEN p_obra_id IS NULL THEN office ELSE folha_privado.admin() OR u.funcao='encarregado' END,'allocation_write',p_obra_id IS NOT NULL AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),'external_write',p_obra_id IS NOT NULL AND (folha_privado.admin() OR u.funcao='encarregado')));
 END $$;
 CREATE FUNCTION public.fn_folha_pessoas_v2(p_data date,p_obra_id uuid) RETURNS jsonb
@@ -471,10 +473,11 @@ BEGIN
  SELECT * INTO old FROM public.folha_registos WHERE obra_id IS NOT DISTINCT FROM w AND data=d AND CASE WHEN kind='primeline' THEN colaborador_id=person ELSE externo_id=person END FOR UPDATE;
  IF (p->>'expected_revision')::integer IS DISTINCT FROM coalesce(old.revision,0) THEN RAISE EXCEPTION 'STALE_REVISION' USING ERRCODE='40001'; END IF;
  IF d<(now() AT TIME ZONE 'Europe/Lisbon')::date AND NOT folha_privado.admin() THEN
-  SELECT correction_days INTO window_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id;
+  window_days:=1;
   IF window_days IS NULL THEN RAISE EXCEPTION 'CORRECTION_WINDOW_UNCONFIGURED'; END IF;
   IF (now() AT TIME ZONE 'Europe/Lisbon')::date-d>window_days THEN RAISE EXCEPTION 'CORRECTION_WINDOW_EXCEEDED'; END IF;
  END IF;
+ IF (now() AT TIME ZONE 'Europe/Lisbon')::date-d>1 AND folha_privado.admin() AND nullif(btrim(p->>'reason'),'') IS NULL THEN RAISE EXCEPTION 'CORRECTION_REASON_REQUIRED'; END IF;
  f:=folha_privado.facts(p->'intervals',d); expected:=(row->>'expected_minutes')::integer;
  special:=extract(isodow FROM d)>5 OR EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND d=ANY(holiday_dates));
  IF EXISTS(SELECT 1 FROM public.folha_registos other,jsonb_array_elements(other.intervals) x,jsonb_array_elements(p->'intervals') y
@@ -484,7 +487,7 @@ BEGIN
  state:=folha_privado.estado_efetivo((f->>'minutes')::integer,(f->>'open')::boolean,expected,row->'absence'<>'null'::jsonb,row->>'conflict' IS NOT NULL);
  IF NOT confirmar THEN RETURN jsonb_build_object('before',to_jsonb(old),'revision',coalesce(old.revision,0),'row',row,'facts',f,'state',state); END IF;
  IF old.id IS NOT NULL THEN
- UPDATE public.folha_registos SET intervals=p->'intervals',minutes=(f->>'minutes')::integer,estado=state,special_day=old.special_day,
+ UPDATE public.folha_registos SET intervals=p->'intervals',minutes=(f->>'minutes')::integer,estado=state,special_day=old.special_day,special_reviewed_at=NULL,special_reviewed_by=NULL,
  revision=old.revision+1,note=p->>'note',atualizado_por=u.id,atualizado_em=now(),request_id=req WHERE id=old.id RETURNING * INTO result;
  ELSE
  INSERT INTO public.folha_registos(empresa_id,obra_id,tipo_local,data,colaborador_id,externo_id,intervals,minutes,estado,special_day,expected_minutes,revision,note,criado_por,atualizado_por,request_id)
@@ -500,6 +503,7 @@ CREATE FUNCTION folha_privado.normal(p uuid,w uuid,d date) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE r jsonb; xs jsonb; full_day jsonb;
 BEGIN
+ IF extract(isodow FROM d)>5 OR EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=(folha_privado.ator()).empresa_id AND d=ANY(holiday_dates)) THEN RAISE EXCEPTION 'SPECIAL_DAY_NO_NORMAL_FILL'; END IF;
  r:=folha_privado.linha(p,w,d,'primeline');
  SELECT intervals INTO full_day FROM public.folha_horarios WHERE obra_id=w;
  IF full_day IS NULL THEN RAISE EXCEPTION 'SCHEDULE_REQUIRED'; END IF;

@@ -16,6 +16,8 @@ CREATE TABLE primeline_folha_v2_backup.colaboradores AS TABLE public.colaborador
 CREATE TABLE primeline_folha_v2_backup.he AS TABLE public.horas_extraordinarias;
 CREATE TABLE primeline_folha_v2_backup.planeamento AS TABLE public.planeamento_itens;
 CREATE TABLE primeline_folha_v2_backup.alertas AS TABLE public.alertas;
+CREATE TABLE primeline_folha_v2_backup.ausencias_constraints AS SELECT conname,pg_get_constraintdef(oid) definicao FROM pg_constraint WHERE conrelid='public.ausencias'::regclass AND contype='c';
+CREATE TABLE primeline_folha_v2_backup.anexos AS TABLE public.ausencias_anexos;
 CREATE TABLE primeline_folha_v2_backup.funcoes AS SELECT p.oid::regprocedure::text assinatura,pg_get_functiondef(p.oid) definicao,p.proacl::text acl,pg_get_userbyid(p.proowner) owner FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind='f';
 CREATE TABLE primeline_folha_v2_backup.policies AS SELECT * FROM pg_policies WHERE schemaname='public';
 CREATE TABLE primeline_folha_v2_backup.triggers AS SELECT t.tgrelid::regclass::text tabela,t.tgname nome,t.tgenabled ativo,pg_get_triggerdef(t.oid) definicao FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal;

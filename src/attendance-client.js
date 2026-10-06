@@ -60,7 +60,8 @@ export function createAttendanceManagementClient({supabase,confirm,requestId=()=
       try{
         const p=await call('fn_folha_gestao_v2',{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
         if(p?.version!==2||p.committed!==false||typeof p.versao!=='string'||!p.versao)throw new Error('Pré-visualização inválida.');
-        const message=action==='vacation_replace'?`Confirmar os ${data.dates.length} dias de férias selecionados? Os dias desmarcados deste período serão retirados.`:'Confirmar esta alteração?';
+        const vacationPreview=p.preview?.dates;const consumption=p.preview?.calendar_pending?'Calendário por validar; consumo ainda não definitivo.':p.preview?.consumed_days!=null?`${p.preview.consumed_days} dias úteis consumidos.`:'';
+        const message=action.startsWith('vacation_')&&Array.isArray(vacationPreview)?`Confirmar ${vacationPreview.length} dias úteis? ${consumption}${action==='vacation_replace'?' Os dias desmarcados deste período serão retirados.':''}`:action==='vacation_replace'?`Confirmar os ${data.dates.length} dias de férias selecionados? Os dias desmarcados deste período serão retirados.`:'Confirmar esta alteração?';
         if(!await confirm(message)){pending=null;return null;}
         const r=await call('fn_folha_gestao_v2',{p_acao:action,p_dados:body,p_confirmar:true,p_versao:p.versao});
         if(r?.version!==2||r.committed!==true||r.request_id!==body.request_id||r.revision!==data.expected_revision+1)throw new Error('Gravação não confirmada. Recarregue antes de repetir.');

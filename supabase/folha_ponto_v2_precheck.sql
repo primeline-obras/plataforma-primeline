@@ -1,6 +1,13 @@
 -- REAL CATALOG VALIDATION REQUIRED: herda integralmente o postcheck auditado do hotfix.
 -- Somente leitura. Verifica instalação e preservação integral do catálogo fora da lista autorizada.
 BEGIN READ ONLY;
+DO $adm_sources$ BEGIN
+ IF to_regclass('public.ausencias_anexos') IS NULL OR NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.ausencias_anexos'::regclass AND attname='ausencia_id' AND atttypid='uuid'::regtype AND NOT attisdropped)
+ OR NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.ausencias_anexos'::regclass AND attname='arquivo_url' AND atttypid='text'::regtype AND NOT attisdropped)
+ OR NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.colaboradores'::regclass AND attname='funcao' AND atttypid='text'::regtype AND NOT attisdropped)
+ THEN RAISE EXCEPTION 'ADM_SOURCE_SCHEMA_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM public.ausencias_anexos an LEFT JOIN public.ausencias a ON a.id=an.ausencia_id WHERE a.id IS NULL) THEN RAISE EXCEPTION 'ABSENCE_ATTACHMENT_ORPHAN'; END IF;
+END $adm_sources$;
 DO $private$
 BEGIN
  IF (SELECT nspowner<> 'postgres'::regrole FROM pg_namespace WHERE nspname='primeline_encarregado_20261004')

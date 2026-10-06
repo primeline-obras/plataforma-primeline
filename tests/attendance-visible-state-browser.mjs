@@ -63,9 +63,9 @@ try{
    if(scene==='vacation'){assert.match(text,/Férias/);assert.match(text,/DIA COMPLETO/);}
    if(scene==='both'){assert.match(text,/Legado e Folha V2 coexistem/);assert.match(text,/Regularização/);assert.doesNotMatch(text,/DIA COMPLETO/);}
    if(scene==='work_absence')assert.match(text,/Regularização/);
-   if(scene==='missing')assert.match(text,/Horas em falta/);
+   if(scene==='missing')assert.match(text,/HORAS EM FALTA — REQUER REGULARIZAÇÃO/);
    if(scene==='overtime')assert.match(text,/HE validada · regra financeira pendente/);
-   if(scene==='special')assert.match(text,/DIA ESPECIAL · REGRA PENDENTE/);
+   if(scene==='special')assert.match(text,/DIA ESPECIAL — REQUER REVISÃO/);
    if(scene==='pending'&&['encarregado','administrativo'].includes(role)){
     for(const operation of ['start','finish','normal'])await page.locator(`[data-sheet-bulk="${operation}"]`).evaluate(e=>{e.disabled=false;e.click();});
     assert.equal(await page.evaluate(()=>calls.some(c=>c.name.endsWith('fn_folha_operar_v2'))),false);
@@ -77,7 +77,7 @@ try{
    await page.evaluate(async()=>{
     const {createAttendanceManagementModule}=await import('/src/attendance-management.js');
     window.pendingAbsence=true;
-    window.management=createAttendanceManagementModule({toast:()=>{},supabase:async()=>Response.json({version:2,permissions:{admin:true,he_review:false,task_report:false,task_review:false},people:[{id:'p',name:'Synthetic'}],tasks:[],task_reports:[],overtime:[],history:[],vacations:[{data:'2026-09-24',estado:pendingAbsence?'ausente_pendente':'confirmada'}],vacation_revision:0,entitlements:[],payroll:[],config:{},live_facts:{sheets:[],pending_days:[],legacy_days:[],absences:[{date:'2026-09-24',type:'falta_injustificada',state:pendingAbsence?'ausente_pendente':'justificada'}]}})});
+    window.management=createAttendanceManagementModule({toast:()=>{},supabase:async()=>Response.json({version:2,permissions:{admin:true,he_review:false,task_report:false,task_review:false},people:[{id:'p',name:'Synthetic'}],tasks:[],task_reports:[],overtime:[],history:[],vacations:[{data:'2026-09-24',estado:pendingAbsence?'ausente_pendente':'confirmada'}],vacation_revision:0,entitlements:[],payroll:[{competencia:"2026-09-01",estado:"draft",revision:1,manuais:{km:0,allowance:0}}],config:{calendar_complete:true,calendar_validated_years:[2026]},live_facts:{sheets:[],pending_days:[],legacy_days:[],absences:[{date:'2026-09-24',type:'falta_injustificada',state:pendingAbsence?'ausente_pendente':'justificada'}]}})});
     await management.show(document.querySelector('#root'),{date:'2026-09-24',workId:null});
    });
    await page.locator('[data-management-tab=vacations]').click();await page.locator('[data-management-person]').selectOption('p');

@@ -25,8 +25,8 @@ import { createManagementMapModule } from "./management-map.js?v=12";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceManagementClient } from "./attendance-client.js?v=4";
-import { createAttendanceModule } from "./attendance-sheet.js?v=6";
+import { createAttendanceManagementClient } from "./attendance-client.js?v=5";
+import { createAttendanceModule } from "./attendance-sheet.js?v=7";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -1793,6 +1793,7 @@ function isVacation(absence) {
 
 const workforceAbsenceLabels = {
   ferias: "Férias",
+  baixa_doenca: "Baixa por doença", baixa_maternidade: "Baixa de maternidade", baixa_parental: "Baixa parental",
   falta_injustificada: "Falta injustificada",
   falta_justificada_sem_remuneracao: "Falta justificada sem remuneração",
   falta_justificada_com_remuneracao: "Falta justificada com remuneração",
@@ -1802,14 +1803,18 @@ function workforceAbsencePresentation(absences, effective, date) {
   const names = new Map(effective.map(item => [item.person.id, shortPersonName(item.person.nome)]));
   const matches = absences.filter(item => item.data === date && names.has(item.colaborador_id));
   if (!matches.length) return null;
-  const visualType = matches.some(item => item.tipo === "falta_injustificada")
+  const visualType = matches.some(item => item.estado === "ausente_pendente")
+    ? "pending"
+    : matches.some(item => String(item.tipo || "").startsWith("baixa_"))
+    ? "absence"
+    : matches.some(item => item.tipo === "falta_injustificada")
     ? "unjustified"
     : matches.some(item => String(item.tipo || "").startsWith("falta_justificada")) ? "justified" : "vacation";
   const tooltip = matches.map(item => {
     const label = workforceAbsenceLabels[item.tipo] || String(item.tipo || "Ausência").replaceAll("_", " ");
-    return names.get(item.colaborador_id) + " · " + label + (item.comentario ? " — " + item.comentario : "");
+    return names.get(item.colaborador_id) + " · " + label + (item.estado === "ausente_pendente" ? " · JUSTIFICAÇÃO PENDENTE" : "") + (item.comentario ? " — " + item.comentario : "");
   }).join("\n");
-  return { visualType, tooltip, badge: visualType === "vacation" ? "F" : visualType === "justified" ? "J" : "!" };
+  return { visualType, tooltip, badge: visualType === "pending" ? "?" : visualType === "absence" ? "A" : visualType === "vacation" ? "F" : visualType === "justified" ? "J" : "!" };
 }
 
 function vacationMonthBounds(month = selectedVacationMonth) {
@@ -2192,7 +2197,7 @@ function renderTeam() {
   const vacationEditor = canManageTeam() ? `<details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO</div>`;
   const absenceForm = canManageAbsences() ? `<form class="absence-entry-form" id="absence-entry-form">
     <div><label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
-    <label>TIPO<select name="tipo" required><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
+    <label>TIPO<select name="tipo" required><option value="baixa_doenca">Baixa por doença</option><option value="baixa_maternidade">Baixa de maternidade</option><option value="baixa_parental">Baixa parental</option><option value="falta_injustificada">Falta injustificada</option><option value="falta_justificada_sem_remuneracao">Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao">Falta justificada com remuneração</option></select></label>
     <label>DATA<input name="data" type="date" value="${new Date().toISOString().slice(0, 10)}" required></label>
     <label>ANEXO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label></div>
     <button class="primary-button" type="submit">REGISTAR AUSÊNCIA <span>→</span></button><p class="form-error"></p>
@@ -2205,7 +2210,7 @@ function renderTeam() {
       <time>${formatOptionalDate(item.data)}</time><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${absenceTypeLabels[item.tipo] || String(item.tipo || "Ausência").replace(/_/g, " ")}</span>${item.comentario ? `<small>${safeText(item.comentario)}</small>` : ""}</div>
       <em class="absence-state ${item.estado || "confirmada"}">${absenceStateLabels[item.estado] || item.estado || "Confirmada"}</em>
       ${canManageAbsences() ? `<div class="absence-attachments">${attachments.map(file => `<button type="button" data-absence-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${safeText(file.nome_arquivo)}">ANEXO · ${safeText(file.nome_arquivo)}</button>`).join("")}<button type="button" data-edit-absence="${item.id}">${editing ? "FECHAR EDIÇÃO" : "EDITAR AUSÊNCIA"}</button></div>` : ""}
-      ${editing ? `<form class="absence-edit-form" data-update-absence="${item.id}"><label>COLABORADOR<select name="colaborador_id" required>${collaborators.map(candidate => `<option value="${candidate.id}" ${candidate.id === item.colaborador_id ? "selected" : ""}>${safeText(candidate.nome)}</option>`).join("")}</select></label><label>TIPO<select name="tipo" required><option value="falta_injustificada" ${item.tipo === "falta_injustificada" ? "selected" : ""}>Falta injustificada</option><option value="falta_justificada_sem_remuneracao" ${item.tipo === "falta_justificada_sem_remuneracao" ? "selected" : ""}>Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao" ${item.tipo === "falta_justificada_com_remuneracao" ? "selected" : ""}>Falta justificada com remuneração</option></select></label><label>DATA<input name="data" type="date" value="${item.data}" required></label><label>COMENTÁRIO<input name="comentario" value="${safeText(item.comentario || "")}" maxlength="1000"></label><button type="submit">GUARDAR ALTERAÇÕES</button><p class="form-error"></p></form>` : ""}
+      ${editing ? `<form class="absence-edit-form" data-update-absence="${item.id}"><label>COLABORADOR<select name="colaborador_id" required>${collaborators.map(candidate => `<option value="${candidate.id}" ${candidate.id === item.colaborador_id ? "selected" : ""}>${safeText(candidate.nome)}</option>`).join("")}</select></label><label>TIPO<select name="tipo" required><option value="baixa_doenca" ${item.tipo==='baixa_doenca'?'selected':''}>Baixa por doença</option><option value="baixa_maternidade" ${item.tipo==='baixa_maternidade'?'selected':''}>Baixa de maternidade</option><option value="baixa_parental" ${item.tipo==='baixa_parental'?'selected':''}>Baixa parental</option><option value="falta_injustificada" ${item.tipo === "falta_injustificada" ? "selected" : ""}>Falta injustificada</option><option value="falta_justificada_sem_remuneracao" ${item.tipo === "falta_justificada_sem_remuneracao" ? "selected" : ""}>Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao" ${item.tipo === "falta_justificada_com_remuneracao" ? "selected" : ""}>Falta justificada com remuneração</option></select></label><label>DATA<input name="data" type="date" value="${item.data}" required></label><label>COMENTÁRIO<input name="comentario" value="${safeText(item.comentario || "")}" maxlength="1000"></label><button type="submit">GUARDAR ALTERAÇÕES</button><p class="form-error"></p></form>` : ""}
       ${canManageAbsences() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
     </article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
@@ -2492,7 +2497,8 @@ async function openVacationDaysDialog(personId, week) {
   $("#workflow-dialog-title").textContent = "EDITAR FÉRIAS";
   $("#workflow-dialog-content").innerHTML = `<form id="workforce-vacation-form" data-person-id="${personId}" data-week="${week}" data-revision="${context.vacation_revision}">
     <p class="dialog-copy"><strong>${safeText(shortPersonName(person.nome))}</strong><br>Marque apenas os dias em que estará de férias.</p>
-    <div class="vacation-days-picker">${dates.map((date, index) => `<label><input type="checkbox" name="vacation_date" value="${date}" ${existing.has(date) ? "checked" : ""}><span><b>${weekdayNames[index]}</b><small>${prettyDate.format(new Date(`${date}T12:00:00`))}</small></span></label>`).join("")}</div>
+    <div class="vacation-days-picker">${dates.map((date, index) => `<label><input type="checkbox" name="vacation_date" value="${date}" ${existing.has(date) ? "checked" : ""} ${context.config?.holiday_dates?.includes(date)&&!existing.has(date)?'disabled':''}><span><b>${weekdayNames[index]}</b><small>${prettyDate.format(new Date(`${date}T12:00:00`))}${context.config?.holiday_dates?.includes(date)?' · FERIADO — NÃO CONSOME':''}</small></span></label>`).join("")}</div>
+    <p>Férias em dias úteis completos. ${context.config?.calendar_complete&&dates.every(d=>context.config?.calendar_validated_years?.includes(Number(d.slice(0,4))))?'Calendário validado.':'Calendário por validar — consumo ainda não definitivo.'}</p>
     <p class="vacation-help">Pode desmarcar dias já registados. Se não marcar nenhum, as férias desta semana serão removidas.</p>
     <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">GUARDAR DIAS <span>→</span></button></div>
   </form>`;

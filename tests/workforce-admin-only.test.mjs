@@ -36,7 +36,7 @@ test("Equipa Técnica vê só o Mapa de Férias, sem indicadores de RH", () => {
   assert.match(app, /\$\("#team-active-stat"\)\.hidden = vacationOnly/);
   assert.match(app, /\$\("#team-kpis"\)\.hidden = vacationOnly/);
   assert.match(app, /\$\("#team-alert-summary"\)\.hidden = vacationOnly/);
-  assert.match(app, /Mapa de Férias, ponto diário da equipa em obra e medicina do trabalho\./);
+  assert.match(app, /Mapa de Férias, Folha de Ponto da equipa em obra e medicina do trabalho\./);
   assert.match(app, /\$\("#team-kpis"\)\.innerHTML = vacationOnly \? ""/);
   assert.match(app, /\$\("#team-alert-summary"\)\.innerHTML = vacationOnly \? ""/);
 });

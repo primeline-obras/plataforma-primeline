@@ -4,8 +4,9 @@ import {readFile} from 'node:fs/promises';
 const read=p=>readFile(new URL('../'+p,import.meta.url),'utf8');
 const sql=await read('supabase/folha_ponto_v2.sql'),aux=await read('supabase/folha_ponto_v2_gestao.sql');
 const client=await read('src/attendance-client.js'),sheet=await read('src/attendance-sheet.js'),app=await read('src/app.js');
-test('Folha usa somente RPCs controladas, sem fallback/DML ou motivo obrigatório',()=>{
- assert.doesNotMatch(client+sheet,/fn_guardar_ponto_obra|fn_listar_ponto_obra|method:\s*['"](?:PATCH|DELETE)['"]|reason[^\n]{0,20}required/);
+test('Folha usa somente RPCs controladas, sem fallback/DML; motivo obrigatório fora da janela ADM',()=>{
+ assert.doesNotMatch(client+sheet,/fn_guardar_ponto_obra|fn_listar_ponto_obra|method:\s*['"](?:PATCH|DELETE)['"]/);
+ assert.match(sheet,/MOTIVO DA CORREÇÃO \(OBRIGATÓRIO\)/);assert.match(sql,/CORRECTION_REASON_REQUIRED/);
  assert.match(sheet,/remove_from_day/);assert.match(sheet,/daySummary/);assert.match(sheet,/reason:.*\|\|null/);
  const vacation=app.slice(app.indexOf('async function saveVacationDays'),app.indexOf('async function loadTeamData'));
  assert.match(vacation,/vacation_replace/);assert.doesNotMatch(vacation,/method:\s*['"](?:POST|DELETE|PATCH)['"]|!isSupabaseConfigured\)\s*\{/);
