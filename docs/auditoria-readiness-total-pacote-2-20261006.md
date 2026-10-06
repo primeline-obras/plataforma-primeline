@@ -90,9 +90,7 @@ summary/payroll nos três viewports. Revisão concorrente stale recusada.
 PASS local para factos, km quantidade, ajudas em €, observações manuais, pendências,
 revisão, validar/recibos/fechar/reabrir, reconciliação e história.
 HE/prémio não incluídos; exporter oficial continua recusado.
-**R01:** o requisito atual "apenas Administrativo" não é cumprido na gravação de
-rascunho: Gestão/Gerência mantêm escrita anteriormente implementada. Não confundir
-esta divergência de autorização funcional com leak cross-company.
+**R01 — classificação corrigida pela decisão definitiva da Jordane:** payroll_save é permitido a Administrativo e Gestão da Plataforma. Gerência mantém acesso a rascunhos anteriormente preservado; esse acesso não constitui P1 confirmado. O P1 é a exclusão indevida de Gestão das ações reservadas por adm() e de outras ações limitadas a papéis específicos. Tenant, auditoria, revisão, concorrência, integridade e RLS continuam obrigatórios.
 
 ## K. Escritório e janela
 
@@ -238,7 +236,7 @@ Nenhuma gravação real. Logs/screenshots sintéticos em TEMP, fora do Git.
 
 | ID | Severidade | Área | Produção/local | Bloqueia rollout? | Correção recomendada |
 |---|---|---|---|---|---|
-| R01 | P1 | Autorização Vencimentos | Local confirmado; V2 não aplicado nesta tarefa | Sim, face ao requisito atual | Restringir payroll_save ao Administrativo na RPC/UI, mantendo leitura legítima explicitamente prevista |
+| R01 | P1 | Autorização funcional de Gestão | Código local confirmado; V2 não aplicado nesta tarefa | Sim, face à regra definitiva | Garantir ações autorizadas de gestao_plataforma na RPC/UI, preservando todos os mecanismos de integridade; avaliar Gerência separadamente |
 | R02 | P2 | Postcheck documental | Script local; estado real não consultado | Sim para aceitar instalação documental | Comparar tabela+expressões completas+helpers/ACLs com definições aprovadas |
 | R03 | P2 | Fingerprints/ordem | Incompatibilidade local conhecida | Sim após hotfix documental | Preparar baseline pós-documental revisto sem afrouxar gates nem reescrever backup histórico |
 | R05 | P2 | Writer Ponto legado | Dívida explícita nos scripts; catálogo real não reconfirmado | Sim para encerrar dívida/Fase B; não exige apagar legado | Definir fecho autorizado do writer após validação V2 e plano de conflitos; manter histórico READ ONLY |
@@ -246,12 +244,17 @@ Nenhuma gravação real. Logs/screenshots sintéticos em TEMP, fora do Git.
 
 ### Reprodução, causa e impacto
 
-**R01.** `folha_ponto_v2_gestao.sql`: payroll_save usa admin() (Administrativo,
-Gestão/Gerência), mas não a guarda adm() exclusiva. `attendance-management.js`
-mostra form de rascunho com permissions.admin. Novo teste synthetic actors 11/12
-grava dois drafts na própria empresa, confirmando autoria. Isso preserva decisão
-anterior mais ampla, mas contradiz o requisito desta varredura "apenas Administrativo".
-Não alterar cargos/perfis RH, nem assumir leak entre empresas.
+**R01 — decisão definitiva e evidência por perfil.** A interpretação anterior de "apenas Administrativo" foi substituída pela correção expressa da Jordane. Não restringir gestao_plataforma. payroll_save usa admin() e permanece legitimamente disponível à Gestão. A decisão anterior em docs/pacote-2-correcao-auditoria-final-20261006.md, secção de contexto de gestão, preserva Administrativo/Gestão/Gerência; não foi identificada uma regra específica que proíba rascunhos à Gerência. Isso não autoriza equipará-la à Gestão nas restantes ações.
+
+| Perfil | payroll_save | Validar/fechar/reabrir Vencimentos | Interpretação |
+|---|---|---|---|
+| administrativo | Permitido | Permitido pela guarda de papel | Preservar |
+| gestao_plataforma | Permitido | Atualmente recusado por adm() | P1: deve ser permitido, sujeito aos restantes requisitos |
+| gerencia | Permitido no comportamento anterior preservado | Recusado por adm() | Não ampliar automaticamente; aplicar requisito específico |
+
+adm() exige funcao = administrativo e utilizador ativo com empresa. A RPC aplica essa guarda a payroll_validate, payroll_close, payroll_reopen, he_validate, he_process, configure_he_eligibility, absence_confirm e special_review. O contexto/UI também usa permissions.adm e restringe he_review/task_report/task_review por papel. Essas restrições excluem Gestão e precisam de revisão na futura correção autorizada. A guarda de confirmação de ausência também usa adm(). Papéis exclusivos de reportes/aprovações não podem excluir Gestão pela nova regra, nem conceder automaticamente essas ações à Gerência.
+
+O teste local existente de rascunhos dos atores 11/12 prova comportamento atual e autoria; passa a ser evidência de preservação, não prova de autorização indevida. Esta reclassificação resulta de revisão de código e decisões, sem nova execução de suites, alteração de produto ou consulta à produção. Não alterar cargos/perfis RH, nem assumir leak entre empresas.
 
 **R02.** `documentos_rh_tenant_postcheck.sql`: busca guards por nome/permissividade/
 comando/roles, sem comparar qual/with_check nem associar cada nome à tabela esperada.
