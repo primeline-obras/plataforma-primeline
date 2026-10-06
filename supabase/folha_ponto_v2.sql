@@ -87,6 +87,16 @@ CREATE TABLE public.folha_historico(
  request_id uuid NOT NULL, reason text CHECK(length(reason)<=1000), origem text NOT NULL DEFAULT 'folha_v2'
 );
 CREATE INDEX folha_historico_chave ON public.folha_historico(empresa_id,obra_id,person_id,data,at);
+CREATE FUNCTION folha_privado.invalidar_review_especial() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF ROW(NEW.intervals,NEW.minutes,NEW.estado,NEW.special_day,NEW.expected_minutes,NEW.obra_id,NEW.colaborador_id,NEW.externo_id,NEW.data,NEW.tipo_local)
+ IS DISTINCT FROM ROW(OLD.intervals,OLD.minutes,OLD.estado,OLD.special_day,OLD.expected_minutes,OLD.obra_id,OLD.colaborador_id,OLD.externo_id,OLD.data,OLD.tipo_local)
+ THEN NEW.special_reviewed_at:=NULL;NEW.special_reviewed_by:=NULL; END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER trg_folha_invalidar_review BEFORE UPDATE ON public.folha_registos FOR EACH ROW EXECUTE FUNCTION folha_privado.invalidar_review_especial();
+REVOKE ALL ON FUNCTION folha_privado.invalidar_review_especial() FROM PUBLIC,anon,authenticated,service_role;
 CREATE TABLE public.folha_he(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL, obra_id uuid NOT NULL,
  folha_id uuid NOT NULL REFERENCES public.folha_registos(id), folha_revision integer NOT NULL,
@@ -285,13 +295,13 @@ BEGIN
  IF s.id IS NOT NULL THEN expected:=s.expected_minutes; END IF;
  RETURN jsonb_build_object('tipo_local',CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,'person_id',p,'name',nome,'role',papel,'provider_name',fornecedor,
   'sheet',CASE WHEN s.id IS NULL THEN NULL ELSE jsonb_build_object('id',s.id,'intervals',s.intervals,'note',s.note,'state',s.estado) END,
-  'absence',a,'legacy',legacy,'conflict',conf,'special_day',s.special_day,'special_review_pending',s.special_day AND s.special_reviewed_at IS NULL,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
+  'absence',a,'legacy',legacy,'conflict',conf,'special_day',s.special_day,'special_reviewed',s.special_reviewed_at IS NOT NULL,'special_review_pending',s.special_day AND s.special_reviewed_at IS NULL,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
   'allocation_ids',coalesce(ids,'[]'),'period',coalesce(period,'dia_inteiro'),'expected_minutes',expected,
   'can_remove',w IS NOT NULL AND NOT legacy AND conf IS NULL AND s.id IS NULL AND a IS NULL AND NOT EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=p AND data=d) AND jsonb_array_length(coalesce(ids,'[]'))=1
    AND EXISTS(SELECT 1 FROM public.obras WHERE id=w AND situacao='em_curso')
    AND EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d))
    AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),
-  'overtime',CASE WHEN s.id IS NOT NULL THEN jsonb_build_object('estado',coalesce((SELECT h.estado FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),CASE WHEN s.special_day AND s.estado<>'regularization' THEN 'pending_rule' ELSE 'none' END)) END,
+  'overtime',CASE WHEN s.id IS NOT NULL THEN jsonb_build_object('estado',coalesce((SELECT h.estado FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),CASE WHEN s.special_day AND s.special_reviewed_at IS NULL AND s.estado<>'regularization' THEN 'pending_rule' ELSE 'none' END)) END,
   'can_write',NOT legacy AND conf IS NULL AND d<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND (d=(now() AT TIME ZONE 'Europe/Lisbon')::date OR folha_privado.admin() OR d>=(now() AT TIME ZONE 'Europe/Lisbon')::date-1) AND (w IS NULL OR folha_privado.admin() OR u.funcao='encarregado') AND ((k='external' AND EXISTS(SELECT 1 FROM public.folha_externos WHERE id=p AND empresa_id=u.empresa_id AND ativo)) OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
 END $$;
 CREATE FUNCTION folha_privado.estado_efetivo(minutos integer,aberto boolean,esperado integer,ausencia boolean,conflito boolean) RETURNS text

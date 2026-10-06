@@ -18,6 +18,11 @@ DO $$ DECLARE t text; r text; f record; current_columns jsonb; BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.folha_gestao_historico'::regclass AND attname='dominio' AND attgenerated='s')
   OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.folha_gestao_historico'::regclass AND contype='c' AND pg_get_constraintdef(oid) LIKE '%planning_concluded_alerts_resolved%')
  THEN RAISE EXCEPTION 'MANAGEMENT_HISTORY_DOMAIN_INVALID'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.folha_registos'::regclass AND tgname='trg_folha_invalidar_review' AND tgenabled='O')
+ OR to_regprocedure('folha_privado.he_operacional(jsonb)') IS NULL
+ OR strpos(pg_get_functiondef('folha_privado.linha(uuid,uuid,date,text)'::regprocedure),'''special_reviewed''')=0
+ OR strpos(pg_get_expr((SELECT adbin FROM pg_attrdef WHERE adrelid='public.folha_gestao_historico'::regclass AND adnum=(SELECT attnum FROM pg_attribute WHERE attrelid='public.folha_gestao_historico'::regclass AND attname='dominio')),'public.folha_gestao_historico'::regclass),'he_process')>0
+ THEN RAISE EXCEPTION 'SECURITY_VISIBILITY_CONTRACT_INVALID'; END IF;
  IF strpos(pg_get_functiondef('public.fn_folha_contexto_v2(date,uuid)'::regprocedure),'public.ponto_pessoal_obra h JOIN public.colaboradores')=0
   OR strpos(pg_get_functiondef('public.fn_folha_contexto_v2(date,uuid)'::regprocedure),'absence_pending')=0
   OR strpos(pg_get_functiondef('folha_privado.linha(uuid,uuid,date,text)'::regprocedure),'''legacy'',legacy')=0

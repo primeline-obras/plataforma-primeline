@@ -123,6 +123,7 @@ DROP FUNCTION folha_privado.proteger_legado();
 DROP TABLE public.folha_he;
 DROP TABLE public.folha_historico;
 DROP TABLE public.folha_registos;
+DROP FUNCTION folha_privado.invalidar_review_especial();
 DROP TABLE public.folha_externos_dias;
 DROP TABLE public.folha_externos;
 DROP TABLE public.folha_horarios;

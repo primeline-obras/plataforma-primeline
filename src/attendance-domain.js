@@ -28,12 +28,12 @@ export function intervalFacts(intervals = [], { date, now } = {}) {
   if (ranges.some((x,i)=>i && (ranges[i-1].end == null || x.start < ranges[i-1].end))) throw new Error('Os intervalos de trabalho sobrepõem-se.');
   return { minutes: ranges.reduce((sum,x)=>sum+(x.end == null ? 0 : x.end-x.start),0), open, started:ranges.length>0 };
 }
-export function analyseSheet({ sheet = null, absence = null, legacy = false, expectedMinutes = null, workType = 'obra', specialDay = false }) {
+export function analyseSheet({ sheet = null, absence = null, legacy = false, expectedMinutes = null, workType = 'obra', specialDay = false, specialReviewed = false }) {
   const facts = intervalFacts(sheet?.intervals || []);
   // Persisted backend state is authoritative; interval analysis is for unsaved previews.
   if (sheet && ['open','registered','missing','regularization'].includes(sheet.estado ?? sheet.state)) {
     const state=sheet.estado ?? sheet.state;
-    const overtime=state==='registered' && specialDay ? 'pending_rule' : state==='registered' && workType==='obra' && expectedMinutes!=null && facts.minutes>expectedMinutes ? 'potential' : 'none';
+    const overtime=state==='registered' && specialDay ? (specialReviewed?'none':'pending_rule') : state==='registered' && workType==='obra' && expectedMinutes!=null && facts.minutes>expectedMinutes ? 'potential' : 'none';
     return {state,expectedMinutes,...facts,overtime};
   }
   if (legacy && sheet) return {state:'regularization',expectedMinutes,...facts,overtime:'none'};
@@ -41,7 +41,7 @@ export function analyseSheet({ sheet = null, absence = null, legacy = false, exp
   if (absence) return {state:absence.estado==='ausente_pendente'?'absence_pending':absence.tipo==='ferias'?'vacation':'absence',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'none'};
   if (legacy) return {state:'legacy',expectedMinutes,...facts,overtime:'none'};
   const state = !sheet || !facts.started ? 'none' : facts.open ? 'open' : expectedMinutes == null ? 'regularization' : facts.minutes < expectedMinutes ? 'missing' : 'registered';
-  const overtime = specialDay && facts.started ? 'pending_rule' : workType==='obra' && expectedMinutes != null && !facts.open && facts.minutes>expectedMinutes ? 'potential' : 'none';
+  const overtime = specialDay && facts.started ? (specialReviewed?'none':'pending_rule') : workType==='obra' && expectedMinutes != null && !facts.open && facts.minutes>expectedMinutes ? 'potential' : 'none';
   return {state,expectedMinutes,...facts,overtime};
 }
 export function exactAllocations(rows, personId, date) {

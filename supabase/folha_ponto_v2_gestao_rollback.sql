@@ -29,6 +29,7 @@ DROP TRIGGER trg_folha_vencimentos_legado ON public.ponto_pessoal_obra;
 DROP FUNCTION folha_privado.reconciliar_vencimentos();
 DROP FUNCTION public.fn_folha_gestao_v2(text,jsonb,boolean,text);
 DROP FUNCTION public.fn_folha_gestao_contexto_v2(uuid,uuid,date);
+DROP FUNCTION folha_privado.he_operacional(jsonb);
 DROP FUNCTION folha_privado.payroll_facts(uuid,date);
 DROP TABLE public.folha_gestao_historico;
 DROP TABLE public.folha_tarefas_reportes;

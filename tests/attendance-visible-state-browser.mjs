@@ -38,6 +38,7 @@ try{
     if(scene==='both')Object.assign(r,{legacy:true,conflict:'LEGACY_CONFLICT',sheet:{intervals:[{start:'09:00',end:'13:00'}]},can_write:false,can_remove:false});
     if(scene==='work_absence')Object.assign(r,{absence:{tipo:'falta_injustificada',estado:'ausente_pendente'},sheet:{intervals:[{start:'09:00',end:'13:00'}]},can_remove:false});
     if(scene==='missing')r.sheet={intervals:[{start:'09:00',end:'13:00'}]};
+    if(scene==='special')Object.assign(r,{special_day:true,special_reviewed:false,special_review_pending:true,sheet:{state:'registered',intervals:[{start:'09:00',end:'17:00'}]}});
     if(scene==='overtime')Object.assign(r,{sheet:{intervals:[{start:'09:00',end:'18:00'}]},overtime:{estado:'validated_pending_rule'}});
     return Response.json({version:2,date:b.p_data,work_id:b.p_obra_id,works:[{id:'own',number:1,name:'Synthetic'}],rows:[r],external_rows:[],permissions:{write:writer,allocation_write:writer,external_write:false},schedule:{intervals:[{period:'manha',start:'09:00',end:'13:00'},{period:'tarde',start:'14:00',end:'18:00'}]},special_day:scene==='special',admin:role==='administrativo',correction_days:7});
    }});await module.show();
@@ -65,7 +66,7 @@ try{
    if(scene==='work_absence')assert.match(text,/Regularização/);
    if(scene==='missing')assert.match(text,/HORAS EM FALTA — REQUER REGULARIZAÇÃO/);
    if(scene==='overtime')assert.match(text,/HE validada · regra financeira pendente/);
-   if(scene==='special')assert.match(text,/DIA ESPECIAL — REQUER REVISÃO/);
+   if(scene==='special')assert.match(text,/DIA ESPECIAL · REQUER REVISÃO/);
    if(scene==='pending'&&['encarregado','administrativo'].includes(role)){
     for(const operation of ['start','finish','normal'])await page.locator(`[data-sheet-bulk="${operation}"]`).evaluate(e=>{e.disabled=false;e.click();});
     assert.equal(await page.evaluate(()=>calls.some(c=>c.name.endsWith('fn_folha_operar_v2'))),false);

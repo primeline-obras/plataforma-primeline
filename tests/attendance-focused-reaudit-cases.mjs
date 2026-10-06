@@ -16,7 +16,7 @@ export async function focusedReauditCases(t,{q,a,as,aux,id}) {
    assert.ok(c.history.every(e=>['tarefas',...(user===13?[]:['he','horario'])].includes(e.dominio)));
    assert.ok(c.task_reports.every(e=>e.obra_id===work&&e.empresa_id===id(1)));
    if(user===13)assert.deepEqual(c.overtime,[]);
-   else assert.ok(c.overtime.every(e=>e.obra_id===work&&e.empresa_id===id(1)));
+   else assert.ok(c.overtime.every(e=>e.obra_id===work&&!Object.hasOwn(e,'empresa_id')));
    const client=createAttendanceManagementClient({supabase:async()=>Response.json(c)});
    assert.deepEqual(await client.context({workId:work}),c);
   }

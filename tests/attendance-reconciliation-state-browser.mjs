@@ -31,7 +31,7 @@ const cases=[
  ['legacy',{legacy:true,can_write:false,can_remove:false},'REGISTO LEGADO',0],
  ['legacy conflict',{legacy:true,conflict:'LEGACY_CONFLICT',sheet:sheet('regularization')},'Regularização',1],
  ['potential HE',{sheet:sheet('registered',[{start:'09:00',end:'18:00'}]),overtime:{estado:'potential'}},'Potencial HE',0],
- ['pending_rule',{sheet:sheet('registered'),special_day:true},'DIA ESPECIAL — REQUER REVISÃO',0],
+ ['pending_rule',{sheet:sheet('registered'),special_day:true,special_reviewed:false,special_review_pending:true},'DIA ESPECIAL · REQUER REVISÃO',1],
  ['pending_validation',{sheet:sheet('registered'),overtime:{estado:'pending_validation'}},'validação administrativa pendente',0],
  ['rejected',{sheet:sheet('registered'),overtime:{estado:'rejected'}},'HE rejeitada',0],
  ['validated_pending_rule',{sheet:sheet('registered'),overtime:{estado:'validated_pending_rule'}},'regra financeira pendente',0],
