@@ -245,5 +245,14 @@ DO $$ BEGIN
  IF to_regclass('public.folha_registos') IS NOT NULL OR to_regnamespace('folha_privado') IS NOT NULL THEN RAISE EXCEPTION 'FOLHA_V2_ALREADY_INSTALLED'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='public.quadro_pessoal_alocacao'::regclass AND polname='encarregado_sem_dml_direto' AND NOT polpermissive) THEN RAISE EXCEPTION 'HOTFIX_POLICY_REQUIRED'; END IF;
 END $$;
+-- Explicit legacy projection: fail closed if required source columns are absent.
+DO $legacy_projection$
+DECLARE missing text[];
+BEGIN
+ SELECT array_agg(required ORDER BY required) INTO missing
+ FROM unnest(ARRAY['id','empresa_id','obra_id','colaborador_id','data','horas','entrada_manha','saida_manha','entrada_tarde','saida_tarde','periodos_alocados','estado','registado_por','atualizado_por','criado_em','atualizado_em']) required
+ WHERE NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.ponto_pessoal_obra'::regclass AND attname=required AND attnum>0 AND NOT attisdropped);
+ IF missing IS NOT NULL THEN RAISE EXCEPTION 'LEGACY_PROJECTION_COLUMNS_MISSING: %',missing; END IF;
+END $legacy_projection$;
 SELECT 'FOLHA_V2_PRECHECK_OK' status;
 COMMIT;

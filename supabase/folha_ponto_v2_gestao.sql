@@ -30,7 +30,13 @@ CREATE TABLE public.folha_tarefas_reportes(
 );
 CREATE TABLE public.folha_gestao_historico(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL, obra_id uuid,
- action text NOT NULL, entidade_id uuid NOT NULL, antes jsonb, depois jsonb,
+ action text NOT NULL CHECK(action IN('configure_company','configure_schedule','he_approve','he_reject','he_validate','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export','task_report','task_confirm','planning_concluded_alerts_resolved')),
+ dominio text GENERATED ALWAYS AS (CASE
+ WHEN action IN('task_report','task_confirm','planning_concluded_alerts_resolved') THEN 'tarefas'
+ WHEN action IN('he_approve','he_reject','he_validate') THEN 'he'
+ WHEN action='configure_schedule' THEN 'horario'
+ ELSE 'administrativo' END) STORED,
+ entidade_id uuid NOT NULL, antes jsonb, depois jsonb,
  ator_id uuid NOT NULL REFERENCES public.utilizadores(id), at timestamptz NOT NULL DEFAULT now(),
  request_id uuid NOT NULL, reason text CHECK(length(reason)<=1000), origem text NOT NULL DEFAULT 'folha_v2'
 );
@@ -63,6 +69,24 @@ BEGIN
  SELECT * INTO u FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id() AND ativo IS TRUE FOR SHARE;
  IF u.id IS NULL OR u.empresa_id IS NULL THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501'; END IF;
  IF p_confirmar IS NULL OR req IS NULL OR (p_dados->>'version')::integer IS DISTINCT FROM 2 THEN RAISE EXCEPTION 'VALIDATION_ERROR: contrato'; END IF;
+ IF p_acao IN('configure_company','configure_schedule','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export') AND NOT folha_privado.admin()
+ THEN RAISE EXCEPTION 'PERMISSION_DENIED: administração' USING ERRCODE='42501'; END IF;
+ IF p_acao IN('configure_company','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export') AND w IS NOT NULL THEN
+  RAISE EXCEPTION 'ADMIN_WORK_SCOPE_INVALID: ação administrativa sem obra' USING ERRCODE='22023';
+ END IF;
+ -- Replays must obey the actor's CURRENT role and work scope.
+ IF p_acao IN('task_report','task_confirm') THEN
+  PERFORM folha_privado.obra(w);
+  IF p_acao='task_report' AND u.funcao<>'encarregado' OR p_acao='task_confirm' AND u.funcao NOT IN('diretor_obra','adjunto') THEN
+   RAISE EXCEPTION 'PERMISSION_DENIED: tarefa' USING ERRCODE='42501';
+  END IF;
+ ELSIF p_acao IN('he_approve','he_reject','he_validate') THEN
+  SELECT * INTO h FROM public.folha_he WHERE id=(p_dados->>'id')::uuid AND empresa_id=u.empresa_id;
+  IF NOT FOUND OR p_acao IN('he_approve','he_reject') AND u.funcao NOT IN('diretor_obra','adjunto') OR p_acao='he_validate' AND NOT folha_privado.admin() THEN
+   RAISE EXCEPTION 'PERMISSION_DENIED: HE' USING ERRCODE='42501';
+  END IF;
+  PERFORM folha_privado.obra(h.obra_id);
+ END IF;
  payload:=jsonb_build_object('action',p_acao,'data',p_dados,'contract','gestao_v2');
  PERFORM pg_advisory_xact_lock(hashtextextended(u.empresa_id::text||':'||u.id::text||':'||req::text,0));
  SELECT * INTO op FROM folha_privado.operacoes WHERE empresa_id=u.empresa_id AND ator_id=u.id AND request_id=req;
@@ -74,8 +98,6 @@ BEGIN
  END IF;
  SELECT * INTO cfg FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id;
  expected:=(p_dados->>'expected_revision')::integer;
- IF p_acao IN('configure_company','configure_schedule','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export') AND NOT folha_privado.admin()
- THEN RAISE EXCEPTION 'PERMISSION_DENIED: administração' USING ERRCODE='42501'; END IF;
  IF p_acao='configure_company' THEN
   before:=to_jsonb(cfg); entity:=u.empresa_id; rev:=coalesce(cfg.revision,0);
   IF p_dados ? 'correction_days' AND (p_dados->>'correction_days')::integer<0 THEN RAISE EXCEPTION 'VALIDATION_ERROR: janela'; END IF;
@@ -236,7 +258,7 @@ END $$;
 CREATE TRIGGER folha_tarefa_concluida AFTER UPDATE OF estado ON public.planeamento_itens FOR EACH ROW EXECUTE FUNCTION folha_privado.tarefa_concluida();
 CREATE FUNCTION public.fn_folha_gestao_contexto_v2(p_obra_id uuid DEFAULT NULL,p_colaborador_id uuid DEFAULT NULL,p_competencia date DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE u public.utilizadores; rights jsonb; vacations jsonb; payroll jsonb; history jsonb;
+DECLARE u public.utilizadores; rights jsonb; vacations jsonb; payroll jsonb; history jsonb; response jsonb;
 BEGIN
  u:=folha_privado.ator();
  IF p_obra_id IS NOT NULL THEN PERFORM folha_privado.obra(p_obra_id); END IF;
@@ -249,9 +271,11 @@ BEGIN
   SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.competencia),'[]') INTO payroll FROM public.folha_vencimentos x WHERE colaborador_id=p_colaborador_id AND empresa_id=u.empresa_id AND (p_competencia IS NULL OR competencia=p_competencia);
  END IF;
  SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.at,x.id),'[]') INTO history FROM public.folha_gestao_historico x
- WHERE empresa_id=u.empresa_id AND (p_obra_id IS NULL OR obra_id=p_obra_id OR (folha_privado.admin() AND p_colaborador_id IS NOT NULL))
+ WHERE empresa_id=u.empresa_id
+ AND (folha_privado.admin() OR dominio='tarefas' OR dominio IN('he','horario') AND u.funcao IN('diretor_obra','adjunto'))
+ AND (p_obra_id IS NULL OR obra_id=p_obra_id OR (folha_privado.admin() AND p_colaborador_id IS NOT NULL))
  AND (p_colaborador_id IS NULL OR entidade_id=p_colaborador_id OR entidade_id IN(SELECT id FROM public.folha_vencimentos WHERE colaborador_id=p_colaborador_id));
- RETURN jsonb_build_object('version',2,
+ response:=jsonb_build_object('version',2,
  'schedule',(SELECT to_jsonb(h) FROM public.folha_horarios h WHERE h.obra_id=p_obra_id),
  'permissions',jsonb_build_object('admin',folha_privado.admin(),'he_review',u.funcao IN('diretor_obra','adjunto'),'task_report',u.funcao='encarregado','task_review',u.funcao IN('diretor_obra','adjunto')),
  'people',CASE WHEN folha_privado.admin() THEN coalesce((SELECT jsonb_agg(jsonb_build_object('id',c.id,'name',c.nome) ORDER BY c.nome,c.id) FROM public.colaboradores c WHERE empresa_id=u.empresa_id),'[]') ELSE '[]'::jsonb END,
@@ -260,8 +284,12 @@ BEGIN
  'config',CASE WHEN folha_privado.admin() THEN (SELECT to_jsonb(x) FROM public.folha_config_empresa x WHERE empresa_id=u.empresa_id) END,
  'vacation_revision',coalesce((SELECT revision FROM public.folha_ferias_revisoes WHERE colaborador_id=p_colaborador_id AND empresa_id=u.empresa_id),0),
  'entitlements',coalesce(rights,'[]'),'vacations',coalesce(vacations,'[]'),'payroll',coalesce(payroll,'[]'),'history',history,
- 'overtime',coalesce((SELECT jsonb_agg(to_jsonb(x)||jsonb_build_object('sheet',(SELECT jsonb_build_object('person_id',f.colaborador_id,'date',f.data,'intervals',f.intervals,'revision',f.revision) FROM public.folha_registos f WHERE f.id=x.folha_id),'person_name',(SELECT c.nome FROM public.folha_registos f JOIN public.colaboradores c ON c.id=f.colaborador_id WHERE f.id=x.folha_id)) ORDER BY x.id) FROM public.folha_he x WHERE empresa_id=u.empresa_id AND (folha_privado.admin() AND p_obra_id IS NULL OR obra_id=p_obra_id)),'[]'),
+ 'overtime',coalesce((SELECT jsonb_agg(to_jsonb(x)||jsonb_build_object('sheet',(SELECT jsonb_build_object('person_id',f.colaborador_id,'date',f.data,'intervals',f.intervals,'revision',f.revision) FROM public.folha_registos f WHERE f.id=x.folha_id),'person_name',(SELECT c.nome FROM public.folha_registos f JOIN public.colaboradores c ON c.id=f.colaborador_id WHERE f.id=x.folha_id)) ORDER BY x.id) FROM public.folha_he x WHERE empresa_id=u.empresa_id AND (folha_privado.admin() OR u.funcao IN('diretor_obra','adjunto')) AND (folha_privado.admin() AND p_obra_id IS NULL OR obra_id=p_obra_id)),'[]'),
  'task_reports',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY x.id) FROM public.folha_tarefas_reportes x WHERE empresa_id=u.empresa_id AND (p_obra_id IS NOT NULL AND obra_id=p_obra_id)),'[]'));
+IF NOT folha_privado.admin() THEN
+  response:=response-ARRAY['people','live_facts','config','vacation_revision','entitlements','vacations','payroll'];
+ END IF;
+ RETURN response;
 END $$;
 DO $$ DECLARE t text; BEGIN
  FOR t IN SELECT unnest(ARRAY['folha_direitos_ferias','folha_ferias_revisoes','folha_vencimentos','folha_tarefas_reportes','folha_gestao_historico']) LOOP

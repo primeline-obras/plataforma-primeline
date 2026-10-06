@@ -309,8 +309,10 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   assert.equal((await client.context(day,id(100))).version,2);assert.ok((await client.candidates(day,id(100))).some(x=>x.person_id===id(42)));
   const d=alloc(42);delete d.request_id;await client.operate('allocate',d);
   const ids=(await q('SELECT id FROM quadro_pessoal_alocacao WHERE colaborador_id=$1 AND data=$2',[id(42),day])).rows.map(x=>x.id);
-  await client.operate('remove_from_day',{...d,expected_allocation_revision:1,ids});assert.equal((await client.history(key(42))).length,2);
+  await client.operate('remove_from_day',{...d,expected_allocation_revision:1,ids});assert.equal((await client.history(key(42))).events.length,2);
  });
+ await (await import('./attendance-preserved-audit-cases.mjs')).independentAuditCases(t,{q,a,b,as,call,aux,auxDo,id,today});
+ await (await import('./attendance-payload-regression-cases.mjs')).payloadRegressionCases(t,{q,a,as,call,aux,auxDo,id});
  await t.test('Fase B pós-hotfix: gate ausente/drift recusa; instalação, v1/RH/hotfix e rollback',async()=>{
   const pre=await read('../supabase/quadro_fase_b_pos_hotfix_precheck.sql');
   await assert.rejects(q(pre),/REAL CATALOG VALIDATION REQUIRED/);await q('ROLLBACK');

@@ -1,5 +1,15 @@
 -- Pacote 2. Instalação LOCAL proposta; não executa conversão nem reconciliação histórica.
 BEGIN;
+-- Explicit legacy projection: fail closed if required source columns are absent.
+DO $legacy_projection$
+DECLARE missing text[];
+BEGIN
+ SELECT array_agg(required ORDER BY required) INTO missing
+ FROM unnest(ARRAY['id','empresa_id','obra_id','colaborador_id','data','horas','entrada_manha','saida_manha','entrada_tarde','saida_tarde','periodos_alocados','estado','registado_por','atualizado_por','criado_em','atualizado_em']) required
+ WHERE NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.ponto_pessoal_obra'::regclass AND attname=required AND attnum>0 AND NOT attisdropped);
+ IF missing IS NOT NULL THEN RAISE EXCEPTION 'LEGACY_PROJECTION_COLUMNS_MISSING: %',missing; END IF;
+END $legacy_projection$;
+
 SET LOCAL lock_timeout='10s';
 DO $$ BEGIN
  IF current_user <> 'postgres' OR session_user <> 'postgres' THEN
@@ -242,7 +252,7 @@ BEGIN
  IF k='primeline' THEN
   SELECT c.nome,c.funcao INTO nome,papel FROM public.colaboradores c WHERE c.id=p AND c.empresa_id=u.empresa_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: pessoa' USING ERRCODE='42501'; END IF;
-  SELECT to_jsonb(x) INTO a FROM public.ausencias x WHERE x.colaborador_id=p AND x.data=d ORDER BY x.criado_em DESC,x.id LIMIT 1;
+  SELECT jsonb_build_object('id',x.id,'data',x.data,'tipo',x.tipo,'estado',x.estado) INTO a FROM public.ausencias x WHERE x.colaborador_id=p AND x.data=d ORDER BY x.criado_em DESC,x.id LIMIT 1;
   IF EXISTS(SELECT 1 FROM public.ponto_pessoal_obra WHERE colaborador_id=p AND data=d) THEN conf:='LEGACY_CONFLICT'; END IF;
   SELECT coalesce(jsonb_agg(q.id ORDER BY q.id),'[]'),CASE WHEN count(DISTINCT q.periodo)>1 THEN 'dia_inteiro' ELSE min(q.periodo) END INTO ids,period FROM public.quadro_pessoal_alocacao q WHERE q.colaborador_id=p AND q.data=d AND q.obra_id=w;
   IF EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao q JOIN public.quadro_pessoal_alocacao other ON q.colaborador_id=other.colaborador_id AND q.data=other.data AND q.id<other.id
@@ -270,7 +280,7 @@ BEGIN
    AND EXISTS(SELECT 1 FROM public.obras WHERE id=w AND situacao='em_curso')
    AND EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d))
    AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),
-  'overtime',(SELECT to_jsonb(h) FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),
+  'overtime',(SELECT jsonb_build_object('estado',h.estado) FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),
   'can_write',conf IS NULL AND d<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND (d=(now() AT TIME ZONE 'Europe/Lisbon')::date OR folha_privado.admin() OR d>=(now() AT TIME ZONE 'Europe/Lisbon')::date-(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id)) AND (w IS NULL OR folha_privado.admin() OR u.funcao='encarregado') AND ((k='external' AND EXISTS(SELECT 1 FROM public.folha_externos WHERE id=p AND empresa_id=u.empresa_id AND ativo)) OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
 END $$;
 CREATE FUNCTION public.fn_folha_contexto_v2(p_data date,p_obra_id uuid DEFAULT NULL) RETURNS jsonb
@@ -298,7 +308,7 @@ BEGIN
   END LOOP;
   SELECT jsonb_build_object('intervals',h.intervals,'expected_minutes',h.expected_minutes,'revision',h.revision) INTO sched FROM public.folha_horarios h WHERE h.obra_id=p_obra_id;
   SELECT coalesce(jsonb_agg(jsonb_build_object('id',f.id,'name',f.nome)),'[]') INTO providers FROM public.fornecedores f
-   WHERE f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id));
+   WHERE f.empresa_id=u.empresa_id AND (folha_privado.admin() OR u.funcao='encarregado') AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id));
  ELSIF office THEN
   PERFORM folha_privado.local(self_id,NULL);
   FOR x IN SELECT c.id colaborador_id FROM public.colaboradores c WHERE c.empresa_id=u.empresa_id AND (c.id=self_id OR folha_privado.admin() AND (EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao q WHERE q.colaborador_id=c.id AND q.data=p_data AND q.tipo_alocacao='escritorio') OR EXISTS(SELECT 1 FROM public.folha_registos f WHERE f.colaborador_id=c.id AND f.obra_id IS NULL AND f.data=p_data))) LOOP
@@ -322,7 +332,7 @@ BEGIN
  summary:=jsonb_build_object('people',jsonb_array_length(rows||ext),'registered',registered,'open',opened,'pending',pending,'complete',pending=0);
  RETURN jsonb_build_object('version',2,'date',p_data,'work_id',p_obra_id,'works',works,'rows',rows,'external_rows',ext,
   'tipo_local',CASE WHEN p_obra_id IS NULL THEN 'escritorio' ELSE 'obra' END,'office_available',office,'self_person_id',self_id,'correction_days',(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),'admin',folha_privado.admin(),'summary',summary,'schedule',sched,'special_day',special,'providers',providers,
-  'external_people',coalesce((SELECT jsonb_agg(jsonb_build_object('id',e.id,'name',e.nome,'provider_id',e.fornecedor_id)) FROM public.folha_externos e WHERE e.empresa_id=u.empresa_id AND e.ativo AND EXISTS(SELECT 1 FROM public.fornecedores f WHERE f.id=e.fornecedor_id AND f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id)))
+  'external_people',coalesce((SELECT jsonb_agg(jsonb_build_object('id',e.id,'name',e.nome,'provider_id',e.fornecedor_id)) FROM public.folha_externos e WHERE e.empresa_id=u.empresa_id AND e.ativo AND (folha_privado.admin() OR u.funcao='encarregado') AND EXISTS(SELECT 1 FROM public.fornecedores f WHERE f.id=e.fornecedor_id AND f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.fornecedor_id=f.id AND s.obra_id=p_obra_id)))
    AND NOT EXISTS(SELECT 1 FROM public.folha_externos_dias ed WHERE ed.externo_id=e.id AND ed.data=p_data AND ed.obra_id=p_obra_id)),'[]'),
   'management',folha_privado.admin() OR p_obra_id IS NOT NULL AND u.funcao IN('encarregado','diretor_obra','adjunto'),
   'calendar_verified',coalesce((SELECT calendar_complete FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),false),
@@ -358,10 +368,15 @@ BEGIN
  IF w IS NOT NULL AND NOT folha_privado.admin() AND NOT EXISTS(SELECT 1 FROM public.folha_historico WHERE obra_id=w AND person_id=p AND data=d AND kind=k)
  AND NOT EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao WHERE obra_id=w AND colaborador_id=p AND data=d)
  AND NOT EXISTS(SELECT 1 FROM public.folha_externos_dias WHERE obra_id=w AND externo_id=p AND data=d)
+ AND NOT EXISTS(SELECT 1 FROM public.ponto_pessoal_obra WHERE empresa_id=u.empresa_id AND obra_id=w AND colaborador_id=p AND data=d AND k='primeline')
  THEN RAISE EXCEPTION 'PERMISSION_DENIED: histórico fora da equipa' USING ERRCODE='42501'; END IF;
  SELECT coalesce(jsonb_agg(to_jsonb(h) ORDER BY h.at,h.id),'[]') INTO events FROM public.folha_historico h
  WHERE empresa_id=u.empresa_id AND obra_id IS NOT DISTINCT FROM w AND person_id=p AND data=d AND kind=k;
- SELECT coalesce(jsonb_agg(to_jsonb(h) ORDER BY h.criado_em,h.id),'[]') INTO legacy FROM public.ponto_pessoal_obra h
+ SELECT coalesce(jsonb_agg(jsonb_build_object('id',h.id,'data',h.data,'obra_id',h.obra_id,
+ 'horas',h.horas,'entrada_manha',h.entrada_manha,'saida_manha',h.saida_manha,
+ 'entrada_tarde',h.entrada_tarde,'saida_tarde',h.saida_tarde,'periodos_alocados',h.periodos_alocados,
+ 'estado',h.estado,'registado_por',h.registado_por,'atualizado_por',h.atualizado_por,
+ 'criado_em',h.criado_em,'atualizado_em',h.atualizado_em) ORDER BY h.criado_em,h.id),'[]') INTO legacy FROM public.ponto_pessoal_obra h
  WHERE empresa_id=u.empresa_id AND obra_id IS NOT DISTINCT FROM w AND colaborador_id=p AND data=d AND k='primeline';
  RETURN jsonb_build_object('version',2,'events',events,'legacy',legacy,'legacy_interpretation','original');
 END $$;

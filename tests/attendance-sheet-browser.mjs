@@ -24,7 +24,7 @@ async function setup(page,{role='encarregado',status=200,deny=false}={}) {
       if(window.mockStatus!==200)return Response.json({message:'Recusado'},{status:window.mockStatus});
       if(name.endsWith('fn_folha_contexto_v2'))return Response.json(context(b.p_data,b.p_obra_id));
       if(name.endsWith('fn_folha_pessoas_v2'))return Response.json({version:2,people:[{person_id:'available',name:'Disponível',can_allocate:true,allocation_revision:0},{person_id:'other',name:'Outra obra',current_work:{id:'source',label:'Obra 2',type:'obra'},can_transfer:true,allocation_revision:2},{person_id:'office',name:'Escritório',current_work:{id:null,label:'Escritório',type:'escritorio'},can_transfer:false,allocation_revision:0}]});
-      if(name.endsWith('fn_folha_historico_v2'))return Response.json({version:2,events:[{at:'2026-10-05',action:'save',reason:'Histórico preservado'}]});
+      if(name.endsWith('fn_folha_historico_v2'))return Response.json(window.historyPayload||{version:2,events:[{at:'2026-10-05',action:'save',reason:'Histórico preservado'}],legacy:[],legacy_interpretation:'original'});
       if(name.endsWith('fn_folha_operar_v2')){
         if(deny)return Response.json({code:'42501',message:'Sem permissão'},{status:403});
         if(window.staleCommit&&b.p_confirmar)return Response.json({code:'STALE_REVISION',message:'Recarregue'},{status:409});
@@ -62,6 +62,11 @@ try {
         await page.locator('[data-sheet-history="p"]').click();await page.waitForFunction(()=>document.querySelector('[data-sheet-detail]')?.textContent.includes('Histórico preservado'));
       }
       await page.screenshot({path:path.join(shots,`${role}-${size.width}.png`)});pass++;
+    }
+    for(const mode of ['none','legacy','v2','both']) {
+      await setup(page);await page.evaluate(mode=>{window.historyPayload={version:2,events:['v2','both'].includes(mode)?[{at:'2026-10-05',action:'save',reason:'V2 evidence'}]:[],legacy:['legacy','both'].includes(mode)?[{id:'legacy',data:'2026-09-25',obra_id:'own',estado:'presente',horas:8,entrada_manha:'09:00',saida_manha:'13:00',registado_por:'author',criado_em:'2026-09-25'}]:[],legacy_interpretation:'original'};},mode);
+      await page.locator('[data-sheet-history="p"]').click();await page.waitForFunction(()=>document.querySelector('[data-sheet-detail]')?.textContent.includes('REGISTO LEGADO'));
+      const detail=page.locator('[data-sheet-detail]');assert.match(await detail.textContent(),/HISTÓRICO FOLHA V2/);assert.equal(await detail.locator('[data-sheet-legacy]').count(),['legacy','both'].includes(mode)?1:0);assert.equal(await detail.locator('button,input,textarea').count(),0);assert.equal(await page.evaluate(()=>calls.some(c=>c.b.p_acao)),false);pass++;
     }
     await setup(page,{status:404});assert.match(await page.locator('#root').textContent(),/ainda não está disponível/);assert.equal(await page.locator('[data-sheet-edit]').count(),0);assert.equal(await page.evaluate(()=>calls.some(x=>/fn_guardar_ponto_obra|fn_listar_ponto_obra/.test(x.name))),false);pass++;
     await setup(page,{deny:true});await page.locator('[data-sheet-edit="p"]').click();await page.locator('[name=start0]').fill('09:00');await page.locator('[data-sheet-form] button[type=submit]').click();await page.waitForFunction(()=>messages.some(x=>x.m==='Sem permissão'));assert.equal(await page.evaluate(()=>rows[0].sheet),null);assert.equal(await page.evaluate(()=>messages.some(x=>x.m==='Registo confirmado.')),false);pass++;

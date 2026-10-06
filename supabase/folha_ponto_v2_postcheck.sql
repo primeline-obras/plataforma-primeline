@@ -15,6 +15,9 @@ DO $$ DECLARE t text; r text; f record; current_columns jsonb; BEGIN
    OR EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x WHERE p.oid=t::regprocedure AND x.grantee=0)
   THEN RAISE EXCEPTION 'NEW_RPC_INVALID: %',t; END IF;
  END LOOP;
+ IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.folha_gestao_historico'::regclass AND attname='dominio' AND attgenerated='s')
+  OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.folha_gestao_historico'::regclass AND contype='c' AND pg_get_constraintdef(oid) LIKE '%planning_concluded_alerts_resolved%')
+ THEN RAISE EXCEPTION 'MANAGEMENT_HISTORY_DOMAIN_INVALID'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='folha_privado' AND (p.proowner<>'postgres'::regrole OR has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('anon',p.oid,'EXECUTE')))
  THEN RAISE EXCEPTION 'PRIVATE_HELPER_EXPOSED'; END IF;
  FOR f IN SELECT * FROM primeline_folha_v2_backup.triggers LOOP

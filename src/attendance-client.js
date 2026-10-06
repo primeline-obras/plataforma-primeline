@@ -45,14 +45,14 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
     if(j?.version!==2 || !Array.isArray(j.people))throw new Error('Lista de pessoas inválida.');return j.people;
   },history:async(key)=>{
     const j=await rpc(FOLHA_RPCS.history,{p_chave:key});
-    if(j?.version!==2 || !Array.isArray(j.events))throw new Error('Histórico inválido.');return j.events;
+    if(j?.version!==2 || !Array.isArray(j.events) || !Array.isArray(j.legacy) || j.legacy_interpretation!=='original')throw new Error('Histórico inválido.');return j;
   }};
 }
 export function createAttendanceManagementClient({supabase,confirm,requestId=()=>crypto.randomUUID()}) {
   let pending=null,busy=false;
   async function call(name,body){const r=await supabase(`rpc/${name}`,{method:'POST',body:JSON.stringify(body)});const j=await r.json().catch(()=>null);if(!r.ok){const e=new Error(r.status===404?'A gestão da Folha ainda não está disponível.':j?.message||'Operação recusada.');e.code=j?.code||String(r.status);throw e;}return j;}
   return {
-    context:async({workId=null,personId=null,month=null}={})=>{const j=await call('fn_folha_gestao_contexto_v2',{p_obra_id:workId,p_colaborador_id:personId,p_competencia:month});if(j?.version!==2||!['people','tasks','overtime','vacations','entitlements','payroll','history'].every(k=>Array.isArray(j[k]))||!Number.isInteger(j.vacation_revision)||!j.permissions||!['admin','he_review','task_report','task_review'].every(k=>typeof j.permissions[k]==='boolean'))throw new Error('Contexto administrativo inválido.');return j;},
+    context:async({workId=null,personId=null,month=null}={})=>{const j=await call('fn_folha_gestao_contexto_v2',{p_obra_id:workId,p_colaborador_id:personId,p_competencia:month});if(j?.version!==2||!['tasks','task_reports','overtime','history'].every(k=>Array.isArray(j[k]))||(j.permissions?.admin && (!['people','vacations','entitlements','payroll'].every(k=>Array.isArray(j[k]))||!Number.isInteger(j.vacation_revision)))||!j.permissions||!['admin','he_review','task_report','task_review'].every(k=>typeof j.permissions[k]==='boolean'))throw new Error('Contexto administrativo inválido.');return j;},
     execute:async(action,data)=>{
       if(busy)throw new Error('Aguarde a operação em curso.');busy=true;
       const fingerprint=JSON.stringify({action,data});if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};
