@@ -1,3 +1,5 @@
+import { platformConfirm } from "./platform-dialogs.js?v=2";
+
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
@@ -861,7 +863,7 @@ export function createSubcontractorsModule({
       const source = state.suppliers.find(item => item.id === state.mergeSourceId);
       const target = state.suppliers.find(item => item.id === state.mergeTargetId);
       if (!source || !target || !state.mergePreview?.pode_mesclar) return;
-      const confirmed = window.confirm(
+      const confirmed = await platformConfirm(
         `Mesclar “${source.nome}” em “${target.nome}”?\n\n` +
         `${Number(state.mergePreview.total_referencias || 0)} referência(s) serão transferidas. ` +
         "A operação é transacional e o nome antigo será preservado como alias."
@@ -899,7 +901,7 @@ export function createSubcontractorsModule({
     if (deleteButton) {
       const supplier = state.suppliers.find(item => item.id === deleteButton.dataset.deleteSupplier);
       if (!supplier) return;
-      const confirmed = window.confirm(
+      const confirmed = await platformConfirm(
         `Eliminar definitivamente o registo duplicado “${supplier.nome}”?\n\n` +
         "A eliminação só será permitida se este registo não tiver documentos, obras, faturas, propostas ou subempreitadas associados."
       );

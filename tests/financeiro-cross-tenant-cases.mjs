@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
-import {createServer} from 'node:net';
+import {localPostgrestPort} from './local-postgrest-port.mjs';
 import {createRequire} from 'node:module';
 import {join} from 'node:path';
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -42,13 +42,14 @@ export async function financialCases({t,q,port,stage}) {
   else if(c.name.includes('devolver'))assert.equal(r.estado_aprovacao,'pendente');
   else assert.equal(r.estado_pagamento,'pago');
  };
- const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const hp=socket.address().port;await new Promise(r=>socket.close(r));
+ const hp=await localPostgrestPort();
  const secret='synthetic-only-financial-authorization-20261004';
  const jwt=n=>{const enc=x=>Buffer.from(JSON.stringify(x)).toString('base64url');const data=enc({alg:'HS256',typ:'JWT'})+'.'+enc({role:'authenticated',sub:id(n),exp:Math.floor(Date.now()/1000)+900});return data+'.'+createHmac('sha256',secret).update(data).digest('base64url');};
- const child=spawn(process.env.QUADRO_POSTGREST,[],{windowsHide:true,stdio:'ignore',env:{...process.env,PGRST_DB_URI:`postgresql://postgres@127.0.0.1:${port}/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_HOST:'127.0.0.1',PGRST_SERVER_PORT:String(hp)}});
+ const child=spawn(process.env.QUADRO_POSTGREST,[],{windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,PGRST_DB_URI:`postgresql://postgres@127.0.0.1:${port}/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_HOST:'127.0.0.1',PGRST_SERVER_PORT:String(hp),PGRST_LOG_LEVEL:'info'}});
+ let output='';child.stdout.on('data',b=>{output+=b;});child.stderr.on('data',b=>{output+=b;});
  const request=(path,body,n)=>fetch('http://127.0.0.1:'+hp+'/'+path,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(n==null?{}:{Authorization:'Bearer '+jwt(n)})},...(body?{body:JSON.stringify(body)}:{})});
  try {
-  let ready=false;for(let i=0;i<100;i++){try{if((await request('')).ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,100));}assert.ok(ready,'PostgREST local');
+  let ready=false;for(let i=0;i<100;i++){try{if((await request('')).ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,100));}assert.ok(ready,'PostgREST local (exit='+child.exitCode+'): '+output);
   for(const c of cases) {
    if(stage==='before')await t.test('BASELINE cross-company HTTP: '+c.name,async()=>{await prepare(c,200);const r=await request('rpc/'+c.name,c.args,17);assert.equal(r.status,200,await r.text());await effect(c);await clean();});
    else {

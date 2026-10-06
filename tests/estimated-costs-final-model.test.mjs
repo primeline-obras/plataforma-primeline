@@ -21,12 +21,13 @@ assert.match(sql, /percentagem_pago/);
 
 assert.match(dashboard, /CUSTO REAL/);
 assert.match(dashboard, /CUSTOS ESTIMADOS/);
-assert.match(dashboard, /ESTIMATIVA FINAL/);
+assert.match(dashboard, /estimativa_terminus_total/);
 assert.match(dashboard, /data-confirm-sub-cost/);
-assert.match(dashboard, /data-complete-pl-cost/);
-assert.match(dashboard, /renderCostTrace\(model, true\)/);
+assert.match(dashboard, /data-confirm-pl-cost/);
+assert.match(dashboard, /renderCostTrace\(projection, false\)/);
 assert.match(dashboard, /costEditMode = false/);
-assert.match(dashboard, /COMPOSIÇÃO AUDITÁVEL DO CUSTO · SÓ LEITURA/);
+assert.match(dashboard, /const canEdit = editable && canAdjustWorkCosts\(\)/);
+assert.match(dashboard, /COMPOSIÇÃO AUDITÁVEL DO CUSTO/);
 assert.doesNotMatch(dashboard, /Custos fixos · 8,5%/);
 assert.match(consolidatedSql, /fn_concluir_custos_pl_tarefa/);
 assert.match(consolidatedSql, /fn_resumo_custos_obra/);

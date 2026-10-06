@@ -2,6 +2,7 @@ BEGIN;
 -- Fail closed if new facts/history exist. Preserve production evidence.
 DO $$ BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF to_regclass('folha_privado.legacy_cutover') IS NOT NULL THEN RAISE EXCEPTION 'ROLLBACK_CUTOVER_ACTIVE: verify dedicated rollback first'; END IF;
  IF EXISTS(SELECT 1 FROM public.folha_historico) OR EXISTS(SELECT 1 FROM public.folha_registos)
  OR EXISTS(SELECT 1 FROM public.folha_externos) OR EXISTS(SELECT 1 FROM public.folha_externos_dias)
  OR EXISTS(SELECT 1 FROM public.folha_he) OR EXISTS(SELECT 1 FROM public.folha_config_empresa)
@@ -115,6 +116,8 @@ DROP FUNCTION folha_privado.quadro_autorizado(uuid,date,jsonb,jsonb);
 DROP FUNCTION folha_privado.obra(uuid,boolean);
 DROP FUNCTION folha_privado.local(uuid,uuid,boolean);
 DROP FUNCTION folha_privado.admin();
+DROP FUNCTION folha_privado.superuser();
+DROP FUNCTION folha_privado.adm_operacional();
 DROP FUNCTION folha_privado.ator();
 DROP FUNCTION folha_privado.facts(jsonb,date);
 DROP FUNCTION folha_privado.lock_dia(uuid,date);

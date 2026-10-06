@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {createHmac} from 'node:crypto';
-import {createServer} from 'node:net';
+import {localPostgrestPort} from './local-postgrest-port.mjs';
 const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 export async function restCases({t,port}) {
  assert.ok(process.env.QUADRO_POSTGREST,'Definir QUADRO_POSTGREST para os testes REST reais locais');
- const socket=createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const httpPort=socket.address().port;await new Promise(r=>socket.close(r));
+ const httpPort=await localPostgrestPort();
  const secret='synthetic-local-only-not-a-production-secret-20261004';
  const token=n=>{const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const p=Buffer.from(JSON.stringify({role:'authenticated',sub:id(n),exp:Math.floor(Date.now()/1000)+1200})).toString('base64url');return h+'.'+p+'.'+createHmac('sha256',secret).update(h+'.'+p).digest('base64url');};
- const child=spawn(process.env.QUADRO_POSTGREST,[],{windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,PGRST_DB_URI:`postgresql://postgres@127.0.0.1:${port}/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_HOST:'127.0.0.1',PGRST_SERVER_PORT:String(httpPort),PGRST_LOG_LEVEL:'crit'}});
+ const child=spawn(process.env.QUADRO_POSTGREST,[],{windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,PGRST_DB_URI:`postgresql://postgres@127.0.0.1:${port}/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_HOST:'127.0.0.1',PGRST_SERVER_PORT:String(httpPort),PGRST_LOG_LEVEL:'info'}});
  let output='';child.stderr.on('data',b=>{output+=b;});child.stdout.on('data',b=>{output+=b;});
  const url='http://127.0.0.1:'+httpPort;
  const request=(path,n=10,method='GET',body)=>fetch(url+'/'+path,{method,headers:{...(n===null?{}:{Authorization:'Bearer '+token(n)}),'Content-Type':'application/json',Prefer:'return=representation'},...(body?{body:JSON.stringify(body)}:{})});

@@ -103,7 +103,7 @@ ALTER TABLE public.folha_he ADD COLUMN prazo_processamento date;
 
 CREATE FUNCTION folha_privado.adm() RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
- SELECT EXISTS(SELECT 1 FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id() AND ativo AND empresa_id IS NOT NULL AND funcao='administrativo')
+ SELECT folha_privado.adm_operacional()
 $$;
 CREATE FUNCTION folha_privado.prazo_he(empresa uuid,d date) RETURNS date
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -178,12 +178,12 @@ BEGIN
  -- Replays must obey the actor's CURRENT role and work scope.
  IF p_acao IN('task_report','task_confirm') THEN
   PERFORM folha_privado.obra(w);
-  IF p_acao='task_report' AND u.funcao<>'encarregado' OR p_acao='task_confirm' AND u.funcao NOT IN('diretor_obra','adjunto') THEN
+  IF p_acao='task_report' AND (u.funcao<>'encarregado' AND NOT folha_privado.superuser()) OR p_acao='task_confirm' AND (u.funcao NOT IN('diretor_obra','adjunto') AND NOT folha_privado.superuser()) THEN
    RAISE EXCEPTION 'PERMISSION_DENIED: tarefa' USING ERRCODE='42501';
   END IF;
  ELSIF p_acao IN('he_approve','he_reject','he_validate') THEN
   SELECT * INTO h FROM public.folha_he WHERE id=(p_dados->>'id')::uuid AND empresa_id=u.empresa_id;
-  IF NOT FOUND OR p_acao IN('he_approve','he_reject') AND u.funcao NOT IN('diretor_obra','adjunto') OR p_acao='he_validate' AND NOT folha_privado.admin() THEN
+  IF NOT FOUND OR p_acao IN('he_approve','he_reject') AND (u.funcao NOT IN('diretor_obra','adjunto') AND NOT folha_privado.superuser()) OR p_acao='he_validate' AND NOT folha_privado.admin() THEN
    RAISE EXCEPTION 'PERMISSION_DENIED: HE' USING ERRCODE='42501';
   END IF;
   PERFORM folha_privado.obra(h.obra_id);
@@ -249,7 +249,7 @@ BEGIN
    IF NOT FOUND THEN RAISE EXCEPTION 'HE_ROLE_NOT_ELIGIBLE'; END IF;
   END IF;
   IF f.revision<>h.folha_revision THEN RAISE EXCEPTION 'STALE_SOURCE' USING ERRCODE='40001'; END IF;
-  IF (p_acao IN('he_approve','he_reject') AND (u.funcao NOT IN('diretor_obra','adjunto') OR h.estado<>'potential'))
+  IF (p_acao IN('he_approve','he_reject') AND ((u.funcao NOT IN('diretor_obra','adjunto') AND NOT folha_privado.superuser()) OR h.estado<>'potential'))
     OR (p_acao='he_validate' AND (NOT folha_privado.admin() OR h.estado<>'pending_validation'))
   THEN RAISE EXCEPTION 'PERMISSION_DENIED: transição HE' USING ERRCODE='42501'; END IF;
   before:=to_jsonb(h);rev:=h.revision;after:=jsonb_build_object('estado',CASE p_acao WHEN 'he_approve' THEN 'pending_validation' WHEN 'he_reject' THEN 'rejected' ELSE 'validated_pending_rule' END);
@@ -318,10 +318,10 @@ BEGIN
   PERFORM folha_privado.obra(w);
   SELECT * INTO t FROM public.folha_tarefas_reportes WHERE tarefa_id=entity FOR UPDATE;before:=to_jsonb(t);rev:=coalesce(t.revision,0);
   IF p_acao='task_report' THEN
-   IF u.funcao<>'encarregado' OR task.estado='concluido' OR task.arquivado_em IS NOT NULL OR t.id IS NOT NULL THEN RAISE EXCEPTION 'TASK_REPORT_INVALID'; END IF;
+   IF (u.funcao<>'encarregado' AND NOT folha_privado.superuser()) OR task.estado='concluido' OR task.arquivado_em IS NOT NULL OR t.id IS NOT NULL THEN RAISE EXCEPTION 'TASK_REPORT_INVALID'; END IF;
    after:=jsonb_build_object('estado','reported');
   ELSE
-   IF u.funcao NOT IN('diretor_obra','adjunto') OR t.estado IS DISTINCT FROM 'reported' OR task.estado<>'concluido' THEN RAISE EXCEPTION 'PLANNING_CONFIRMATION_REQUIRED'; END IF;
+   IF (u.funcao NOT IN('diretor_obra','adjunto') AND NOT folha_privado.superuser()) OR t.estado IS DISTINCT FROM 'reported' OR task.estado<>'concluido' THEN RAISE EXCEPTION 'PLANNING_CONFIRMATION_REQUIRED'; END IF;
    after:=jsonb_build_object('estado','confirmed');
   END IF;
  ELSE RAISE EXCEPTION 'ACTION_UNSUPPORTED'; END IF;
@@ -401,7 +401,7 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.folha_tarefas_reportes WHERE tarefa_id=NEW.id AND estado='reported') THEN RETURN NEW; END IF;
  SELECT obra_id INTO w FROM public.fases WHERE id=NEW.fase_id;
  BEGIN u:=folha_privado.ator(); PERFORM folha_privado.obra(w); EXCEPTION WHEN insufficient_privilege THEN RETURN NEW; END;
- IF NOT folha_privado.admin() AND u.funcao NOT IN('diretor_obra','adjunto') THEN RETURN NEW; END IF;
+ IF NOT folha_privado.superuser() AND u.funcao NOT IN('diretor_obra','adjunto') THEN RETURN NEW; END IF;
  SELECT * INTO report_before FROM public.folha_tarefas_reportes WHERE tarefa_id=NEW.id AND estado='reported' FOR UPDATE;
  UPDATE public.folha_tarefas_reportes SET estado='confirmed',confirmado_por=u.id,confirmado_em=now(),revision=revision+1 WHERE tarefa_id=NEW.id AND estado='reported' RETURNING * INTO report_after;
  SELECT coalesce(jsonb_agg(id ORDER BY id),'[]') INTO ids FROM public.alertas WHERE obra_id=w AND empresa_id=u.empresa_id AND entidade_id=NEW.id AND entidade_tipo='planeamento_item' AND tipo='folha_conclusao_reportada' AND estado='pendente';
@@ -438,7 +438,7 @@ BEGIN
  AND (p_colaborador_id IS NULL OR entidade_id=p_colaborador_id OR entidade_id IN(SELECT id FROM public.folha_vencimentos WHERE colaborador_id=p_colaborador_id));
  response:=jsonb_build_object('version',2,
  'schedule',(SELECT to_jsonb(h) FROM public.folha_horarios h WHERE h.obra_id=p_obra_id),
- 'permissions',jsonb_build_object('admin',folha_privado.admin(),'adm',folha_privado.adm(),'he_review',u.funcao IN('diretor_obra','adjunto'),'task_report',u.funcao='encarregado','task_review',u.funcao IN('diretor_obra','adjunto')),
+ 'permissions',jsonb_build_object('admin',folha_privado.admin(),'adm',folha_privado.adm(),'he_review',(folha_privado.superuser() OR u.funcao IN('diretor_obra','adjunto')),'task_report',(folha_privado.superuser() OR u.funcao='encarregado'),'task_review',(folha_privado.superuser() OR u.funcao IN('diretor_obra','adjunto'))),
  'people',CASE WHEN folha_privado.admin() THEN coalesce((SELECT jsonb_agg(jsonb_build_object('id',c.id,'name',c.nome) ORDER BY c.nome,c.id) FROM public.colaboradores c WHERE empresa_id=u.empresa_id),'[]') ELSE '[]'::jsonb END,
  'live_facts',CASE WHEN folha_privado.admin() AND p_colaborador_id IS NOT NULL AND p_competencia IS NOT NULL THEN folha_privado.payroll_facts(p_colaborador_id,p_competencia) END,
  'tasks',coalesce((SELECT jsonb_agg(jsonb_build_object('id',p.id,'codigo',to_jsonb(p)->'codigo','descricao',to_jsonb(p)->'descricao','estado',p.estado,'report',(SELECT to_jsonb(r) FROM public.folha_tarefas_reportes r WHERE r.tarefa_id=p.id)) ORDER BY p.id) FROM public.planeamento_itens p JOIN public.fases fase ON fase.id=p.fase_id JOIN public.obras o ON o.id=fase.obra_id WHERE o.empresa_id=u.empresa_id AND p_obra_id IS NOT NULL AND fase.obra_id=p_obra_id AND p.arquivado_em IS NULL AND p.estado<>'concluido'),'[]'),
@@ -460,4 +460,8 @@ DO $$ DECLARE t text; BEGIN
 END $$;
 REVOKE ALL ON FUNCTION folha_privado.payroll_facts(uuid,date),folha_privado.tarefa_concluida(),public.fn_folha_gestao_v2(text,jsonb,boolean,text),public.fn_folha_gestao_contexto_v2(uuid,uuid,date) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_folha_gestao_v2(text,jsonb,boolean,text),public.fn_folha_gestao_contexto_v2(uuid,uuid,date) TO authenticated;
+-- Exact installed function evidence, never refreshed by validation.
+CREATE TABLE primeline_folha_v2_backup.instalacao_funcoes AS SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',replace(pg_get_functiondef(p.oid),chr(13),''),'owner',p.proowner,'acl',p.proacl,'config',p.proconfig) ORDER BY p.oid::regprocedure::text COLLATE "C")
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='folha_privado' OR (n.nspname='public' AND p.proname IN('fn_folha_contexto_v2','fn_folha_pessoas_v2','fn_folha_operar_v2','fn_folha_historico_v2','fn_folha_gestao_v2','fn_folha_gestao_contexto_v2'));
+REVOKE ALL ON primeline_folha_v2_backup.instalacao_funcoes FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;

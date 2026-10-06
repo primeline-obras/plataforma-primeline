@@ -61,6 +61,16 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
  INSERT INTO fases VALUES('${id(500)}','${id(100)}');
  INSERT INTO planeamento_itens VALUES('${id(501)}','${id(500)}','em_execucao',NULL);`);
  await q('CREATE TABLE ausencias_anexos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),ausencia_id uuid NOT NULL REFERENCES ausencias(id),arquivo_url text NOT NULL,nome_arquivo text NOT NULL,criado_em timestamptz NOT NULL DEFAULT now())');
+ // Main-compatible documentary layer; synthetic private Storage catalog only.
+ await q(`CREATE TABLE viaturas(id uuid PRIMARY KEY,empresa_id uuid);
+ CREATE TABLE documentos(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),empresa_id uuid,entidade_tipo text,entidade_id uuid,nome_arquivo text);
+ CREATE SCHEMA storage;CREATE TABLE storage.buckets(id text PRIMARY KEY,public boolean);INSERT INTO storage.buckets VALUES('documentos',false);
+ CREATE TABLE storage.objects(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id text,name text);
+ ALTER TABLE documentos ENABLE ROW LEVEL SECURITY;ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+ GRANT USAGE ON SCHEMA storage TO authenticated;GRANT SELECT,INSERT,UPDATE,DELETE ON documentos,storage.objects TO authenticated;
+ CREATE POLICY pl_documentos_rh ON documentos FOR ALL TO authenticated USING(fn_e_administrativo()) WITH CHECK(fn_e_administrativo());
+ CREATE POLICY storage_rh ON storage.objects FOR SELECT TO authenticated USING(bucket_id='documentos' AND fn_e_administrativo());`);
+ for(const step of ['precheck','backup','','postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
  await q(await read('../supabase/folha_ponto_v2_backup.sql'));
  await q(await read('../supabase/folha_ponto_v2.sql'));
  await q(await read('../supabase/folha_ponto_v2_gestao.sql'));
@@ -320,6 +330,7 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
  await (await import('./attendance-adm-rules-cases.mjs')).admRulesCases(t,{q,a,b,as,aux,auxDo,id,today});
  await (await import('./attendance-security-visibility-cases.mjs')).securityVisibilityCases(t,{q,a,b,as,aux,auxDo,id});
  await (await import('./attendance-reconciliation-cases.mjs')).reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id});
+ await (await import('./attendance-adm-rules-cases.mjs')).admRulesCases(t,{q,a,b,as,aux,auxDo,id,today},12);
  await t.test('Fase B pós-hotfix: gate ausente/drift recusa; instalação, v1/RH/hotfix e rollback',async()=>{
   const pre=await read('../supabase/quadro_fase_b_pos_hotfix_precheck.sql');
   await assert.rejects(q(pre),/REAL CATALOG VALIDATION REQUIRED/);await q('ROLLBACK');
@@ -330,7 +341,7 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   ALTER TABLE primeline_pacote2_gate.aprovacao ENABLE ROW LEVEL SECURITY;
   REVOKE ALL ON primeline_pacote2_gate.aprovacao FROM PUBLIC,anon,authenticated,service_role;`);
   // SYNTHETIC ONLY: models a separately reviewed gate, never manufactures a real production fingerprint.
-  const catalogSql=pre.slice(pre.indexOf('actual:=(')+9,pre.indexOf('\n IF actual IS DISTINCT')).replace(/\);\s*$/,'');
+  const catalogSql=pre.slice(pre.lastIndexOf('actual:=(')+9,pre.lastIndexOf('\n IF actual IS DISTINCT')).replace(/\);\s*$/,'');
   const catalog=(await q(catalogSql)).rows[0].jsonb_build_object;
   await q("INSERT INTO primeline_pacote2_gate.aprovacao VALUES('pacote2_folha_v2_20261005','postgres',now(),NULL,$1,true,true,(SELECT instalacao_id::text FROM primeline_quadro_rollout.controlo WHERE singleton),$2)",['0'.repeat(64),catalog]);
   await q(pre);
@@ -344,10 +355,12 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   assert.equal((await q("SELECT pg_get_functiondef('fn_quadro_proteger_escrita()'::regprocedure) d")).rows[0].d,old);
   await assert.rejects(q(pre),/POST_HOTFIX_VALIDATION_REQUIRED/);await q('ROLLBACK');
  });
+ await (await import('./attendance-consolidated-cases.mjs')).consolidatedCases(t,{q,a,as,aux,auxDo,id,read});
  await t.test('rollback v2 recusa factos; rollback vazio explicitamente restaura o núcleo v1',async()=>{
   await assert.rejects(q(await read('../supabase/folha_ponto_v2_gestao_rollback.sql')),/ROLLBACK_DATA_PRESENT/);await q('ROLLBACK');
   // Descartar SOMENTE factos sintéticos desta base efémera para verificar a desinstalação vazia.
   await q('TRUNCATE folha_gestao_historico,folha_vencimentos,folha_tarefas_reportes,folha_direitos_ferias,folha_ferias_revisoes,folha_he,folha_historico,folha_registos,folha_externos,folha_externos_dias,folha_config_empresa,folha_horarios,folha_privado.operacoes');
+  await q(await read('../supabase/folha_v2_legacy_cutover_rollback.sql'));
   await q(await read('../supabase/folha_ponto_v2_gestao_rollback.sql'));await q(await read('../supabase/folha_ponto_v2_rollback.sql'));
   assert.equal((await q("SELECT to_regprocedure('fn_folha_operar_v2(text,jsonb,boolean,text)')::text r")).rows[0].r,null);
   assert.doesNotMatch((await q("SELECT prosrc FROM pg_proc WHERE oid='fn_quadro_aplicar_interno(uuid,date,jsonb,jsonb,text,uuid,boolean)'::regprocedure")).rows[0].prosrc,/folha_privado/);

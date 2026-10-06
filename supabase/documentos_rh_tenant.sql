@@ -1,6 +1,7 @@
 -- Independent, main-compatible RH metadata/Storage guard. No data/path migration.
 BEGIN;
 DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NULL THEN RAISE EXCEPTION 'OWNER_AND_PRIVATE_BACKUP_REQUIRED'; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='documentos' AND public IS FALSE) THEN RAISE EXCEPTION 'PRIVATE_DOCUMENT_BUCKET_REQUIRED'; END IF; END $$;
 CREATE SCHEMA primeline_documentos_rh_privado AUTHORIZATION postgres;
 REVOKE ALL ON SCHEMA primeline_documentos_rh_privado FROM PUBLIC,anon,authenticated,service_role;
 GRANT USAGE ON SCHEMA primeline_documentos_rh_privado TO authenticated;
@@ -42,4 +43,15 @@ DROP POLICY IF EXISTS pl_documentos_rh ON public.documentos;
 CREATE POLICY pl_documentos_rh ON public.documentos FOR ALL TO authenticated
  USING(entidade_tipo IN('colaborador','viatura') AND primeline_documentos_rh_privado.entidade(entidade_tipo,entidade_id,empresa_id))
  WITH CHECK(entidade_tipo IN('colaborador','viatura') AND primeline_documentos_rh_privado.entidade(entidade_tipo,entidade_id,empresa_id));
+-- Immutable installation evidence in the already private backup namespace.
+-- Captured only by this reviewed transaction, never refreshed by postcheck.
+CREATE TABLE primeline_documentos_rh_backup.instalacao AS
+SELECT jsonb_build_object(
+ 'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY schemaname,tablename,policyname) FROM pg_policies p WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename='objects')),
+ 'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',c.relacl,'columns',(SELECT jsonb_agg(jsonb_build_object('name',attname,'acl',attacl) ORDER BY attnum) FROM pg_attribute WHERE attrelid=c.oid AND attnum>0 AND NOT attisdropped)) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass)),
+ 'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'acl',p.proacl,'config',p.proconfig) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.pronamespace='primeline_documentos_rh_privado'::regnamespace OR p.oid IN('public.fn_utilizador_atual_id()'::regprocedure,'public.fn_e_administrativo()'::regprocedure)),
+ 'schemas',(SELECT jsonb_agg(jsonb_build_object('name',nspname,'owner',nspowner,'acl',nspacl) ORDER BY nspname) FROM pg_namespace WHERE nspname='primeline_documentos_rh_privado'),
+ 'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')
+) AS catalogo;
+REVOKE ALL ON primeline_documentos_rh_backup.instalacao FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;

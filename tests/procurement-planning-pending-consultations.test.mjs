@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import vm from "node:vm";
+import { planningChanges, requestPlanningBatch } from "../src/planning-batch.js";
 
 const procurement = await readFile(new URL("../src/procurement.js", import.meta.url), "utf8");
 const planning = await readFile(new URL("../src/planning.js", import.meta.url), "utf8");
@@ -24,9 +26,34 @@ test("cada tarefa permite especialidade controlada e executor PL ou subempreitad
   assert.match(migration, /executado_por in \('PL', 'subempreitada'\)/);
   assert.match(planning, /name="especialidade_id"/);
   assert.match(planning, /name="executado_por"/);
-  assert.match(planning, /especialidade_id: value\("especialidade_id"\) \|\| null/);
-  assert.match(planning, /executado_por: value\("executado_por"\) \|\| null/);
   assert.match(planning, /especialidades\?select=id,nome&order=nome/);
+});
+
+test("edição simultânea captura especialidade/executor e persiste ambos no lote confirmado", async () => {
+  const original = [{ id: 'synthetic-task', especialidade_id: null, executado_por: 'PL' }];
+  const state = { original, items: structuredClone(original), batchSaving: false, preview: {}, dependenciesLoaded: true };
+  const row = { dataset: { editItem: original[0].id }, classList: { toggle() {} } };
+  // Execute the actual UI handler, with only the surrounding DOM replaced.
+  const handler = planning.slice(planning.indexOf('  function captureInput(input) {'), planning.indexOf('  function removeTask('));
+  const context = vm.createContext({ state, planningChanges, readOnly: () => false, dirtyCount: () => 1, content: { querySelector: () => null } });
+  vm.runInContext(handler + '; globalThis.capture = captureInput;', context);
+  for (const [name, value] of [['especialidade_id', 'synthetic-specialty'], ['executado_por', 'subempreitada']]) context.capture({ name, value, closest: () => row });
+  const payload = { version: 1, obra_id: 'synthetic-work', changes: planningChanges(original, state.items) };
+  const persisted = structuredClone(original);
+  const api = async (path, options) => {
+    assert.equal(path, 'rpc/fn_guardar_planeamento_lote');
+    const body = JSON.parse(options.body);
+    assert.deepEqual(body.p_lote.changes, [{ id: original[0].id, especialidade_id: 'synthetic-specialty', executado_por: 'subempreitada' }]);
+    if (!body.p_confirmacao) return Response.json({ version: 1, confirmation_token: 'synthetic-token' });
+    assert.equal(body.p_confirmacao, 'synthetic-token');
+    Object.assign(persisted[0], body.p_lote.changes[0]);
+    return Response.json({ version: 1, committed: true });
+  };
+  const preview = await requestPlanningBatch(api, payload);
+  await requestPlanningBatch(api, payload, preview.confirmation_token);
+  assert.equal(persisted[0].especialidade_id, 'synthetic-specialty');
+  assert.equal(persisted[0].executado_por, 'subempreitada');
+  assert.equal(original[0].especialidade_id, null);
 });
 
 test("Consultas Pendentes é uma vista calculada, ordenada por início e sem remoção manual", () => {

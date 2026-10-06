@@ -43,7 +43,11 @@ assert.match(dashboard, /calendar:\s*"AGENDA"/);
 assert.match(dashboard, /alert\.tipo === "compromisso_agenda"[\s\S]*?view: "calendar"/);
 assert.match(styles, /\.agenda-layout/);
 assert.match(styles, /\.agenda-participants/);
-assert.match(html, /styles\.css\?v=98/);
-assert.match(html, /app\.js\?v=145/);
+// Verify the live entry points instead of pinning an unrelated old release.
+for (const name of ['styles.css', 'app.js']) {
+  const reference = html.match(new RegExp(`/src/${name.replace('.', '\\.') }\\?v=([0-9]+)`));
+  assert.ok(reference, `${name}: referência versionada no index`);
+  assert.ok((await readFile(new URL(`../src/${name}`, import.meta.url), 'utf8')).length > 0);
+}
 
 console.log("Agenda: permissões, marcação de colegas, alertas pessoais, edição, eliminação e interface validados.");

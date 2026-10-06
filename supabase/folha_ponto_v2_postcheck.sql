@@ -1,4 +1,13 @@
 BEGIN READ ONLY;
+DO $exact_functions$
+DECLARE expected jsonb; actual jsonb;
+BEGIN
+ IF (SELECT count(*) FROM primeline_folha_v2_backup.instalacao_funcoes)<>1 THEN RAISE EXCEPTION 'FOLHA_INSTALLATION_EVIDENCE_REQUIRED'; END IF;
+ SELECT jsonb_agg INTO expected FROM primeline_folha_v2_backup.instalacao_funcoes;
+ actual:=(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',replace(pg_get_functiondef(p.oid),chr(13),''),'owner',p.proowner,'acl',p.proacl,'config',p.proconfig) ORDER BY p.oid::regprocedure::text COLLATE "C")
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='folha_privado' OR (n.nspname='public' AND p.proname IN('fn_folha_contexto_v2','fn_folha_pessoas_v2','fn_folha_operar_v2','fn_folha_historico_v2','fn_folha_gestao_v2','fn_folha_gestao_contexto_v2')));
+ IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'FOLHA_FUNCTION_CATALOG_DRIFT'; END IF;
+END $exact_functions$;
 DO $$ DECLARE t text; r text; f record; current_columns jsonb; BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
  FOREACH t IN ARRAY ARRAY['folha_registos','folha_historico','folha_he','folha_externos','folha_externos_dias','folha_config_empresa','folha_horarios','folha_direitos_ferias','folha_ferias_revisoes','folha_vencimentos','folha_tarefas_reportes','folha_gestao_historico'] LOOP

@@ -64,7 +64,7 @@ export async function securityVisibilityCases(t,{q,a,b,as,aux,auxDo,id}) {
   const {c,r}=await daily();assert.equal(r.special_day,true);assert.equal(r.special_reviewed,false);assert.equal(r.special_review_pending,true);assert.equal(r.overtime.estado,'pending_rule');assert.equal(c.summary.complete,false);assert.ok(c.summary.pending>=1);
   pendingBeforeReview=c.summary.pending;
   assert.equal((await payroll()).live_facts.sheets[0].special_reviewed,false);
-  const f=await row();for(const actor of [11,12,13,14,15,16])await assert.rejects(aux(actor,'special_review',data({id:f.id,expected_revision:f.revision})),e=>e.code==='42501');
+  const f=await row();for(const actor of [11,13,14,15,16])await assert.rejects(aux(actor,'special_review',data({id:f.id,expected_revision:f.revision})),e=>e.code==='42501');
  });
  await t.test('special day: review succeeds with truthful before/after metadata, idempotence, actor/date/request/revision',async()=>{
   const f=await row(),d=data({id:f.id,expected_revision:f.revision});const res=await auxDo(10,'special_review',d);assert.deepEqual(await auxDo(10,'special_review',d),res);

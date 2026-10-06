@@ -35,6 +35,24 @@ BEGIN
  END IF;
 END $budget_phase_coherence$;
 
+-- Approved documentary delta is mandatory and checked in full before projection.
+DO $document_catalog$
+DECLARE actual jsonb; expected jsonb;
+BEGIN
+ IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;
+ IF (SELECT count(*) FROM primeline_documentos_rh_backup.instalacao)<>1 THEN RAISE EXCEPTION 'DOCUMENT_INSTALLATION_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN LATERAL aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner))) x WHERE n.nspname='primeline_documentos_rh_backup' AND (n.nspowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole))
+ OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x WHERE c.relnamespace='primeline_documentos_rh_backup'::regnamespace AND (c.relowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole)) THEN RAISE EXCEPTION 'DOCUMENT_BACKUP_NOT_PRIVATE'; END IF;
+ SELECT catalogo INTO expected FROM primeline_documentos_rh_backup.instalacao;
+ actual:=(SELECT jsonb_build_object(
+ 'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY schemaname,tablename,policyname) FROM pg_policies p WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename='objects')),
+ 'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',c.relacl,'columns',(SELECT jsonb_agg(jsonb_build_object('name',attname,'acl',attacl) ORDER BY attnum) FROM pg_attribute WHERE attrelid=c.oid AND attnum>0 AND NOT attisdropped)) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass)),
+ 'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'acl',p.proacl,'config',p.proconfig) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.pronamespace='primeline_documentos_rh_privado'::regnamespace OR p.oid IN('public.fn_utilizador_atual_id()'::regprocedure,'public.fn_e_administrativo()'::regprocedure)),
+ 'schemas',(SELECT jsonb_agg(jsonb_build_object('name',nspname,'owner',nspowner,'acl',nspacl) ORDER BY nspname) FROM pg_namespace WHERE nspname='primeline_documentos_rh_privado'),
+ 'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')
+));
+ IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'DOCUMENT_CATALOG_DRIFT'; END IF;
+END $document_catalog$;
 DO $post$
 DECLARE b jsonb; a jsonb; live jsonb; x jsonb; y jsonb;
 BEGIN
@@ -47,6 +65,12 @@ BEGIN
  'view_definition',CASE WHEN c.relkind IN('v','m') THEN pg_get_viewdef(c.oid,true) END) ORDER BY c.relname) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN('r','p','v','m')),
  'functions',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'owner',pg_get_userbyid(p.proowner),'acl',(SELECT array_agg(acl_item::text ORDER BY acl_item::text COLLATE "C")::text FROM unnest(coalesce(p.proacl,acldefault('f',p.proowner))) acl_item),'definition',replace(pg_get_functiondef(p.oid),chr(13),'')) ORDER BY p.oid::regprocedure::text COLLATE "C") FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prokind IN('f','p'))
 ));
+ -- Compose the old reviewed baseline with the precisely certified document delta.
+ -- Its pre-migration policies must themselves match the old installation.
+ IF EXISTS(SELECT 1 FROM jsonb_array_elements(a->'tables') t WHERE t->>'name' IN('documentos','ausencias_anexos') AND
+  t->'policies' IS DISTINCT FROM (SELECT jsonb_agg(jsonb_build_object('name',p.policyname,'cmd',CASE p.cmd WHEN 'ALL' THEN '*' WHEN 'SELECT' THEN 'r' WHEN 'INSERT' THEN 'a' WHEN 'UPDATE' THEN 'w' WHEN 'DELETE' THEN 'd' END,'permissive',p.permissive='PERMISSIVE','roles',to_jsonb(p.roles),'using',p.qual,'check',p.with_check) ORDER BY p.policyname) FROM primeline_documentos_rh_backup.policies p WHERE p.schemaname='public' AND p.tablename=t->>'name'))
+ THEN RAISE EXCEPTION 'DOCUMENT_PRE_BASELINE_DRIFT'; END IF;
+ live:=jsonb_set(live,'{tables}',(SELECT jsonb_agg(CASE WHEN t->>'name' IN('documentos','ausencias_anexos') THEN jsonb_set(t,'{policies}',(SELECT old->'policies' FROM jsonb_array_elements(a->'tables') old WHERE old->>'name'=t->>'name')) ELSE t END ORDER BY t->>'name') FROM jsonb_array_elements(live->'tables') t));
  IF a IS NULL OR live IS DISTINCT FROM a THEN RAISE EXCEPTION 'POSTCHECK_CATALOG_DRIFT'; END IF;
  -- Compara TODAS as tabelas, excetuando apenas as policies restritivas desta entrega.
  SELECT jsonb_agg(t||jsonb_build_object('policies',

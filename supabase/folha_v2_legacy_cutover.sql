@@ -1,6 +1,9 @@
+-- Only AFTER the real V2 frontend is published and independently validated.
 BEGIN;
-SET LOCAL lock_timeout='10s';
-LOCK TABLE public.quadro_pessoal_alocacao,public.quadro_pessoal_movimentos IN ACCESS EXCLUSIVE MODE;DO $document_catalog$
+SELECT pg_advisory_xact_lock(61001,1);
+LOCK TABLE public.ponto_pessoal_obra,public.folha_registos IN ACCESS EXCLUSIVE MODE;
+-- Reuse the fully reviewed pre-cutover catalog, never manufacture approval.
+DO $document_catalog$
 DECLARE actual jsonb; expected jsonb;
 BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;
@@ -51,37 +54,24 @@ BEGIN
  IF actual IS DISTINCT FROM approved->'expected_catalog' THEN RAISE EXCEPTION 'POST_HOTFIX_CATALOG_DRIFT'; END IF;
  IF to_regprocedure('public.fn_folha_operar_v2(text,jsonb,boolean,text)') IS NULL THEN RAISE EXCEPTION 'FOLHA_V2_REQUIRED'; END IF;
 END $gate$;
+
 DO $$ BEGIN
- IF to_regclass('primeline_quadro_b_20261005.aprovacao') IS NULL THEN RAISE EXCEPTION 'BACKUP_B_REQUIRED'; END IF;
- IF (SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM public.quadro_pessoal_alocacao x) IS DISTINCT FROM (SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM primeline_quadro_b_20261005.alocacoes x)
- OR (SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM public.quadro_pessoal_movimentos x) IS DISTINCT FROM (SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM primeline_quadro_b_20261005.movimentos x)
- OR (SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM public.ponto_pessoal_obra x) IS DISTINCT FROM (SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM primeline_quadro_b_20261005.ponto x)
- THEN RAISE EXCEPTION 'BACKUP_DATA_DRIFT'; END IF;
-END $$;CREATE OR REPLACE FUNCTION public.fn_quadro_proteger_escrita()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$
-DECLARE q public.quadro_pessoal_alocacao;
-BEGIN
- IF TG_OP='DELETE' THEN q:=OLD; ELSE q:=NEW; END IF;
- IF TG_OP='UPDATE' AND (NEW.id,NEW.colaborador_id,NEW.data) IS DISTINCT FROM (OLD.id,OLD.colaborador_id,OLD.data)
- THEN RAISE EXCEPTION 'CONTROLLED_WRITE_REQUIRED: identidade imutável.' USING ERRCODE='42501'; END IF;
- IF NOT EXISTS(SELECT 1 FROM public.quadro_escrita_interna p WHERE p.transacao=txid_current()
- AND p.colaborador_id=q.colaborador_id AND p.data=q.data AND p.utilizador_id=public.fn_utilizador_atual_id())
- THEN RAISE EXCEPTION 'CONTROLLED_WRITE_REQUIRED: use a operação controlada de alocação.' USING ERRCODE='42501'; END IF;
- IF TG_OP='DELETE' THEN RETURN OLD; END IF; RETURN NEW;
+ IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;
+ IF to_regprocedure('public.fn_folha_operar_v2(text,jsonb,boolean,text)') IS NULL OR to_regclass('folha_privado.legacy_cutover') IS NOT NULL THEN RAISE EXCEPTION 'CUTOVER_STATE_INVALID'; END IF;
+ IF to_regclass('primeline_pacote2_gate.aprovacao') IS NULL THEN RAISE EXCEPTION 'FRONTEND_V2_VALIDATION_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN LATERAL aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner))) x WHERE n.nspname='primeline_pacote2_gate' AND (n.nspowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole))
+ OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x WHERE c.oid='primeline_pacote2_gate.aprovacao'::regclass AND (c.relowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole)) THEN RAISE EXCEPTION 'GATE_NOT_PRIVATE'; END IF;
+ IF (SELECT count(*) FROM primeline_pacote2_gate.aprovacao)<>1 OR NOT EXISTS(SELECT 1 FROM primeline_pacote2_gate.aprovacao WHERE release_id='pacote2_folha_v2_20261005' AND reviewed_by='postgres' AND reviewed_at<=now() AND frontend_validated IS TRUE AND backend_v2_validated IS TRUE AND frontend_assets_sha256 ~ '^[0-9a-f]{64}$' AND consumed_at IS NULL AND installation_id=(SELECT instalacao_id::text FROM primeline_quadro_rollout.controlo WHERE singleton)) THEN RAISE EXCEPTION 'FRONTEND_V2_VALIDATION_REQUIRED'; END IF;
+ IF EXISTS(SELECT 1 FROM public.ponto_pessoal_obra p JOIN public.folha_registos f ON f.colaborador_id=p.colaborador_id AND f.data=p.data) THEN RAISE EXCEPTION 'LEGACY_V2_CONFLICT'; END IF;
 END $$;
-CREATE OR REPLACE FUNCTION public.fn_quadro_operar(p_acao text,p_dados jsonb,p_confirmar boolean DEFAULT false,p_versao text DEFAULT NULL)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public,pg_temp AS $$ BEGIN
- RAISE EXCEPTION 'CLIENT_UPGRADE_REQUIRED: recarregue o Quadro antes de editar.' USING ERRCODE='42501'; END $$;
--- Policies pós-hotfix ficam INTACTAS, incluindo a restritiva do Encarregado.
-REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.quadro_pessoal_alocacao,public.quadro_pessoal_movimentos FROM PUBLIC,anon,authenticated,service_role;
-DO $$ DECLARE c record; BEGIN
- FOR c IN SELECT attrelid::regclass tabela,attname FROM pg_attribute WHERE attrelid IN('public.quadro_pessoal_alocacao'::regclass,'public.quadro_pessoal_movimentos'::regclass) AND attnum>0 AND NOT attisdropped LOOP
- EXECUTE format('REVOKE INSERT (%I),UPDATE (%I),REFERENCES (%I) ON TABLE %s FROM PUBLIC,anon,authenticated,service_role',c.attname,c.attname,c.attname,c.tabela);
- END LOOP;
-END $$;
-REVOKE ALL ON FUNCTION public.fn_quadro_operar(text,jsonb,boolean,text) FROM PUBLIC,anon,authenticated,service_role;
-UPDATE primeline_quadro_rollout.controlo SET estado='b',fase_b_aplicada_em=clock_timestamp() WHERE singleton;
-UPDATE primeline_pacote2_gate.aprovacao SET consumed_at=clock_timestamp();
--- Ponto legado permanece histórico e com a dívida de writer inventariada.
--- Fecho desse writer exige validação real v2 + plano explícito dos dias LEGACY_CONFLICT.
+
+CREATE TABLE folha_privado.legacy_cutover AS TABLE public.ponto_pessoal_obra;
+REVOKE ALL ON folha_privado.legacy_cutover FROM PUBLIC,anon,authenticated,service_role;
+ALTER TABLE folha_privado.legacy_cutover ENABLE ROW LEVEL SECURITY;
+CREATE FUNCTION folha_privado.legacy_closed() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN RAISE EXCEPTION 'LEGACY_WRITER_CLOSED: use Folha de Ponto V2' USING ERRCODE='42501'; END $$;
+REVOKE ALL ON FUNCTION folha_privado.legacy_closed() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER trg_01_folha_legacy_closed BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.ponto_pessoal_obra
+ FOR EACH STATEMENT EXECUTE FUNCTION folha_privado.legacy_closed();
 COMMIT;

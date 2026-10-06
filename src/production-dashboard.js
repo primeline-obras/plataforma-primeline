@@ -1264,7 +1264,7 @@ export function createProductionDashboard(options) {
   }
 
   async function confirmSubcontractCost(itemId, button) {
-    if (!meetingState || !canAdjustWorkCosts() || !confirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer a adjudicação como compromisso?")) return;
+    if (!meetingState || !canAdjustWorkCosts() || !await platformConfirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer a adjudicação como compromisso?")) return;
     button.disabled = true;
     const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
     if (!response.ok) return toast(`Não foi possível confirmar a adjudicação: ${await response.text()}`, "error");

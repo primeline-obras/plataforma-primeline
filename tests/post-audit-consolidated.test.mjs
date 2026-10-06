@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 
 const root = new URL("../", import.meta.url);
 const read = path => readFile(new URL(path, root), "utf8");
@@ -10,15 +11,22 @@ const [app, planning, dashboard, documents, access, sql] = await Promise.all([
 ]);
 
 test("Reunião Semanal é sempre só leitura e a edição de custos vive no Resumo", () => {
-  assert.match(dashboard, /renderCostTrace\(model, true\)/);
+  const meeting = dashboard.slice(dashboard.indexOf('async function openMeeting('), dashboard.indexOf('async function openMeeting(') + 10000);
+  assert.match(meeting, /costEditMode = false/);
+  assert.match(meeting, /renderCostTrace\(projection, false\)/);
   assert.match(dashboard, /data-work-cost-card/);
   assert.match(dashboard, /async function showWorkCosts/);
-  assert.doesNotMatch(dashboard, /querySelector\("#meeting-view"\)\?\.addEventListener/);
+  // Delegated listeners remain, but every mutation handler checks the edit context.
+  for (const name of ['saveCostAdjustment','deleteCostAdjustment','confirmPlCost','confirmSubcontractCost']) {
+    const body = dashboard.slice(dashboard.indexOf(`async function ${name}(`));
+    assert.match(body.slice(0,600), /!canAdjustWorkCosts\(\)/);
+  }
 });
 
 test("Planeamento usa o modelo único e o Encarregado recebe uma grelha só de consulta", () => {
   assert.match(planning, /rpc\/fn_resumo_custos_obra/);
-  assert.match(planning, /rpc\/fn_concluir_custos_pl_tarefa/);
+  assert.match(planning, /requestPlanningBatch\(supabase, payload, server.confirmation_token\)/);
+  assert.doesNotMatch(planning, /rpc\/fn_concluir_custos_pl_tarefa/);
   assert.doesNotMatch(planning, /fn_resumo_custos_estimados_obra|fn_confirmar_compromisso_subempreitada/);
   assert.match(planning, /O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS/);
   assert.match(sql, /'PL','subempreitada','misto'/);
@@ -43,12 +51,23 @@ test("Faturas expõem e operam os cinco estados e permitem apagar guias/anexos",
   assert.match(sql, /fn_apagar_anexo_fatura/);
 });
 
-test("Arranque falha fechado e nenhum módulo usa diálogos nativos", async () => {
-  assert.doesNotMatch(app, /demoData-browser/);
+test("Arranque falha fechado antes de carregar dados; diálogos nativos não são usados", async () => {
+  // An unused import is not a login fallback. Execute the actual fail-closed branch.
+  const guard = app.slice(app.indexOf('async function loadData() {') + 'async function loadData() {'.length, app.indexOf('  await loadAccessContext();', app.indexOf('async function loadData() {')));
+  const controls = [{disabled:false}, {disabled:false}];
+  const nodes = {'#login-form':{querySelectorAll:()=>controls}, '#auth-error':{textContent:''}, '#auth-screen':{hidden:true}};
+  runInNewContext(`(function(){${guard}})()`, {isSupabaseConfigured:false, $:selector=>nodes[selector], getSession:()=>{throw Error('não deve consultar a sessão');}});
+  assert.ok(controls.every(c=>c.disabled)); assert.equal(nodes['#auth-screen'].hidden,false);
+  assert.match(nodes['#auth-error'].textContent, /acesso foi bloqueado/);
+  assert.equal((app.match(/\bdemo(?:Invoices|Works|Suppliers|Subcontracts)\b/g)||[]).length,4,'constantes importadas não alimentam dados');
   assert.match(app, /Configuração segura indisponível[\s\S]*acesso foi bloqueado/);
   const names = (await readdir(new URL("src/", root))).filter(name => name.endsWith(".js"));
   const sources = await Promise.all(names.map(name => read(`src/${name}`)));
-  for (const source of sources) assert.doesNotMatch(source, /\b(?:window\.)?(?:prompt|alert|confirm)\s*\(/);
+  for (const source of sources) {
+    assert.doesNotMatch(source, /\bwindow\.(?:prompt|alert|confirm)\s*\(/);
+    // The Folha client intentionally accepts an injected asynchronous confirm adapter.
+    if (!/export function \w+\(\{[^)]*\bconfirm\b/.test(source)) assert.doesNotMatch(source, /(?<![.\w])(?:prompt|alert|confirm)\s*\(/);
+  }
 });
 
 test("Definições e Planeamento respeitam a matriz de papéis", () => {

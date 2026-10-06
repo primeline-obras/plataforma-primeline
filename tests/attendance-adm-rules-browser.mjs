@@ -12,10 +12,10 @@ const server=createServer(async(req,res)=>{try{const p=new URL(req.url,'http://l
  if(!p.startsWith('/src/'))throw Error('Forbidden');res.setHeader('Content-Type',p.endsWith('.css')?'text/css':'text/javascript');res.end(await readFile(path.join(process.cwd(),p)));}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({channel:'msedge',headless:true});let groups=0;const errors=[];
-try {for(const width of [1440,820,390])for(const role of ['administrativo','gestao_plataforma','encarregado']){
+try {for(const width of [1440,820,390])for(const role of ['administrativo','gestao_plataforma','gerencia','encarregado']){
  const page=await browser.newPage({viewport:{width,height:900}});page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());await page.goto(url);
  await page.evaluate(async role=>{
-  const {createAttendanceManagementModule}=await import('/src/attendance-management.js');const admin=role!=='encarregado',adm=role==='administrativo';
+  const {createAttendanceManagementModule}=await import('/src/attendance-management.js');const admin=role!=='encarregado',adm=['administrativo','gestao_plataforma'].includes(role);
   window.calls=[];window.toasts=[];window.events=[];window.vacations=[];window.vrevision=0;window.entitlements=[];window.payroll=[];
   window.config={revision:1,correction_days:1,office_expected_minutes:480,calendar_complete:true,calendar_validated_years:[2026],holiday_dates:['2026-10-12'],he_eligible_roles:['pedreiro','servente']};
   window.he={id:'he',obra_id:'own',folha_id:'sheet',folha_revision:1,revision:1,minutes:60,estado:'pending_validation',sheet:{date:'2026-09-08',intervals:[{start:'09:00',end:'18:00'}]}};
@@ -41,8 +41,8 @@ try {for(const width of [1440,820,390])for(const role of ['administrativo','gest
  if(role==='encarregado'){
   assert.equal(await page.locator('[data-management-tab=vacations],[data-management-tab=payroll],[data-management-tab=absences]').count(),0);groups++;
  }else{
-  assert.equal(await page.locator('[data-management-action=he_validate]').count(),role==='administrativo'?1:0);
-  if(role==='administrativo'){
+  assert.equal(await page.locator('[data-management-action=he_validate]').count(),['administrativo','gestao_plataforma'].includes(role)?1:0);
+  if(['administrativo','gestao_plataforma'].includes(role)){
    await page.locator('[data-management-action=he_validate]').click();await page.waitForFunction(()=>he.estado==='validated_pending_rule');
    assert.match(await page.locator('[data-management-body]').textContent(),/Prazo dependente de calendário/);
    await page.locator('[data-management-action=he_process]').click();await page.waitForFunction(()=>he.processado_em);assert.match(await page.locator('[data-management-body]').textContent(),/Pago \/ processado/);groups++;
@@ -55,7 +55,7 @@ try {for(const width of [1440,820,390])for(const role of ['administrativo','gest
   await page.locator('[data-management-tab=payroll]').click();assert.equal(await page.locator('[name=premium]').count(),0);assert.match(await page.locator('[data-management-body]').textContent(),/QUANTIDADE DE QUILÓMETROS/);assert.match(await page.locator('[data-management-body]').textContent(),/AJUDAS DE CUSTO NACIONAL \(€\)/);assert.equal(await page.locator('[name=note]').inputValue(),'');
   await page.locator('[name=km]').fill('12.5');await page.locator('[name=allowance]').fill('0');await page.locator('[name=note]').fill('Manual sintético');await page.locator('[data-management-payroll] button').click();await page.waitForFunction(()=>payroll.length===1);
   const manual=await page.evaluate(()=>payroll[0].manuais);assert.deepEqual(manual,{km:12.5,allowance:0,note:'Manual sintético'});assert.equal(await page.locator('button:has-text("EXPORTAR")').isDisabled(),true);groups++;
-  if(role==='administrativo'){
+  if(['administrativo','gestao_plataforma'].includes(role)){
    await page.locator('[data-management-payroll-action=payroll_validate]').click();await page.waitForFunction(()=>payroll[0].estado==='validated');await page.locator('[data-management-payroll-action=payroll_close]').click();await page.waitForFunction(()=>payroll[0].estado==='closed');assert.match(await page.locator('[data-management-body]').textContent(),/Recibos recebidos em/);
    await page.locator('[data-management-payroll-action=payroll_reopen]').click();await page.waitForFunction(()=>payroll[0].estado==='draft');groups++;
    await page.locator('[data-management-tab=absences]').click();assert.match(await page.locator('[data-management-body]').textContent(),/DOCUMENTO PENDENTE/);assert.equal(await page.locator('[data-management-absence]').isDisabled(),true);
@@ -64,7 +64,7 @@ try {for(const width of [1440,820,390])for(const role of ['administrativo','gest
    await page.locator('[data-management-tab=schedule]').click();await page.locator('[name=roles]').fill('Pedreiro\nServente');await page.locator('[data-management-eligibility] button').click();await page.waitForFunction(()=>config.revision===2);groups++;
   }else{assert.equal(await page.locator('[data-management-payroll-action]').count(),0);groups++;}
  }
- if(role==='administrativo'){
+ if(['administrativo','gestao_plataforma'].includes(role)){
   await page.evaluate(async()=>{
    module.reset();const fresh=document.createElement('div');fresh.id='root';document.querySelector('#root').replaceWith(fresh);
    const {createAttendanceModule}=await import('/src/attendance-sheet.js');window.sheetCalls=[];window.actual={person_id:'p',name:'Sintético dia especial',role:'Pedreiro',can_write:true,revision:1,expected_minutes:480,special_day:true,special_review_pending:true,sheet:{state:'registered',intervals:[{start:'09:00',end:'17:00'}]}};
@@ -85,5 +85,5 @@ try {for(const width of [1440,820,390])for(const role of ['administrativo','gest
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));assert.ok(await page.evaluate(()=>calls.every(x=>x.name.startsWith('rpc/fn_folha_'))));
  await page.screenshot({path:path.join(folder,`${role}-${width}.png`),fullPage:true});await page.close();groups++;
  }
- assert.deepEqual(errors,[]);console.log(JSON.stringify({groups,fail:0,pageErrors:errors.length,viewports:3,profiles:3,screenshots:folder}));
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({groups,fail:0,pageErrors:errors.length,viewports:3,profiles:4,screenshots:folder}));
 }finally{await browser.close();await new Promise(r=>server.close(r));}

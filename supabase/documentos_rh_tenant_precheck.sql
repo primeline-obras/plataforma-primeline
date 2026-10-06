@@ -2,6 +2,7 @@
 BEGIN READ ONLY;
 DO $$ DECLARE t text; BEGIN
  IF current_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='documentos' AND public IS FALSE) THEN RAISE EXCEPTION 'PRIVATE_DOCUMENT_BUCKET_REQUIRED'; END IF;
  FOREACH t IN ARRAY ARRAY['public.documentos','public.colaboradores','public.viaturas','public.ausencias','public.ausencias_anexos','public.utilizadores','storage.objects'] LOOP
   IF to_regclass(t) IS NULL THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_REQUIRED: %',t; END IF;
  END LOOP;

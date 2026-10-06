@@ -15,6 +15,8 @@ CREATE FUNCTION fn_e_administrativo() RETURNS boolean LANGUAGE sql STABLE SECURI
 CREATE FUNCTION fn_pode_ver_obra(w uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT EXISTS(SELECT 1 FROM obras o JOIN utilizadores u ON u.empresa_id=o.empresa_id WHERE o.id=w AND u.id=fn_utilizador_atual_id() AND u.ativo) $$;
 CREATE FUNCTION fn_pode_editar_obra(w uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public AS $$ SELECT fn_pode_ver_obra(w) $$;
 CREATE SCHEMA storage;
+CREATE TABLE storage.buckets(id text PRIMARY KEY,public boolean NOT NULL DEFAULT false);
+INSERT INTO storage.buckets VALUES('documentos',false);
 CREATE TABLE storage.objects(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id text NOT NULL,name text NOT NULL,UNIQUE(bucket_id,name));
 CREATE FUNCTION storage.foldername(p text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$ SELECT (string_to_array(p,'/'))[1:array_length(string_to_array(p,'/'),1)-1] $$;
 GRANT USAGE ON SCHEMA public,storage TO authenticated;

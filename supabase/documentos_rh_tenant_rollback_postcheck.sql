@@ -7,6 +7,10 @@ BEGIN
  IF EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN LATERAL aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner))) x WHERE n.nspname='primeline_documentos_rh_backup' AND (n.nspowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole))
  OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x WHERE c.relnamespace='primeline_documentos_rh_backup'::regnamespace AND (c.relowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole)) THEN RAISE EXCEPTION 'DOCUMENT_BACKUP_NOT_PRIVATE'; END IF;
  SELECT catalogo INTO expected FROM primeline_documentos_rh_backup.instalacao;
+ -- Expected rollback = installed catalog with only the permissive RH policy restored.
+ expected:=jsonb_set(expected,'{policies}',coalesce((SELECT jsonb_agg(p ORDER BY p->>'schemaname',p->>'tablename',p->>'policyname') FROM (
+ SELECT p FROM jsonb_array_elements(expected->'policies') p WHERE NOT(p->>'schemaname'='public' AND p->>'tablename'='documentos' AND p->>'policyname'='pl_documentos_rh')
+ UNION ALL SELECT to_jsonb(p) FROM primeline_documentos_rh_backup.policies p WHERE schemaname='public' AND tablename='documentos' AND policyname='pl_documentos_rh') x),'[]'::jsonb));
  actual:=(SELECT jsonb_build_object(
  'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY schemaname,tablename,policyname) FROM pg_policies p WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename='objects')),
  'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',c.relacl,'columns',(SELECT jsonb_agg(jsonb_build_object('name',attname,'acl',attacl) ORDER BY attnum) FROM pg_attribute WHERE attrelid=c.oid AND attnum>0 AND NOT attisdropped)) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass)),
@@ -27,5 +31,5 @@ DO $$ DECLARE p text; t regclass; BEGIN
  OR EXISTS(SELECT 1 FROM (TABLE storage.objects EXCEPT ALL TABLE primeline_documentos_rh_backup.objects) x) OR EXISTS(SELECT 1 FROM (TABLE primeline_documentos_rh_backup.objects EXCEPT ALL TABLE storage.objects) x) THEN RAISE EXCEPTION 'RH_DOCUMENT_DATA_CHANGED'; END IF;
  IF EXISTS(SELECT 1 FROM primeline_documentos_rh_backup.tables b JOIN pg_class c ON c.oid=b.oid WHERE c.relacl IS DISTINCT FROM b.relacl) THEN RAISE EXCEPTION 'RH_TABLE_GRANTS_CHANGED'; END IF;
 END $$;
-SELECT 'DOCUMENTOS_RH_TENANT_POSTCHECK_OK' AS resultado;
+SELECT 'DOCUMENTOS_RH_SAFE_ROLLBACK_OK' AS resultado;
 ROLLBACK;
