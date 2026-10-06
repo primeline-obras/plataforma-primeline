@@ -1,5 +1,5 @@
 // Facts only. Payroll rates, holiday consumption and correction windows are not defaults.
-export const SHEET_STATES = Object.freeze({ none: 'Não registado', open: 'Em aberto', registered: 'Registado', missing: 'Horas em falta', vacation: 'Férias', absence: 'Ausência', regularization: 'Regularização' });
+export const SHEET_STATES = Object.freeze({ none: 'Não registado', open: 'Em aberto', registered: 'Registado', legacy: 'REGISTO LEGADO', missing: 'Horas em falta', vacation: 'Férias', absence: 'Ausência', absence_pending: 'Ausência · JUSTIFICAÇÃO PENDENTE', regularization: 'Regularização' });
 export function assertDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '') || new Date(`${value}T12:00:00Z`).toISOString().slice(0,10) !== value) throw new Error('Data inválida.');
   return value;
@@ -28,10 +28,12 @@ export function intervalFacts(intervals = [], { date, now } = {}) {
   if (ranges.some((x,i)=>i && (ranges[i-1].end == null || x.start < ranges[i-1].end))) throw new Error('Os intervalos de trabalho sobrepõem-se.');
   return { minutes: ranges.reduce((sum,x)=>sum+(x.end == null ? 0 : x.end-x.start),0), open, started:ranges.length>0 };
 }
-export function analyseSheet({ sheet = null, absence = null, expectedMinutes = null, workType = 'obra', specialDay = false }) {
+export function analyseSheet({ sheet = null, absence = null, legacy = false, expectedMinutes = null, workType = 'obra', specialDay = false }) {
   const facts = intervalFacts(sheet?.intervals || []);
+  if (legacy && sheet) return {state:'regularization',expectedMinutes,...facts,overtime:'none'};
   if (absence && facts.started) return {state:'regularization',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'pending_validation'};
-  if (absence) return {state:absence.tipo==='ferias'?'vacation':'absence',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'none'};
+  if (absence) return {state:absence.estado==='ausente_pendente'?'absence_pending':absence.tipo==='ferias'?'vacation':'absence',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'none'};
+  if (legacy) return {state:'legacy',expectedMinutes,...facts,overtime:'none'};
   const state = !sheet || !facts.started ? 'none' : facts.open ? 'open' : expectedMinutes == null ? 'regularization' : facts.minutes < expectedMinutes ? 'missing' : 'registered';
   const overtime = specialDay && facts.started ? 'pending_rule' : workType==='obra' && expectedMinutes != null && !facts.open && facts.minutes>expectedMinutes ? 'potential' : 'none';
   return {state,expectedMinutes,...facts,overtime};
@@ -92,15 +94,15 @@ export function payrollTransition(state,action,{canAdmin=false,unresolved=0,offi
 }
 export function activePlanningTasks(items) {return items.filter(x=>x.estado!=='concluido' && !x.arquivado_em);}
 export function daySummary(rows, options={}) {
-  const states=rows.map(row=>row.conflict?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,expectedMinutes:row.expected_minutes,...options}).state);
-  const pending=states.filter(s=>!['registered','vacation','absence'].includes(s)).length;
+  const states=rows.map(row=>row.conflict?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,...options}).state);
+  const pending=states.filter(s=>!['registered','vacation','absence','legacy'].includes(s)).length;
   return {people:states.length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:pending===0};
 }
 export function normalDaySelection(rows,{schedule,date,now,admin=false,correctionDays=null}={}) {
  const eligible=[],excluded=[];
  let scheduleError=null;try{intervalFacts(normalIntervals(schedule),{date,now});}catch(e){scheduleError=e.message;}
  for(const row of rows){let reason=null,intervals;
-  if(row.absence)reason='Férias/ausência';else if(row.conflict)reason='Conflito';else if(row.sheet)reason='Folha já registada';else if(scheduleError)reason=scheduleError;
+   if(row.absence)reason='Férias/ausência';else if(row.conflict)reason='Conflito';else if(row.legacy)reason='Registo legado';else if(row.sheet)reason='Folha já registada';else if(scheduleError)reason=scheduleError;
   else if(!row.can_write)reason='Sem autorização ou fora da janela';
   else if(!admin&&!correctionAllowed({role:'encarregado',date,today:now.date,days:correctionDays}))reason='Fora da janela de correção';
   else {try{intervals=normalIntervals(schedule,row.period||'dia_inteiro');intervalFacts(intervals,{date,now});}catch(e){reason=e.message;}}

@@ -18,6 +18,11 @@ DO $$ DECLARE t text; r text; f record; current_columns jsonb; BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.folha_gestao_historico'::regclass AND attname='dominio' AND attgenerated='s')
   OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.folha_gestao_historico'::regclass AND contype='c' AND pg_get_constraintdef(oid) LIKE '%planning_concluded_alerts_resolved%')
  THEN RAISE EXCEPTION 'MANAGEMENT_HISTORY_DOMAIN_INVALID'; END IF;
+ IF strpos(pg_get_functiondef('public.fn_folha_contexto_v2(date,uuid)'::regprocedure),'public.ponto_pessoal_obra h JOIN public.colaboradores')=0
+  OR strpos(pg_get_functiondef('public.fn_folha_contexto_v2(date,uuid)'::regprocedure),'absence_pending')=0
+  OR strpos(pg_get_functiondef('folha_privado.linha(uuid,uuid,date,text)'::regprocedure),'''legacy'',legacy')=0
+  OR strpos(pg_get_functiondef('folha_privado.linha(uuid,uuid,date,text)'::regprocedure),'NOT legacy AND conf IS NULL')=0
+ THEN RAISE EXCEPTION 'VISIBLE_STATE_CONTRACT_INVALID'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='folha_privado' AND (p.proowner<>'postgres'::regrole OR has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('anon',p.oid,'EXECUTE')))
  THEN RAISE EXCEPTION 'PRIVATE_HELPER_EXPOSED'; END IF;
  FOR f IN SELECT * FROM primeline_folha_v2_backup.triggers LOOP
