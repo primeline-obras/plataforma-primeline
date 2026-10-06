@@ -1,0 +1,11 @@
+BEGIN;
+DO $$ BEGIN IF current_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NOT NULL THEN RAISE EXCEPTION 'OWNER_OR_BACKUP_PRECONDITION'; END IF; END $$;
+CREATE SCHEMA primeline_documentos_rh_backup AUTHORIZATION postgres;
+REVOKE ALL ON SCHEMA primeline_documentos_rh_backup FROM PUBLIC,anon,authenticated,service_role;
+CREATE TABLE primeline_documentos_rh_backup.policies AS SELECT * FROM pg_policies WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename='objects');
+CREATE TABLE primeline_documentos_rh_backup.tables AS SELECT c.oid,c.relrowsecurity,c.relacl FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass);
+CREATE TABLE primeline_documentos_rh_backup.documentos AS TABLE public.documentos;
+CREATE TABLE primeline_documentos_rh_backup.anexos AS TABLE public.ausencias_anexos;
+CREATE TABLE primeline_documentos_rh_backup.objects AS TABLE storage.objects;
+REVOKE ALL ON ALL TABLES IN SCHEMA primeline_documentos_rh_backup FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;
