@@ -318,6 +318,7 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
  await (await import('./attendance-focused-reaudit-cases.mjs')).focusedReauditCases(t,{q,a,as,aux,id});
  await (await import('./attendance-visible-state-cases.mjs')).visibleStateCases(t,{q,a,as,call,id});
  await (await import('./attendance-adm-rules-cases.mjs')).admRulesCases(t,{q,a,b,as,aux,auxDo,id,today});
+ await (await import('./audit-attendance-adm-final-cases.mjs')).auditAdmFinalCases(t,{q,a,b,as,aux,auxDo,id,today});
  await (await import('./attendance-reconciliation-cases.mjs')).reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id});
  await t.test('Fase B pós-hotfix: gate ausente/drift recusa; instalação, v1/RH/hotfix e rollback',async()=>{
   const pre=await read('../supabase/quadro_fase_b_pos_hotfix_precheck.sql');
