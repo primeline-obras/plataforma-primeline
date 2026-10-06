@@ -30,7 +30,7 @@ CREATE TABLE public.folha_tarefas_reportes(
 );
 CREATE TABLE public.folha_gestao_historico(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), empresa_id uuid NOT NULL, obra_id uuid,
- action text NOT NULL CHECK(action IN('configure_company','configure_schedule','he_approve','he_reject','he_validate','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export','task_report','task_confirm','planning_concluded_alerts_resolved')),
+ action text NOT NULL CHECK(action IN('configure_company','configure_schedule','he_approve','he_reject','he_validate','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export','task_report','task_confirm','planning_concluded_alerts_resolved','payroll_reconcile')),
  dominio text GENERATED ALWAYS AS (CASE
  WHEN action IN('task_report','task_confirm','planning_concluded_alerts_resolved') THEN 'tarefas'
  WHEN action IN('he_approve','he_reject','he_validate') THEN 'he'
@@ -52,14 +52,43 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  FROM public.folha_registos f WHERE f.colaborador_id=p AND f.data>=m AND f.data<(m+interval '1 month')::date),'[]'),
  'absences',coalesce((SELECT jsonb_agg(jsonb_build_object('id',a.id,'date',a.data,'type',a.tipo,'state',a.estado) ORDER BY a.data,a.id)
  FROM public.ausencias a WHERE a.colaborador_id=p AND a.data>=m AND a.data<(m+interval '1 month')::date),'[]'),
- 'pending_days',coalesce((SELECT jsonb_agg(data ORDER BY data) FROM (SELECT DISTINCT q.data FROM public.quadro_pessoal_alocacao q WHERE q.colaborador_id=p AND q.data>=m AND q.data<(m+interval '1 month')::date AND q.data<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND NOT EXISTS(SELECT 1 FROM public.folha_registos f WHERE f.colaborador_id=p AND f.data=q.data AND f.obra_id IS NOT DISTINCT FROM q.obra_id) AND NOT EXISTS(SELECT 1 FROM public.ausencias a WHERE a.colaborador_id=p AND a.data=q.data)) missing),'[]'),
+ 'pending_days',coalesce((SELECT jsonb_agg(data ORDER BY data) FROM (SELECT DISTINCT q.data FROM public.quadro_pessoal_alocacao q WHERE q.colaborador_id=p AND q.data>=m AND q.data<(m+interval '1 month')::date AND q.data<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND NOT EXISTS(SELECT 1 FROM public.folha_registos f WHERE f.colaborador_id=p AND f.data=q.data AND f.obra_id IS NOT DISTINCT FROM q.obra_id) AND NOT EXISTS(SELECT 1 FROM public.ausencias a WHERE a.colaborador_id=p AND a.data=q.data) AND NOT EXISTS(SELECT 1 FROM public.ponto_pessoal_obra h WHERE h.colaborador_id=p AND h.data=q.data)) missing),'[]'),
  'legacy_days',coalesce((SELECT jsonb_agg(DISTINCT data ORDER BY data) FROM public.ponto_pessoal_obra WHERE colaborador_id=p AND data>=m AND data<(m+interval '1 month')::date),'[]'),
  'financial_effect',false,'legacy_not_converted',true)
 $$;
+-- Factual snapshots cannot keep a prior validation after their source changes.
+CREATE FUNCTION folha_privado.reconciliar_vencimentos() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE x jsonb; p uuid; d date; u public.utilizadores; v public.folha_vencimentos; antes jsonb; facts jsonb; req uuid;
+BEGIN
+ FOR x IN SELECT DISTINCT value FROM jsonb_array_elements(CASE WHEN TG_OP='INSERT' THEN jsonb_build_array(to_jsonb(NEW)) WHEN TG_OP='DELETE' THEN jsonb_build_array(to_jsonb(OLD)) ELSE jsonb_build_array(to_jsonb(OLD),to_jsonb(NEW)) END) LOOP
+  p:=(x->>'colaborador_id')::uuid;d:=(x->>'data')::date;
+  IF p IS NULL OR NOT EXISTS(SELECT 1 FROM public.folha_vencimentos WHERE colaborador_id=p AND competencia=date_trunc('month',d)::date) THEN CONTINUE; END IF;
+  u:=folha_privado.ator();PERFORM folha_privado.lock_dia(p,d);
+  IF EXISTS(SELECT 1 FROM public.folha_vencimentos WHERE colaborador_id=p AND empresa_id<>u.empresa_id)
+  THEN RAISE EXCEPTION 'TENANT_RECONCILIATION_DENIED' USING ERRCODE='42501'; END IF;
+  req:=coalesce(nullif(current_setting('folha.request_id',true),'')::uuid,CASE WHEN TG_TABLE_NAME='folha_registos' THEN (x->>'request_id')::uuid END,gen_random_uuid());
+  FOR v IN SELECT * FROM public.folha_vencimentos WHERE colaborador_id=p AND empresa_id=u.empresa_id AND competencia=date_trunc('month',d)::date FOR UPDATE LOOP
+   facts:=folha_privado.payroll_facts(p,v.competencia);
+   IF v.factos IS NOT DISTINCT FROM facts THEN CONTINUE; END IF;
+   IF v.estado IN('closed','exported') THEN RAISE EXCEPTION 'PAYROLL_CLOSED_FACTS_CHANGED' USING ERRCODE='40001'; END IF;
+   antes:=to_jsonb(v);
+   UPDATE public.folha_vencimentos SET factos=facts,estado='draft',revision=revision+1,atualizado_por=u.id,atualizado_em=now() WHERE id=v.id RETURNING * INTO v;
+   INSERT INTO public.folha_gestao_historico(empresa_id,action,entidade_id,antes,depois,ator_id,request_id,origem)
+   VALUES(v.empresa_id,'payroll_reconcile',v.id,antes,to_jsonb(v),u.id,req,'facts_reconciliation');
+  END LOOP;
+ END LOOP;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER trg_folha_vencimentos_ausencia AFTER INSERT OR UPDATE OR DELETE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();
+CREATE TRIGGER trg_folha_vencimentos_facto AFTER INSERT OR UPDATE OR DELETE ON public.folha_registos FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();
+CREATE TRIGGER trg_folha_vencimentos_alocacao AFTER INSERT OR UPDATE OR DELETE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();
+CREATE TRIGGER trg_folha_vencimentos_legado AFTER INSERT OR UPDATE OR DELETE ON public.ponto_pessoal_obra FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();
+REVOKE ALL ON FUNCTION folha_privado.reconciliar_vencimentos() FROM PUBLIC,anon,authenticated,service_role;
 CREATE FUNCTION public.fn_folha_gestao_v2(p_acao text,p_dados jsonb,p_confirmar boolean DEFAULT false,p_versao text DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; req uuid:=(p_dados->>'request_id')::uuid; w uuid:=(p_dados->>'work_id')::uuid;
- person uuid:=(p_dados->>'person_id')::uuid; entity uuid; before jsonb; after jsonb; payload jsonb; op folha_privado.operacoes;
+ person uuid:=(p_dados->>'person_id')::uuid; entity uuid; before jsonb; after jsonb; payload jsonb; op folha_privado.operacoes; previous_request text;
  token text; result jsonb; expected integer; rev integer; d date; m date; dates date[]; scope_dates date[]; a date; item jsonb;
  h public.folha_he; f public.folha_registos; v public.folha_vencimentos; t public.folha_tarefas_reportes; task public.planeamento_itens;
  cfg public.folha_config_empresa; facts jsonb; pending boolean; consumed integer:=0; histids jsonb;
@@ -209,6 +238,8 @@ BEGIN
   INSERT INTO public.folha_direitos_ferias VALUES(u.empresa_id,person,(after->>'year')::integer,(after->>'days')::numeric,after->>'source',rev+1)
    ON CONFLICT(colaborador_id,ano) DO UPDATE SET dias=excluded.dias,fonte=excluded.fonte,revision=excluded.revision;
  ELSIF p_acao IN('vacation_set','vacation_remove','vacation_replace') THEN
+  -- Correlation only; this setting never grants permissions. Triggers resolve actor/tenant independently.
+  previous_request:=current_setting('folha.request_id',true);PERFORM set_config('folha.request_id',req::text,true);
   IF p_acao='vacation_remove' THEN DELETE FROM public.ausencias WHERE colaborador_id=person AND data=ANY(dates) AND tipo='ferias';
   ELSE
    IF p_acao='vacation_replace' THEN DELETE FROM public.ausencias WHERE colaborador_id=person AND data=ANY(scope_dates) AND NOT data=ANY(dates) AND tipo='ferias'; END IF;
@@ -219,6 +250,7 @@ BEGIN
    END LOOP;
   END IF;
   INSERT INTO public.folha_ferias_revisoes VALUES(u.empresa_id,person,rev+1) ON CONFLICT(colaborador_id) DO UPDATE SET revision=excluded.revision;
+  PERFORM set_config('folha.request_id',coalesce(previous_request,''),true);
  ELSIF p_acao IN('payroll_save','payroll_validate','payroll_close') THEN
   INSERT INTO public.folha_vencimentos(id,empresa_id,colaborador_id,competencia,factos,manuais,estado,revision,criado_por,atualizado_por)
    VALUES(entity,u.empresa_id,person,m,after->'facts',after->'manual',after->>'estado',rev+1,u.id,u.id)

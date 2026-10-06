@@ -68,7 +68,7 @@ CREATE TABLE public.folha_registos(
  colaborador_id uuid REFERENCES public.colaboradores(id), externo_id uuid REFERENCES public.folha_externos(id),
  intervals jsonb NOT NULL CHECK(jsonb_typeof(intervals)='array' AND jsonb_array_length(intervals)>0),
  minutes integer NOT NULL CHECK(minutes>=0), estado text NOT NULL CHECK(estado IN('open','registered','missing','regularization')),
- special_day boolean NOT NULL, revision integer NOT NULL CHECK(revision>0), note text CHECK(length(note)<=1000),
+ special_day boolean NOT NULL, expected_minutes integer CHECK(expected_minutes>0), revision integer NOT NULL CHECK(revision>0), note text CHECK(length(note)<=1000),
  criado_por uuid NOT NULL REFERENCES public.utilizadores(id), atualizado_por uuid NOT NULL REFERENCES public.utilizadores(id),
  criado_em timestamptz NOT NULL DEFAULT now(), atualizado_em timestamptz NOT NULL DEFAULT now(), request_id uuid NOT NULL,
  CHECK(num_nonnulls(colaborador_id,externo_id)=1),
@@ -221,9 +221,14 @@ CREATE TRIGGER folha_legacy_conflict BEFORE INSERT OR UPDATE ON public.ponto_pes
  FOR EACH ROW EXECUTE FUNCTION folha_privado.proteger_legado();
 CREATE FUNCTION folha_privado.lock_legado() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-BEGIN PERFORM pg_advisory_xact_lock(61001,1); RETURN NULL; END $$;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF;
+ PERFORM pg_advisory_xact_lock(61001,1); RETURN NULL;
+END $$;
 -- Coordena também escritores antigos; não altera linhas, sem herança temporal.
 CREATE TRIGGER trg_00_folha_absencias_lock BEFORE INSERT OR UPDATE OR DELETE ON public.ausencias
+ FOR EACH STATEMENT EXECUTE FUNCTION folha_privado.lock_legado();
+CREATE TRIGGER trg_00_folha_alocacao_lock BEFORE INSERT OR UPDATE OR DELETE ON public.quadro_pessoal_alocacao
  FOR EACH STATEMENT EXECUTE FUNCTION folha_privado.lock_legado();
 CREATE TRIGGER trg_00_folha_ponto_lock BEFORE INSERT OR UPDATE OR DELETE ON public.ponto_pessoal_obra
  FOR EACH STATEMENT EXECUTE FUNCTION folha_privado.lock_legado();
@@ -276,17 +281,72 @@ BEGIN
   expected:=coalesce((SELECT office_expected_minutes FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id),480);
   IF EXISTS(SELECT 1 FROM public.quadro_pessoal_alocacao WHERE colaborador_id=p AND data=d AND obra_id IS NOT NULL) THEN conf:='ALLOCATION_CONFLICT'; END IF;
  END IF;
+ IF s.id IS NOT NULL THEN expected:=s.expected_minutes; END IF;
  RETURN jsonb_build_object('tipo_local',CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,'person_id',p,'name',nome,'role',papel,'provider_name',fornecedor,
   'sheet',CASE WHEN s.id IS NULL THEN NULL ELSE jsonb_build_object('id',s.id,'intervals',s.intervals,'note',s.note,'state',s.estado) END,
-  'absence',a,'legacy',legacy,'conflict',conf,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
-  'allocation_ids',coalesce(ids,'[]'),'period',coalesce(period,'dia_inteiro'),'expected_minutes',CASE WHEN a->>'tipo'='ferias' THEN 0 ELSE expected END,
+  'absence',a,'legacy',legacy,'conflict',conf,'special_day',s.special_day,'revision',coalesce(s.revision,0),'allocation_revision',coalesce(rev,0),
+  'allocation_ids',coalesce(ids,'[]'),'period',coalesce(period,'dia_inteiro'),'expected_minutes',expected,
   'can_remove',w IS NOT NULL AND NOT legacy AND conf IS NULL AND s.id IS NULL AND a IS NULL AND NOT EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=p AND data=d) AND jsonb_array_length(coalesce(ids,'[]'))=1
    AND EXISTS(SELECT 1 FROM public.obras WHERE id=w AND situacao='em_curso')
    AND EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d))
    AND (public.fn_quadro_pode_gerir_v1(NULL) OR u.funcao='encarregado'),
-  'overtime',(SELECT jsonb_build_object('estado',h.estado) FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),
+  'overtime',CASE WHEN s.id IS NOT NULL THEN jsonb_build_object('estado',coalesce((SELECT h.estado FROM public.folha_he h WHERE h.folha_id=s.id AND h.folha_revision=s.revision AND h.estado<>'superseded'),CASE WHEN s.special_day AND s.estado<>'regularization' THEN 'pending_rule' ELSE 'none' END)) END,
   'can_write',NOT legacy AND conf IS NULL AND d<=(now() AT TIME ZONE 'Europe/Lisbon')::date AND (d=(now() AT TIME ZONE 'Europe/Lisbon')::date OR folha_privado.admin() OR d>=(now() AT TIME ZONE 'Europe/Lisbon')::date-(SELECT correction_days FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id)) AND (w IS NULL OR folha_privado.admin() OR u.funcao='encarregado') AND ((k='external' AND EXISTS(SELECT 1 FROM public.folha_externos WHERE id=p AND empresa_id=u.empresa_id AND ativo)) OR EXISTS(SELECT 1 FROM public.colaboradores c WHERE c.id=p AND c.data_admissao<=d AND (c.data_saida IS NULL OR c.data_saida>d))));
 END $$;
+CREATE FUNCTION folha_privado.estado_efetivo(minutos integer,aberto boolean,esperado integer,ausencia boolean,conflito boolean) RETURNS text
+LANGUAGE sql IMMUTABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT CASE WHEN ausencia OR conflito THEN 'regularization' WHEN aberto THEN 'open'
+ WHEN esperado IS NULL THEN 'regularization' WHEN minutos<esperado THEN 'missing' ELSE 'registered' END
+$$;
+CREATE FUNCTION folha_privado.reconciliar_he(f public.folha_registos) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ UPDATE public.folha_he SET estado='superseded',revision=revision+1 WHERE folha_id=f.id AND estado<>'superseded';
+ IF f.obra_id IS NOT NULL AND f.colaborador_id IS NOT NULL AND NOT f.special_day AND f.estado='registered'
+ AND f.expected_minutes IS NOT NULL AND f.minutes>f.expected_minutes
+ AND EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=f.empresa_id AND overtime_enabled AND calendar_complete AND NOT f.data=ANY(holiday_dates))
+ AND extract(isodow FROM f.data)<6
+ AND NOT EXISTS(SELECT 1 FROM public.horas_extraordinarias WHERE colaborador_id=f.colaborador_id AND data=f.data)
+ THEN INSERT INTO public.folha_he(empresa_id,obra_id,folha_id,folha_revision,minutes,estado)
+ VALUES(f.empresa_id,f.obra_id,f.id,f.revision,f.minutes-f.expected_minutes,'potential'); END IF;
+END $$;
+CREATE FUNCTION folha_privado.reconciliar_dia(p uuid,d date,req uuid,origem text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u public.utilizadores; f public.folha_registos; antes public.folha_registos; r jsonb; facts jsonb; novo_estado text; conflito boolean;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=p AND data=d) THEN RETURN; END IF;
+ u:=folha_privado.ator();
+ IF NOT EXISTS(SELECT 1 FROM public.colaboradores WHERE id=p AND empresa_id=u.empresa_id)
+ OR EXISTS(SELECT 1 FROM public.folha_registos WHERE colaborador_id=p AND data=d AND empresa_id<>u.empresa_id)
+ THEN RAISE EXCEPTION 'TENANT_RECONCILIATION_DENIED' USING ERRCODE='42501'; END IF;
+ PERFORM folha_privado.lock_dia(p,d);
+ FOR f IN SELECT * FROM public.folha_registos WHERE colaborador_id=p AND data=d AND empresa_id=u.empresa_id ORDER BY id FOR UPDATE LOOP
+  r:=folha_privado.linha(p,f.obra_id,d,'primeline');facts:=folha_privado.facts(f.intervals,d);
+  conflito:=r->>'conflict' IS NOT NULL OR EXISTS(SELECT 1 FROM public.folha_registos other,jsonb_array_elements(other.intervals) x,jsonb_array_elements(f.intervals) y
+   WHERE other.colaborador_id=p AND other.data=d AND other.id<>f.id AND other.obra_id IS DISTINCT FROM f.obra_id
+   AND (x->>'start')::time<coalesce((y->>'end')::time,'24:00'::time) AND (y->>'start')::time<coalesce((x->>'end')::time,'24:00'::time));
+  novo_estado:=folha_privado.estado_efetivo((facts->>'minutes')::integer,(facts->>'open')::boolean,f.expected_minutes,r->'absence'<>'null'::jsonb,conflito);
+  IF novo_estado IS DISTINCT FROM f.estado THEN
+   antes:=f;
+   UPDATE public.folha_registos SET estado=novo_estado,revision=revision+1,atualizado_por=u.id,atualizado_em=now(),request_id=req WHERE id=f.id RETURNING * INTO f;
+   INSERT INTO public.folha_historico(empresa_id,obra_id,tipo_local,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,origem)
+   VALUES(f.empresa_id,f.obra_id,f.tipo_local,p,'primeline',d,'reconcile',to_jsonb(antes),to_jsonb(f),f.revision,u.id,req,origem);
+   PERFORM folha_privado.reconciliar_he(f);
+  END IF;
+ END LOOP;
+END $$;
+CREATE FUNCTION folha_privado.reconciliar_dependencia() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE req uuid:=coalesce(nullif(current_setting('folha.request_id',true),'')::uuid,gen_random_uuid()); origem text;
+BEGIN
+ origem:=CASE WHEN TG_TABLE_NAME='ausencias' THEN CASE WHEN (TG_OP<>'DELETE' AND to_jsonb(NEW)->>'tipo'='ferias') OR (TG_OP<>'INSERT' AND to_jsonb(OLD)->>'tipo'='ferias') THEN 'vacation_reconciliation' ELSE 'absence_reconciliation' END ELSE 'allocation_reconciliation' END;
+ IF TG_OP<>'INSERT' THEN PERFORM folha_privado.reconciliar_dia(OLD.colaborador_id,OLD.data,req,origem); END IF;
+ IF TG_OP<>'DELETE' AND (TG_OP='INSERT' OR NEW.colaborador_id IS DISTINCT FROM OLD.colaborador_id OR NEW.data IS DISTINCT FROM OLD.data)
+ THEN PERFORM folha_privado.reconciliar_dia(NEW.colaborador_id,NEW.data,req,origem); END IF;
+ RETURN NULL;
+END $$;
+CREATE TRIGGER trg_folha_ausencia_reconciliar AFTER INSERT OR UPDATE OR DELETE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_dependencia();
+CREATE TRIGGER trg_folha_alocacao_reconciliar AFTER INSERT OR UPDATE OR DELETE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_dependencia();
 CREATE FUNCTION public.fn_folha_contexto_v2(p_data date,p_obra_id uuid DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; works jsonb; rows jsonb:='[]'; ext jsonb:='[]'; sched jsonb; providers jsonb:='[]'; x record; special boolean;
@@ -323,7 +383,8 @@ BEGIN
  END IF;
  special:=extract(isodow FROM p_data)>5 OR EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND p_data=ANY(holiday_dates));
  FOR r IN SELECT value FROM jsonb_array_elements(rows||ext) LOOP
-  IF r->>'conflict' IS NOT NULL THEN status:='regularization';
+  IF r->'sheet'<>'null'::jsonb THEN status:=r->'sheet'->>'state';
+  ELSIF r->>'conflict' IS NOT NULL THEN status:='regularization';
   ELSIF r->'absence'<>'null'::jsonb THEN status:=CASE WHEN r->'sheet'<>'null'::jsonb THEN 'regularization' WHEN r->'absence'->>'estado'='ausente_pendente' THEN 'absence_pending' ELSE 'absence' END;
   ELSIF (r->>'legacy')::boolean THEN status:='legacy';
   ELSIF r->'sheet'='null'::jsonb THEN status:='none';
@@ -420,24 +481,19 @@ BEGIN
  WHERE other.data=d AND other.obra_id IS DISTINCT FROM w AND (CASE WHEN kind='primeline' THEN other.colaborador_id=person ELSE other.externo_id=person END)
  AND (x->>'start')::time<coalesce((y->>'end')::time,'24:00'::time) AND (y->>'start')::time<coalesce((x->>'end')::time,'24:00'::time))
  THEN RAISE EXCEPTION 'INTERVAL_CONFLICT: outra obra'; END IF;
- state:=CASE WHEN row->'absence'<>'null'::jsonb THEN 'regularization' WHEN (f->>'open')::boolean THEN 'open' WHEN expected IS NULL THEN 'regularization' WHEN (f->>'minutes')::integer<expected THEN 'missing' ELSE 'registered' END;
+ state:=folha_privado.estado_efetivo((f->>'minutes')::integer,(f->>'open')::boolean,expected,row->'absence'<>'null'::jsonb,row->>'conflict' IS NOT NULL);
  IF NOT confirmar THEN RETURN jsonb_build_object('before',to_jsonb(old),'revision',coalesce(old.revision,0),'row',row,'facts',f,'state',state); END IF;
  IF old.id IS NOT NULL THEN
- UPDATE public.folha_registos SET intervals=p->'intervals',minutes=(f->>'minutes')::integer,estado=state,special_day=special,
+ UPDATE public.folha_registos SET intervals=p->'intervals',minutes=(f->>'minutes')::integer,estado=state,special_day=old.special_day,
  revision=old.revision+1,note=p->>'note',atualizado_por=u.id,atualizado_em=now(),request_id=req WHERE id=old.id RETURNING * INTO result;
  ELSE
- INSERT INTO public.folha_registos(empresa_id,obra_id,tipo_local,data,colaborador_id,externo_id,intervals,minutes,estado,special_day,revision,note,criado_por,atualizado_por,request_id)
- VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,d,CASE WHEN kind='primeline' THEN person END,CASE WHEN kind='external' THEN person END,p->'intervals',(f->>'minutes')::integer,state,special,coalesce(old.revision,0)+1,p->>'note',u.id,u.id,req)
+ INSERT INTO public.folha_registos(empresa_id,obra_id,tipo_local,data,colaborador_id,externo_id,intervals,minutes,estado,special_day,expected_minutes,revision,note,criado_por,atualizado_por,request_id)
+ VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,d,CASE WHEN kind='primeline' THEN person END,CASE WHEN kind='external' THEN person END,p->'intervals',(f->>'minutes')::integer,state,special,expected,coalesce(old.revision,0)+1,p->>'note',u.id,u.id,req)
  RETURNING * INTO result;
  END IF;
  INSERT INTO public.folha_historico(empresa_id,obra_id,tipo_local,person_id,kind,data,action,antes,depois,revision,ator_id,request_id,reason)
  VALUES(u.empresa_id,w,CASE WHEN w IS NULL THEN 'escritorio' ELSE 'obra' END,person,kind,d,'save',to_jsonb(old),to_jsonb(result),result.revision,u.id,req,p->>'reason');
- UPDATE public.folha_he SET estado='superseded',revision=revision+1 WHERE folha_id=result.id AND estado<>'superseded';
- IF w IS NOT NULL AND kind='primeline' AND NOT special AND state='registered' AND expected IS NOT NULL AND result.minutes>expected
- AND EXISTS(SELECT 1 FROM public.folha_config_empresa WHERE empresa_id=u.empresa_id AND overtime_enabled AND calendar_complete)
- AND NOT EXISTS(SELECT 1 FROM public.horas_extraordinarias WHERE colaborador_id=person AND data=d)
- THEN INSERT INTO public.folha_he(empresa_id,obra_id,folha_id,folha_revision,minutes,estado)
- VALUES(u.empresa_id,w,result.id,result.revision,result.minutes-expected,'potential'); END IF;
+ PERFORM folha_privado.reconciliar_he(result);
  RETURN jsonb_build_object('result',to_jsonb(result));
 END $$;
 CREATE FUNCTION folha_privado.normal(p uuid,w uuid,d date) RETURNS jsonb

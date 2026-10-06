@@ -25,6 +25,16 @@ DO $$ DECLARE t text; r text; f record; current_columns jsonb; BEGIN
  THEN RAISE EXCEPTION 'VISIBLE_STATE_CONTRACT_INVALID'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='folha_privado' AND (p.proowner<>'postgres'::regrole OR has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('anon',p.oid,'EXECUTE')))
  THEN RAISE EXCEPTION 'PRIVATE_HELPER_EXPOSED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.folha_registos'::regclass AND attname='expected_minutes' AND NOT attisdropped)
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.ausencias'::regclass AND tgname='trg_folha_ausencia_reconciliar' AND tgenabled='O')
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.quadro_pessoal_alocacao'::regclass AND tgname='trg_folha_alocacao_reconciliar' AND tgenabled='O')
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.ausencias'::regclass AND tgname='trg_folha_vencimentos_ausencia' AND tgenabled='O')
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.folha_registos'::regclass AND tgname='trg_folha_vencimentos_facto' AND tgenabled='O')
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.quadro_pessoal_alocacao'::regclass AND tgname='trg_folha_vencimentos_alocacao' AND tgenabled='O')
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.ponto_pessoal_obra'::regclass AND tgname='trg_folha_vencimentos_legado' AND tgenabled='O')
+ OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.quadro_pessoal_alocacao'::regclass AND tgname='trg_00_folha_alocacao_lock' AND tgenabled='O')
+ OR EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='folha_privado' AND p.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog'])
+ THEN RAISE EXCEPTION 'RECONCILIATION_CONTRACT_INVALID'; END IF;
  FOR f IN SELECT * FROM primeline_folha_v2_backup.triggers LOOP
   IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=f.tabela::regclass AND tgname=f.nome AND tgenabled=f.ativo AND pg_get_triggerdef(oid)=f.definicao)
   THEN RAISE EXCEPTION 'LEGACY_TRIGGER_DRIFT: %.%',f.tabela,f.nome; END IF;

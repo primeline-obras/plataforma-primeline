@@ -1,15 +1,15 @@
-import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary, normalDaySelection } from './attendance-domain.js?v=4';
+import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary, normalDaySelection } from './attendance-domain.js?v=5';
 import { createSheetClient } from './attendance-client.js?v=4';
 import { platformConfirm } from './platform-dialogs.js?v=1';
-import {createAttendanceManagementModule} from './attendance-management.js?v=3';
+import {createAttendanceManagementModule} from './attendance-management.js?v=4';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:'CONFIRMAR'}),navigatePlanning}) {
   const client=createSheetClient({supabase,confirm});
-  const management=createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning});
+  const management=createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning,onFactsChanged:refreshFacts});
   const state={date:localClock(now()).date,workId:null,context:null,loading:false,error:'',editor:null,candidates:null,busy:false,history:null};
   let epoch=0;
   function key(row,external=false) {return {kind:external?'external':'primeline',person_id:row.person_id,work_id:state.workId,date:state.date};}
-  function facts(row){const f=analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,workType:state.context.tipo_local||'obra',specialDay:state.context.special_day});return row.conflict?{...f,state:'regularization'}:f;}
+  function facts(row){const f=analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,workType:state.context.tipo_local||'obra',specialDay:row.special_day??state.context.special_day});return row.conflict&&!row.sheet?.state&&!row.sheet?.estado?{...f,state:'regularization'}:f;}
   function statusDetails(row,f) {
     const types={ferias:'Férias',falta_injustificada:'Falta injustificada',falta_justificada_sem_remuneracao:'Falta justificada sem remuneração',falta_justificada_com_remuneracao:'Falta justificada com remuneração'};
     const reasons={LEGACY_WRITER_BLOCKED:'Escrita V2 bloqueada por registo legado neste dia · regularização necessária',LEGACY_CONFLICT:'Legado e Folha V2 coexistem · regularização necessária',ALLOCATION_CONFLICT:'Conflito de alocações · regularização necessária'};
@@ -46,6 +46,22 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
     }catch(e){if(token===epoch)state.error=e.message;}finally{if(token===epoch){state.loading=false;render();}}
   }
   function find(id,external){return (external?state.context.external_rows:state.context.rows).find(r=>r.person_id===id);}
+  async function refreshFacts(action){
+    if(action?.startsWith('configure_'))return load();
+    const token=epoch;if(!state.context)return;
+    try{
+      const c=await client.context(state.date,state.workId);if(token!==epoch||!root.isConnected)return;
+      state.context=c;
+      const lists=root.querySelectorAll('.sheet-list');
+      if(lists[0])lists[0].innerHTML=c.rows.map(r=>rowHtml(r)).join('')||'<p>Sem pessoas alocadas neste dia.</p>';
+      if(lists[1])lists[1].innerHTML=c.external_rows.map(r=>rowHtml(r,true)).join('')||'<p>Sem registos externos neste dia.</p>';
+      const summary=daySummary([...c.rows,...c.external_rows],{specialDay:c.special_day,workType:c.tipo_local});
+      const target=root.querySelector('[data-sheet-summary]');
+      if(target)target.textContent=`${summary.people} pessoas · ${summary.registered} registadas · ${summary.open} em aberto · ${summary.pending} pendentes${summary.complete?' · DIA COMPLETO ✓':''}`;
+      const normal=root.querySelector('[data-sheet-bulk="normal"]');
+      if(normal)normal.disabled=!normalDaySelection(c.rows,{schedule:c.schedule,date:state.date,now:localClock(now()),admin:c.admin,correctionDays:c.correction_days}).eligible.length;
+    }catch(e){if(token===epoch)await load();throw e;}
+  }
   function openEditor(row,external) {
     state.editor={row,external};
     const intervals=row.sheet?.intervals||[];

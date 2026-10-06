@@ -91,6 +91,13 @@ BEGIN
  RETURN jsonb_build_object('allocations',public.fn_quadro_dia_explicito(p_colaborador_id,p_data),'revision',v_revisao,'changed',true);
 END $$;
 DROP TRIGGER trg_00_folha_absencias_lock ON public.ausencias;
+DROP TRIGGER trg_00_folha_alocacao_lock ON public.quadro_pessoal_alocacao;
+DROP TRIGGER trg_folha_ausencia_reconciliar ON public.ausencias;
+DROP TRIGGER trg_folha_alocacao_reconciliar ON public.quadro_pessoal_alocacao;
+DROP FUNCTION folha_privado.reconciliar_dependencia();
+DROP FUNCTION folha_privado.reconciliar_dia(uuid,date,uuid,text);
+DROP FUNCTION folha_privado.reconciliar_he(public.folha_registos);
+DROP FUNCTION folha_privado.estado_efetivo(integer,boolean,integer,boolean,boolean);
 DROP TRIGGER trg_00_folha_ponto_lock ON public.ponto_pessoal_obra;
 DROP TRIGGER trg_00_folha_he_lock ON public.horas_extraordinarias;
 DROP TRIGGER folha_he_origin_conflict ON public.horas_extraordinarias;

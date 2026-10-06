@@ -30,6 +30,12 @@ export function intervalFacts(intervals = [], { date, now } = {}) {
 }
 export function analyseSheet({ sheet = null, absence = null, legacy = false, expectedMinutes = null, workType = 'obra', specialDay = false }) {
   const facts = intervalFacts(sheet?.intervals || []);
+  // Persisted backend state is authoritative; interval analysis is for unsaved previews.
+  if (sheet && ['open','registered','missing','regularization'].includes(sheet.estado ?? sheet.state)) {
+    const state=sheet.estado ?? sheet.state;
+    const overtime=state==='registered' && specialDay ? 'pending_rule' : state==='registered' && workType==='obra' && expectedMinutes!=null && facts.minutes>expectedMinutes ? 'potential' : 'none';
+    return {state,expectedMinutes,...facts,overtime};
+  }
   if (legacy && sheet) return {state:'regularization',expectedMinutes,...facts,overtime:'none'};
   if (absence && facts.started) return {state:'regularization',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'pending_validation'};
   if (absence) return {state:absence.estado==='ausente_pendente'?'absence_pending':absence.tipo==='ferias'?'vacation':'absence',expectedMinutes:absence.tipo==='ferias'?0:expectedMinutes,...facts,overtime:'none'};
@@ -94,7 +100,7 @@ export function payrollTransition(state,action,{canAdmin=false,unresolved=0,offi
 }
 export function activePlanningTasks(items) {return items.filter(x=>x.estado!=='concluido' && !x.arquivado_em);}
 export function daySummary(rows, options={}) {
-  const states=rows.map(row=>row.conflict?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,...options}).state);
+  const states=rows.map(row=>row.conflict&&!row.sheet?.state&&!row.sheet?.estado?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,...options}).state);
   const pending=states.filter(s=>!['registered','vacation','absence','legacy'].includes(s)).length;
   return {people:states.length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:pending===0};
 }

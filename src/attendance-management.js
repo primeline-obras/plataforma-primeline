@@ -1,11 +1,11 @@
 import {createAttendanceManagementClient} from './attendance-client.js?v=4';
-import {vacationSelection,SHEET_STATES} from './attendance-domain.js?v=4';
+import {vacationSelection,SHEET_STATES} from './attendance-domain.js?v=5';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={reported:'Conclusão reportada',confirmed:'Conclusão confirmada',potential:'Potencial HE',pending_validation:'Aguarda validação administrativa',validated_pending_rule:'Validada · regra financeira pendente',pending_rule:'Regra pendente',rejected:'Rejeitada',draft:'Rascunho',validated:'Validado',closed:'Fechado',ausente_pendente:'Justificação pendente',justificada:'Justificada',confirmada:'Confirmada',em_execucao:'Em execução',por_iniciar:'Por iniciar',concluido:'Concluído'};
 const label=x=>labels[x]||SHEET_STATES[x]||x;
 const dateInput=(name,label,value='')=>`<label>${label}<input name="${name}" type="date" value="${esc(value)}"></label>`;
 const historyHtml=events=>events.map(e=>`<details><summary>${esc(e.at)} · ${esc(e.action)} · autor ${esc(e.ator_id)}</summary><p>${esc(e.reason)}</p><pre>Antes: ${esc(JSON.stringify(e.antes))}\nDepois: ${esc(JSON.stringify(e.depois))}</pre></details>`).join('')||'<p>Sem alterações registadas.</p>';
-export function createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning}) {
+export function createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning,onFactsChanged}) {
  const client=createAttendanceManagementClient({supabase,confirm});
  let root=null,generation=0,context=null,workId=null,date=null,personId=null,month=null,schedule=null,tab='he',selected=new Set(),busy=false;
  async function load(){const token=++generation;if(!root?.isConnected)return;root.innerHTML='<p>A carregar gestão da Folha…</p>';
@@ -30,7 +30,7 @@ export function createAttendanceManagementModule({supabase,confirm,toast,navigat
   return `<label>COMPETÊNCIA<input data-management-month type="month" value="${month.slice(0,7)}"></label><p>Estado: ${esc(label(v?.estado||'draft'))} · ${pending} factos pendentes. Sem cálculo salarial automático.</p><h4>FACTOS DA FOLHA</h4>${(facts?.sheets||[]).map(s=>`<p>${esc(s.date)} · ${s.minutes} minutos · ${esc(label(s.state))}${s.special_day?' · dia especial: regra pendente':''}</p>`).join('')||'<p>Sem Folha registada nesta competência; ausência de registo não é presença.</p>'}<h4>PENDÊNCIAS</h4>${(facts?.pending_days||[]).map(d=>`<p>${esc(d)} · ponto não registado</p>`).join('')}${(facts?.legacy_days||[]).map(d=>`<p>${esc(d)} · legado por reconciliar</p>`).join('')}<h4>FÉRIAS / AUSÊNCIAS</h4>${(facts?.absences||[]).map(a=>`<p>${esc(a.date)} · ${esc(a.type)} · ${esc(label(a.state))}</p>`).join('')||'<p>Sem ausências registadas.</p>'}<form data-management-payroll>${[['premium','PRÉMIO'],['km','KM'],['allowance','AJUDAS DE CUSTO']].map(([k,n])=>`<label>${n} — MANUAL<input name="${k}" type="number" min="0" step="0.01" value="${esc(manual[k])}"></label>`).join('')}<label>OBSERVAÇÕES<textarea name="note" maxlength="1000">${esc(manual.note)}</textarea></label><button ${v&&v.estado!=='draft'?'disabled':''}>GUARDAR RASCUNHO</button></form><p>Fecho e exportação indisponíveis até aprovação de regras ADM e instalação do modelo/exportador oficial.</p><button disabled>FECHAR</button><button disabled>EXPORTAR</button><h4>HISTÓRICO</h4>${historyHtml(context.history)}`;
  }
  async function execute(action,data){if(busy)return;busy=true;const controls=[...root.querySelectorAll('button,input,select,textarea')];controls.forEach(e=>e.disabled=true);const token=generation;
-  try{const r=await client.execute(action,{...data,reason:data.reason||null});if(token!==generation||!root?.isConnected)return;if(r){if(action.startsWith('vacation_'))selected.clear();toast('Alteração confirmada.');await load();}}
+  try{const r=await client.execute(action,{...data,reason:data.reason||null});if(token!==generation||!root?.isConnected)return;if(r){if(action.startsWith('vacation_'))selected.clear();toast('Alteração confirmada.');await load();if(action.startsWith('vacation_')||action.startsWith('configure_'))await onFactsChanged?.(action);}}
   catch(e){if(token===generation&&root?.isConnected){toast(e.message,'error');root.querySelector('[data-management-error]').textContent=e.message;if(e.code==='40001'||e.code==='STALE_REVISION')await load();}}
   finally{busy=false;if(root?.isConnected&&context)render();}
  }
