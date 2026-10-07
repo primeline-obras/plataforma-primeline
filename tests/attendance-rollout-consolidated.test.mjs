@@ -99,7 +99,7 @@ test('consolidated rollout: reconstructed hotfix → documents → Folha; all dr
   const literal=JSON.stringify(localBaseline).replaceAll("'","''");
   let synthetic=sql.replace(/WITH baseline AS \(SELECT '[\s\S]*?'::jsonb data\),/,()=> 'WITH baseline AS (SELECT '+"'"+literal+"'::jsonb data),");
   const localValues=local.counts.map(n=>"('"+n.relname+"',"+n.total+"::bigint)").join(',');
-  synthetic=synthetic.replace(/expected_counts\(name,expected\) AS \(VALUES [\s\S]*?\),\ncounts/,()=>"expected_counts(name,expected) AS (VALUES "+localValues+"),\ncounts");
+  synthetic=synthetic.replace(/expected_counts\(name,expected\) AS \(VALUES [\s\S]*?\),\r?\ncounts/,()=>"expected_counts(name,expected) AS (VALUES "+localValues+"),\ncounts");
   const readyRows=(await q(synthetic)).flatMap(r=>r.rows||[]);const ready=readyRows[0].precheck_real_final;
   assert.equal(ready.verdict,'READY_FOR_DOCUMENTAL_AND_V2_ROLLOUT',JSON.stringify(ready.blockers));
   assert.equal(ready.document_delete_rpc.state,'P1_KNOWN_BASELINE_READY_FOR_HOTFIX');

@@ -102,4 +102,3 @@ Resultados e commit de entrega são registrados ao concluir as suites integrais 
 ## Gate externo restante
 
 Uma execução manual do SQL read-only acima, seguida da análise de todos os blockers e autorização expressa. Nada deste documento constitui autorização de rollout real.
-
