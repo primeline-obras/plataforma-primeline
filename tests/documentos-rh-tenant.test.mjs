@@ -14,6 +14,9 @@ test('RH documents: independent PostgreSQL RLS and main-compatible scripts',{ski
  for(const [n,c] of [[20,1],[21,2]]){await q('INSERT INTO colaboradores VALUES($1,$2)',[id(n),id(c)]);await q('INSERT INTO viaturas VALUES($1,$2)',[id(n+10),id(c)]);await q('INSERT INTO obras VALUES($1,$2)',[id(n+30),id(c)]);await q('INSERT INTO ausencias VALUES($1,$2)',[id(n+40),id(n)]);await q("INSERT INTO ausencias_anexos VALUES($1,$2,'synthetic','synthetic')",[id(n+50),id(n+40)]);
  for(const tipo of ['colaborador','viatura']){const ent=tipo==='colaborador'?n:n+10;await q("INSERT INTO documentos(empresa_id,entidade_tipo,entidade_id,nome_arquivo) VALUES($1,$2,$3,'Synthetic')",[id(c),tipo,id(ent)]);await q("INSERT INTO storage.objects(bucket_id,name) VALUES('documentos',$1)",['rh/'+tipo+'/'+id(ent)+'/synthetic.pdf']);}}
  await q('INSERT INTO autos_medicao VALUES($1,$2)',[id(80),id(50)]);await q("INSERT INTO documentos(empresa_id,entidade_tipo,entidade_id) VALUES($1,'auto_medicao',$2)",[id(1),id(80)]);await q("INSERT INTO storage.objects(bucket_id,name) VALUES('documentos',$1)",[id(50)+'/work.pdf']);
+ await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
  await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
  await t.test('postcheck rejects every policy/helper/ACL delta against the reviewed installation',async()=>{
   const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');

@@ -70,6 +70,9 @@ test('AUDIT: rollback dependency continuity',{timeout:240000,skip:!bin||!deps?'D
  GRANT USAGE ON SCHEMA storage TO authenticated;GRANT SELECT,INSERT,UPDATE,DELETE ON documentos,storage.objects TO authenticated;
  CREATE POLICY pl_documentos_rh ON documentos FOR ALL TO authenticated USING(fn_e_administrativo()) WITH CHECK(fn_e_administrativo());
  CREATE POLICY storage_rh ON storage.objects FOR SELECT TO authenticated USING(bucket_id='documentos' AND fn_e_administrativo());`);
+ await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
  for(const step of ['precheck','backup','','postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
  await q(await read('../supabase/folha_ponto_v2_backup.sql'));
  await q(await read('../supabase/folha_ponto_v2.sql'));

@@ -18,6 +18,9 @@ test('AUDIT: bucket security metadata must be pinned',{skip:!bin||!deps,timeout:
  CREATE FUNCTION public.audit_bucket_helper(text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$ SELECT $1='documentos' $$;
  REVOKE ALL ON FUNCTION public.audit_bucket_helper(text) FROM PUBLIC;
  CREATE POLICY audit_baseline ON storage.buckets FOR ALL TO authenticated USING(public.audit_bucket_helper(id)) WITH CHECK(public.audit_bucket_helper(id));`);
+ await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
  await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
  // Independent negative drift cases; candidate scripts stay unchanged.
  const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');

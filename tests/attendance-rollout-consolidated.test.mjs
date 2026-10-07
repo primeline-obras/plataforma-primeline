@@ -80,7 +80,34 @@ test('consolidated rollout: reconstructed hotfix → documents → Folha; all dr
    CREATE POLICY documents_insert ON storage.objects FOR INSERT TO authenticated WITH CHECK(bucket_id='documentos');`);
   const pre=await read('../supabase/folha_ponto_v2_precheck.sql');
   await t.test('missing documentary delta is rejected',async()=>{await assert.rejects(q(pre),/does not exist/);await q('ROLLBACK');});
-  for(const step of ['precheck','backup','','postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
+  await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
+ await t.test('final precheck returns ONE normal JSON result and recognises vulnerable known baseline',async()=>{
+  const sql=await read('../supabase/pacote2_precheck_real_final_20261007.sql');
+  assert.doesNotMatch(sql,/RAISE NOTICE|CREATE\s+(?:TABLE|FUNCTION|SCHEMA)|GRANT\s|REVOKE\s/i);
+  const results=await q(sql);const rows=(Array.isArray(results)?results:[results]).flatMap(r=>r.rows||[]);
+  assert.equal(rows.length,1);const v=rows[0].precheck_real_final;
+  assert.equal(v.environment.read_only,'on');assert.equal(v.document_delete_rpc.state,'P1_KNOWN_BASELINE_READY_FOR_HOTFIX');
+  assert.equal(v.verdict,'BLOCKED');assert.ok(v.blockers.length>0,'Synthetic reduced Storage/catalog must never be silently certified as real baseline');
+  // Unit-check the decision engine with an explicitly SYNTHETIC expected catalog.
+  // Production baseline/file is never changed and cannot be certified by this reduced fixture.
+  const captured=await q(await read('../supabase/pacote2_validacao_real_final_readonly.sql'));
+  const local=(Array.isArray(captured)?captured:[captured]).flatMap(r=>r.rows||[]).find(r=>r.readonly_catalog).readonly_catalog;
+  for(const table of local.tables) table.indexes?.sort((a,b)=>Buffer.compare(Buffer.from(a.definition),Buffer.from(b.definition)));
+  const localBaseline={functions:local.functions.map(({signature,owner,security_definer,config,acl,definition_sha256})=>({signature,owner,security_definer,config,acl,definition_sha256})),tables:local.tables};
+  const literal=JSON.stringify(localBaseline).replaceAll("'","''");
+  let synthetic=sql.replace(/WITH baseline AS \(SELECT '[\s\S]*?'::jsonb data\),/,()=> 'WITH baseline AS (SELECT '+"'"+literal+"'::jsonb data),");
+  const localValues=local.counts.map(n=>"('"+n.relname+"',"+n.total+"::bigint)").join(',');
+  synthetic=synthetic.replace(/expected_counts\(name,expected\) AS \(VALUES [\s\S]*?\),\ncounts/,()=>"expected_counts(name,expected) AS (VALUES "+localValues+"),\ncounts");
+  const readyRows=(await q(synthetic)).flatMap(r=>r.rows||[]);const ready=readyRows[0].precheck_real_final;
+  assert.equal(ready.verdict,'READY_FOR_DOCUMENTAL_AND_V2_ROLLOUT',JSON.stringify(ready.blockers));
+  assert.equal(ready.document_delete_rpc.state,'P1_KNOWN_BASELINE_READY_FOR_HOTFIX');
+  await q('ALTER FUNCTION fn_apagar_documento_entidade(uuid) SECURITY INVOKER');
+  try{const bad=(await q(synthetic)).flatMap(r=>r.rows||[])[0].precheck_real_final;assert.equal(bad.verdict,'BLOCKED');assert.equal(bad.document_delete_rpc.state,'DRIFT');}finally{await q('ALTER FUNCTION fn_apagar_documento_entidade(uuid) SECURITY DEFINER');}
+
+ });
+ for(const step of ['precheck','backup','','postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
   await t.test('reviewed documentary delta composes exactly with existing hotfix',async()=>{await q(pre);});
   await t.test('unrelated table grant and incomplete documentary delta are rejected',async()=>{
    for(const sql of ['GRANT SELECT ON colaboradores TO anon','ALTER POLICY rh_empresa_guard ON documentos USING(false)','DROP POLICY rh_storage_empresa_guard ON storage.objects']) {

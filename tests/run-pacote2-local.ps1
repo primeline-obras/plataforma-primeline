@@ -11,7 +11,10 @@ $env:VIATURAS_PG_BIN=$env:QUADRO_PG_BIN
 $env:VIATURAS_PG_MODULE=Join-Path $env:QUADRO_TEST_DEPS 'pg'
 $env:LOCAL_PG_BIN=$env:QUADRO_PG_BIN
 $env:LOCAL_PG_DEPS=$env:QUADRO_TEST_DEPS
+# PostgREST has no bundled libpq: use the already installed client's complete DLL set.
+$postgrestDllBin=if($env:QUADRO_POSTGREST_DLL_BIN){$env:QUADRO_POSTGREST_DLL_BIN}else{'C:\Program Files\PostgreSQL\17\bin'}
 $env:PATH=$env:QUADRO_PG_BIN+';'+$env:PATH
+if(Test-Path (Join-Path $postgrestDllBin 'libpq.dll')){$env:PATH=$postgrestDllBin+';'+$env:PATH}
 $env:RH_TEST_DEPS=Join-Path $PSScriptRoot 'runtime'
 $env:LOGIN_TEST_DEPS=Join-Path $PSScriptRoot 'runtime\package.json'
 $env:PLANNING_PLAYWRIGHT='C:\Users\conta\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\node_modules\playwright'
