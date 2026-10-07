@@ -87,7 +87,7 @@ CREATE TRIGGER trg_folha_vencimentos_legado AFTER INSERT OR UPDATE OR DELETE ON 
 REVOKE ALL ON FUNCTION folha_privado.reconciliar_vencimentos() FROM PUBLIC,anon,authenticated,service_role;
 -- Fragmento de instalação local, incorporado pela migration de gestão.
 -- Não executar isoladamente nem contra produção.
-ALTER TABLE public.folha_config_empresa ADD COLUMN calendar_validated_years integer[] NOT NULL DEFAULT '{}';
+ALTER TABLE public.folha_config_empresa ADD COLUMN IF NOT EXISTS calendar_validated_years integer[] NOT NULL DEFAULT '{}';
 ALTER TABLE public.folha_direitos_ferias ADD COLUMN saldo_transitado integer NOT NULL DEFAULT 0 CHECK(saldo_transitado>=0);
 ALTER TABLE public.folha_direitos_ferias ADD COLUMN validade_transitado date;
 ALTER TABLE public.folha_direitos_ferias ADD COLUMN dias_adicionais integer NOT NULL DEFAULT 0 CHECK(dias_adicionais>=0);
@@ -165,6 +165,7 @@ DECLARE u public.utilizadores; req uuid:=(p_dados->>'request_id')::uuid; w uuid:
  cfg public.folha_config_empresa; ab public.ausencias; facts jsonb; pending boolean; consumed integer:=0; histids jsonb;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF;
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;
  PERFORM pg_advisory_xact_lock(61001,1);
  SELECT * INTO u FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id() AND ativo IS TRUE FOR SHARE;
  IF u.id IS NULL OR u.empresa_id IS NULL THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501'; END IF;
@@ -175,6 +176,7 @@ BEGIN
  IF p_acao IN('configure_company','vacation_set','vacation_remove','vacation_replace','vacation_entitlement','payroll_save','payroll_validate','payroll_close','payroll_export','payroll_reopen','configure_he_eligibility','absence_confirm','special_review') AND w IS NOT NULL THEN
   RAISE EXCEPTION 'ADMIN_WORK_SCOPE_INVALID: ação administrativa sem obra' USING ERRCODE='22023';
  END IF;
+ IF p_acao='configure_schedule' THEN PERFORM folha_privado.obra(w); END IF;
  -- Replays must obey the actor's CURRENT role and work scope.
  IF p_acao IN('task_report','task_confirm') THEN
   PERFORM folha_privado.obra(w);
@@ -193,6 +195,20 @@ BEGIN
  SELECT * INTO op FROM folha_privado.operacoes WHERE empresa_id=u.empresa_id AND ator_id=u.id AND request_id=req;
  IF FOUND THEN
   IF op.payload<>payload THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT'; END IF;
+  -- Recheck entity tenant/scope without revisiting completed transition/revision.
+  IF person IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.colaboradores WHERE id=person AND empresa_id=u.empresa_id) THEN RAISE EXCEPTION 'PERMISSION_DENIED: pessoa' USING ERRCODE='42501'; END IF;
+  IF p_acao='he_process' THEN
+   SELECT * INTO h FROM public.folha_he WHERE id=(p_dados->>'id')::uuid AND empresa_id=u.empresa_id;
+   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: HE' USING ERRCODE='42501'; END IF;
+   PERFORM folha_privado.obra(h.obra_id);
+  ELSIF p_acao='special_review' THEN
+   SELECT * INTO f FROM public.folha_registos WHERE id=(p_dados->>'id')::uuid AND empresa_id=u.empresa_id;
+   IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED: Folha' USING ERRCODE='42501'; END IF;
+  ELSIF p_acao='absence_confirm' AND NOT EXISTS(SELECT 1 FROM public.ausencias a JOIN public.colaboradores c ON c.id=a.colaborador_id WHERE a.id=(p_dados->>'id')::uuid AND c.empresa_id=u.empresa_id) THEN
+   RAISE EXCEPTION 'PERMISSION_DENIED: ausência' USING ERRCODE='42501';
+  ELSIF p_acao IN('task_report','task_confirm') AND NOT EXISTS(SELECT 1 FROM public.planeamento_itens pi JOIN public.fases fase ON fase.id=pi.fase_id JOIN public.obras o ON o.id=fase.obra_id WHERE pi.id=(p_dados->>'task_id')::uuid AND fase.obra_id=w AND o.empresa_id=u.empresa_id) THEN
+   RAISE EXCEPTION 'PERMISSION_DENIED: tarefa' USING ERRCODE='42501';
+  END IF;
   IF NOT p_confirmar THEN RETURN jsonb_build_object('version',2,'committed',false,'versao',op.token); END IF;
   IF p_versao IS DISTINCT FROM op.token THEN RAISE EXCEPTION 'STALE_PREVIEW' USING ERRCODE='40001'; END IF;
   RETURN op.resultado;

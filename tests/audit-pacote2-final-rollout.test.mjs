@@ -109,8 +109,8 @@ test('AUDIT: rollout prerequisites and read-only collector',{timeout:240000,skip
   try{const after=await collect();assert.notDeepEqual(after,before,'Stale gate fingerprint is invisible in collector output');}finally{await q('UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[catalog]);}
  });
  await t.test('B rejects stale signature and unapproved table grant',async()=>{
-  await q("UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog='{}'");try{await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT/);}finally{await q('ROLLBACK');await q('UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[catalog]);}
-  await q('GRANT UPDATE ON folha_registos TO authenticated');try{await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT/);}finally{await q('ROLLBACK');await q('REVOKE UPDATE ON folha_registos FROM authenticated');}
+  await q("UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog='{}'");try{await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT|CUTOVER_REQUIRED/);}finally{await q('ROLLBACK');await q('UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[catalog]);}
+  await q('GRANT UPDATE ON folha_registos TO authenticated');try{await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT|CUTOVER_REQUIRED/);}finally{await q('ROLLBACK');await q('REVOKE UPDATE ON folha_registos FROM authenticated');}
  });
  await t.test('collector distinguishes old policy, incomplete calendar, writer and catalog drift',async()=>{
   const before=await collect();
@@ -129,8 +129,31 @@ test('AUDIT: rollout prerequisites and read-only collector',{timeout:240000,skip
   await q('UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[(await q(catalogSql)).rows[0].jsonb_build_object]);
   await q(await read('../supabase/folha_v2_legacy_cutover_precheck.sql'));
   await q(await read('../supabase/folha_v2_legacy_cutover.sql'));await q(await read('../supabase/folha_v2_legacy_cutover_postcheck.sql'));
-  try{await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT/);}finally{await q('ROLLBACK');}
+  try{await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT|CUTOVER_REQUIRED/);}finally{await q('ROLLBACK');}
   await q('UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[(await q(catalogSql)).rows[0].jsonb_build_object]);
+  const readiness=async()=>JSON.parse((await collect()).notices.find(n=>n.startsWith('READINESS_AGGREGATE: ')).slice('READINESS_AGGREGATE: '.length)).phase_b_approval;
+  assert.equal((await readiness()).state,'MATCH');
+  const savedApproval=(await q('SELECT to_jsonb(x) value FROM primeline_pacote2_gate.aprovacao x')).rows[0].value;
+  for(const [mutation,expectedState,undo,params=[]] of [
+   ["UPDATE primeline_pacote2_gate.aprovacao SET installation_id='wrong-installation'",'INCOMPATIBLE','UPDATE primeline_pacote2_gate.aprovacao SET installation_id=$1',[savedApproval.installation_id]],
+   ['GRANT SELECT ON primeline_pacote2_gate.aprovacao TO authenticated','INCOMPATIBLE','REVOKE SELECT ON primeline_pacote2_gate.aprovacao FROM authenticated'],
+   ['UPDATE primeline_pacote2_gate.aprovacao SET consumed_at=now()','INCOMPATIBLE','UPDATE primeline_pacote2_gate.aprovacao SET consumed_at=NULL'],
+   ["UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog='{}'",'STALE','UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[savedApproval.expected_catalog]],
+   ['DELETE FROM primeline_pacote2_gate.aprovacao','ABSENT','INSERT INTO primeline_pacote2_gate.aprovacao SELECT * FROM jsonb_populate_record(NULL::primeline_pacote2_gate.aprovacao,$1)',[savedApproval]],
+   ['ALTER TABLE primeline_pacote2_gate.aprovacao RENAME TO audit_saved_approval','ABSENT','ALTER TABLE primeline_pacote2_gate.audit_saved_approval RENAME TO aprovacao'],
+   ['GRANT UPDATE ON folha_registos TO authenticated','STALE','REVOKE UPDATE ON folha_registos FROM authenticated'],
+   ['ALTER TABLE ponto_pessoal_obra DISABLE TRIGGER trg_01_folha_legacy_closed','STALE','ALTER TABLE ponto_pessoal_obra ENABLE TRIGGER trg_01_folha_legacy_closed']
+  ]) {
+   await q(mutation);try {assert.equal((await readiness()).state,expectedState);}finally{await q('ROLLBACK');await q(undo,params);}
+  }
+  for(const mutation of [
+   'DROP TRIGGER trg_01_folha_legacy_closed ON ponto_pessoal_obra',
+   'ALTER TABLE ponto_pessoal_obra DISABLE TRIGGER trg_01_folha_legacy_closed',
+   "ALTER FUNCTION folha_privado.legacy_closed() SECURITY INVOKER",
+   'GRANT SELECT ON folha_privado.legacy_cutover TO authenticated'
+  ]) {
+   await q('BEGIN');try {await q(mutation);await assert.rejects(q(pre),/LEGACY|CUTOVER/);}finally{await q('ROLLBACK');}
+  }
   await q(pre);await q(await read('../supabase/quadro_fase_b_pos_hotfix_backup.sql'));await q(await read('../supabase/quadro_fase_b_pos_hotfix_migration.sql'));await q(await read('../supabase/quadro_fase_b_pos_hotfix_postcheck.sql'));
   await q(await read('../supabase/quadro_fase_b_pos_hotfix_rollback.sql'));await q(await read('../supabase/folha_v2_legacy_cutover_postcheck.sql'));
   await q(await read('../supabase/folha_v2_legacy_cutover_rollback.sql'));

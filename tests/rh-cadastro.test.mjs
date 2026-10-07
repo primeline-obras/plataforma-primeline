@@ -185,7 +185,7 @@ test('PostgreSQL: migração, cadastro, permissões e lote atómico',{skip:!deps
   await t.test('ficheiro real: 47 linhas, tipo vazio, pré-visualização e reimportação',{skip:!process.env.RH_XLSX},async()=>{
     await db.exec('begin');
     try {
-      const X=require(deps+'/xlsx.full.min.js'),book=X.read(fs.readFileSync(process.env.RH_XLSX));
+      const X=require('xlsx'),book=X.read(fs.readFileSync(process.env.RH_XLSX));
       const rows=X.utils.sheet_to_json(book.Sheets.Colaboradores,{defval:''});
       assert.equal(rows.length,47);assert.ok(rows.every(r=>!r.tipo_contrato&&r.data_inicio));
       const testCompany='10000000-0000-0000-0000-000000000047';
@@ -294,7 +294,7 @@ test('formulário preserva dados ao abrir e guarda uma única vez',{skip:!deps},
 });
 
 test('interface: aviso contratual visível, permite confirmar e não limpa células vazias',{skip:!deps},async()=>{
-  const require=createRequire(deps+'/package.json'),{JSDOM}=require('jsdom'),X=require(deps+'/xlsx.full.min.js');
+  const require=createRequire(deps+'/package.json'),{JSDOM}=require('jsdom'),X=require('xlsx');
   const dom=new JSDOM('<div id="workflow-dialog" hidden><h2 id="workflow-dialog-title"></h2><div id="workflow-dialog-content"></div></div>');
   const previous={document:globalThis.document,XLSX:globalThis.XLSX};
   globalThis.document=dom.window.document;globalThis.XLSX=X;

@@ -59,6 +59,9 @@ try {
       const method = options.method || "GET";
       const body = options.body ? JSON.parse(options.body) : null;
       calls.push({ resource, query: url.search, method, body });
+      if(resource==='rpc/fn_listar_ponto_obra') return Response.json({obras:[{id:'w1'},{id:'w2'}],linhas:people.filter(p=>!p.data_saida).map(p=>({colaborador_id:p.id,nome:p.nome,funcao:p.funcao}))});
+      if(resource==='rpc/fn_colaborador_na_obra_atual_encarregado') return Response.json(true);
+      if(resource==='rpc/fn_ausencias_equipa_encarregado') return Response.json([]);
       if (resource === "rpc/fn_e_admin") return Response.json(false);
       if (resource === "rpc/fn_listar_rastreio_faturas") return Response.json([]);
       if (resource === 'rpc/fn_quadro_contexto_v1' && auditMode==='missingBackend') return Response.json({message:'PGRST202: missing RPC'},{status:404});

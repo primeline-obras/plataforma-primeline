@@ -14,10 +14,24 @@ test('AUDIT: bucket security metadata must be pinned',{skip:!bin||!deps,timeout:
  for(const [n,c] of [[20,1],[21,2]]){await q('INSERT INTO colaboradores VALUES($1,$2)',[id(n),id(c)]);await q('INSERT INTO viaturas VALUES($1,$2)',[id(n+10),id(c)]);await q('INSERT INTO obras VALUES($1,$2)',[id(n+30),id(c)]);await q('INSERT INTO ausencias VALUES($1,$2)',[id(n+40),id(n)]);await q("INSERT INTO ausencias_anexos VALUES($1,$2,'synthetic','synthetic')",[id(n+50),id(n+40)]);
  for(const tipo of ['colaborador','viatura']){const ent=tipo==='colaborador'?n:n+10;await q("INSERT INTO documentos(empresa_id,entidade_tipo,entidade_id,nome_arquivo) VALUES($1,$2,$3,'Synthetic')",[id(c),tipo,id(ent)]);await q("INSERT INTO storage.objects(bucket_id,name) VALUES('documentos',$1)",['rh/'+tipo+'/'+id(ent)+'/synthetic.pdf']);}}
  await q('INSERT INTO autos_medicao VALUES($1,$2)',[id(80),id(50)]);await q("INSERT INTO documentos(empresa_id,entidade_tipo,entidade_id) VALUES($1,'auto_medicao',$2)",[id(1),id(80)]);await q("INSERT INTO storage.objects(bucket_id,name) VALUES('documentos',$1)",[id(50)+'/work.pdf']);
+ await q(`ALTER TABLE storage.buckets ADD COLUMN file_size_limit bigint DEFAULT 1000000, ADD COLUMN allowed_mime_types text[] DEFAULT ARRAY['application/pdf'];
+ CREATE FUNCTION public.audit_bucket_helper(text) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$ SELECT $1='documentos' $$;
+ REVOKE ALL ON FUNCTION public.audit_bucket_helper(text) FROM PUBLIC;
+ CREATE POLICY audit_baseline ON storage.buckets FOR ALL TO authenticated USING(public.audit_bucket_helper(id)) WITH CHECK(public.audit_bucket_helper(id));`);
  await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
  // Independent negative drift cases; candidate scripts stay unchanged.
  const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');
  for(const [label,mutation] of [
+  ['bucket force RLS','ALTER TABLE storage.buckets FORCE ROW LEVEL SECURITY'],
+  ['bucket removed policy','DROP POLICY audit_baseline ON storage.buckets'],
+  ['bucket USING','ALTER POLICY audit_baseline ON storage.buckets USING(false)'],
+  ['bucket WITH CHECK','ALTER POLICY audit_baseline ON storage.buckets WITH CHECK(false)'],
+  ['bucket public',"UPDATE storage.buckets SET public=true WHERE id='documentos'"],
+  ['bucket MIME',"UPDATE storage.buckets SET allowed_mime_types=ARRAY['text/html'] WHERE id='documentos'"],
+  ['bucket limit',"UPDATE storage.buckets SET file_size_limit=1 WHERE id='documentos'"],
+  ['bucket helper search path','ALTER FUNCTION public.audit_bucket_helper(text) SET search_path=public'],
+  ['bucket helper security','ALTER FUNCTION public.audit_bucket_helper(text) SECURITY INVOKER'],
+  ['bucket helper ACL','GRANT EXECUTE ON FUNCTION public.audit_bucket_helper(text) TO PUBLIC'],
   ['bucket table ACL','GRANT UPDATE ON storage.buckets TO authenticated'],
   ['bucket column ACL','GRANT UPDATE(public) ON storage.buckets TO authenticated'],
   ['bucket RLS','ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY'],

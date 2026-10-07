@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
+import {confirmationContext} from './platform-confirm-handlers.mjs';
 const read=p=>readFile(new URL('../src/'+p,import.meta.url),'utf8').then(s=>s.replaceAll('\r',''));
 const [map,costs,suppliers]=await Promise.all(['management-map.js','production-dashboard.js','subcontractors.js'].map(read));
 const importBody=map.slice(map.indexOf('  async function confirmImport() {'),map.indexOf('  root.addEventListener("input"')).trim();
@@ -28,3 +29,17 @@ test('import handler must coalesce simultaneous confirmation waits',async()=>{
  const a=context.invoke(),b=context.invoke();for(const answer of answers)answer(true);await Promise.all([a,b]);
  assert.equal(writes,1,'Two pending handler activations produce duplicate confirmed import batches');
 });
+for(const [name,code] of definitions) {
+ test(name+': concurrent confirmation, cancellation and failed adapter release the guard',async()=>{
+  let answer,calls=0,writes=0;
+  const context=confirmationContext(()=>{calls++;return new Promise(r=>answer=r);},()=>writes++);
+  runInNewContext(code,context);
+  const first=context.invoke(),duplicate=context.invoke();assert.equal(calls,1);
+  answer(false);await Promise.all([first,duplicate]);assert.equal(writes,0);
+  context.platformConfirm=async()=>{throw new Error('Synthetic adapter error');};
+  await context.invoke().catch(()=>{});
+  assert.equal(context.state.importing,false);assert.ok(!context.state.mergeLoading);
+  assert.equal(context.button.disabled,false);assert.equal(context.deleteButton.disabled,false);
+  context.platformConfirm=async()=>true;await context.invoke();assert.equal(writes,1);
+ });
+}

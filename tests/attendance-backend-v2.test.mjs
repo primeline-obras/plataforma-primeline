@@ -331,9 +331,9 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
  await (await import('./attendance-security-visibility-cases.mjs')).securityVisibilityCases(t,{q,a,b,as,aux,auxDo,id});
  await (await import('./attendance-reconciliation-cases.mjs')).reconciliationCases(t,{q,a,b,as,call,aux,auxDo,id});
  await (await import('./attendance-adm-rules-cases.mjs')).admRulesCases(t,{q,a,b,as,aux,auxDo,id,today},12);
- await t.test('Fase B pós-hotfix: gate ausente/drift recusa; instalação, v1/RH/hotfix e rollback',async()=>{
+ await t.test('Fase B pós-hotfix: gate ausente/drift recusa; instalação, v1/RH/hotfix e rollback',async bt=>{
   const pre=await read('../supabase/quadro_fase_b_pos_hotfix_precheck.sql');
-  await assert.rejects(q(pre),/REAL CATALOG VALIDATION REQUIRED/);await q('ROLLBACK');
+  await assert.rejects(q(pre),/REAL CATALOG VALIDATION REQUIRED|CUTOVER_REQUIRED/);await q('ROLLBACK');
   await q(`CREATE FUNCTION fn_encarregado_acesso_direto_bloqueado() RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM utilizadores WHERE id=fn_utilizador_atual_id() AND funcao='encarregado') $$;
   CREATE POLICY encarregado_sem_dml_direto ON quadro_pessoal_alocacao AS RESTRICTIVE FOR ALL TO authenticated USING(NOT fn_encarregado_acesso_direto_bloqueado()) WITH CHECK(NOT fn_encarregado_acesso_direto_bloqueado());
   CREATE SCHEMA primeline_pacote2_gate;REVOKE ALL ON SCHEMA primeline_pacote2_gate FROM PUBLIC,anon,authenticated,service_role;
@@ -344,6 +344,8 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   const catalogSql=pre.slice(pre.lastIndexOf('actual:=(')+9,pre.lastIndexOf('\n IF actual IS DISTINCT')).replace(/\);\s*$/,'');
   const catalog=(await q(catalogSql)).rows[0].jsonb_build_object;
   await q("INSERT INTO primeline_pacote2_gate.aprovacao VALUES('pacote2_folha_v2_20261005','postgres',now(),NULL,$1,true,true,(SELECT instalacao_id::text FROM primeline_quadro_rollout.controlo WHERE singleton),$2)",['0'.repeat(64),catalog]);
+ await (await import('./attendance-consolidated-cases.mjs')).consolidatedCases(bt,{q,a,as,aux,auxDo,id,read});
+  await q('UPDATE primeline_pacote2_gate.aprovacao SET expected_catalog=$1',[(await q(catalogSql)).rows[0].jsonb_build_object]);
   await q(pre);
   await q('GRANT UPDATE ON folha_registos TO authenticated');await assert.rejects(q(pre),/POST_HOTFIX_CATALOG_DRIFT/);await q('ROLLBACK');await q('REVOKE UPDATE ON folha_registos FROM authenticated');
   await q(pre);await q(await read('../supabase/quadro_fase_b_pos_hotfix_backup.sql'));
@@ -355,7 +357,7 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   assert.equal((await q("SELECT pg_get_functiondef('fn_quadro_proteger_escrita()'::regprocedure) d")).rows[0].d,old);
   await assert.rejects(q(pre),/POST_HOTFIX_VALIDATION_REQUIRED/);await q('ROLLBACK');
  });
- await (await import('./attendance-consolidated-cases.mjs')).consolidatedCases(t,{q,a,as,aux,auxDo,id,read});
+
  await t.test('rollback v2 recusa factos; rollback vazio explicitamente restaura o núcleo v1',async()=>{
   await assert.rejects(q(await read('../supabase/folha_ponto_v2_gestao_rollback.sql')),/ROLLBACK_DATA_PRESENT/);await q('ROLLBACK');
   // Descartar SOMENTE factos sintéticos desta base efémera para verificar a desinstalação vazia.

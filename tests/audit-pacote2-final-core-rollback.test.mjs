@@ -98,5 +98,32 @@ test('AUDIT: rollback dependency continuity',{timeout:240000,skip:!bin||!deps?'D
   await a.query('COMMIT');
   assert.equal((await q('SELECT count(*)::int n FROM folha_registos')).rows[0].n,1);
  });
+ await t.test('core rollback waits for legitimate writer then refuses committed facts',async()=>{
+  await q('TRUNCATE folha_he,folha_historico,folha_registos,folha_privado.operacoes');
+  await a.query('BEGIN');
+  const payload={version:2,request_id:id(98002),work_id:null,date:day,key:{person_id:id(30),work_id:null,date:day,kind:'primeline'},expected_revision:0,intervals:[{start:'09:00',end:'17:00'}],reason:'Synthetic rollback concurrency'};
+  const preview=await as(a,10,'SELECT fn_folha_operar_v2($1,$2,false,NULL) v',['save',payload]);
+  await as(a,10,'SELECT fn_folha_operar_v2($1,$2,true,$3) v',['save',payload,preview.versao]);
+  const pending=result(b.query(await read('../supabase/folha_ponto_v2_rollback.sql')));
+  let blocked=false;
+  for(let n=0;n<100;n++){if((await q('SELECT cardinality(pg_blocking_pids($1))>0 blocked',[b.processID])).rows[0].blocked){blocked=true;break;}await delay(25);}
+  assert.equal(blocked,true);await a.query('COMMIT');
+  const outcome=await pending;await b.query('ROLLBACK');
+  assert.match(outcome.error?.message||'',/ROLLBACK_DATA_PRESENT|lock timeout/);
+  assert.equal((await q('SELECT count(*)::int n FROM folha_registos')).rows[0].n,1);
+ });
+ await t.test('writer entering after rollback locks cannot commit a fact that is dropped',async()=>{
+  await q('TRUNCATE folha_he,folha_historico,folha_registos,folha_privado.operacoes');
+  await b.query('BEGIN; LOCK TABLE quadro_pessoal_alocacao IN SHARE ROW EXCLUSIVE MODE; SELECT pg_advisory_xact_lock(61001,1)');
+  const payload={version:2,request_id:id(98003),work_id:null,date:day,key:{person_id:id(30),work_id:null,date:day,kind:'primeline'},expected_revision:0,intervals:[{start:'09:00',end:'17:00'}],reason:'Synthetic late writer'};
+  const writing=result((async()=>{const preview=await as(a,10,'SELECT fn_folha_operar_v2($1,$2,false,NULL) v',['save',payload]);return as(a,10,'SELECT fn_folha_operar_v2($1,$2,true,$3) v',['save',payload,preview.versao]);})());
+  let blocked=false;
+  for(let n=0;n<100;n++){if((await q('SELECT cardinality(pg_blocking_pids($1))>0 blocked',[a.processID])).rows[0].blocked){blocked=true;break;}await delay(25);}
+  assert.equal(blocked,true);
+  const removed=await result(b.query(await read('../supabase/folha_ponto_v2_rollback.sql')));await b.query('ROLLBACK');
+  const written=await writing;
+  if(!removed.error){assert.ok(written.error);assert.equal((await q("SELECT to_regclass('public.folha_registos') IS NULL missing")).rows[0].missing,true);}
+  else {assert.equal((await q('SELECT count(*)::int n FROM folha_registos')).rows[0].n,written.error?0:1);}
+ });
  }finally{for(const c of clients)await c.end().catch(()=>{});if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}
 });

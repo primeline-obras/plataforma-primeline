@@ -40,6 +40,7 @@ CREATE TABLE public.folha_config_empresa(
  he_eligible_roles text[] NOT NULL DEFAULT ARRAY['pedreiro','servente'],
  holiday_dates date[] NOT NULL DEFAULT '{}',
  calendar_complete boolean NOT NULL DEFAULT false,
+ calendar_validated_years integer[] NOT NULL DEFAULT '{}',
  revision integer NOT NULL DEFAULT 1 CHECK(revision>0)
 );
 CREATE TABLE public.folha_horarios(
@@ -226,6 +227,7 @@ CREATE FUNCTION folha_privado.lock_dia(p uuid,d date) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  -- Mesmo primeiro lock do núcleo Quadro; nenhuma ordem inversa entre os dois motores.
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;
  PERFORM pg_advisory_xact_lock(61001,1);
  PERFORM pg_advisory_xact_lock(hashtextextended(p::text,0));
  PERFORM pg_advisory_xact_lock(hashtextextended(p::text||':'||d::text,0));
@@ -243,6 +245,7 @@ CREATE FUNCTION folha_privado.lock_legado() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF;
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;
  PERFORM pg_advisory_xact_lock(61001,1); RETURN NULL;
 END $$;
 -- Coordena também escritores antigos; não altera linhas, sem herança temporal.
@@ -574,12 +577,40 @@ BEGIN
  END IF;
  RETURN jsonb_build_object('before',b,'after',a,'allocation_revision',coalesce(rev,0),'result',result);
 END $$;
+-- Authorization only: replay must not repeat revision/absence/state checks changed by its commit.
+CREATE FUNCTION folha_privado.autorizar_replay(acao text,p jsonb,w uuid,d date) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u public.utilizadores; item jsonb; person uuid; kind text; provider uuid;
+BEGIN
+ u:=folha_privado.ator();
+ IF acao IN('save','bulk') THEN
+  FOR item IN SELECT value FROM jsonb_array_elements(CASE WHEN acao='save' THEN jsonb_build_array(p) ELSE p->'items' END) LOOP
+   person:=(item->'key'->>'person_id')::uuid; kind:=item->'key'->>'kind';
+   PERFORM folha_privado.local(person,w,true);
+   IF kind='primeline' THEN
+    IF NOT EXISTS(SELECT 1 FROM public.colaboradores WHERE id=person AND empresa_id=u.empresa_id AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d)) THEN RAISE EXCEPTION 'PERMISSION_DENIED: pessoa' USING ERRCODE='42501'; END IF;
+   ELSE
+    IF NOT EXISTS(SELECT 1 FROM public.folha_externos e JOIN public.fornecedores f ON f.id=e.fornecedor_id WHERE e.id=person AND e.empresa_id=u.empresa_id AND e.ativo AND f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.obra_id=w AND s.fornecedor_id=e.fornecedor_id))) THEN RAISE EXCEPTION 'PERMISSION_DENIED: externo' USING ERRCODE='42501'; END IF;
+   END IF;
+  END LOOP;
+  IF (now() AT TIME ZONE 'Europe/Lisbon')::date-d>1 AND NOT folha_privado.adm_operacional() THEN RAISE EXCEPTION 'CORRECTION_WINDOW_EXCEEDED'; END IF;
+ ELSIF acao IN('allocate','transfer','remove_from_day') THEN
+  IF NOT public.fn_quadro_pode_gerir_v1(NULL) AND u.funcao<>'encarregado' THEN RAISE EXCEPTION 'PERMISSION_DENIED: alocação' USING ERRCODE='42501'; END IF;
+  person:=(p->>'person_id')::uuid;
+  IF NOT EXISTS(SELECT 1 FROM public.colaboradores WHERE id=person AND empresa_id=u.empresa_id AND data_admissao<=d AND (data_saida IS NULL OR data_saida>d)) THEN RAISE EXCEPTION 'PERMISSION_DENIED: pessoa' USING ERRCODE='42501'; END IF;
+  IF acao='transfer' AND NOT EXISTS(SELECT 1 FROM public.obras WHERE id=(p->>'source_work_id')::uuid AND empresa_id=u.empresa_id) THEN RAISE EXCEPTION 'PERMISSION_DENIED: origem' USING ERRCODE='42501'; END IF;
+ ELSE
+  provider:=(p->>'provider_id')::uuid;
+  IF NOT EXISTS(SELECT 1 FROM public.fornecedores WHERE id=provider AND empresa_id=u.empresa_id) OR (NOT folha_privado.admin() AND NOT EXISTS(SELECT 1 FROM public.subempreitadas WHERE obra_id=w AND fornecedor_id=provider)) THEN RAISE EXCEPTION 'PERMISSION_DENIED: fornecedor' USING ERRCODE='42501'; END IF;
+ END IF;
+END $$;
 CREATE FUNCTION public.fn_folha_operar_v2(p_acao text,p_dados jsonb,p_confirmar boolean DEFAULT false,p_versao text DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; w uuid:=(p_dados->>'work_id')::uuid; d date:=(p_dados->>'date')::date;
  req uuid:=(p_dados->>'request_id')::uuid; payload jsonb; op folha_privado.operacoes; preview jsonb:='[]'; keys jsonb:='[]';
  item jsonb; token text; result jsonb; person uuid; provider uuid; old_count integer;
 BEGIN
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;
  PERFORM pg_advisory_xact_lock(61001,1);
  SELECT * INTO u FROM public.utilizadores WHERE id=public.fn_utilizador_atual_id() AND ativo IS TRUE FOR SHARE;
  IF u.id IS NULL OR u.empresa_id IS NULL THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501'; END IF;
@@ -594,10 +625,12 @@ BEGIN
  SELECT * INTO op FROM folha_privado.operacoes WHERE empresa_id=u.empresa_id AND ator_id=u.id AND request_id=req;
  IF FOUND THEN
   IF op.payload<>payload THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT'; END IF;
+  PERFORM folha_privado.autorizar_replay(p_acao,p_dados,w,d);
   IF NOT p_confirmar THEN RETURN jsonb_build_object('version',2,'committed',false,'versao',op.token,'summary','Operação já registada; confirmar recupera o resultado.'); END IF;
   IF p_versao IS DISTINCT FROM op.token THEN RAISE EXCEPTION 'STALE_PREVIEW' USING ERRCODE='40001'; END IF;
   RETURN op.resultado;
  END IF;
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;
  PERFORM pg_advisory_xact_lock(61001,1);
  IF p_acao IN('save','bulk') THEN
   IF p_acao='save' THEN preview:=jsonb_build_array(folha_privado.save(p_dados,w,d,req,false));

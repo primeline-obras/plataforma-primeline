@@ -1,4 +1,8 @@
 BEGIN;
+DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;
+DO $$ BEGIN IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF; END $$;
+SET LOCAL lock_timeout='5s';
+LOCK TABLE public.quadro_pessoal_alocacao IN SHARE ROW EXCLUSIVE MODE;
 SELECT pg_advisory_xact_lock(61001,1);
 LOCK TABLE public.ponto_pessoal_obra,public.folha_registos,public.folha_historico IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN

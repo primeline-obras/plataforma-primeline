@@ -1,7 +1,14 @@
 BEGIN;
+DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;
+DO $$ BEGIN IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF; END $$;
+SET LOCAL lock_timeout='5s';
+LOCK TABLE public.quadro_pessoal_alocacao IN SHARE ROW EXCLUSIVE MODE;
+SELECT pg_advisory_xact_lock(61001,1);
+LOCK TABLE public.folha_registos,public.folha_historico,public.folha_externos,public.folha_externos_dias,public.folha_he,public.folha_config_empresa,public.folha_horarios,folha_privado.operacoes IN ACCESS EXCLUSIVE MODE;
 -- Fail closed if new facts/history exist. Preserve production evidence.
 DO $$ BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF to_regprocedure('public.fn_folha_gestao_v2(text,jsonb,boolean,text)') IS NOT NULL THEN RAISE EXCEPTION 'ROLLBACK_ORDER: gestão must be removed before core'; END IF;
  IF to_regclass('folha_privado.legacy_cutover') IS NOT NULL THEN RAISE EXCEPTION 'ROLLBACK_CUTOVER_ACTIVE: verify dedicated rollback first'; END IF;
  IF EXISTS(SELECT 1 FROM public.folha_historico) OR EXISTS(SELECT 1 FROM public.folha_registos)
  OR EXISTS(SELECT 1 FROM public.folha_externos) OR EXISTS(SELECT 1 FROM public.folha_externos_dias)
@@ -108,6 +115,7 @@ DROP FUNCTION public.fn_folha_operar_v2(text,jsonb,boolean,text);
 DROP FUNCTION public.fn_folha_historico_v2(jsonb);
 DROP FUNCTION public.fn_folha_pessoas_v2(date,uuid);
 DROP FUNCTION public.fn_folha_contexto_v2(date,uuid);
+DROP FUNCTION folha_privado.autorizar_replay(text,jsonb,uuid,date);
 DROP FUNCTION folha_privado.alocar(text,jsonb,uuid,date,uuid,boolean);
 DROP FUNCTION folha_privado.save(jsonb,uuid,date,uuid,boolean);
 DROP FUNCTION folha_privado.normal(uuid,uuid,date);

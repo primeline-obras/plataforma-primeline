@@ -1,6 +1,7 @@
 // Teste isolado do módulo com API simulada; não abre a produção.
 // RH_TEST_DEPS: diretório com playwright e xlsx.full.min.js; RH_SCREENSHOTS: saída.
 import fs from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import http from 'node:http';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -8,7 +9,8 @@ import {createRequire} from 'node:module';
 const deps=process.env.RH_TEST_DEPS;
 if(!deps) throw new Error('Defina RH_TEST_DEPS com as dependências de teste.');
 const {chromium}=createRequire(deps+'/package.json')('playwright');
-const repo=path.resolve(new URL('..',import.meta.url).pathname);
+const repo=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
+const xlsxPath=createRequire(deps+'/package.json').resolve('xlsx/dist/xlsx.full.min.js');
 const html=`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="/src/styles.css"><link rel="stylesheet" href="/src/visual-identity-final.css">
 <script src="/xlsx.js"></script>
@@ -17,14 +19,14 @@ const html=`<!doctype html><meta charset="utf-8"><meta name="viewport" content="
 const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname==='/'){res.setHeader('Content-Type','text/html');res.end(html);return;}
-  const target=url.pathname==='/xlsx.js'?deps+'/xlsx.full.min.js':path.join(repo,url.pathname);
-  if(!target.startsWith(repo+'/')&&target!==deps+'/xlsx.full.min.js'){res.writeHead(403).end();return;}
+  const target=url.pathname==='/xlsx.js'?xlsxPath:path.join(repo,url.pathname);
+  if(!target.startsWith(repo+path.sep)&&target!==xlsxPath){res.writeHead(403).end();return;}
   try{res.setHeader('Content-Type',target.endsWith('.css')?'text/css':'text/javascript');res.end(fs.readFileSync(target));}catch{res.writeHead(404).end();}
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 let browser;
 try {
-  browser=await chromium.launch({headless:true});
+  browser=await chromium.launch({channel:'msedge',headless:true});
   const page=await browser.newPage({viewport:{width:1366,height:900}});
   await page.route('**/*',route=>route.request().url().startsWith('http://127.0.0.1:')?route.continue():route.abort());
   await page.goto('http://127.0.0.1:'+server.address().port);

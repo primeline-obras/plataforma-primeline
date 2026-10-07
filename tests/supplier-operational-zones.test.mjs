@@ -121,7 +121,7 @@ test("duplicate supplier deletion is explicit and refuses records with business 
   const source = await read("src/subcontractors.js");
   for (const expected of [
     "ELIMINAR DUPLICADO", "data-delete-supplier", "fn_eliminar_fornecedor_duplicado",
-    "window.confirm", "Registo duplicado eliminado",
+    "platformConfirm", "Registo duplicado eliminado",
   ]) assert.ok(source.includes(expected), `missing ${expected}`);
   const sql = await read("supabase/diretorio_tipos_avaliacao_especialidades.sql");
   assert.match(sql, /fn_eliminar_fornecedor_duplicado/);

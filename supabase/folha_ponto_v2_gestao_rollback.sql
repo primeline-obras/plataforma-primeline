@@ -1,4 +1,11 @@
 BEGIN;
+DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;
+DO $$ BEGIN IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001'; END IF; END $$;
+-- Coordinate Quadro/Folha writers before any emptiness check. Fail closed on contention.
+SET LOCAL lock_timeout='5s';
+LOCK TABLE public.quadro_pessoal_alocacao IN SHARE ROW EXCLUSIVE MODE;
+SELECT pg_advisory_xact_lock(61001,1);
+LOCK TABLE public.folha_gestao_historico,public.folha_vencimentos,public.folha_tarefas_reportes,public.folha_direitos_ferias,public.folha_ferias_revisoes,folha_privado.operacoes IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
  IF EXISTS(SELECT 1 FROM public.folha_gestao_historico) OR EXISTS(SELECT 1 FROM public.folha_vencimentos)
@@ -19,7 +26,7 @@ DO $$ DECLARE c record; BEGIN
  END LOOP;
 END $$;
 ALTER TABLE public.folha_he DROP COLUMN processado_em,DROP COLUMN processado_por,DROP COLUMN prazo_processamento;
-ALTER TABLE public.folha_config_empresa DROP COLUMN calendar_validated_years;
+-- calendar_validated_years is shared with core; keep until core rollback.
 DROP TRIGGER folha_tarefa_concluida ON public.planeamento_itens;
 DROP FUNCTION folha_privado.tarefa_concluida();
 DROP TRIGGER trg_folha_vencimentos_ausencia ON public.ausencias;

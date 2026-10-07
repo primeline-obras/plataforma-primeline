@@ -7,9 +7,7 @@ const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLANNING_PLAYWRIGHT||'playwright');
 const read=p=>readFile(new URL('../src/'+p,import.meta.url),'utf8');
 const [suppliers,costs,map,adapter,styles]=await Promise.all(['subcontractors.js','production-dashboard.js','management-map.js','platform-dialogs.js','styles.css'].map(read));
-const prefixes=[...suppliers.matchAll(/const confirmed = await platformConfirm\([\s\S]*?if \(!confirmed\) return;/g)].map(m=>m[0]);
-prefixes.push(costs.slice(costs.indexOf('async function confirmSubcontractCost(')).split('button.disabled = true;')[0].split('{').slice(1).join('{'));
-prefixes.push(map.slice(map.indexOf('async function confirmImport() {')+'async function confirmImport() {'.length).split('state.importing = true;')[0]);
+import {definitions,confirmationContext} from './platform-confirm-handlers.mjs';
 const server=createServer((req,res)=>{
   if(req.url==='/adapter.js'){res.setHeader('Content-Type','text/javascript');return res.end(adapter);}
   if(req.url==='/styles.css'){res.setHeader('Content-Type','text/css');return res.end(styles);}
@@ -24,15 +22,15 @@ try{
     page.on('pageerror',e=>errors.push(e.message));
     page.on('dialog',()=>errors.push('Diálogo nativo inesperado'));
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    for(const body of prefixes){
-      await page.evaluate(async body=>{
+    for(const [name,code] of definitions){
+      await page.evaluate(async ({code,factory})=>{
         const {platformConfirm}=await import('/adapter.js');
-        // Import the real adapter; the appended callback is a synthetic counter.
         window.writes=0;
-        const fn=new Function('platformConfirm','source','target','supplier','state','meetingState','canAdjustWorkCosts','write',`return (async()=>{${body};write();})()`);
-        window.invoke=()=>fn(platformConfirm,{nome:'Sintético'},{nome:'Destino'},{nome:'Sintético'},{mergePreview:{total_referencias:0},preview:{criar:1,duplicados:0},importing:false},{},()=>true,()=>window.writes++);
-        window.operation=window.invoke();
-      },body);
+        const context=(new Function('return ('+factory+')'))()(platformConfirm,()=>window.writes++);
+        const invoke=new Function(...Object.keys(context),code+';return globalThis.invoke;')(...Object.values(context));
+        window.invoke=invoke;
+        window.operation=invoke();
+      },{code,factory:confirmationContext.toString()});
       await page.locator('dialog[open]').waitFor();
       assert.equal(await page.evaluate(()=>window.writes),0,label+' pending');
       await page.locator('[data-dialog-cancel]').click();

@@ -1141,12 +1141,15 @@ export function createProductionDashboard(options) {
   }
 
   async function deleteCostAdjustment(id, button) {
-    if (!meetingState || !canAdjustWorkCosts() || !await platformConfirm("Remover este ajuste de custo? O evento continuará registado na auditoria.", { title: "Remover ajuste", danger: true, confirmLabel: "REMOVER" })) return;
+    if (!meetingState || !canAdjustWorkCosts() || button.disabled) return;
     button.disabled = true;
-    const response = await supabase(`ajustes_custo_obra?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!response.ok) return toast("Não foi possível remover o ajuste.", "error");
-    toast("Ajuste removido.");
-    await showWorkCosts(meetingState.work.id);
+    try {
+      if (!await platformConfirm("Remover este ajuste de custo? O evento continuará registado na auditoria.", { title: "Remover ajuste", danger: true, confirmLabel: "REMOVER" })) return;
+      const response = await supabase(`ajustes_custo_obra?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!response.ok) return toast("Não foi possível remover o ajuste.", "error");
+      toast("Ajuste removido.");
+      await showWorkCosts(meetingState.work.id);
+      } finally { button.disabled = false; }
   }
 
   async function saveCostComponent(form) {
@@ -1173,15 +1176,17 @@ export function createProductionDashboard(options) {
   }
 
   async function confirmSubcontractEstimatedCost(subcontractId, button) {
-    if (!meetingState || !canAdjustWorkCosts()
-      || !await platformConfirm("Valor adjudicado — confirmar remoção dos Custos Estimados?", { title: "Confirmar custo adjudicado" })) return;
+    if (!meetingState || !canAdjustWorkCosts() || button.disabled) return;
     button.disabled = true;
-    const response = await supabase("rpc/fn_confirmar_remocao_custo_estimado_subempreitada", {
-      method: "POST", body: JSON.stringify({ p_subempreitada_id: subcontractId }),
-    });
-    if (!response.ok) return toast("Não foi possível confirmar a remoção do custo estimado.", "error");
-    toast("Custo orçamentado removido; compromisso adjudicado assumido.");
-    await showWorkCosts(meetingState.work.id);
+    try {
+      if (!await platformConfirm("Valor adjudicado — confirmar remoção dos Custos Estimados?", { title: "Confirmar custo adjudicado" })) return;
+      const response = await supabase("rpc/fn_confirmar_remocao_custo_estimado_subempreitada", {
+        method: "POST", body: JSON.stringify({ p_subempreitada_id: subcontractId }),
+      });
+      if (!response.ok) return toast("Não foi possível confirmar a remoção do custo estimado.", "error");
+      toast("Custo orçamentado removido; compromisso adjudicado assumido.");
+      await showWorkCosts(meetingState.work.id);
+      } finally { button.disabled = false; }
   }
 
   async function completePlCost(componentId, defaultValue, button) {
@@ -1264,12 +1269,15 @@ export function createProductionDashboard(options) {
   }
 
   async function confirmSubcontractCost(itemId, button) {
-    if (!meetingState || !canAdjustWorkCosts() || !await platformConfirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer a adjudicação como compromisso?")) return;
+    if (!meetingState || !canAdjustWorkCosts() || button.disabled) return;
     button.disabled = true;
-    const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
-    if (!response.ok) return toast(`Não foi possível confirmar a adjudicação: ${await response.text()}`, "error");
-    toast("Adjudicação confirmada como compromisso.");
-    await openMeeting(meetingState.work.id, meetingReturnView);
+    try {
+      if (!await platformConfirm("Confirmar a remoção do valor orçamentado dos Custos Estimados e reconhecer a adjudicação como compromisso?")) return;
+      const response = await supabase("rpc/fn_confirmar_compromisso_subempreitada", { method: "POST", body: JSON.stringify({ p_planeamento_item_id: itemId }) });
+      if (!response.ok) return toast(`Não foi possível confirmar a adjudicação: ${await response.text()}`, "error");
+      toast("Adjudicação confirmada como compromisso.");
+      await openMeeting(meetingState.work.id, meetingReturnView);
+      } finally { button.disabled = false; }
   }
 
   async function openMeeting(workId, returnView = "overview") {

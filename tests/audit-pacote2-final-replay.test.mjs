@@ -99,5 +99,25 @@ test('AUDIT: core replay must revalidate reduced permissions',{timeout:240000,sk
   await q("UPDATE utilizadores SET funcao='gerencia' WHERE id=$1",[id(12)]);
   try{await assert.rejects(call(a,12,'save',{...d,request_id:id(99002),expected_revision:1}),/CORRECTION_WINDOW_EXCEEDED/);await assert.rejects(call(a,12,'save',d,true,preview.versao),/CORRECTION_WINDOW_EXCEEDED|PERMISSION_DENIED/);}finally{await q("UPDATE utilizadores SET funcao='gestao_plataforma' WHERE id=$1",[id(12)]);}
  });
+ await t.test('unchanged authorization replays once; changed payload and inactive actor are refused',async()=>{
+  const op=(await q('SELECT * FROM folha_privado.operacoes WHERE request_id=$1',[id(99002)])).rows[0];
+  // Use an actual committed allocation from the first test, including its original token/revision.
+  const saved=(await q("SELECT * FROM folha_privado.operacoes WHERE payload->>'action'='allocate' ORDER BY criado_em LIMIT 1")).rows[0];
+  const data=saved.payload.data;
+  const before=await count('folha_historico');
+  assert.deepEqual(await call(a,12,'allocate',data,true,saved.token),saved.resultado);
+  assert.equal(await count('folha_historico'),before);
+  await assert.rejects(call(a,12,'allocate',{...data,period:'manha'},true,saved.token),/IDEMPOTENCY_CONFLICT/);
+  await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(12)]);
+  try {await assert.rejects(call(a,12,'allocate',data,true,saved.token),e=>e.code==='42501');}
+  finally {await q('UPDATE utilizadores SET ativo=true WHERE id=$1',[id(12)]);}
+ });
+ await t.test('Encarregado replay loses scope when responsibility is removed',async()=>{
+  const data=alloc(31,day);const preview=await call(a,13,'allocate',data);
+  await call(a,13,'allocate',data,true,preview.versao);
+  await q('DELETE FROM obra_responsaveis WHERE obra_id=$1 AND utilizador_id=$2',[id(100),id(13)]);
+  try {await assert.rejects(call(a,13,'allocate',data,true,preview.versao),e=>e.code==='42501');}
+  finally {await q("INSERT INTO obra_responsaveis(obra_id,utilizador_id,papel) VALUES($1,$2,'encarregado')",[id(100),id(13)]);}
+ });
  }finally{for(const c of clients)await c.end().catch(()=>{});if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}
 });

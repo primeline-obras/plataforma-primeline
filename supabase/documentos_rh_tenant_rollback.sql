@@ -1,4 +1,7 @@
 BEGIN;
+DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;
+SET LOCAL lock_timeout='5s';
+LOCK TABLE public.documentos IN ACCESS EXCLUSIVE MODE;
 DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NULL THEN RAISE EXCEPTION 'OWNER_AND_PRIVATE_BACKUP_REQUIRED'; END IF; END $$;
 DROP POLICY pl_documentos_rh ON public.documentos;
 DO $$ DECLARE p record; r record; BEGIN

@@ -252,7 +252,28 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
     render();
   }
   async function readImportFile(file) { state.importRows = []; state.importReadyRows = []; state.importErrors = []; state.importProgress = ""; state.preview = null; if (!globalThis.XLSX) { state.importErrors = ["O leitor Excel não está disponível."]; return render(); } const workbook = globalThis.XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false }); const parsed = parseManagementWorkbook(workbook); state.importRows = parsed.rows; state.importErrors = parsed.errors; render(); if (!parsed.errors.length) try { await previewImport(parsed.rows); } catch (error) { state.importProgress = ""; state.importErrors = [error.message]; render(); } }
-  async function confirmImport() { if (!state.preview || state.importing) return; if (!await platformConfirm(`Importar ${state.preview.criar || 0} linhas? Os ${state.preview.duplicados || 0} duplicados serão ignorados.`)) return; state.importing = true; render(); try { const result = await runImportBatches(state.importReadyRows, true); toast(`${result.criados || 0} lançamentos importados. ${result.duplicados || 0} duplicados ignorados.`); state.importOpen = false; state.importRows = []; state.importReadyRows = []; state.preview = null; await load(true); } catch (error) { state.importProgress = ""; state.importErrors = [`${error.message} Pode repetir a importação em segurança: os lotes já gravados serão reconhecidos como duplicados.`]; } finally { state.importing = false; render(); } }
+  async function confirmImport() {
+    if (!state.preview || state.importing) return;
+    state.importing = true;
+    try {
+      const confirmed = await platformConfirm(`Importar ${state.preview.criar || 0} linhas? Os ${state.preview.duplicados || 0} duplicados serão ignorados.`);
+      if (!confirmed) return;
+      render();
+      const result = await runImportBatches(state.importReadyRows, true);
+      toast(`${result.criados || 0} lançamentos importados. ${result.duplicados || 0} duplicados ignorados.`);
+      state.importOpen = false;
+      state.importRows = [];
+      state.importReadyRows = [];
+      state.preview = null;
+      await load(true);
+    } catch (error) {
+      state.importProgress = "";
+      state.importErrors = [`${error.message} Pode repetir a importação em segurança: os lotes já gravados serão reconhecidos como duplicados.`];
+    } finally {
+      state.importing = false;
+      render();
+    }
+  }
   root.addEventListener("input", event => { if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
   root.addEventListener("change", event => { if (event.target.matches("[data-management-import-file]")) { const [file] = event.target.files; if (file) readImportFile(file); return; } if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
   root.addEventListener("reset", () => setTimeout(() => root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())), 0));

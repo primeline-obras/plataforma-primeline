@@ -862,14 +862,15 @@ export function createSubcontractorsModule({
     if (event.target.closest("[data-confirm-supplier-merge]")) {
       const source = state.suppliers.find(item => item.id === state.mergeSourceId);
       const target = state.suppliers.find(item => item.id === state.mergeTargetId);
-      if (!source || !target || !state.mergePreview?.pode_mesclar) return;
+      if (!source || !target || !state.mergePreview?.pode_mesclar || state.mergeLoading) return;
+      state.mergeLoading = true;
+      try {
       const confirmed = await platformConfirm(
         `Mesclar “${source.nome}” em “${target.nome}”?\n\n` +
         `${Number(state.mergePreview.total_referencias || 0)} referência(s) serão transferidas. ` +
         "A operação é transacional e o nome antigo será preservado como alias."
       );
       if (!confirmed) return;
-      state.mergeLoading = true;
       state.mergeError = "";
       render();
       try {
@@ -895,19 +896,20 @@ export function createSubcontractorsModule({
         state.mergeLoading = false;
         render();
       }
+      } finally { state.mergeLoading = false; render(); }
       return;
     }
     const deleteButton = event.target.closest("[data-delete-supplier]");
     if (deleteButton) {
       const supplier = state.suppliers.find(item => item.id === deleteButton.dataset.deleteSupplier);
-      if (!supplier) return;
+      if (!supplier || deleteButton.disabled) return;
+      deleteButton.disabled = true;
+      try {
       const confirmed = await platformConfirm(
         `Eliminar definitivamente o registo duplicado “${supplier.nome}”?\n\n` +
         "A eliminação só será permitida se este registo não tiver documentos, obras, faturas, propostas ou subempreitadas associados."
       );
       if (!confirmed) return;
-      deleteButton.disabled = true;
-      try {
         await query("rpc/fn_eliminar_fornecedor_duplicado", {
           method: "POST",
           body: JSON.stringify({ p_fornecedor_id: supplier.id }),
@@ -922,7 +924,7 @@ export function createSubcontractorsModule({
       } catch (error) {
         toast(error.message, "error");
         deleteButton.disabled = false;
-      }
+      } finally { deleteButton.disabled = false; }
     }
   });
 
