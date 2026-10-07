@@ -6,12 +6,14 @@ Branch: `fix/pacote-2-fecho-local-final-20261007`.
 Base exata: `6517aad4409b988b9fd6eda7c8f1eda1ec2296e1`, preservando a auditoria e os seus testes negativos.
 Candidato anterior: `32e9493e6083f042ee29dbf2f09dab66e7a55e04`.
 Código final: `23058444d402224354bb6765db66b5b8daa44971`.
-O HEAD entregue acrescenta este relatório; a segunda execução completa também verifica esse commit documental. O SHA completo de entrega é obtido por `git rev-parse HEAD` e confirmado no remoto.
+O HEAD entregue inclui este relatório e o ajuste do runner para dependências isoladas; a segunda execução completa também verifica esses commits. O SHA completo de entrega é obtido por `git rev-parse HEAD` e confirmado no remoto.
 
 ## B. Commits
 
 - `979fe78ae9faf1e345f023a7e21785c5696e4734`: correções FC-01–FC-08, regressões, runtime e descoberta automática.
 - `23058444d402224354bb6765db66b5b8daa44971`: guarda adicional de evidência no rollback parcial, encontrada na segunda revisão.
+- `a9c058663ba0f2c90fcc68feccc854b388bbe8b8`: relatório consolidado.
+- `bc26002588ef57dc193103826ada497cc71060b1`: override PGlite para as suites antigas na worktree limpa.
 - Commit documental de entrega: este relatório. Nenhum commit em main.
 
 ## C. FC-01 — PASS
@@ -113,7 +115,7 @@ Rollbacks documental, Gestão, core, cutover e B revistos e exercitados localmen
 
 Passagem separada pelo mesmo agente, a partir do commit, sem alterar produto nessa worktree. Instalação `npm ci` pelo lockfile, sem reutilizar node_modules do desenvolvimento; nova descoberta integral, clusters PostgreSQL efémeros, contextos browser e diretório de logs separado.
 
-A primeira revisão limpa encontrou a guarda de evidência descrita em K; foi corrigida na branch e testada. A verificação limpa foi então repetida sobre o HEAD final, com negativos FC, matriz completa, scripts/rollbacks e `git diff --check`. Resultado final verde, com os totais M/N. Não se afirma auditoria por outra pessoa/agente.
+A primeira revisão limpa encontrou a guarda de evidência descrita em K e duas dependências de teste em pasta ignorada; foram corrigidas na branch e testadas. A verificação limpa foi então repetida sobre o HEAD final, com negativos FC, matriz completa, scripts/rollbacks e `git diff --check`. Resultado final verde, com os totais M/N. Não se afirma auditoria por outra pessoa/agente.
 
 ## T. Restantes locais
 
