@@ -115,8 +115,15 @@ Resultados finais locais:
 - `git diff --check`: PASS.
 - A primeira execução completa encontrou dois asserts desatualizados de drift do bucket e falha de arranque do PostgREST local. Os asserts agora alteram RLS ativo para desativado e esperam o gate explícito de owner/RLS. A repetição integral passou; nenhuma falha foi transformada em SKIP.
 
-Repetição na segunda worktree limpa: preparada após o commit; a evidência será registada antes da entrega final.
+Segunda worktree limpa: `C:\Users\conta\.codex\worktrees\pacote2-documental-verificacao\primeline-go-urgente`, reutilizada após confirmar ausência de alterações.
+
+Commit da implementação testado: `55188a6e9170b7f6e52d7b108fb739a13ae3be6c`.
+Ownership/resume + inventário + sequência PostgreSQL consolidada: **20 PASS / 0 FAIL / 0 SKIP**, `git diff --check` PASS. O commit posterior regista apenas esta evidência documental; os ficheiros executáveis mantêm os mesmos blobs testados.
+
+Logs sintéticos fora do Git: `primeline-owner-complete-final` (Node), `primeline-owner-complete` (browser) e `primeline-owner-second-worktree.log`, no diretório temporário local.
 
 ## Gates reais restantes
+
+GO LOCAL: nenhum P0/P1/P2 conhecido permanece nesta correção de ownership/retoma. O P1 documental original continua na produção até aplicar o hotfix; não foi considerado corrigido por testes locais.
 
 A correção local não prova SET ROLE no Supabase real. O próximo precheck deve confirmar essa capacidade e que o backup continua integralmente igual ao estado instalado. Qualquer BLOCKED é NO-GO para a migration. Não foi executada nenhuma nova consulta real nesta tarefa.
