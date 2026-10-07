@@ -77,6 +77,7 @@ Foram corrigidos caminhos Windows do browser RH e mocks de âmbito que não incl
 - Gestão rollback protege também revisões de férias e evidência administrativa isolada.
 - Confirmações de custos, fusão e eliminação têm guardas antes de await.
 - Browser RH e Quadro usam os contratos atuais e executam no Windows.
+- O runner aponta `QUADRO_PGLITE` para o runtime declarado do checkout; dois testes antigos já aceitavam esse override, mas recorriam a uma pasta ignorada ausente numa worktree nova.
 
 ## L. Descoberta integral
 

@@ -3,6 +3,7 @@ $ErrorActionPreference='Stop'
 $node='C:\Users\conta\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
 $env:QUADRO_PG_BIN=Join-Path $env:TEMP 'primeline-doc-guard-pg176\package\native\bin'
 $env:QUADRO_TEST_DEPS=Join-Path $env:TEMP 'primeline-medicina-test-deps\runtime\node_modules'
+$env:QUADRO_PGLITE=Join-Path $PSScriptRoot 'runtime\node_modules\@electric-sql\pglite\dist\index.js'
 $env:QUADRO_POSTGREST=Join-Path $env:TEMP 'primeline-authorization-postgrest\postgrest.exe'
 $env:MEDICINA_PG_BIN=$env:QUADRO_PG_BIN
 $env:MEDICINA_TEST_DEPS=$env:QUADRO_TEST_DEPS
