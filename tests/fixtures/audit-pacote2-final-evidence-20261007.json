@@ -1,0 +1,406 @@
+{
+  "date": "2026-10-07",
+  "candidate": "32e9493e6083f042ee29dbf2f09dab66e7a55e04",
+  "base": "5e0feb3454243bdf11fe09292bd9e3db2d40e9b3",
+  "synthetic_only": true,
+  "production_access": false,
+  "delta": [
+    {
+      "path": "docs/pacote-2-correcao-consolidada-final-20261006.md",
+      "sha256": "686ce764f07eb335f7d6c00a286b2a21fb9f5a5bd811e52a0da60c29794c62a1"
+    },
+    {
+      "path": "index.html",
+      "sha256": "eb57ecb768d3a21b42bf7e6f895ba773071e9f0f975a80ca7a07ddd28f3a1d4a"
+    },
+    {
+      "path": "src/app.js",
+      "sha256": "5af6b816c1e8667380317fd9b41f3b4a80aaff3f5354db8f7e4142dfb342a2f4"
+    },
+    {
+      "path": "src/management-map.js",
+      "sha256": "b56184afe2b3308a30ac78ee4f24381a2481cd6b3fca7ae61b6cc1f3782c618c"
+    },
+    {
+      "path": "src/production-dashboard.js",
+      "sha256": "9810361bd004d77a3e39981a41ac231b32d9b99b182b424428ffa6404f04d802"
+    },
+    {
+      "path": "src/subcontractors.js",
+      "sha256": "6d91ea1468229b960718515a5aad1f78a4d6ff2301528fc388a88d04ddc186a5"
+    },
+    {
+      "path": "supabase/documentos_rh_tenant.sql",
+      "sha256": "5027714e2510b1756ee5e7994bc9e143f7a6a34608a6735682319b100bd2ad21"
+    },
+    {
+      "path": "supabase/documentos_rh_tenant_postcheck.sql",
+      "sha256": "5ebaddfd68f9b99aaa0f4e7f1510d2ce513600a9854643272d6e521510bc4322"
+    },
+    {
+      "path": "supabase/documentos_rh_tenant_precheck.sql",
+      "sha256": "496a0d864dcfbbad6eb4daf2a82070612270120fa2fd5f548b33a8a02bf299d1"
+    },
+    {
+      "path": "supabase/documentos_rh_tenant_rollback.sql",
+      "sha256": "f4f94b0eae6fcd4cd26742a4f8f0c30b4c15ce03e97cb1adc9c30cba1d1118ac"
+    },
+    {
+      "path": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "sha256": "2d2704a744d2890b7cf05129fb4d1aff943b5e8f8455e83e662d078234648a59"
+    },
+    {
+      "path": "supabase/folha_ponto_v2.sql",
+      "sha256": "05f2cef231044d414f9744eea552378c8f8dfcadcc10f319d09eec33044347d3"
+    },
+    {
+      "path": "supabase/folha_ponto_v2_gestao.sql",
+      "sha256": "7edd8e106b9364ccda12b00e024ef86162bdb1d07a4bd894a845c5a5e66f499c"
+    },
+    {
+      "path": "supabase/folha_ponto_v2_postcheck.sql",
+      "sha256": "9e89bbef38b7ebccbd296ab1ccdf55a226f50249e2744bd41140535d182d029a"
+    },
+    {
+      "path": "supabase/folha_ponto_v2_precheck.sql",
+      "sha256": "100bf38de0263923ddd08e79851d4d6396e7711eccd500851187f88afb918939"
+    },
+    {
+      "path": "supabase/folha_ponto_v2_rollback.sql",
+      "sha256": "e50ea9aef45766a6e12e60afdde6be686476ad56bf89777f127136c90c2fcdd6"
+    },
+    {
+      "path": "supabase/folha_v2_legacy_cutover.sql",
+      "sha256": "a351bf95cf9071826c12abf3589d87b362036b760261e9573cdf1ef16581852b"
+    },
+    {
+      "path": "supabase/folha_v2_legacy_cutover_postcheck.sql",
+      "sha256": "198bfca4365ca49730716d8d5c80652e8042950376e41be4dc4e29a599fd8fc4"
+    },
+    {
+      "path": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "sha256": "72f0315c49fcf9a44b654bea73cc2659c6031761ef325d61a045c528ff58c516"
+    },
+    {
+      "path": "supabase/folha_v2_legacy_cutover_rollback.sql",
+      "sha256": "645477d25aeb8c444493b81237fa5cbfb3a51765e6f3d9612954c15320594f9f"
+    },
+    {
+      "path": "supabase/pacote2_validacao_real_final_readonly.sql",
+      "sha256": "29f0032fcd292436dd0cf1706f861e26b4cbb63ce6f9ae05851bcf8676072cca"
+    },
+    {
+      "path": "supabase/quadro_fase_b_pos_hotfix_backup.sql",
+      "sha256": "fdf85a1cb3764d52d3f69e68a88f17e69e34f5ee3ad54c13cc2b59594f9b8527"
+    },
+    {
+      "path": "supabase/quadro_fase_b_pos_hotfix_migration.sql",
+      "sha256": "ffc1b6069d7ec277880c04454e545087712447d6b606f389624008eb819a69dd"
+    },
+    {
+      "path": "supabase/quadro_fase_b_pos_hotfix_postcheck.sql",
+      "sha256": "c02d86b195971f524488260fc1cb78e5c2896c3323cf306860e820a125fdc066"
+    },
+    {
+      "path": "supabase/quadro_fase_b_pos_hotfix_precheck.sql",
+      "sha256": "22767c8f73927a6b887f0270b3dd714de64014a496f4b1c4848c0965bde9dd6b"
+    },
+    {
+      "path": "tests/attendance-adm-rules-browser.mjs",
+      "sha256": "d6274adac941d20862b309178dadb5b080639343f2296dea086643c8003abae1"
+    },
+    {
+      "path": "tests/attendance-adm-rules-cases.mjs",
+      "sha256": "b586be99b5ce13b06640a32180b77c7693c49a63faa826dc2413186c2abc0d32"
+    },
+    {
+      "path": "tests/attendance-backend-v2.test.mjs",
+      "sha256": "33b09bc45c98df3b2703cb771e10875c747d9afdd04ce0825eeb193bd936bcf5"
+    },
+    {
+      "path": "tests/attendance-consolidated-cases.mjs",
+      "sha256": "3f260067876bfac71d38cc0c515354463eb02ff8a83b90364f0cb43e7add9a7f"
+    },
+    {
+      "path": "tests/attendance-rollout-consolidated.test.mjs",
+      "sha256": "0751edb04a2e215bd62572f4dbe40bc30d43d4cbefc6577f7bed8e71c316ee75"
+    },
+    {
+      "path": "tests/attendance-security-visibility-cases.mjs",
+      "sha256": "f8f1aa2b7758d62518ca1012247f0406c5e5ff87d23c363e91dfa5f91271ef07"
+    },
+    {
+      "path": "tests/calendar-commitments.test.mjs",
+      "sha256": "08c59a3a50ff94cfa8c83ba68ec8680fae1728309c5684b131bd1ade8e9385c8"
+    },
+    {
+      "path": "tests/documentos-rh-tenant.test.mjs",
+      "sha256": "22955b6c0daa4b72cbace3405466af62cb3e2cd4d0beceba7abaa241ff9ec7f3"
+    },
+    {
+      "path": "tests/encarregado-autorizacao-rest.mjs",
+      "sha256": "9a0c64a504ca2d4399293cc00626704cd763bbd882977e3435c1195538514013"
+    },
+    {
+      "path": "tests/estimated-costs-final-model.test.mjs",
+      "sha256": "69d6207c7e65967f8663f1e933dc754fd0cee6bda2d7d02121aa67d24226a83f"
+    },
+    {
+      "path": "tests/financeiro-cross-tenant-cases.mjs",
+      "sha256": "a853b4c168c517c4c0676c7f62c93a1fda3e620024700222ed83b2aaaca1eac3"
+    },
+    {
+      "path": "tests/fixtures/documentos-rh-tenant-base.sql",
+      "sha256": "65c26fa3fb147d6f7010f41f5a169c198626ba6be8c5ce53516c07336fb8515b"
+    },
+    {
+      "path": "tests/local-postgrest-port.mjs",
+      "sha256": "897831b33fd06b3f7694c48e7ba757f2862dc7b1e31ee45176aa0c5c2edf4d8c"
+    },
+    {
+      "path": "tests/platform-confirm-regression-browser.mjs",
+      "sha256": "ed1c117c3d352de977352188f9ddf572dc7b0fe440d39cd5c169610eb4765c45"
+    },
+    {
+      "path": "tests/platform-confirm-regression.test.mjs",
+      "sha256": "cdf369361da2eb95430a07bb3c9b2b1087e1d8059e5dc321af61f826f08afcbf"
+    },
+    {
+      "path": "tests/post-audit-consolidated.test.mjs",
+      "sha256": "7edeb25f4baf0dee418df6edf848b044410e74716273a7fdecf1042ec2546102"
+    },
+    {
+      "path": "tests/procurement-planning-pending-consultations.test.mjs",
+      "sha256": "138c84a28444229fe9e5c56f1dc4cccef42037d16fae56bc0d8001a0fadcc263"
+    }
+  ],
+  "suites": {
+    "original": [
+      "tests/absences-workflow.test.mjs",
+      "tests/access-control.test.mjs",
+      "tests/active-collaborators-admission.test.mjs",
+      "tests/adjunto-access-parity.test.mjs",
+      "tests/alert-priority-email.test.mjs",
+      "tests/alert-resolver-user-fk.test.mjs",
+      "tests/alerts-expiry-resolution.test.mjs",
+      "tests/attendance-backend-v2.test.mjs",
+      "tests/attendance-domain.test.mjs",
+      "tests/attendance-rollout-consolidated.test.mjs",
+      "tests/attendance-v2-static.test.mjs",
+      "tests/audit-log.test.mjs",
+      "tests/audit-view.test.mjs",
+      "tests/automatic-work-costs.test.mjs",
+      "tests/calendar-commitments.test.mjs",
+      "tests/cash-flow-sources.test.mjs",
+      "tests/collaborator-complete-fields.test.mjs",
+      "tests/collaborator-lifecycle.test.mjs",
+      "tests/collaborator-rh-conformity.test.mjs",
+      "tests/company-documents.test.mjs",
+      "tests/comparative-map-dynamic.test.mjs",
+      "tests/comparative-proposal-pdf-import.test.mjs",
+      "tests/direct-debits.test.mjs",
+      "tests/document-operational-indexes.test.mjs",
+      "tests/document-version-subcontract-alert.test.mjs",
+      "tests/documentos-rh-tenant.test.mjs",
+      "tests/documents-center.test.mjs",
+      "tests/duplicate-invoice-warning.test.mjs",
+      "tests/employment-contract-alerts.test.mjs",
+      "tests/encarregado-escopo.test.mjs",
+      "tests/estimated-costs-consolidated.test.mjs",
+      "tests/estimated-costs-final-model.test.mjs",
+      "tests/estimated-costs-final.test.mjs",
+      "tests/finance-operational-access.test.mjs",
+      "tests/financeiro-cross-tenant.test.mjs",
+      "tests/financial-map.test.mjs",
+      "tests/foreman-action-plan.test.mjs",
+      "tests/foreman-global-workforce-vacations.test.mjs",
+      "tests/foreman-scope.test.mjs",
+      "tests/invoice-delete-administrative.test.mjs",
+      "tests/invoice-director-return-administrative.test.mjs",
+      "tests/invoice-director-subcontract-link.test.mjs",
+      "tests/invoice-extraction-editing.test.mjs",
+      "tests/invoice-finance-actions.test.mjs",
+      "tests/invoice-guide-warning.test.mjs",
+      "tests/invoice-observation-approval.test.mjs",
+      "tests/invoice-pending-detail-approval.test.mjs",
+      "tests/invoice-pending-edit-payment-condition.test.mjs",
+      "tests/invoice-workflow-readiness.test.mjs",
+      "tests/mapa-comparativo.test.mjs",
+      "tests/medicina-trabalho.test.mjs",
+      "tests/medicine-client.test.mjs",
+      "tests/meeting-alerts.test.mjs",
+      "tests/operational-parameters.test.mjs",
+      "tests/overtime-workflow.test.mjs",
+      "tests/phase-b-hotfix-compatibility.test.mjs",
+      "tests/planning-batch.test.mjs",
+      "tests/planning-grid-collapsible.test.mjs",
+      "tests/planning-import.test.mjs",
+      "tests/planning-obra120-xlsx.test.mjs",
+      "tests/planning-operational.test.mjs",
+      "tests/planning-release-isolation.test.mjs",
+      "tests/planning-safeupdate.test.mjs",
+      "tests/platform-confirm-regression.test.mjs",
+      "tests/platform-management-phase-budget.test.mjs",
+      "tests/post-audit-consolidated.test.mjs",
+      "tests/procurement-planning-pending-consultations.test.mjs",
+      "tests/restricted-deletion-paths.test.mjs",
+      "tests/rh-cadastro.test.mjs",
+      "tests/rh-work-finance-crossing.test.mjs",
+      "tests/rnc-module.test.mjs",
+      "tests/session-boundary.test.mjs",
+      "tests/session-isolation.test.mjs",
+      "tests/subcontract-contract-control.test.mjs",
+      "tests/subcontractor-specialties.test.mjs",
+      "tests/supabase-collaborators.test.mjs",
+      "tests/tees-forecast-foreman.test.mjs",
+      "tests/ux-obras-alertas-comparativo.test.mjs",
+      "tests/vehicle-assignment-client.test.mjs",
+      "tests/vehicle-assignment-concurrency.test.mjs",
+      "tests/vehicle-assignment.test.mjs",
+      "tests/vehicle-deadlines.test.mjs",
+      "tests/vehicle-validity.test.mjs",
+      "tests/vehicles-module.test.mjs",
+      "tests/workforce-absence-visual.test.mjs",
+      "tests/workforce-admin-only.test.mjs",
+      "tests/workforce-alerts.test.mjs",
+      "tests/workforce-allocation-client.test.mjs",
+      "tests/workforce-allocation-scroll.test.mjs",
+      "tests/workforce-controlled.test.mjs",
+      "tests/workforce-foremen-multiple-works.test.mjs",
+      "tests/workforce-holidays-visual.test.mjs",
+      "tests/workforce-movements-permissions.test.mjs",
+      "tests/workforce-operational-report.test.mjs",
+      "tests/workforce-p1-audit.test.mjs",
+      "tests/workforce-p1-concurrency.test.mjs",
+      "tests/workforce-preflight-local.test.mjs",
+      "tests/workforce-vacations.test.mjs",
+      "tests/writers-economicos-final-static.test.mjs",
+      "tests/writers-economicos-static.test.mjs"
+    ],
+    "additional": [
+      "tests/classificacao-especialidades-lote-inicial.test.mjs",
+      "tests/consolidated-view.test.mjs",
+      "tests/extension-requests-index.test.mjs",
+      "tests/global-scroll-safeguard.test.mjs",
+      "tests/index-filename-convention.test.mjs",
+      "tests/investment-mode.test.mjs",
+      "tests/login-password.test.mjs",
+      "tests/login-redirect-theme.test.mjs",
+      "tests/management-map-filters.test.mjs",
+      "tests/management-map-five-sheets.test.mjs",
+      "tests/management-map-import-safety.test.mjs",
+      "tests/management-map.test.mjs",
+      "tests/material-discounts.test.mjs",
+      "tests/measurement-billing-approval.test.mjs",
+      "tests/meeting-names-adjunct-color.test.mjs",
+      "tests/meeting-participant-directory.test.mjs",
+      "tests/meeting-reservations-edit-delete.test.mjs",
+      "tests/meeting-rooms.test.mjs",
+      "tests/overview-final-by-role.test.mjs",
+      "tests/overview-roles-2026.test.mjs",
+      "tests/post-validation-corrections.test.mjs",
+      "tests/primeline-go-brand.test.mjs",
+      "tests/projects-grouping.test.mjs",
+      "tests/properties-budget-requests.test.mjs",
+      "tests/rsp-consolidated.test.mjs",
+      "tests/rsp-tees.test.mjs",
+      "tests/sidebar-directory-final.test.mjs",
+      "tests/sidebar-icons.test.mjs",
+      "tests/sidebar-scroll.test.mjs",
+      "tests/supplier-excel-fill.test.mjs",
+      "tests/supplier-operational-zones.test.mjs",
+      "tests/tee-form.test.mjs",
+      "tests/visual-identity-final.test.mjs",
+      "tests/visual-phase2.test.mjs",
+      "tests/work-phases-tab.test.mjs",
+      "tests/work-template.test.mjs",
+      "tests/works-list-scroll.test.mjs",
+      "tests/xlsx-operational-import.test.mjs"
+    ],
+    "audit": [
+      "tests/audit-pacote2-final-bucket-drift.test.mjs",
+      "tests/audit-pacote2-final-confirmations.test.mjs",
+      "tests/audit-pacote2-final-core-rollback.test.mjs",
+      "tests/audit-pacote2-final-replay.test.mjs",
+      "tests/audit-pacote2-final-rollout.test.mjs"
+    ]
+  },
+  "results": {
+    "original": {
+      "fail": 0,
+      "skip": 3,
+      "pass": 910
+    },
+    "additional": {
+      "fail": 3,
+      "skip": 0,
+      "pass": 93
+    },
+    "audit": {
+      "fail": 16,
+      "skip": 0,
+      "pass": 7
+    },
+    "total": {
+      "tests": 1032,
+      "skip": 3,
+      "files": 143,
+      "pass": 1010,
+      "fail": 19
+    },
+    "failed_parent_containers": 4,
+    "browser": {
+      "additional_session_transitions": 4,
+      "pass": true,
+      "original_suites": 13
+    }
+  },
+  "findings": [
+    {
+      "area": "storage.buckets security snapshot",
+      "severity": "P1",
+      "id": "FC-01"
+    },
+    {
+      "area": "B cutover prerequisite",
+      "severity": "P2",
+      "id": "FC-02"
+    },
+    {
+      "area": "read-only stale approval visibility",
+      "severity": "P2",
+      "id": "FC-03"
+    },
+    {
+      "area": "management rollback concurrent fact loss",
+      "severity": "P1",
+      "id": "FC-04"
+    },
+    {
+      "area": "partial rollback core dependency",
+      "severity": "P2",
+      "id": "FC-05"
+    },
+    {
+      "area": "core replay current action permissions",
+      "severity": "P2",
+      "id": "FC-06"
+    },
+    {
+      "area": "confirmation handler reentrancy",
+      "severity": "P3",
+      "id": "FC-07"
+    },
+    {
+      "area": "outdated test contracts",
+      "severity": "P3",
+      "id": "FC-08"
+    }
+  ],
+  "decision": "NO-GO LOCAL",
+  "external_gate": "REAL_VALIDATION_REQUIRED",
+  "environment_blocked": [
+    "real MCP catalog validation not repeated",
+    "login-password.test.mjs: jsdom missing"
+  ]
+}
