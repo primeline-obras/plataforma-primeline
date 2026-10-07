@@ -8,15 +8,15 @@
     },
     {
       "path": "config.js",
-      "sha256": "d1ce691c9305491a3be6f24dfe2a335b8eca087edad41b7dec72e070fd57c0ff"
+      "sha256": "3860b84e635e6b7b5bf69825fb38399205e62f579a687bc3bdcb934197c03378"
     },
     {
       "path": "src/access-control.js",
-      "sha256": "69a06938fd1e1ffba3e6da5789f5a217818805d7d341644d53a51ec7d93891ef"
+      "sha256": "0bc7d265c12254c1ec1d9fc52cfdd015545e7303aab1d3ff3cd76adfb25e2731"
     },
     {
       "path": "src/action-plan.js",
-      "sha256": "27db74a05b53359b624bbd1904bef57b65f230d62053d346e6d1be19fa38c847"
+      "sha256": "51b599f39ace806819b877c34fecd2e831b5bdc35cca1ebf36235384c61147b9"
     },
     {
       "path": "src/app.js",
@@ -44,51 +44,51 @@
     },
     {
       "path": "src/attendance.js",
-      "sha256": "eea6b0c38cf43e93917d0b7a4e4170bb313634113829e1385c4d189f182d4ef5"
+      "sha256": "80614a459c48f2067bdb90722d9eb3d39e54bc494ad0af7d84f04f386d35acfd"
     },
     {
       "path": "src/budget-requests.js",
-      "sha256": "005bce40e51d837ee5e4d2aa960ad71dbc040b6a4f2730f6689f8bb314c7ef5c"
+      "sha256": "6e2f4fcc72dc4b694ab2877480df07b2a246ee4affd7f140de31281086fbcc99"
     },
     {
       "path": "src/calendar.js",
-      "sha256": "6e9f351faea17f0017787360f4698819849549eb416f7b136c6af8ae2d19a318"
+      "sha256": "75134079bfab0d2bb7000438e76b7cd7458dd4545ce93d34b1eea8cda659fd57"
     },
     {
       "path": "src/company-documents.js",
-      "sha256": "adebb9ac4a3409631b9201b2c0ed8c3979a365ed35eb2415107762fbdc2e3a21"
+      "sha256": "c40ee8e4b029eaf1abea474cd0d1839d6b660fb7b2a978cd1ff8b6ef4037ff78"
     },
     {
       "path": "src/comparative-map.js",
-      "sha256": "3f9d3890e665c96cc35b245d9207a599d5065369420fa6e6d6fa07b08cd20606"
+      "sha256": "b87ea7df6d58d3518ae2b29435026e59752055d01035b7a9d4b2f0263c0d9e98"
     },
     {
       "path": "src/consolidated-view.js",
-      "sha256": "15fec79044bd94981eb4d157eaae00a4bedc52a2ceda33552054a37c6cc65481"
+      "sha256": "33e0dd2b838dc55ace9c4586ce4828d3dc95664dd72c8ccff3fb87b07e90c867"
     },
     {
       "path": "src/cost-model.css",
-      "sha256": "4870df1d3c8590c6ab11b4af18d31cf256621faa1ad3b2f4266b9d917cd36ce6"
+      "sha256": "dd6047e8e389a7d5ca2026665f3285e4f2d404c4b310551c951d1aa492707d33"
     },
     {
       "path": "src/demoData-browser.js",
-      "sha256": "662e7c037b51457152f5f3d05a1536fa341c7283c5b6b27d0b5b51afe80b2be1"
+      "sha256": "d99a373c9edfa11df80398292f169af497eded16045ea527389b9b9aa9779279"
     },
     {
       "path": "src/direct-debits.js",
-      "sha256": "b0557efd70c94e90eb5e3e3df37c21a852b52d0cc35ac96d7f850b6afe897fa3"
+      "sha256": "1ebf8fdc4eb5340614b803e630049f6506e6ba8ef299e72d2bd74bdd1cc0fab8"
     },
     {
       "path": "src/document-index-pdf.js",
-      "sha256": "00f167b323e023f2333b2b1b213edc40b8efc483d20074b1cfcc9219429ed4d2"
+      "sha256": "c28d6c3038ca55ba1aa51650ae33ad8f2dcbb265cf9db389891a9a9a0a9f5a9c"
     },
     {
       "path": "src/documents.js",
-      "sha256": "2a763e1d07f379ff7adfe4524dd971e6ddb1af215d95120b10f0d4b566cbc0b1"
+      "sha256": "7c9ace2a9bdece65633e5b153ca5e5cfff25ae14ba344035a28e5749895453d6"
     },
     {
       "path": "src/financial-map.js",
-      "sha256": "eeb75fd6e4163e47bd53e455bf3d91153bf79238e6eac533334f59cf666946af"
+      "sha256": "5e686fa0252843c5434f2bc867a57fa37fdddf09ce0ffc178b1835ae3c909707"
     },
     {
       "path": "src/foreman-scope.js",
@@ -96,15 +96,15 @@
     },
     {
       "path": "src/login-password.css",
-      "sha256": "6049d9e636b69e8e931871a44f724ef2c4178381b8164c0c21fef65304f3d93a"
+      "sha256": "36c99b35e7af7b7f8cba007839a51b576a80a9d562c7ef410d98396d77c33a02"
     },
     {
       "path": "src/login-password.js",
-      "sha256": "54fda55c12bf81ac1fad97209a1c0a795b075561977a6fe3d03d733c13d80605"
+      "sha256": "76d19ea5ee95a27ae64af72330fa008923eb02d14fdd595b9b676144ca1e2d06"
     },
     {
       "path": "src/management-map.js",
-      "sha256": "44b7a2d41769d9dd16d66e5fdb4258b62dff1ffd50b81740339ae2e92b01f2e7"
+      "sha256": "21defc93e1fb3ff7e0056d761e12c9f5f28edd6ab6bc6cfd4d195969219960c3"
     },
     {
       "path": "src/medicine.css",
@@ -116,7 +116,7 @@
     },
     {
       "path": "src/meeting-rooms.js",
-      "sha256": "ed70315e0ae48a707218f58c9943981a0800f28f452f7e37b9f1dde7f43d3d12"
+      "sha256": "4e34c1ba203558bce6cddb56521555ff4e1bf734b55eb99da0a880cf4ea827ab"
     },
     {
       "path": "src/planning-batch.js",
@@ -124,7 +124,7 @@
     },
     {
       "path": "src/planning-import.js",
-      "sha256": "2b6ea184229c9f78cdfe2ea85991b370d96730c8a63d58d3a3e52a4afecafcd2"
+      "sha256": "a3d24ec6697ebdee2a9ad4085a5fc9877da4fe3f42b94a73bd814330f6814cc7"
     },
     {
       "path": "src/planning-operational.js",
@@ -132,47 +132,47 @@
     },
     {
       "path": "src/planning.js",
-      "sha256": "79be991177c10e703385e952b64602ea7efa17f949d821f6ce19d07af36f805c"
+      "sha256": "00d662321afa2d56ad13211294c831d0f152db4f35e1eedfe1bf310c56cd007d"
     },
     {
       "path": "src/platform-dialogs.js",
-      "sha256": "289fb30183501155dd8a9c838ac73b6830e410ee7938b2078f76ef38db9773b8"
+      "sha256": "16de32c4d9a8c5713467d03fc6665ed7cc99ae32b059235b83d393fefeb186f1"
     },
     {
       "path": "src/procurement.js",
-      "sha256": "de4d19c8105658a7ddfa44429b65d0cb107f872695f6154baf888796cb7c829a"
+      "sha256": "cf6aea5d4525416279099930a390fd746a4125beeb5906108aacc0bd075f8aa3"
     },
     {
       "path": "src/production-dashboard.js",
-      "sha256": "01bd89e9b8dc099ee34ec53c50a3c9c5a8ddfc4b096b291c66cc240c979b1f37"
+      "sha256": "931f7145c6f2ad96f58924daeffcda4cf5ed212273b24e13decce152db418c77"
     },
     {
       "path": "src/projects.js",
-      "sha256": "bab91dbb72a85f5fd49e0c1f07eafd58d5405d82d9e9f0fcdfebd0b4ab0cbcd4"
+      "sha256": "739a2ccb7f2adf45d731909ee132a73319e59af210664da58aab6d747fcadfa3"
     },
     {
       "path": "src/properties.js",
-      "sha256": "1e8edcf96eb80b26bf898e80babf16ad01b25a20280468dad79b140f82c5d632"
+      "sha256": "92da7d36359d4d36910e695d021a7dd32d89344b7ae49b4e6abc7c6d0d2f417b"
     },
     {
       "path": "src/proposal-pdf-import.js",
-      "sha256": "f69f9c303cb984d47018ca0b962b73bf83bc420a56f17e4891615a600fe34fbe"
+      "sha256": "cbbc72c508c87c4e39f50ad84b8fea1ef73af0d5a0bd35343e6e82413b930400"
     },
     {
       "path": "src/reset-password.js",
-      "sha256": "8bfd1e178d36443d6c16cc234a041c43422f2336f025d9909af7b6aa91ef3295"
+      "sha256": "49c6a74ae1ab1b7c60df59d1b440ba5806b2786aece21d4a0185b963a6c5038f"
     },
     {
       "path": "src/rh-cadastro.js",
-      "sha256": "93e2c34d7a5c86251fc098fa14f7a6bffc2bc8704d4f2fef25c2bcf385d1c6ea"
+      "sha256": "4185cba205df393332d4cf32115da2f7758984357cadb06f9b323a96a0f9b696"
     },
     {
       "path": "src/rnc-pdf.js",
-      "sha256": "a79eae122a5d0e4487c1c3ff1714c021eb952e0cbf94ae2fcb33e6d12ae28c5c"
+      "sha256": "8ace78dd0259ffee04134fb5d027482fc0aaa6cdc839b292992eba9901641389"
     },
     {
       "path": "src/rnc.js",
-      "sha256": "ef08ecfa2f3aea9da56b63b66360aa071136d0a9bb026a1e8b6cf28db4b1974b"
+      "sha256": "21262f3208053afd39c2609f4393b5fe910ccdb80baa18b6ac9141f845c6afc6"
     },
     {
       "path": "src/session-boundary.js",
@@ -180,63 +180,64 @@
     },
     {
       "path": "src/settings.js",
-      "sha256": "ea6e9386fdb1e34997dab512b3e4555f95b1e55913ae65a4b7359f1edce3ddce"
+      "sha256": "be890e68475210cd527efc48305f0d209e9fbc8d996c277b5c9dfabdfc2bc06a"
     },
     {
       "path": "src/specialties.css",
-      "sha256": "e3c9eb4a325ad681e8dc018ae2833dec82d2add0d849af4d44bc9c95b81d4aa1"
+      "sha256": "09b90f7fdd3677ef43c8c8616e8239fefb0b017be48a2d3111c1771bb303fd1a"
     },
     {
       "path": "src/styles.css",
-      "sha256": "3530346345f5c1cb6376ca6b7a38a416e139a255a7e8a9f773118c7c6cee1efc"
+      "sha256": "ebe8a50d783384008363e9746f33cb643100a713ecb853f48000fe928736be7d"
     },
     {
       "path": "src/subcontractors.js",
-      "sha256": "7d7474c9b8b6ff262f1820f180c2d20baf1ff29fcb73f0399e6561933e981988"
+      "sha256": "6a83572e0822fbcf42e1444867a8b26248ad9eda737f811342c5c1ecf0f70f85"
     },
     {
       "path": "src/supabase-browser.js",
-      "sha256": "c6c8a99e711a1e930682ae06e7c3c3e55659817c47405bacedcc69fa238c18fa"
+      "sha256": "1937254c3bf5c65daf49725be67f88cb7e9d703b6371aef28928ff16a3d16418"
     },
     {
       "path": "src/supplier-directory-grouping.css",
-      "sha256": "63fed677198465621011a1cf0d047b53e884b35c907c0b2319336f9736480ddf"
+      "sha256": "51b7fd23e5c4a3869332e8ba7e71f6ff7249957f3931d386a25343113f9b1fe6"
     },
     {
       "path": "src/vehicle-assignment.js",
-      "sha256": "399cad49c824ddbe07df7d7ced3d474bceadd6a1c4171827855b8cc8867ca1d3"
+      "sha256": "698a63f17bf7a75dce089c1df7fe23e3c824453331a144517356979baaa46458"
     },
     {
       "path": "src/vehicle-validity.js",
-      "sha256": "7a6ce374c205edabaa7931405397123c5d3c176e39c17f581221d988f7d06921"
+      "sha256": "76ff3a7a88228cdb256ce73b8c34147e821aa689bd1271119f273ea2cab780ff"
     },
     {
       "path": "src/vehicles.js",
-      "sha256": "8da1ad76455295542c9a1fc1ab08d1cdd2a1a74713c42e2289efa03f378c3f01"
+      "sha256": "0b3b50916b852e694211bfd90f153bf6ad683e26fb659df4df01f7363c2144bc"
     },
     {
       "path": "src/visual-identity-final.css",
-      "sha256": "0c895dc049341c8c2f305208d9da7e80bcde209a096ca32d4fa014720268d26c"
+      "sha256": "4add9202a94a447b630a0e54031de9ee5b5b8674b4c9efb0349c6ffbe0ba9b9f"
     },
     {
       "path": "src/visual-identity-final.js",
-      "sha256": "3b5d00ab58f8c5b647d42f896c44b07ca553acb1ac0eed139ef53d3ff16ea389"
+      "sha256": "5948bd27edf3ce5fa5ce802e4ff6c1559a6825b7965ba3593078ce2ca77dcde1"
     },
     {
       "path": "src/visual-phase2.css",
-      "sha256": "dcd97bb7857648c4b9f539824881b28b4aa17e837b267e2e6d3b21c80c877455"
+      "sha256": "4d239ba410de1b07fbfab6ffe9a8f8fcd26c2480e1487e62275e0afcd175ea7f"
     },
     {
       "path": "src/workforce-allocation.js",
-      "sha256": "1966b018e5a03c4836c8089fdc8e5fa0c5ecbe4bd568a7c6f61fcbb9d3985303"
+      "sha256": "c712e6a857be118ada39e7e3a65eab7fac51089c32f3713b61275c963d1ab852"
     },
     {
       "path": "src/workforce-calendar.css",
-      "sha256": "0525d97bcbd34bfbc83edb7a5cfd9ae712b1f2e5cc23e0c8aecb45ae1c477c31"
+      "sha256": "d5e35d62f7e1704825ced9d3d8a426c37dec1813f0552c6682d30c0460bb2cca"
     },
     {
       "path": "src/xlsx-operational-import.js",
-      "sha256": "738cc8e546d096ef9231a7f0a8f0c9eded1af875d95a5e3ca1fd39c03f3e45f3"
+      "sha256": "368ce166518db5033be9607f9acb79da648fe6da1d569a60a5c3a041d8a3bb0b"
     }
-  ]
+  ],
+  "hash_basis": "Committed Git blob bytes; Cloudflare Git checkout, without Windows working-tree CRLF conversion"
 }

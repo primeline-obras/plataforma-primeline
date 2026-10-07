@@ -87,7 +87,7 @@ Não retestar toda a plataforma. Usar desktop e um dispositivo tablet/mobile rep
 
 O código frontend NÃO foi alterado nesta tarefa. Conteúdo idêntico ao commit **3b44c165a04169f76b6c4f8dc16db0b46bd12f10**. O commit de entrega acrescenta scripts/testes/documentação deste fecho. Usar esse commit completo para a futura publicação; o seu SHA consta da entrega.
 
-Manifesto: docs/pacote-2-frontend-assets-20261007.json (59 ficheiros JS/CSS/index/config, hashes SHA-256). Módulos Folha: src/attendance-sheet.js, attendance-client.js, attendance-domain.js, attendance-management.js e respectivos estilos. Confirmar nomes existentes pelo manifesto; não inferir module path.
+Manifesto: docs/pacote-2-frontend-assets-20261007.json (59 ficheiros JS/CSS/index/config, hashes SHA-256 dos bytes commitados no Git, sem conversão CRLF da cópia Windows). Módulos Folha: src/attendance-sheet.js, attendance-client.js, attendance-domain.js, attendance-management.js e respectivos estilos. Confirmar nomes existentes pelo manifesto; não inferir module path.
 
 Cache atual: app.js?v=186; styles.css?v=104; workforce-calendar.css?v=9; attendance-sheet.css?v=3; import attendance-sheet.js?v=8; attendance-domain.js?v=7; attendance-client.js?v=5; attendance-management.js?v=6. Nome visível: **FOLHA DE PONTO**, aba Equipa → attendance, acesso operacional diário do Encarregado. O legado ponto_pessoal_obra continua disponível para leitura/histórico e writer até ao cutover. Não existe migração de dados no frontend.
 
@@ -97,7 +97,20 @@ Instalação estrutural/factual funciona sem calendário validado. Defaults: cor
 
 ## Verificação local final
 
-Resultados e commit de entrega são registrados ao concluir as suites integrais e a segunda worktree limpa. Teste de decisão READY usa baseline explicitamente sintética para exercitar o motor; a baseline factual de produção permanece congelada e não é substituída. A sequência de rollout usa os scripts exatos e dados locais, sem cutover na UAT. Cutover/rollback são exercitados separadamente nas suites; não são executados em produção.
+Código/scripts/testes verificados no commit **4260e5da0ca4e7a4c4e6c4a90658b56d512c00e6**. Segunda worktree limpa e destacada: pacote2-documental-verificacao. Mesma agente, ambiente/check-out e clusters efémeros separados; não se apresenta esta repetição como auditoria por outra pessoa.
+
+- Descoberta integral: **144 ficheiros Node**, resultado nativo final **1075 PASS / 0 FAIL / 1 SKIP**, 1076 testes contabilizados.
+- **20/20 suites browser PASS**, em desktop/tablet/mobile, nas duas worktrees; dados sintéticos/mocks, sem escrita real.
+- O único SKIP é a importação de um XLSX RH real externo não fornecido (47 linhas); não se fabricou esse ficheiro nem se converteu falha em SKIP.
+- Sequência exata documental → Folha V2 → postcheck/rollback local: PASS. Cutover e seus rollbacks: PASS em suites separadas. UAT sintética e regressões de sessão/perfis: PASS.
+- Testes documentais/correlatos: ações legítimas, cross-company, inativo/papel indevido, Storage, auditoria, ACL/owner/search_path, drift e concorrência de duas ligações: PASS.
+- Precheck único: uma linha JSON; transação read-only; baseline vulnerável conhecida aceite; variante inesperada BLOCKED; decisão positiva exercitada somente com catálogo/contagens sintéticos explícitos.
+- Durante os diagnósticos, o PostgREST Windows teve falhas de arranque (exit=3) na matriz principal. As suites afetadas passaram isoladamente: Encarregado 33/33 e Financeiro 122/122. A matriz integral final da segunda worktree passou sem falhas. Os logs das tentativas permanecem no TEMP; não foram apagados nem classificados como sucesso.
+- A primeira repetição identificou um regex de teste incompatível com CRLF; corrigido somente no teste. A matriz integral foi repetida no commit corrigido, sem falhas.
+- Manifesto de 59 assets conferido contra os bytes commitados no Git; não contra finais de linha da cópia Windows.
+- Nenhum P0/P1/P2 bloqueante local conhecido na classe documental/correlata corrigida e no pacote testado. Inventário de outros módulos não constitui certificado universal da plataforma.
+
+Evidência local fora do Git: TEMP/primeline-doc-worktree-certified/Node.log; TEMP/primeline-doc-worktree-browser/Browser-results.json; TEMP/primeline-doc-browser-final/Browser-results.json; TEMP/primeline-rest-diagnostic.log; TEMP/primeline-runner-rest-diagnostic.log. Nenhuma evidência contém linhas reais da produção. A entrega final acrescenta somente este resultado documental e o manifesto de assets; código, migrations e testes permanecem os do SHA verificado. Teste de decisão READY usa baseline explicitamente sintética para exercitar o motor; a baseline factual de produção permanece congelada e não é substituída. A sequência de rollout usa os scripts exatos e dados locais, sem cutover na UAT. Cutover/rollback são exercitados separadamente nas suites; não são executados em produção.
 
 ## Gate externo restante
 
