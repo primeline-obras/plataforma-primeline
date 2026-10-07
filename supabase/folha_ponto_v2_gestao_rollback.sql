@@ -10,6 +10,8 @@ DO $$ BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;
  IF EXISTS(SELECT 1 FROM public.folha_gestao_historico) OR EXISTS(SELECT 1 FROM public.folha_vencimentos)
  OR EXISTS(SELECT 1 FROM public.folha_tarefas_reportes) OR EXISTS(SELECT 1 FROM public.folha_direitos_ferias)
+ OR EXISTS(SELECT 1 FROM public.folha_ferias_revisoes)
+ OR EXISTS(SELECT 1 FROM folha_privado.operacoes WHERE payload->>'contract'='gestao_v2')
  THEN RAISE EXCEPTION 'ROLLBACK_DATA_PRESENT: preservar factos; requer plano específico'; END IF;
 END $$;
 DROP TRIGGER trg_zz_folha_confirmacao_ausencia ON public.ausencias;

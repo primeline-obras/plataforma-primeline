@@ -88,6 +88,18 @@ test('AUDIT: rollback dependency continuity',{timeout:240000,skip:!bin||!deps?'D
  const call=(c,user,action,d,confirm=false,token=null)=>as(c,user,'SELECT fn_folha_operar_v2($1,$2,$3,$4) v',[action,action==='save'||action==='bulk'?{...d,reason:d.reason||'Correção sintética administrativa',...(d.items?{items:d.items.map(x=>({...x,reason:x.reason||'Correção sintética administrativa'}))}:{})}:d,confirm,token]);
  const perform=async(user,action,d)=>{const p=await call(a,user,action,d);assert.equal(p.committed,false);return call(a,user,action,d,true,p.versao);};
  const count=async(table)=>(await q(`SELECT count(*)::int n FROM ${table}`)).rows[0].n;
+ await t.test('management rollback preserves standalone vacation revision and administrative replay evidence',async()=>{
+  for(const [insert,check] of [
+   ["INSERT INTO folha_ferias_revisoes VALUES('"+id(1)+"','"+id(30)+"',1)",'SELECT count(*)::int n FROM folha_ferias_revisoes'],
+   ["INSERT INTO folha_privado.operacoes(empresa_id,ator_id,request_id,payload,token,resultado) VALUES('"+id(1)+"','"+id(10)+"','"+id(98999)+"','{\"contract\":\"gestao_v2\"}','synthetic','{}')","SELECT count(*)::int n FROM folha_privado.operacoes WHERE payload->>'contract'='gestao_v2'"]
+  ]) {
+   await q(insert);
+   try {await assert.rejects(q(await read('../supabase/folha_ponto_v2_gestao_rollback.sql')),/ROLLBACK_DATA_PRESENT/);}
+   finally {await q('ROLLBACK');}
+   assert.equal((await q(check)).rows[0].n,1);
+   await q('TRUNCATE folha_ferias_revisoes,folha_privado.operacoes');
+  }
+ });
  await q(await read('../supabase/folha_ponto_v2_gestao_rollback.sql'));
  await q('TRUNCATE folha_config_empresa,folha_horarios');
  await t.test('management rollback must leave the remaining core able to commit a legitimate sheet',async()=>{
