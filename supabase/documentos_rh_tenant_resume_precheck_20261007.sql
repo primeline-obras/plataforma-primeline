@@ -98,14 +98,17 @@ base_blockers AS (
 ), blockers AS (
  SELECT blocker FROM base_blockers
  UNION ALL SELECT jsonb_build_object('item',name,'reason','STORAGE_OWNER_OR_RLS_DRIFT') FROM storage_owner WHERE owner IS DISTINCT FROM 'supabase_storage_admin' OR rls IS DISTINCT FROM true
- UNION ALL SELECT jsonb_build_object('item',name,'reason','STORAGE_OWNER_CAPABILITY_BLOCKED') FROM storage_owner WHERE NOT can_set
  UNION ALL SELECT jsonb_build_object('item','documental_backup','reason',resume_state,'private',backup_private,'shape',backup_shape_ok,'differences',differences) FROM backup_resume WHERE resume_state<>'VALID_EXISTING_BACKUP_RESUME'
 )
 SELECT jsonb_build_object(
  'executor',jsonb_build_object('current_user',current_user,'session_user',session_user),
  'storage_owners',(SELECT jsonb_agg(to_jsonb(storage_owner) ORDER BY name) FROM storage_owner),
- 'can_set_storage_owner_role',(SELECT bool_and(can_set) FROM storage_owner),
- 'storage_policy_ddl',CASE WHEN (SELECT bool_and(can_set AND owner='supabase_storage_admin' AND rls) FROM storage_owner) THEN 'STORAGE_POLICY_DDL_READY' ELSE 'STORAGE_OWNER_CAPABILITY_BLOCKED' END,
+ 'set_role_required',false,
+ 'storage_policy_ddl','STORAGE_DASHBOARD_POLICY_REQUIRED',
+ 'storage_policy_grants',current_setting('supautils.policy_grants',true),
+ 'storage_policy_grants_loaded',EXISTS(SELECT 1 FROM pg_settings WHERE name='supautils.policy_grants'),
+ 'storage_dashboard_capability',CASE WHEN EXISTS(SELECT 1 FROM pg_settings WHERE name='supautils.policy_grants' AND coalesce(nullif(setting,''),'{}')::jsonb->current_user ? 'storage.objects') THEN 'OFFICIAL_POLICY_GRANTS_CONFIGURED' ELSE 'NOT_CONFIRMED_STOP_IF_DASHBOARD_REFUSES' END,
+ 'external_stage_required',true,
  'backup_exists',(SELECT backup_exists FROM backup_resume), 'backup_private',(SELECT backup_private FROM backup_resume),
  'backup_full_visibility',(SELECT backup_full_visibility FROM backup_resume),'backup_readable',(SELECT backup_readable FROM backup_resume), 'backup_matches_live',(SELECT backup_matches_live FROM backup_resume),'resume_state',(SELECT resume_state FROM backup_resume),
  'migration_partial',(SELECT migration_partial FROM backup_resume) OR EXISTS(SELECT 1 FROM function_drift WHERE split_part(blocker->>'item','(',1) IN('fn_apagar_anexo_rnc','fn_apagar_documento_obra','fn_registar_documento_obra','fn_alterar_responsavel_viatura','fn_guardar_validade_viatura','fn_apagar_documento_entidade','fn_apagar_anexo_imovel','fn_apagar_anexo_pedido_orcamento','fn_apagar_imovel_empresa','fn_apagar_reuniao_condominio','fn_apagar_versao_pedido_orcamento','fn_cancelar_pedido_orcamento','fn_gerir_registo_frota')),

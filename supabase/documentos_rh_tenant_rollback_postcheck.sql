@@ -2,6 +2,7 @@ BEGIN READ ONLY;
 DO $storage_baseline$ BEGIN
  IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2
  THEN RAISE EXCEPTION 'STORAGE_OWNER_OR_RLS_DRIFT'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE')))) THEN RAISE EXCEPTION 'STORAGE_FULL_READ_VISIBILITY_REQUIRED'; END IF;
 END $storage_baseline$;
 DO $document_catalog$
 DECLARE actual jsonb; expected jsonb;
@@ -22,10 +23,11 @@ BEGIN
  'schemas',(SELECT jsonb_agg(jsonb_build_object('name',nspname,'owner',nspowner,'acl',nspacl) ORDER BY nspname) FROM pg_namespace WHERE nspname IN('primeline_documentos_rh_privado','storage')),
  'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')
 ));
+ IF (SELECT backup_fingerprint FROM primeline_documentos_rh_backup.instalacao) IS DISTINCT FROM (SELECT jsonb_object_agg(name,jsonb_build_object('rows',digest,'metadata',(SELECT jsonb_build_object('owner',c.relowner,'kind',c.relkind,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',c.relacl,'columns',(SELECT jsonb_agg(jsonb_build_object('name',a.attname,'type',a.atttypid,'mod',a.atttypmod,'nullable',NOT a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid),'acl',a.attacl,'dropped',a.attisdropped,'identity',a.attidentity,'generated',a.attgenerated) ORDER BY a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=c.oid AND a.attnum>0),'constraints',(SELECT jsonb_agg(pg_get_constraintdef(x.oid) ORDER BY x.conname) FROM pg_constraint x WHERE x.conrelid=c.oid),'triggers',(SELECT jsonb_agg(pg_get_triggerdef(x.oid) ORDER BY x.tgname) FROM pg_trigger x WHERE x.tgrelid=c.oid),'indexes',(SELECT jsonb_agg(pg_get_indexdef(x.indexrelid) ORDER BY pg_get_indexdef(x.indexrelid)) FROM pg_index x WHERE x.indrelid=c.oid)) FROM pg_class c WHERE c.oid=to_regclass('primeline_documentos_rh_backup.'||name)))) FROM (SELECT name,(xpath('/table/row/value/text()',query_to_xml(format('SELECT md5(coalesce(string_agg(to_jsonb(t)::text,chr(10) ORDER BY to_jsonb(t)::text),'''')) value FROM primeline_documentos_rh_backup.%I t',name),false,false,'')))[1]::text digest FROM unnest(ARRAY['documentos','anexos','objects','policies','tables','rpc']) name) d) THEN RAISE EXCEPTION 'DOCUMENT_ORIGINAL_BACKUP_CHANGED'; END IF;
  IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'DOCUMENT_CATALOG_DRIFT'; END IF;
 END $document_catalog$;
 DO $$ DECLARE p text; t regclass; BEGIN
- FOREACH p IN ARRAY ARRAY['rh_empresa_guard','rh_anexo_empresa_guard','rh_storage_empresa_guard'] LOOP
+ FOREACH p IN ARRAY ARRAY['rh_empresa_guard','rh_anexo_empresa_guard'] LOOP
   IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polname=p AND NOT polpermissive AND polcmd='*' AND polroles=ARRAY['authenticated'::regrole::oid]) THEN RAISE EXCEPTION 'RH_RESTRICTIVE_GUARD_MISSING: %',p; END IF;
  END LOOP;
  IF EXISTS(SELECT 1 FROM pg_class WHERE oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass) AND NOT relrowsecurity) THEN RAISE EXCEPTION 'RH_RLS_REQUIRED'; END IF;

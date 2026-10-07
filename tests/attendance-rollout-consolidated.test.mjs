@@ -108,10 +108,11 @@ test('consolidated rollout: reconstructed hotfix → documents → Folha; all dr
   try{const bad=(await q(synthetic)).flatMap(r=>r.rows||[])[0].precheck_real_final;assert.equal(bad.verdict,'BLOCKED');assert.equal(bad.document_delete_rpc.state,'DRIFT');}finally{await q('ALTER FUNCTION fn_apagar_documento_entidade(uuid) SECURITY DEFINER');}
 
  });
- for(const step of ['precheck','backup','','postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
+ for(const step of ['precheck','backup','','intermediate_postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
+ await q(await read('./fixtures/documentos-rh-storage-dashboard-policy.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
   await t.test('reviewed documentary delta composes exactly with existing hotfix',async()=>{await q(pre);});
   await t.test('unrelated table grant and incomplete documentary delta are rejected',async()=>{
-   for(const sql of ['GRANT SELECT ON colaboradores TO anon','ALTER POLICY rh_empresa_guard ON documentos USING(false)','DROP POLICY rh_storage_empresa_guard ON storage.objects']) {
+   for(const sql of ['GRANT SELECT ON colaboradores TO anon','ALTER POLICY rh_empresa_guard ON documentos USING(false)','DROP POLICY documents_read ON storage.objects']) {
     await q('BEGIN');await q(sql);await assert.rejects(q(pre),/DRIFT/);await q('ROLLBACK');await q(pre);
    }
   });

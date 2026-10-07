@@ -1,3 +1,5 @@
+> PLANO VIGENTE SEM SET ROLE: seguir docs/storage-policy-rollout-20261007.md. Retoma → SQL public/RPC → postcheck intermédio → DOCUMENTAL-STORAGE-POLICY (18 edições) → postcheck final. Não repetir backup documental. As instruções anteriores abaixo são históricas.
+
 > RETOMA APÓS FALHA DE OWNERSHIP: o backup documental real já existe e deve ser preservado. O próximo SQL é `supabase/documentos_rh_tenant_resume_precheck_20261007.sql`. Não repetir o backup documental. A sequência atual, capability e testes estão em `docs/pacote-2-storage-owner-resume-20261007.md`. As instruções de CLEAN START abaixo são o plano original e não se aplicam à retoma atual.
 # Pacote 2 — rollout preparado, 07/10/2026
 

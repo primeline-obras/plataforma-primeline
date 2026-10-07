@@ -22,7 +22,7 @@ test('AUDIT: bucket security metadata must be pinned',{skip:!bin||!deps,timeout:
  await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-storage-hosted-owner.sql'));
- await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
+ await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_intermediate_postcheck.sql'));await q(await read('./fixtures/documentos-rh-storage-dashboard-policy.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
  // Independent negative drift cases; candidate scripts stay unchanged.
  const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');
  for(const [label,mutation] of [

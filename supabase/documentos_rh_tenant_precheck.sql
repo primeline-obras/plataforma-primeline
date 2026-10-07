@@ -4,7 +4,6 @@ DO $storage_capability$ BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'NORMAL_EXECUTOR_REQUIRED' USING ERRCODE='42501'; END IF;
  IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2
  THEN RAISE EXCEPTION 'STORAGE_OWNER_OR_RLS_DRIFT' USING ERRCODE='42501'; END IF;
- IF NOT pg_has_role(session_user,'supabase_storage_admin','SET') THEN RAISE EXCEPTION 'STORAGE_OWNER_CAPABILITY_BLOCKED' USING ERRCODE='42501'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))))
  THEN RAISE EXCEPTION 'STORAGE_FULL_READ_VISIBILITY_REQUIRED' USING ERRCODE='42501'; END IF;
 END $storage_capability$;

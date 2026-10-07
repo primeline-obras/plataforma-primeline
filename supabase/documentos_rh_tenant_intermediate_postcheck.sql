@@ -12,6 +12,7 @@ BEGIN
  IF EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN LATERAL aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner))) x WHERE n.nspname='primeline_documentos_rh_backup' AND (n.nspowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole))
  OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) x WHERE c.relnamespace='primeline_documentos_rh_backup'::regnamespace AND (c.relowner<>'postgres'::regrole OR x.grantee<>'postgres'::regrole)) THEN RAISE EXCEPTION 'DOCUMENT_BACKUP_NOT_PRIVATE'; END IF;
  SELECT catalogo INTO expected FROM primeline_documentos_rh_backup.instalacao;
+ expected:=jsonb_set(expected,'{policies}',(SELECT jsonb_agg(CASE WHEN p->>'schemaname'='storage' AND p->>'tablename'='objects' THEN (SELECT to_jsonb(b) FROM primeline_documentos_rh_backup.policies b WHERE b.schemaname='storage' AND b.tablename='objects' AND b.policyname=p->>'policyname') ELSE p END ORDER BY p->>'schemaname',p->>'tablename',p->>'policyname') FROM jsonb_array_elements(expected->'policies') p));
  actual:=(SELECT jsonb_build_object(
  'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY schemaname,tablename,policyname) FROM pg_policies p WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename IN('objects','buckets'))),
  'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a),'columns',(SELECT jsonb_agg(jsonb_build_object('name',attname,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(attacl) a)) ORDER BY attnum) FROM pg_attribute WHERE attrelid=c.oid AND attnum>0 AND NOT attisdropped)) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass,'storage.buckets'::regclass)),
@@ -33,5 +34,5 @@ DO $$ DECLARE p text; t regclass; BEGIN
  OR EXISTS(SELECT 1 FROM (TABLE storage.objects EXCEPT ALL TABLE primeline_documentos_rh_backup.objects) x) OR EXISTS(SELECT 1 FROM (TABLE primeline_documentos_rh_backup.objects EXCEPT ALL TABLE storage.objects) x) THEN RAISE EXCEPTION 'RH_DOCUMENT_DATA_CHANGED'; END IF;
  IF EXISTS(SELECT 1 FROM primeline_documentos_rh_backup.tables b JOIN pg_class c ON c.oid=b.oid WHERE c.relacl IS DISTINCT FROM b.relacl) THEN RAISE EXCEPTION 'RH_TABLE_GRANTS_CHANGED'; END IF;
 END $$;
-SELECT 'DOCUMENTOS_RH_TENANT_POSTCHECK_OK' AS resultado;
+SELECT 'DOCUMENTOS_RH_PUBLIC_RPC_INTERMEDIATE_OK_STORAGE_PENDING' AS resultado;
 ROLLBACK;

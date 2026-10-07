@@ -87,7 +87,15 @@ test('hosted ownership: non-superuser, failed old migration, preserved backup, r
 
   await q("INSERT INTO storage.objects(id,bucket_id,name) VALUES('00000000-0000-4000-8000-000000000001','documentos','synthetic-only.pdf')");
   const b=(s,p=[])=>bootstrap.query(s,p);
-  await b('ALTER ROLE postgres NOSUPERUSER BYPASSRLS');
+  // Reproduce all 18 frozen real policy definitions, with synthetic rows only.
+  const realPolicies=JSON.parse(await read('./fixtures/pacote2-real-baseline-20261007.json')).tables.find(t=>t.schema==='storage'&&t.name==='objects').policies;
+  await b("DROP POLICY documents_read ON storage.objects;DROP POLICY documents_insert ON storage.objects;CREATE FUNCTION storage.foldername(text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $body$ SELECT (string_to_array($1,'/'))[1:array_length(string_to_array($1,'/'),1)-1] $body$;GRANT USAGE ON SCHEMA storage TO anon,authenticated");
+  for(const p of realPolicies)await b('CREATE POLICY '+qi(p.policyname)+' ON storage.objects AS '+p.permissive+' FOR '+p.cmd+' TO authenticated'+(p.qual?' USING('+p.qual+')':'')+(p.with_check?' WITH CHECK('+p.with_check+')':''));
+  await b('INSERT INTO empresas(id) VALUES($1),($2)',[id(9101),id(9102)]);
+  await b("INSERT INTO utilizadores(id,auth_user_id,empresa_id,funcao,ativo) VALUES($1,$2,$3,'administrativo',true)",[id(9103),id(9104),id(9101)]);
+  await b("INSERT INTO storage.objects(id,bucket_id,name) VALUES($1,'documentos',$2),($3,'documentos',$4)",[id(9105),'empresa/'+id(9101)+'/synthetic.pdf',id(9106),'empresa/'+id(9102)+'/synthetic.pdf']);
+  // Existing client-role capability required by Folha precheck, never Storage-owner membership.
+  await b('GRANT authenticated TO postgres;ALTER ROLE postgres NOSUPERUSER BYPASSRLS');
   const normal=(await q("SELECT current_user,session_user,(SELECT rolsuper FROM pg_roles WHERE rolname=current_user) superuser")).rows[0];
   assert.deepEqual(normal,{current_user:'postgres',session_user:'postgres',superuser:false});
   const resume=await read('../supabase/documentos_rh_tenant_resume_precheck_20261007.sql');
@@ -101,16 +109,13 @@ test('hosted ownership: non-superuser, failed old migration, preserved backup, r
   const syntheticCatalog={functions:captured.functions.map(({signature,owner,security_definer,config,acl,definition_sha256})=>({signature,owner,security_definer,config,acl,definition_sha256})),tables:captured.tables};
   let synthetic=resume.replace(/WITH baseline AS \(SELECT '[\s\S]*?'::jsonb data\),/,()=>"WITH baseline AS (SELECT '"+JSON.stringify(syntheticCatalog).replaceAll("'","''")+"'::jsonb data),");
   synthetic=synthetic.replace(/expected_counts\(name,expected\) AS \(VALUES [\s\S]*?\),\r?\ncounts/,()=>"expected_counts(name,expected) AS (VALUES "+captured.counts.map(n=>"('"+n.relname+"',"+n.total+"::bigint)").join(',')+"),\ncounts");
-  await t.test('native 42501 without SET membership; capability blocks before backup/migration',async()=>{
+  await t.test('native owner DDL refused; Dashboard requirement replaces SET membership gate',async()=>{
    for(const sql of ['ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY','CREATE POLICY forbidden ON storage.objects USING(true)'])await assert.rejects(q(sql),e=>e.code==='42501');
-   await assert.rejects(q(await read('../supabase/documentos_rh_tenant_precheck.sql')),e=>e.code==='42501'&&/STORAGE_OWNER_CAPABILITY_BLOCKED/.test(e.message));await q('ROLLBACK');
-   await assert.rejects(q(await read('../supabase/documentos_rh_tenant.sql')),e=>e.code==='42501'&&/STORAGE_OWNER_CAPABILITY_BLOCKED/.test(e.message));await q('ROLLBACK');
-   const v=await gate(synthetic);assert.equal(v.resume_state,'CLEAN_START');assert.equal(v.verdict,'BLOCKED');assert.equal(v.can_set_storage_owner_role,false);
-   assert.ok(v.blockers.some(x=>x.reason==='STORAGE_OWNER_CAPABILITY_BLOCKED'));
+   await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));
+   const v=await gate(synthetic);assert.equal(v.resume_state,'CLEAN_START');assert.equal(v.verdict,'BLOCKED');assert.equal(v.set_role_required,false);assert.equal(v.storage_policy_ddl,'STORAGE_DASHBOARD_POLICY_REQUIRED');
+   assert.ok(!v.blockers.some(x=>x.reason==='STORAGE_OWNER_CAPABILITY_BLOCKED'));
+   assert.equal((await q("SELECT pg_has_role('postgres','supabase_storage_admin','SET') v")).rows[0].v,false);
   });
-  // SET-only membership is fixture setup, never a rollout statement.
-  await b('GRANT supabase_storage_admin TO postgres WITH INHERIT FALSE, SET TRUE');
-  assert.deepEqual((await q("SELECT pg_has_role('postgres','supabase_storage_admin','SET') can_set,pg_has_role('postgres','supabase_storage_admin','USAGE') inherited")).rows[0],{can_set:true,inherited:false});
   const docPre=await read('../supabase/documentos_rh_tenant_precheck.sql'),docBackup=await read('../supabase/documentos_rh_tenant_backup.sql'),docMigration=await read('../supabase/documentos_rh_tenant.sql');
   await q(docPre);await q(docBackup);
   const backupDigest=async()=>{
@@ -130,8 +135,8 @@ test('hosted ownership: non-superuser, failed old migration, preserved backup, r
   });
   await t.test('backup, owner, RLS, metadata and partial-state drift block without replacing evidence',async()=>{
    const variants=[
-    ["UPDATE primeline_documentos_rh_backup.objects SET name='changed'",'PARTIAL_OR_UNKNOWN_STATE'],
-    ["UPDATE storage.objects SET name='live-changed'",'PARTIAL_OR_UNKNOWN_STATE'],
+    ["UPDATE primeline_documentos_rh_backup.objects SET name='changed' WHERE id='00000000-0000-4000-8000-000000000001'",'PARTIAL_OR_UNKNOWN_STATE'],
+    ["UPDATE storage.objects SET name='live-changed' WHERE id='00000000-0000-4000-8000-000000000001'",'PARTIAL_OR_UNKNOWN_STATE'],
     ['GRANT USAGE ON SCHEMA primeline_documentos_rh_backup TO authenticated','PARTIAL_OR_UNKNOWN_STATE'],
     ['ALTER TABLE primeline_documentos_rh_backup.objects ADD COLUMN accidental text','PARTIAL_OR_UNKNOWN_STATE'],
     ['CREATE SCHEMA primeline_documentos_rh_privado','PARTIAL_OR_UNKNOWN_STATE'],
@@ -143,8 +148,8 @@ test('hosted ownership: non-superuser, failed old migration, preserved backup, r
    for(const [change,state] of variants){await b('BEGIN');await b(change);await b('COMMIT');
     // Restore with exact inverse after the read-only check; fixture changes only.
     try{const v=await gate(synthetic);assert.equal(v.verdict,'BLOCKED',change);assert.equal(v.resume_state,state,change);}finally{
-    if(change.includes("backup.objects SET"))await b("UPDATE primeline_documentos_rh_backup.objects SET name='synthetic-only.pdf'");
-    else if(change.includes("UPDATE storage.objects"))await b("UPDATE storage.objects SET name='synthetic-only.pdf'");
+    if(change.includes("backup.objects SET"))await b("UPDATE primeline_documentos_rh_backup.objects SET name='synthetic-only.pdf' WHERE id='00000000-0000-4000-8000-000000000001'");
+    else if(change.includes("UPDATE storage.objects"))await b("UPDATE storage.objects SET name='synthetic-only.pdf' WHERE id='00000000-0000-4000-8000-000000000001'");
     else if(change.startsWith('GRANT'))await b('REVOKE USAGE ON SCHEMA primeline_documentos_rh_backup FROM authenticated');
     else if(change.includes('ADD COLUMN'))await b('DROP TABLE primeline_documentos_rh_backup.objects;CREATE TABLE primeline_documentos_rh_backup.objects AS TABLE storage.objects;ALTER TABLE primeline_documentos_rh_backup.objects OWNER TO postgres;REVOKE ALL ON primeline_documentos_rh_backup.objects FROM PUBLIC,anon,authenticated,service_role');
     else if(change.startsWith('CREATE SCHEMA'))await b('DROP SCHEMA primeline_documentos_rh_privado');
@@ -157,12 +162,6 @@ test('hosted ownership: non-superuser, failed old migration, preserved backup, r
    await b('DROP TABLE primeline_documentos_rh_backup.objects;CREATE TABLE primeline_documentos_rh_backup.objects AS TABLE storage.objects;ALTER TABLE primeline_documentos_rh_backup.objects OWNER TO postgres;REVOKE ALL ON primeline_documentos_rh_backup.objects FROM PUBLIC,anon,authenticated,service_role');
    assert.deepEqual(await backupDigest(),before);
   });
-  await t.test('revoked capability blocks direct migration without touching backup',async()=>{
-   await b('REVOKE supabase_storage_admin FROM postgres');
-   assert.equal((await gate(synthetic)).can_set_storage_owner_role,false);
-   await assert.rejects(q(docMigration),e=>e.code==='42501'&&/STORAGE_OWNER_CAPABILITY_BLOCKED/.test(e.message));await q('ROLLBACK');
-   await b('GRANT supabase_storage_admin TO postgres WITH INHERIT FALSE, SET TRUE');assert.deepEqual(await backupDigest(),before);
-  });
   await t.test('RLS-filtered visibility cannot be certified as a complete backup comparison',async()=>{
    await b('ALTER ROLE postgres NOBYPASSRLS');
    try{const v=await gate(synthetic);assert.equal(v.verdict,'BLOCKED');assert.equal(v.backup_full_visibility,false);assert.equal(v.backup_matches_live,false);}
@@ -171,12 +170,34 @@ test('hosted ownership: non-superuser, failed old migration, preserved backup, r
   await t.test('corrected documentary migration/postcheck preserve managed owners, RLS, data and ACL',async()=>{
    assert.equal((await gate(synthetic)).verdict,'READY_TO_RESUME_DOCUMENTAL_MIGRATION');
    const initial=(await q("SELECT c.relname,c.relowner,c.relrowsecurity,c.relacl FROM pg_class c WHERE c.oid IN('storage.objects'::regclass,'storage.buckets'::regclass) ORDER BY c.relname")).rows;
-   await q(docMigration);await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
+   await q(docMigration);await q(await read('../supabase/documentos_rh_tenant_intermediate_postcheck.sql'));
+   const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');
+   await assert.rejects(q(post),/DOCUMENT_CATALOG_DRIFT/);await q('ROLLBACK');
+   // Separate external owner connection is local simulation only, not a claimed hosted capability.
+   await b(await read('./fixtures/documentos-rh-storage-dashboard-policy.sql'));
+   await q(post);
+   for(const mutation of ["ALTER POLICY documentos_empresa_storage_select ON storage.objects USING(bucket_id='documentos')", "ALTER POLICY documentos_empresa_storage_select ON storage.objects USING(primeline_documentos_rh_privado.objeto(name))", "CREATE POLICY unintended_or ON storage.objects FOR SELECT TO authenticated USING(true)","UPDATE storage.buckets SET public=true WHERE id='documentos'",'ALTER TABLE storage.objects OWNER TO postgres']){
+    await b(mutation);await assert.rejects(q(post),/DOCUMENT_CATALOG_DRIFT|STORAGE_OWNER_OR_RLS_DRIFT/);await q('ROLLBACK');
+    if(mutation.includes('unintended_or'))await b('DROP POLICY unintended_or ON storage.objects');
+    if(mutation.includes('public=true'))await b("UPDATE storage.buckets SET public=false WHERE id='documentos'");
+    if(mutation.includes('OWNER TO'))await b('ALTER TABLE storage.objects OWNER TO supabase_storage_admin;GRANT SELECT ON storage.objects TO postgres');
+    await b(await read('./fixtures/documentos-rh-storage-dashboard-policy.sql'));
+   }
+   await q(post);
+   assert.equal((await q("SELECT pg_has_role('postgres','supabase_storage_admin','SET') v")).rows[0].v,false);
+   await q("SELECT set_config('request.jwt.claim.sub',$1,false)",[id(9104)]);await q('SET ROLE authenticated');
+   try{assert.equal((await q("SELECT * FROM storage.objects WHERE name=$1",['empresa/'+id(9101)+'/synthetic.pdf'])).rowCount,1);assert.equal((await q("SELECT * FROM storage.objects WHERE name=$1",['empresa/'+id(9102)+'/synthetic.pdf'])).rowCount,0);await assert.rejects(q("INSERT INTO storage.objects(id,bucket_id,name) VALUES($1,'documentos',$2)",[id(9107),'empresa/'+id(9102)+'/new.pdf']),e=>e.code==='42501');}
+   finally{await q('RESET ROLE');}
    assert.deepEqual((await q("SELECT c.relname,c.relowner,c.relrowsecurity,c.relacl FROM pg_class c WHERE c.oid IN('storage.objects'::regclass,'storage.buckets'::regclass) ORDER BY c.relname")).rows,initial);
    assert.equal((await q('SELECT current_user')).rows[0].current_user,'postgres');
    assert.equal((await q("SELECT has_schema_privilege('supabase_storage_admin','primeline_documentos_rh_privado','USAGE') v")).rows[0].v,false);
-   assert.equal((await q("SELECT count(*)::int n FROM pg_policies WHERE schemaname='storage' AND policyname='rh_storage_empresa_guard' AND permissive='RESTRICTIVE'")).rows[0].n,1);
+   assert.equal((await q("SELECT count(*)::int n FROM pg_policies WHERE schemaname='storage' AND coalesce(qual,with_check) LIKE '%objeto_empresa%'")).rows[0].n,18);
    assert.deepEqual(await backupDigest(),before);
+  });
+  await t.test('final gate rejects original-backup metadata drift without accepting new evidence',async()=>{
+   await q('CREATE INDEX local_backup_drift ON primeline_documentos_rh_backup.objects(id)');
+   await assert.rejects(q(await read('../supabase/documentos_rh_tenant_postcheck.sql')),/DOCUMENT_ORIGINAL_BACKUP_CHANGED/);await q('ROLLBACK');
+   await q('DROP INDEX primeline_documentos_rh_backup.local_backup_drift');await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));assert.deepEqual(await backupDigest(),before);
   });
   await t.test('normal non-superuser executes full Folha sequence and safe reverse sequence',async()=>{
    for(const name of ['folha_ponto_v2_precheck','folha_ponto_v2_backup','folha_ponto_v2','folha_ponto_v2_gestao','folha_ponto_v2_postcheck'])await q(await read('../supabase/'+name+'.sql'));

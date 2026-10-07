@@ -1,0 +1,260 @@
+{
+  "model": "tighten-every-existing-permissive-policy",
+  "schema": "storage",
+  "table": "objects",
+  "helper": "primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+  "policies": [
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "avaliacoes_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND ((storage.foldername(name))[2] = 'avaliacoes-subempreiteiro'::text) AND fn_pode_editar_obra(((storage.foldername(name))[1])::uuid))",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND ((storage.foldername(name))[2] = 'avaliacoes-subempreiteiro'::text) AND fn_pode_editar_obra(((storage.foldername(name))[1])::uuid))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'empresa'::text) AND ((storage.foldername(name))[2] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_empresa_storage_delete",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'empresa'::text) AND ((storage.foldername(name))[2] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_empresa_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'empresa'::text) AND ((storage.foldername(name))[2] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'empresa'::text) AND ((storage.foldername(name))[2] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'empresa'::text) AND ((storage.foldername(name))[2] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_empresa_storage_select",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'empresa'::text) AND ((storage.foldername(name))[2] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND fn_pode_editar_documentos_obra(((storage.foldername(name))[1])::uuid))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_obra_storage_delete",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND fn_pode_editar_documentos_obra(((storage.foldername(name))[1])::uuid))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'rh'::text) AND ((storage.foldername(name))[2] = ANY (ARRAY['colaborador'::text, 'viatura'::text, 'ausencia'::text])) AND ((storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_rh_storage_delete",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'rh'::text) AND ((storage.foldername(name))[2] = ANY (ARRAY['colaborador'::text, 'viatura'::text, 'ausencia'::text])) AND ((storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_rh_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'rh'::text) AND ((storage.foldername(name))[2] = ANY (ARRAY['colaborador'::text, 'viatura'::text, 'ausencia'::text])) AND ((storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'rh'::text) AND ((storage.foldername(name))[2] = ANY (ARRAY['colaborador'::text, 'viatura'::text, 'ausencia'::text])) AND ((storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'rh'::text) AND ((storage.foldername(name))[2] = ANY (ARRAY['colaborador'::text, 'viatura'::text, 'ausencia'::text])) AND ((storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_rh_storage_select",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] = 'rh'::text) AND ((storage.foldername(name))[2] = ANY (ARRAY['colaborador'::text, 'viatura'::text, 'ausencia'::text])) AND ((storage.foldername(name))[3] ~* '^[0-9a-f-]{36}$'::text) AND fn_e_administrativo())) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND (fn_pode_editar_obra(((storage.foldername(name))[1])::uuid) OR fn_e_administrativo()))",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND (fn_pode_editar_obra(((storage.foldername(name))[1])::uuid) OR fn_e_administrativo()))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'::text) AND (fn_pode_ver_obra(((storage.foldername(name))[1])::uuid) OR (fn_e_encarregado_da_obra(((storage.foldername(name))[1])::uuid) AND ((storage.foldername(name))[2] = ANY (ARRAY['articulado_original'::text, 'articulado_tee'::text, 'desenho'::text, 'desenhos_preparacao'::text, 'plantas_projeto'::text, 'pdes_rfis'::text, 'pames'::text, 'atas_reuniao'::text, 'rnc'::text])))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "documentos_storage_select",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'::text) AND (fn_pode_ver_obra(((storage.foldername(name))[1])::uuid) OR (fn_e_encarregado_da_obra(((storage.foldername(name))[1])::uuid) AND ((storage.foldername(name))[2] = ANY (ARRAY['articulado_original'::text, 'articulado_tee'::text, 'desenho'::text, 'desenhos_preparacao'::text, 'plantas_projeto'::text, 'pdes_rfis'::text, 'pames'::text, 'atas_reuniao'::text, 'rnc'::text])))))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'documentos'::text) AND (name ~~ 'entidades/%'::text) AND (fn_e_admin() OR fn_e_administrativo()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "entidades_documentos_delete",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND (name ~~ 'entidades/%'::text) AND (fn_e_admin() OR fn_e_administrativo()))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "entidades_documentos_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'documentos'::text) AND (name ~~ 'entidades/%'::text) AND (fn_e_admin() OR fn_e_administrativo()))",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'documentos'::text) AND (name ~~ 'entidades/%'::text) AND (fn_e_admin() OR fn_e_administrativo()))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'documentos'::text) AND (name ~~ 'entidades/%'::text) AND (fn_e_admin() OR fn_e_administrativo()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "entidades_documentos_select",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'documentos'::text) AND (name ~~ 'entidades/%'::text) AND (fn_e_admin() OR fn_e_administrativo()))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "faturas_anexos_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'faturas'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND ((storage.foldername(name))[2] = 'faturas-anexos'::text) AND (fn_pode_editar_obra(((storage.foldername(name))[1])::uuid) OR fn_e_financeiro()))",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'faturas'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND ((storage.foldername(name))[2] = 'faturas-anexos'::text) AND (fn_pode_editar_obra(((storage.foldername(name))[1])::uuid) OR fn_e_financeiro()))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'faturas'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND (fn_pode_ver_obra(((storage.foldername(name))[1])::uuid) OR fn_e_financeiro()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "faturas_read_authenticated",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'faturas'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND (fn_pode_ver_obra(((storage.foldername(name))[1])::uuid) OR fn_e_financeiro()))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'faturas'::text) AND (fn_e_admin() OR (EXISTS ( SELECT 1\n   FROM utilizadores u\n  WHERE ((u.auth_user_id = auth.uid()) AND u.ativo AND (u.funcao = ANY (ARRAY['administrativo'::text, 'financeiro'::text, 'diretor_obra'::text, 'adjunto'::text, 'preparador'::text])))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "faturas_storage_delete_restrito",
+      "schemaname": "storage",
+      "with_check": null,
+      "expected_qual": "(((bucket_id = 'faturas'::text) AND (fn_e_admin() OR (EXISTS ( SELECT 1\n   FROM utilizadores u\n  WHERE ((u.auth_user_id = auth.uid()) AND u.ativo AND (u.funcao = ANY (ARRAY['administrativo'::text, 'financeiro'::text, 'diretor_obra'::text, 'adjunto'::text, 'preparador'::text])))))))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)",
+      "expected_with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "faturas_upload_authenticated",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'faturas'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND ((((storage.foldername(name))[2] = 'guias-remessa'::text) AND fn_pode_editar_obra(((storage.foldername(name))[1])::uuid)) OR (((storage.foldername(name))[2] <> 'guias-remessa'::text) AND fn_e_administrativo())))",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'faturas'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f-]{36}$'::text) AND ((((storage.foldername(name))[2] = 'guias-remessa'::text) AND fn_pode_editar_obra(((storage.foldername(name))[1])::uuid)) OR (((storage.foldername(name))[2] <> 'guias-remessa'::text) AND fn_e_administrativo())))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "rnc_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'::text) AND ((storage.foldername(name))[2] = 'rnc'::text) AND (fn_pode_editar_obra(((storage.foldername(name))[1])::uuid) OR fn_e_encarregado_da_obra(((storage.foldername(name))[1])::uuid)))",
+      "expected_qual": null,
+      "expected_with_check": "(((bucket_id = 'documentos'::text) AND ((storage.foldername(name))[1] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'::text) AND ((storage.foldername(name))[2] = 'rnc'::text) AND (fn_pode_editar_obra(((storage.foldername(name))[1])::uuid) OR fn_e_encarregado_da_obra(((storage.foldername(name))[1])::uuid)))) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)"
+    }
+  ]
+}

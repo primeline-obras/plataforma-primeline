@@ -18,7 +18,7 @@ test('Final document RPC tenant and correlate regression',{skip:!bin||!deps,time
  await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-storage-hosted-owner.sql'));
- await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
+ await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_intermediate_postcheck.sql'));await q(await read('./fixtures/documentos-rh-storage-dashboard-policy.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
 
  await t.test('safe deletion: own tenant, cross tenant, inactive, forbidden role and audit',async()=>{
   await q('CREATE TABLE local_audit(id uuid,action text); CREATE FUNCTION local_doc_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN INSERT INTO public.local_audit VALUES(OLD.id,TG_OP); RETURN OLD; END $$; CREATE TRIGGER audit AFTER DELETE ON documentos FOR EACH ROW EXECUTE FUNCTION local_doc_audit()');
@@ -46,10 +46,13 @@ test('Final document RPC tenant and correlate regression',{skip:!bin||!deps,time
   await as(10,'SELECT fn_apagar_documento_obra($1)',[id(704)]);await as(10,'SELECT fn_apagar_anexo_rnc($1)',[id(702)]);
   await as(10,"SELECT fn_registar_documento_obra($1,'outro','synthetic',$2)",[id(50),id(50)+'/synthetic']);
  });
- await t.test('Storage namespaces: other companies cannot be reopened by a permissive ALL policy',async()=>{
+ await t.test('Storage namespaces: each permissive route requires the tenant guard',async()=>{
   await q('INSERT INTO imoveis_empresa(id,empresa_id) VALUES($1,$2),($3,$4)',[id(800),id(1),id(801),id(2)]);
   await q('INSERT INTO pedidos_orcamento(id,empresa_id) VALUES($1,$2),($3,$4)',[id(802),id(1),id(803),id(2)]);
   await q('CREATE POLICY local_all ON storage.objects FOR ALL TO authenticated USING(true) WITH CHECK(true)');
+  await assert.rejects(q(await read('../supabase/documentos_rh_tenant_postcheck.sql')),/DOCUMENT_CATALOG_DRIFT/);await q('ROLLBACK');
+  // Model the mandatory AND guard on every permissive route; no restrictive policy is assumed.
+  await q('ALTER POLICY local_all ON storage.objects USING(primeline_documentos_rh_privado.objeto_empresa(bucket_id,name)) WITH CHECK(primeline_documentos_rh_privado.objeto_empresa(bucket_id,name))');
   try{
    for(const [bucket,own,foreign] of [
     ['documentos','empresa/'+id(1)+'/synthetic','empresa/'+id(2)+'/synthetic'],

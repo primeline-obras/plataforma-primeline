@@ -5,7 +5,6 @@ DO $storage_capability$ BEGIN
  IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'NORMAL_EXECUTOR_REQUIRED' USING ERRCODE='42501'; END IF;
  IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2
  THEN RAISE EXCEPTION 'STORAGE_OWNER_OR_RLS_DRIFT' USING ERRCODE='42501'; END IF;
- IF NOT pg_has_role(session_user,'supabase_storage_admin','SET') THEN RAISE EXCEPTION 'STORAGE_OWNER_CAPABILITY_BLOCKED' USING ERRCODE='42501'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))))
  THEN RAISE EXCEPTION 'STORAGE_FULL_READ_VISIBILITY_REQUIRED' USING ERRCODE='42501'; END IF;
 END $storage_capability$;
@@ -32,9 +31,6 @@ END $document_correlatos_baseline$;
 DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NULL THEN RAISE EXCEPTION 'OWNER_AND_PRIVATE_BACKUP_REQUIRED'; END IF; END $$;
 DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='documentos' AND public IS FALSE) THEN RAISE EXCEPTION 'PRIVATE_DOCUMENT_BUCKET_REQUIRED'; END IF; END $$;
 -- Locks last until transaction end; no Storage data is changed.
-SET LOCAL ROLE supabase_storage_admin;
-LOCK TABLE storage.objects,storage.buckets IN SHARE MODE;
-RESET ROLE;
 LOCK TABLE public.documentos,public.ausencias_anexos IN SHARE MODE;
 -- Validate the existing evidence without modifying/replacing it.
 DO $existing_backup$ DECLARE s text; BEGIN
@@ -142,14 +138,7 @@ CREATE POLICY rh_empresa_guard ON public.documentos AS RESTRICTIVE FOR ALL TO au
  WITH CHECK(primeline_documentos_rh_privado.empresa(empresa_id) AND (entidade_tipo NOT IN('colaborador','viatura') OR primeline_documentos_rh_privado.entidade(entidade_tipo,entidade_id,empresa_id)));
 CREATE POLICY rh_anexo_empresa_guard ON public.ausencias_anexos AS RESTRICTIVE FOR ALL TO authenticated
  USING(primeline_documentos_rh_privado.entidade('ausencia',ausencia_id,NULL)) WITH CHECK(primeline_documentos_rh_privado.entidade('ausencia',ausencia_id,NULL));
--- Temporary name-resolution privilege only; removed in the same transaction.
-GRANT USAGE ON SCHEMA primeline_documentos_rh_privado TO supabase_storage_admin;
-SET LOCAL ROLE supabase_storage_admin;
-CREATE POLICY rh_storage_empresa_guard ON storage.objects AS RESTRICTIVE FOR ALL TO authenticated
- USING(primeline_documentos_rh_privado.objeto_empresa(bucket_id,name))
- WITH CHECK(primeline_documentos_rh_privado.objeto_empresa(bucket_id,name));
-RESET ROLE;
-REVOKE USAGE ON SCHEMA primeline_documentos_rh_privado FROM supabase_storage_admin;
+-- DOCUMENTAL-STORAGE-POLICY is applied separately through the approved Dashboard editor.
 -- Tighten the dedicated permissive policy as well; no new Storage operations are granted.
 DROP POLICY IF EXISTS pl_documentos_rh ON public.documentos;
 CREATE POLICY pl_documentos_rh ON public.documentos FOR ALL TO authenticated
@@ -174,7 +163,6 @@ BEGIN
  END IF;
  DELETE FROM public.documentos WHERE id=p_documento_id;
 END $function$;
-ALTER FUNCTION public.fn_apagar_documento_entidade(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_documento_entidade(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_documento_entidade(uuid) TO authenticated;
 
@@ -226,7 +214,6 @@ AS $function$
 declare v_path text; begin
  PERFORM primeline_documentos_rh_privado.autorizar_alvo('imoveis_anexos',p_anexo_id); if not (public.fn_e_admin() or public.fn_e_administrativo()) then raise exception 'Sem permissão.' using errcode='42501'; end if;
 delete from public.imoveis_anexos where id=p_anexo_id returning arquivo_url into v_path; if v_path is null then raise exception 'Anexo não encontrado.'; end if; return v_path; end; $function$;
-ALTER FUNCTION public.fn_apagar_anexo_imovel(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_anexo_imovel(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_imovel(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_apagar_anexo_pedido_orcamento(p_anexo_id uuid)
@@ -238,7 +225,6 @@ AS $function$
 declare v_path text; begin
  PERFORM primeline_documentos_rh_privado.autorizar_alvo('pedidos_orcamento_anexos',p_anexo_id); if not (public.fn_e_admin() or public.fn_e_administrativo()) then raise exception 'Sem permissão.' using errcode='42501'; end if;
 delete from public.pedidos_orcamento_anexos where id=p_anexo_id returning arquivo_url into v_path; if v_path is null then raise exception 'Anexo não encontrado.'; end if; return v_path; end; $function$;
-ALTER FUNCTION public.fn_apagar_anexo_pedido_orcamento(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_anexo_pedido_orcamento(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_pedido_orcamento(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_apagar_imovel_empresa(p_imovel_id uuid)
@@ -268,7 +254,6 @@ begin
   where id = p_imovel_id;
 end;
 $function$;
-ALTER FUNCTION public.fn_apagar_imovel_empresa(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_imovel_empresa(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_imovel_empresa(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_apagar_reuniao_condominio(p_reuniao_id uuid)
@@ -295,7 +280,6 @@ begin
   where id = p_reuniao_id;
 end;
 $function$;
-ALTER FUNCTION public.fn_apagar_reuniao_condominio(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_reuniao_condominio(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_reuniao_condominio(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_apagar_versao_pedido_orcamento(p_versao_id uuid)
@@ -322,7 +306,6 @@ begin
   where id = p_versao_id;
 end;
 $function$;
-ALTER FUNCTION public.fn_apagar_versao_pedido_orcamento(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_versao_pedido_orcamento(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_versao_pedido_orcamento(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_cancelar_pedido_orcamento(p_pedido_id uuid)
@@ -355,7 +338,6 @@ begin
   where id = p_pedido_id;
 end;
 $function$;
-ALTER FUNCTION public.fn_cancelar_pedido_orcamento(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_cancelar_pedido_orcamento(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_cancelar_pedido_orcamento(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_gerir_registo_frota(p_tabela text, p_registo_id uuid, p_acao text, p_dados jsonb DEFAULT '{}'::jsonb)
@@ -384,7 +366,6 @@ begin
   if v_row is null then raise exception 'Registo não encontrado.'; end if;
   return v_row;
 end; $function$;
-ALTER FUNCTION public.fn_gerir_registo_frota(text,uuid,text,jsonb) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_gerir_registo_frota(text,uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_gerir_registo_frota(text,uuid,text,jsonb) TO authenticated;
 
@@ -483,7 +464,6 @@ BEGIN
   );
 END;
 $function$;
-ALTER FUNCTION public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_guardar_validade_viatura(p_version integer, p_viatura_id uuid, p_tipo text, p_operacao text, p_data_atual_esperada date, p_data_base date, p_validade_opcao text, p_nova_data date, p_motivo text, p_request_id text)
@@ -869,7 +849,6 @@ BEGIN
 
 END;
 $function$;
-ALTER FUNCTION public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_apagar_anexo_rnc(p_anexo_id uuid)
@@ -887,7 +866,6 @@ begin
   delete from public.rnc_anexos where id=p_anexo_id; return v_path;
 end; $function$
 ;
-ALTER FUNCTION public.fn_apagar_anexo_rnc(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_anexo_rnc(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_rnc(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_apagar_documento_obra(p_documento_id uuid)
@@ -918,7 +896,6 @@ begin
 end;
 $function$
 ;
-ALTER FUNCTION public.fn_apagar_documento_obra(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_apagar_documento_obra(uuid) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_apagar_documento_obra(uuid) TO authenticated;
 CREATE OR REPLACE FUNCTION public.fn_registar_documento_obra(p_obra_id uuid, p_tipo text, p_nome_arquivo text, p_arquivo_url text)
@@ -985,18 +962,32 @@ begin
 end;
 $function$
 ;
-ALTER FUNCTION public.fn_registar_documento_obra(uuid,text,text,text) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.fn_registar_documento_obra(uuid,text,text,text) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_registar_documento_obra(uuid,text,text,text) TO authenticated;
+-- Parse the approved narrowing on a postgres-owned empty TEMP clone. No Storage DDL/data.
+CREATE TEMP TABLE documental_policy_parser (LIKE storage.objects) ON COMMIT DROP;
+DO $expected_storage$ DECLARE p record; stmt text; BEGIN
+ FOR p IN SELECT * FROM primeline_documentos_rh_backup.policies WHERE schemaname='storage' AND tablename='objects' ORDER BY policyname LOOP
+  IF p.permissive<>'PERMISSIVE' OR p.roles<>ARRAY['authenticated']::name[] OR p.cmd NOT IN('SELECT','INSERT','UPDATE','DELETE','ALL') THEN
+   RAISE EXCEPTION 'STORAGE_POLICY_BASELINE_UNSUPPORTED: %',p.policyname;
+  END IF;
+  IF coalesce(p.qual,p.with_check,'') NOT LIKE '%bucket_id%' THEN RAISE EXCEPTION 'STORAGE_POLICY_NAMESPACE_UNPROVEN: %',p.policyname; END IF;
+  stmt:=format('CREATE POLICY %I ON pg_temp.documental_policy_parser AS PERMISSIVE FOR %s TO authenticated',p.policyname,p.cmd);
+  IF p.qual IS NOT NULL THEN stmt:=stmt||format(' USING ((%s) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name))',p.qual); END IF;
+  IF p.with_check IS NOT NULL THEN stmt:=stmt||format(' WITH CHECK ((%s) AND primeline_documentos_rh_privado.objeto_empresa(bucket_id,name))',p.with_check); END IF;
+  EXECUTE stmt;
+ END LOOP;
+ IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='pg_temp.documental_policy_parser'::regclass) THEN RAISE EXCEPTION 'STORAGE_POLICY_BASELINE_EMPTY'; END IF;
+END $expected_storage$;
 -- Immutable installation evidence in the already private backup namespace.
 -- Captured only by this reviewed transaction, never refreshed by postcheck.
 CREATE TABLE primeline_documentos_rh_backup.instalacao AS
 SELECT jsonb_build_object(
- 'policies',(SELECT jsonb_agg(to_jsonb(p) ORDER BY schemaname,tablename,policyname) FROM pg_policies p WHERE (schemaname='public' AND tablename IN('documentos','ausencias_anexos')) OR (schemaname='storage' AND tablename IN('objects','buckets'))),
+ 'policies',(SELECT jsonb_agg(CASE WHEN p.schemaname='storage' AND p.tablename='objects' THEN to_jsonb(p)||jsonb_build_object('qual',e.qual,'with_check',e.with_check) ELSE to_jsonb(p) END ORDER BY p.schemaname,p.tablename,p.policyname) FROM pg_policies p LEFT JOIN pg_policies e ON e.tablename='documental_policy_parser' AND e.schemaname=(SELECT nspname FROM pg_namespace WHERE oid=pg_my_temp_schema()) AND e.policyname=p.policyname WHERE (p.schemaname='public' AND p.tablename IN('documentos','ausencias_anexos')) OR (p.schemaname='storage' AND p.tablename IN('objects','buckets'))),
  'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a),'columns',(SELECT jsonb_agg(jsonb_build_object('name',attname,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(attacl) a)) ORDER BY attnum) FROM pg_attribute WHERE attrelid=c.oid AND attnum>0 AND NOT attisdropped)) ORDER BY c.oid) FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass,'storage.buckets'::regclass)),
  'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a),'config',p.proconfig) ORDER BY p.oid::regprocedure::text) FROM pg_proc p WHERE p.pronamespace='primeline_documentos_rh_privado'::regnamespace OR p.oid IN(to_regprocedure('public.fn_apagar_anexo_rnc(uuid)'),to_regprocedure('public.fn_apagar_documento_obra(uuid)'),to_regprocedure('public.fn_registar_documento_obra(uuid,text,text,text)'),to_regprocedure('public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text)'),to_regprocedure('public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text)'),to_regprocedure('public.fn_apagar_documento_entidade(uuid)'),to_regprocedure('public.fn_apagar_anexo_imovel(uuid)'),to_regprocedure('public.fn_apagar_anexo_pedido_orcamento(uuid)'),to_regprocedure('public.fn_apagar_imovel_empresa(uuid)'),to_regprocedure('public.fn_apagar_reuniao_condominio(uuid)'),to_regprocedure('public.fn_apagar_versao_pedido_orcamento(uuid)'),to_regprocedure('public.fn_cancelar_pedido_orcamento(uuid)'),to_regprocedure('public.fn_gerir_registo_frota(text,uuid,text,jsonb)')) OR p.oid IN('public.fn_utilizador_atual_id()'::regprocedure,'public.fn_e_administrativo()'::regprocedure) OR p.oid IN(SELECT d.refobjid FROM pg_depend d JOIN pg_policy pol ON pol.oid=d.objid WHERE d.classid='pg_policy'::regclass AND d.refclassid='pg_proc'::regclass AND pol.polrelid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass,'storage.buckets'::regclass))),
  'schemas',(SELECT jsonb_agg(jsonb_build_object('name',nspname,'owner',nspowner,'acl',nspacl) ORDER BY nspname) FROM pg_namespace WHERE nspname IN('primeline_documentos_rh_privado','storage')),
  'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')
-) AS catalogo;
+) AS catalogo, (SELECT jsonb_object_agg(name,jsonb_build_object('rows',digest,'metadata',(SELECT jsonb_build_object('owner',c.relowner,'kind',c.relkind,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',c.relacl,'columns',(SELECT jsonb_agg(jsonb_build_object('name',a.attname,'type',a.atttypid,'mod',a.atttypmod,'nullable',NOT a.attnotnull,'default',pg_get_expr(d.adbin,d.adrelid),'acl',a.attacl,'dropped',a.attisdropped,'identity',a.attidentity,'generated',a.attgenerated) ORDER BY a.attnum) FROM pg_attribute a LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum WHERE a.attrelid=c.oid AND a.attnum>0),'constraints',(SELECT jsonb_agg(pg_get_constraintdef(x.oid) ORDER BY x.conname) FROM pg_constraint x WHERE x.conrelid=c.oid),'triggers',(SELECT jsonb_agg(pg_get_triggerdef(x.oid) ORDER BY x.tgname) FROM pg_trigger x WHERE x.tgrelid=c.oid),'indexes',(SELECT jsonb_agg(pg_get_indexdef(x.indexrelid) ORDER BY pg_get_indexdef(x.indexrelid)) FROM pg_index x WHERE x.indrelid=c.oid)) FROM pg_class c WHERE c.oid=to_regclass('primeline_documentos_rh_backup.'||name)))) FROM (SELECT name,(xpath('/table/row/value/text()',query_to_xml(format('SELECT md5(coalesce(string_agg(to_jsonb(t)::text,chr(10) ORDER BY to_jsonb(t)::text),'''')) value FROM primeline_documentos_rh_backup.%I t',name),false,false,'')))[1]::text digest FROM unnest(ARRAY['documentos','anexos','objects','policies','tables','rpc']) name) d) AS backup_fingerprint;
 REVOKE ALL ON primeline_documentos_rh_backup.instalacao FROM PUBLIC,anon,authenticated,service_role;
 COMMIT;
