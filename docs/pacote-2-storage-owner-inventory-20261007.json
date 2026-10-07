@@ -1,0 +1,1601 @@
+{
+  "scope": [
+    "documentos_rh_tenant.sql",
+    "documentos_rh_tenant_backup.sql",
+    "documentos_rh_tenant_postcheck.sql",
+    "documentos_rh_tenant_precheck.sql",
+    "documentos_rh_tenant_resume_precheck_20261007.sql",
+    "documentos_rh_tenant_rollback.sql",
+    "documentos_rh_tenant_rollback_postcheck.sql",
+    "folha_ponto_v2.sql",
+    "folha_ponto_v2_backup.sql",
+    "folha_ponto_v2_gestao.sql",
+    "folha_ponto_v2_gestao_rollback.sql",
+    "folha_ponto_v2_postcheck.sql",
+    "folha_ponto_v2_precheck.sql",
+    "folha_ponto_v2_rollback.sql",
+    "folha_v2_legacy_cutover.sql",
+    "folha_v2_legacy_cutover_postcheck.sql",
+    "folha_v2_legacy_cutover_precheck.sql",
+    "folha_v2_legacy_cutover_rollback.sql"
+  ],
+  "removed": [
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "base": "cf0957447f171cfa274444d5437cbf587f0076ca",
+      "statement": "ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY",
+      "classification": "UNSUPPORTED_REMOVE",
+      "status": "REMOVED"
+    }
+  ],
+  "occurrences": [
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 5,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'NORMAL_EXECUTOR_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 6,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 8,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT pg_has_role(session_user,'supabase_storage_admin','SET') THEN RAISE EXCEPTION 'STORAGE_OWNER_CAPABILITY_BLOCKED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 9,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))))"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 32,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NULL THEN RAISE EXCEPTION 'OWNER_AND_PRIVATE_BACKUP_REQUIRED'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 33,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='documentos' AND public IS FALSE) THEN RAISE EXCEPTION 'PRIVATE_DOCUMENT_BUCKET_REQUIRED'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 36,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": true,
+      "excerpt": "LOCK TABLE storage.objects,storage.buckets IN SHARE MODE;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 43,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CASE WHEN c.relowner IS NOT NULL THEN pg_has_role(session_user,c.relowner,'SET') ELSE false END can_set"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 44,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "FROM (VALUES ('storage.objects'),('storage.buckets')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 45,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "), backup_expected(name,source) AS (VALUES ('documentos','public.documentos'),('anexos','public.ausencias_anexos'),('objects','storage.objects'),('policies','pg_catalog.pg_policies'),('tables',NULL),('rpc',NULL)),"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 63,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "(SELECT bool_and(coalesce(c.relkind='r' AND (NOT c.relrowsecurity OR (SELECT r.rolsuper OR r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user) OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))),false)) FROM (VALUES ('public.documentos'),('public.ausencias_anexo …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 64,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "(SELECT bool_and(coalesce(has_table_privilege(current_user,c.oid,'SELECT'),false)) FROM backup_expected e LEFT JOIN pg_class c ON c.oid=to_regclass('primeline_documentos_rh_backup.'||e.name))"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 65,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "AND (SELECT bool_and(coalesce(has_table_privilege(current_user,c.oid,'SELECT'),false)) FROM (VALUES ('public.documentos'),('public.ausencias_anexos'),('storage.objects')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)) backup_readable,"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 73,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "OR EXISTS(SELECT 1 FROM pg_policy p WHERE p.polname IN('rh_empresa_guard','rh_anexo_empresa_guard','rh_storage_empresa_guard') AND p.polrelid IN(to_regclass('public.documentos'),to_regclass('public.ausencias_anexos'),to_regclass('storage.objects'))) migration_partial"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 76,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "THEN (xpath('/table/row/value/text()',query_to_xml('SELECT jsonb_agg(to_jsonb(d) ORDER BY object)::text value FROM (SELECT ''documentos'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT * FROM public.documentos) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.documentos) UNI …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 86,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE SCHEMA primeline_documentos_rh_privado AUTHORIZATION postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 87,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON SCHEMA primeline_documentos_rh_privado FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 88,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT USAGE ON SCHEMA primeline_documentos_rh_privado TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 108,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION primeline_documentos_rh_privado.empresa(uuid),primeline_documentos_rh_privado.entidade(text,uuid,uuid),primeline_documentos_rh_privado.objeto(text) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 109,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION primeline_documentos_rh_privado.empresa(uuid),primeline_documentos_rh_privado.entidade(text,uuid,uuid),primeline_documentos_rh_privado.objeto(text) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 110,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.documentos ENABLE ROW LEVEL SECURITY;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 111,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.ausencias_anexos ENABLE ROW LEVEL SECURITY;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 136,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION primeline_documentos_rh_privado.objeto_empresa(text,text) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 137,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION primeline_documentos_rh_privado.objeto_empresa(text,text) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 140,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE POLICY rh_empresa_guard ON public.documentos AS RESTRICTIVE FOR ALL TO authenticated"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 143,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE POLICY rh_anexo_empresa_guard ON public.ausencias_anexos AS RESTRICTIVE FOR ALL TO authenticated"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 146,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT USAGE ON SCHEMA primeline_documentos_rh_privado TO supabase_storage_admin;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 148,
+      "classification": "REQUIRES_STORAGE_OWNER",
+      "storage_owner_role_active": true,
+      "excerpt": "CREATE POLICY rh_storage_empresa_guard ON storage.objects AS RESTRICTIVE FOR ALL TO authenticated"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 152,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE USAGE ON SCHEMA primeline_documentos_rh_privado FROM supabase_storage_admin;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 154,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DROP POLICY IF EXISTS pl_documentos_rh ON public.documentos;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 155,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE POLICY pl_documentos_rh ON public.documentos FOR ALL TO authenticated"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 177,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_documento_entidade(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 178,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_documento_entidade(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 179,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_documento_entidade(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 219,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION primeline_documentos_rh_privado.autorizar_alvo(text,uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 229,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_anexo_imovel(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 230,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_anexo_imovel(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 231,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_imovel(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 241,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_anexo_pedido_orcamento(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 242,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_anexo_pedido_orcamento(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 243,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_pedido_orcamento(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 271,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_imovel_empresa(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 272,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_imovel_empresa(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 273,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_imovel_empresa(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 298,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_reuniao_condominio(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 299,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_reuniao_condominio(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 300,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_reuniao_condominio(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 325,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_versao_pedido_orcamento(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 326,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_versao_pedido_orcamento(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 327,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_versao_pedido_orcamento(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 358,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_cancelar_pedido_orcamento(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 359,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_cancelar_pedido_orcamento(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 360,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_cancelar_pedido_orcamento(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 387,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_gerir_registo_frota(text,uuid,text,jsonb) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 388,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_gerir_registo_frota(text,uuid,text,jsonb) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 389,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_gerir_registo_frota(text,uuid,text,jsonb) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 486,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 487,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 488,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 872,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 873,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 874,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 890,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_anexo_rnc(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 891,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_anexo_rnc(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 892,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_anexo_rnc(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 921,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_apagar_documento_obra(uuid) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 922,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_apagar_documento_obra(uuid) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 923,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_apagar_documento_obra(uuid) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 935,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "if auth.uid() is null then"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 988,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER FUNCTION public.fn_registar_documento_obra(uuid,text,text,text) OWNER TO postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 989,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION public.fn_registar_documento_obra(uuid,text,text,text) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 990,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_registar_documento_obra(uuid,text,text,text) TO authenticated;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 996,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a. …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 997,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.p …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 999,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant.sql",
+      "line": 1001,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON primeline_documentos_rh_backup.instalacao FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 3,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'NORMAL_EXECUTOR_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 4,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 6,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT pg_has_role(session_user,'supabase_storage_admin','SET') THEN RAISE EXCEPTION 'STORAGE_OWNER_CAPABILITY_BLOCKED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 7,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))))"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 30,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NOT NULL THEN RAISE EXCEPTION 'OWNER_OR_BACKUP_PRECONDITION'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 31,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE SCHEMA primeline_documentos_rh_backup AUTHORIZATION postgres;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 32,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON SCHEMA primeline_documentos_rh_backup FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 34,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TABLE primeline_documentos_rh_backup.tables AS SELECT c.oid,c.relrowsecurity,c.relacl FROM pg_class c WHERE c.oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass);"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 38,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TABLE primeline_documentos_rh_backup.objects AS TABLE storage.objects;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_backup.sql",
+      "line": 39,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON ALL TABLES IN SCHEMA primeline_documentos_rh_backup FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 3,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 9,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 16,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a. …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 17,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.p …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 19,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 27,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF EXISTS(SELECT 1 FROM pg_class WHERE oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass) AND NOT relrowsecurity) THEN RAISE EXCEPTION 'RH_RLS_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_postcheck.sql",
+      "line": 31,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "OR EXISTS(SELECT 1 FROM (TABLE storage.objects EXCEPT ALL TABLE primeline_documentos_rh_backup.objects) x) OR EXISTS(SELECT 1 FROM (TABLE primeline_documentos_rh_backup.objects EXCEPT ALL TABLE storage.objects) x) THEN RAISE EXCEPTION 'RH_DOCUMENT_DATA_CHANGED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 4,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'NORMAL_EXECUTOR_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 5,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 7,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT pg_has_role(session_user,'supabase_storage_admin','SET') THEN RAISE EXCEPTION 'STORAGE_OWNER_CAPABILITY_BLOCKED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 8,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))))"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 32,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 33,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='documentos' AND public IS FALSE) THEN RAISE EXCEPTION 'PRIVATE_DOCUMENT_BUCKET_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_precheck.sql",
+      "line": 34,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "FOREACH t IN ARRAY ARRAY['public.documentos','public.colaboradores','public.viaturas','public.ausencias','public.ausencias_anexos','public.utilizadores','storage.objects'] LOOP"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 6,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "WITH baseline AS (SELECT '{\"functions\":[{\"signature\":\"bloquear_conclusao_sem_avaliacao()\",\"owner\":\"postgres\",\"security_definer\":false,\"config\":null,\"acl\":\"{=X/postgres,postgres=X/postgres}\",\"definition_sha256\":\"6c5f9f9c3c546309ae1658e4adacf21fee12defb7b7eb52dfedf3707f40448f5\"},{\"signature\":\"definir_ …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 41,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CASE WHEN c.relowner IS NOT NULL THEN pg_has_role(session_user,c.relowner,'SET') ELSE false END can_set"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 42,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "FROM (VALUES ('storage.objects'),('storage.buckets')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 43,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "), backup_expected(name,source) AS (VALUES ('documentos','public.documentos'),('anexos','public.ausencias_anexos'),('objects','storage.objects'),('policies','pg_catalog.pg_policies'),('tables',NULL),('rpc',NULL)),"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 61,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "(SELECT bool_and(coalesce(c.relkind='r' AND (NOT c.relrowsecurity OR (SELECT r.rolsuper OR r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user) OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))),false)) FROM (VALUES ('public.documentos'),('public.ausencias_anexo …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 62,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "(SELECT bool_and(coalesce(has_table_privilege(current_user,c.oid,'SELECT'),false)) FROM backup_expected e LEFT JOIN pg_class c ON c.oid=to_regclass('primeline_documentos_rh_backup.'||e.name))"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 63,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "AND (SELECT bool_and(coalesce(has_table_privilege(current_user,c.oid,'SELECT'),false)) FROM (VALUES ('public.documentos'),('public.ausencias_anexos'),('storage.objects')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)) backup_readable,"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 71,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "OR EXISTS(SELECT 1 FROM pg_policy p WHERE p.polname IN('rh_empresa_guard','rh_anexo_empresa_guard','rh_storage_empresa_guard') AND p.polrelid IN(to_regclass('public.documentos'),to_regclass('public.ausencias_anexos'),to_regclass('storage.objects'))) migration_partial"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 74,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "THEN (xpath('/table/row/value/text()',query_to_xml('SELECT jsonb_agg(to_jsonb(d) ORDER BY object)::text value FROM (SELECT ''documentos'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT * FROM public.documentos) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.documentos) UNI …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 92,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "UNION ALL SELECT jsonb_build_object('item','documentos','reason','PRIVATE_BUCKET_REQUIRED') WHERE (CASE WHEN NOT EXISTS(SELECT 1 FROM table_drift WHERE blocker->>'item'='storage.buckets') THEN ((xpath('/table/row/value/text()',query_to_xml('SELECT EXISTS(SELECT 1 FROM storage.buckets WHERE id=''docu …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 94,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "UNION ALL SELECT jsonb_build_object('item',r.rolname,'reason','CLIENT_ROLE_PRIVILEGE_ESCALATION') FROM pg_roles r WHERE r.rolname IN('anon','authenticated') AND (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication OR pg_has_role(r.oid,'postgres','MEMBER') OR pg_has_r …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 96,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "UNION ALL SELECT jsonb_build_object('item','environment','reason','OWNER_READ_ONLY_VERSION_REQUIRED') WHERE current_user<>'postgres' OR session_user<>'postgres' OR current_setting('transaction_read_only')<>'on' OR current_setting('server_version_num')::integer/10000<>17"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 105,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'executor',jsonb_build_object('current_user',current_user,'session_user',session_user),"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 112,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'document_storage_catalog_match',NOT EXISTS(SELECT 1 FROM table_drift WHERE blocker->>'item' IN('public.documentos','public.ausencias_anexos','storage.objects','storage.buckets')),"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 114,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'environment',jsonb_build_object('project','znttyadndpkxuekhjamd','at',now(),'database',current_database(),'role',current_user,'server_version',current_setting('server_version'),'read_only',current_setting('transaction_read_only')),"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_resume_precheck_20261007.sql",
+      "line": 120,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'storage_readiness',jsonb_build_object('bucket_private',CASE WHEN NOT EXISTS(SELECT 1 FROM table_drift WHERE blocker->>'item'='storage.buckets') THEN ((xpath('/table/row/value/text()',query_to_xml('SELECT EXISTS(SELECT 1 FROM storage.buckets WHERE id=''documentos'' AND public IS FALSE)::text value', …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback.sql",
+      "line": 3,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback.sql",
+      "line": 6,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback.sql",
+      "line": 9,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NULL THEN RAISE EXCEPTION 'OWNER_AND_PRIVATE_BACKUP_REQUIRED'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback.sql",
+      "line": 10,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DROP POLICY pl_documentos_rh ON public.documentos;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback.sql",
+      "line": 13,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('CREATE POLICY %I ON public.documentos AS %s FOR %s TO %s%s%s',p.policyname,p.permissive,p.cmd,(SELECT string_agg(quote_ident(x),',') FROM unnest(p.roles) x),CASE WHEN p.qual IS NULL THEN '' ELSE ' USING ('||p.qual||')' END,CASE WHEN p.with_check IS NULL THEN '' ELSE ' WITH CHECK ('|| …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 3,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 9,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 20,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a. …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 21,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.p …"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 23,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 31,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF EXISTS(SELECT 1 FROM pg_class WHERE oid IN('public.documentos'::regclass,'public.ausencias_anexos'::regclass,'storage.objects'::regclass) AND NOT relrowsecurity) THEN RAISE EXCEPTION 'RH_RLS_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/documentos_rh_tenant_rollback_postcheck.sql",
+      "line": 35,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "OR EXISTS(SELECT 1 FROM (TABLE storage.objects EXCEPT ALL TABLE primeline_documentos_rh_backup.objects) x) OR EXISTS(SELECT 1 FROM (TABLE primeline_documentos_rh_backup.objects EXCEPT ALL TABLE storage.objects) x) THEN RAISE EXCEPTION 'RH_DOCUMENT_DATA_CHANGED'; END IF;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 15,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user <> 'postgres' OR session_user <> 'postgres' THEN"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 34,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON SCHEMA folha_privado FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 99,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_invalidar_review BEFORE UPDATE ON public.folha_registos FOR EACH ROW EXECUTE FUNCTION folha_privado.invalidar_review_especial();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 100,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION folha_privado.invalidar_review_especial() FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 112,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE folha_privado.operacoes ENABLE ROW LEVEL SECURITY;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 133,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('CREATE TRIGGER folha_integridade BEFORE INSERT OR UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION folha_privado.integridade()',t);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 242,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_legacy_conflict BEFORE INSERT OR UPDATE ON public.ponto_pessoal_obra"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 252,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_00_folha_absencias_lock BEFORE INSERT OR UPDATE OR DELETE ON public.ausencias"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 254,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_00_folha_alocacao_lock BEFORE INSERT OR UPDATE OR DELETE ON public.quadro_pessoal_alocacao"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 256,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_00_folha_ponto_lock BEFORE INSERT OR UPDATE OR DELETE ON public.ponto_pessoal_obra"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 258,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_00_folha_he_lock BEFORE INSERT OR UPDATE OR DELETE ON public.horas_extraordinarias"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 268,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_he_origin_conflict BEFORE INSERT OR UPDATE ON public.horas_extraordinarias"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 272,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_historico_imutavel BEFORE UPDATE OR DELETE ON public.folha_historico"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 372,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_ausencia_reconciliar AFTER INSERT OR UPDATE OR DELETE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_dependencia();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 373,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_alocacao_reconciliar AFTER INSERT OR UPDATE OR DELETE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_dependencia();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 703,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',t);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 704,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated,service_role',t);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 707,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anon,authenticated,service_role',f.sig);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2.sql",
+      "line": 710,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_folha_contexto_v2(date,uuid),public.fn_folha_pessoas_v2(date,uuid),public.fn_folha_operar_v2(text,jsonb,boolean,text),public.fn_folha_historico_v2(jsonb) TO authenticated;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_backup.sql",
+      "line": 5,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_backup.sql",
+      "line": 10,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON SCHEMA primeline_folha_v2_backup FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_backup.sql",
+      "line": 27,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON ALL TABLES IN SCHEMA primeline_folha_v2_backup FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 3,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 4,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_config_empresa ADD COLUMN payroll_rules_ready boolean NOT NULL DEFAULT false;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 5,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_config_empresa ADD COLUMN official_template_hash text CHECK(official_template_hash ~ '^[0-9a-f]{64}$');"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 44,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_gestao_historico_imutavel BEFORE UPDATE OR DELETE ON public.folha_gestao_historico FOR EACH ROW EXECUTE FUNCTION folha_privado.imutavel();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 45,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_integridade BEFORE INSERT OR UPDATE ON public.folha_direitos_ferias FOR EACH ROW EXECUTE FUNCTION folha_privado.integridade();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 46,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_integridade BEFORE INSERT OR UPDATE ON public.folha_ferias_revisoes FOR EACH ROW EXECUTE FUNCTION folha_privado.integridade();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 47,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_integridade BEFORE INSERT OR UPDATE ON public.folha_vencimentos FOR EACH ROW EXECUTE FUNCTION folha_privado.integridade();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 48,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_integridade BEFORE INSERT OR UPDATE ON public.folha_tarefas_reportes FOR EACH ROW EXECUTE FUNCTION folha_privado.integridade();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 83,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_vencimentos_ausencia AFTER INSERT OR UPDATE OR DELETE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 84,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_vencimentos_facto AFTER INSERT OR UPDATE OR DELETE ON public.folha_registos FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 85,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_vencimentos_alocacao AFTER INSERT OR UPDATE OR DELETE ON public.quadro_pessoal_alocacao FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 86,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_vencimentos_legado AFTER INSERT OR UPDATE OR DELETE ON public.ponto_pessoal_obra FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 87,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION folha_privado.reconciliar_vencimentos() FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 90,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_config_empresa ADD COLUMN IF NOT EXISTS calendar_validated_years integer[] NOT NULL DEFAULT '{}';"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 91,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD COLUMN saldo_transitado integer NOT NULL DEFAULT 0 CHECK(saldo_transitado>=0);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 92,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD COLUMN validade_transitado date;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 93,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD COLUMN dias_adicionais integer NOT NULL DEFAULT 0 CHECK(dias_adicionais>=0);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 94,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD COLUMN autorizacao text;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 95,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD CHECK(dias=trunc(dias));"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 96,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD CHECK(saldo_transitado=0 OR validade_transitado=make_date(ano,4,30));"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 97,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_direitos_ferias ADD CHECK((saldo_transitado=0 AND dias_adicionais=0) OR nullif(btrim(autorizacao),'') IS NOT NULL);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 98,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_vencimentos ADD COLUMN recibos_recebidos_em timestamptz;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 99,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_vencimentos ADD COLUMN recibos_recebidos_por uuid REFERENCES public.utilizadores(id);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 100,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_he ADD COLUMN processado_em timestamptz;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 101,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_he ADD COLUMN processado_por uuid REFERENCES public.utilizadores(id);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 102,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_he ADD COLUMN prazo_processamento date;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 126,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('ALTER TABLE public.ausencias DROP CONSTRAINT %I',c.conname);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 127,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('ALTER TABLE public.ausencias ADD CONSTRAINT %I CHECK ((%s) OR (tipo IN (''baixa_doenca'',''baixa_maternidade'',''baixa_parental'') AND estado IN (''ausente_pendente'',''confirmada'',''justificada'')))',c.conname,c.expr);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 145,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_zz_folha_confirmacao_ausencia BEFORE INSERT OR UPDATE ON public.ausencias FOR EACH ROW EXECUTE FUNCTION folha_privado.guardar_confirmacao_ausencia();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 155,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_00_folha_anexo_lock BEFORE INSERT OR UPDATE OR DELETE ON public.ausencias_anexos FOR EACH STATEMENT EXECUTE FUNCTION folha_privado.lock_legado();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 156,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_folha_anexo_doenca BEFORE UPDATE OR DELETE ON public.ausencias_anexos FOR EACH ROW EXECUTE FUNCTION folha_privado.guardar_anexo_doenca();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 157,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION folha_privado.adm(),folha_privado.prazo_he(uuid,date),folha_privado.guardar_confirmacao_ausencia(),folha_privado.guardar_anexo_doenca() FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 281,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "after:=after||jsonb_build_object('carry',coalesce((p_dados->>'carry')::integer,0),'additional',coalesce((p_dados->>'additional')::integer,0),'authorization',p_dados->>'authorization','carry_expires',make_date((p_dados->>'year')::integer,4,30));"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 282,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF (after->>'days')::numeric<>trunc((after->>'days')::numeric) OR (after->>'carry')::integer<0 OR (after->>'additional')::integer<0 OR ((after->>'carry')::integer>0 OR (after->>'additional')::integer>0) AND nullif(btrim(after->>'authorization'),'') IS NULL THEN RAISE EXCEPTION 'ENTITLEMENT_ADJUSTMEN …"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 377,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "INSERT INTO public.folha_direitos_ferias(empresa_id,colaborador_id,ano,dias,fonte,revision,saldo_transitado,validade_transitado,dias_adicionais,autorizacao) VALUES(u.empresa_id,person,(after->>'year')::integer,(after->>'days')::numeric,after->>'source',rev+1,(after->>'carry')::integer,(after->>'carr …"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 430,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER folha_tarefa_concluida AFTER UPDATE OF estado ON public.planeamento_itens FOR EACH ROW EXECUTE FUNCTION folha_privado.tarefa_concluida();"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 435,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION folha_privado.he_operacional(jsonb) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 474,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY',t); EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC,anon,authenticated,service_role',t);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 477,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION folha_privado.payroll_facts(uuid,date),folha_privado.tarefa_concluida(),public.fn_folha_gestao_v2(text,jsonb,boolean,text),public.fn_folha_gestao_contexto_v2(uuid,uuid,date) FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 478,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "GRANT EXECUTE ON FUNCTION public.fn_folha_gestao_v2(text,jsonb,boolean,text),public.fn_folha_gestao_contexto_v2(uuid,uuid,date) TO authenticated;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao.sql",
+      "line": 482,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON primeline_folha_v2_backup.instalacao_funcoes FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 2,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 10,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 26,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('ALTER TABLE public.ausencias DROP CONSTRAINT %I',c.conname);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 27,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "EXECUTE format('ALTER TABLE public.ausencias ADD CONSTRAINT %I %s',c.conname,c.definicao);"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 30,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_he DROP COLUMN processado_em,DROP COLUMN processado_por,DROP COLUMN prazo_processamento;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 48,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_config_empresa DROP COLUMN payroll_rules_ready;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_gestao_rollback.sql",
+      "line": 49,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE public.folha_config_empresa DROP COLUMN official_template_hash;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_postcheck.sql",
+      "line": 12,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_precheck.sql",
+      "line": 42,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_precheck.sql",
+      "line": 49,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a. …"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_precheck.sql",
+      "line": 50,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.p …"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_precheck.sql",
+      "line": 52,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_precheck.sql",
+      "line": 277,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_rollback.sql",
+      "line": 2,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/folha_ponto_v2_rollback.sql",
+      "line": 10,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 9,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 16,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a. …"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 17,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.p …"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 19,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 26,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 59,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 69,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON folha_privado.legacy_cutover FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 70,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "ALTER TABLE folha_privado.legacy_cutover ENABLE ROW LEVEL SECURITY;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 74,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "REVOKE ALL ON FUNCTION folha_privado.legacy_closed() FROM PUBLIC,anon,authenticated,service_role;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover.sql",
+      "line": 75,
+      "classification": "POSTGRES_OWNED_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "CREATE TRIGGER trg_01_folha_legacy_closed BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON public.ponto_pessoal_obra"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "line": 6,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "line": 13,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'tables',(SELECT jsonb_agg(jsonb_build_object('oid',c.oid,'schema',(SELECT nspname FROM pg_namespace WHERE oid=c.relnamespace),'name',c.relname,'owner',c.relowner,'rls',c.relrowsecurity,'force',c.relforcerowsecurity,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a. …"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "line": 14,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'helpers',(SELECT jsonb_agg(jsonb_build_object('signature',p.oid::regprocedure::text,'definition',pg_get_functiondef(p.oid),'owner',p.proowner,'security_definer',p.prosecdef,'acl',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable) FROM aclexplode(coalesce(p.p …"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "line": 16,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "'bucket',(SELECT jsonb_agg(to_jsonb(b)) FROM storage.buckets b WHERE id='documentos')"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "line": 23,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_precheck.sql",
+      "line": 56,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_rollback.sql",
+      "line": 2,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;"
+    },
+    {
+      "file": "supabase/folha_v2_legacy_cutover_rollback.sql",
+      "line": 9,
+      "classification": "READ_ONLY_OK",
+      "storage_owner_role_active": false,
+      "excerpt": "IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'OWNER_REQUIRED'; END IF;"
+    }
+  ]
+}

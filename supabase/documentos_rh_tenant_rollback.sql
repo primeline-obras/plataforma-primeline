@@ -1,4 +1,8 @@
 BEGIN;
+DO $storage_baseline$ BEGIN
+ IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2
+ THEN RAISE EXCEPTION 'STORAGE_OWNER_OR_RLS_DRIFT'; END IF;
+END $storage_baseline$;
 DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'ROLLOUT_OWNER_REQUIRED' USING ERRCODE='42501'; END IF; END $$;
 SET LOCAL lock_timeout='5s';
 LOCK TABLE public.documentos IN ACCESS EXCLUSIVE MODE;

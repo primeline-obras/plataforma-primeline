@@ -1,5 +1,14 @@
 -- Independent, main-compatible RH metadata/Storage guard. No data/path migration.
 BEGIN;
+SET LOCAL lock_timeout='10s';
+DO $storage_capability$ BEGIN
+ IF current_user<>'postgres' OR session_user<>'postgres' THEN RAISE EXCEPTION 'NORMAL_EXECUTOR_REQUIRED' USING ERRCODE='42501'; END IF;
+ IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2
+ THEN RAISE EXCEPTION 'STORAGE_OWNER_OR_RLS_DRIFT' USING ERRCODE='42501'; END IF;
+ IF NOT pg_has_role(session_user,'supabase_storage_admin','SET') THEN RAISE EXCEPTION 'STORAGE_OWNER_CAPABILITY_BLOCKED' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_roles r ON r.rolname=current_user WHERE c.oid=to_regclass('storage.objects') AND (r.rolsuper OR r.rolbypassrls OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))))
+ THEN RAISE EXCEPTION 'STORAGE_FULL_READ_VISIBILITY_REQUIRED' USING ERRCODE='42501'; END IF;
+END $storage_capability$;
 DO $document_rpc_baseline$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_proc p WHERE p.oid=to_regprocedure('public.fn_apagar_documento_entidade(uuid)') AND p.proowner='postgres'::regrole AND p.prosecdef AND p.proconfig=ARRAY['search_path=public']
  AND encode(sha256(convert_to(replace(pg_get_functiondef(p.oid),chr(13),''),'UTF8')),'hex')='53626d177adc3b6a335f6b3f5d84d0db61c5c70861eafd4d32ddc414e6e161d0'
@@ -22,6 +31,58 @@ END $document_correlatos_baseline$;
 
 DO $$ BEGIN IF current_user<>'postgres' OR session_user<>'postgres' OR to_regnamespace('primeline_documentos_rh_backup') IS NULL THEN RAISE EXCEPTION 'OWNER_AND_PRIVATE_BACKUP_REQUIRED'; END IF; END $$;
 DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM storage.buckets WHERE id='documentos' AND public IS FALSE) THEN RAISE EXCEPTION 'PRIVATE_DOCUMENT_BUCKET_REQUIRED'; END IF; END $$;
+-- Locks last until transaction end; no Storage data is changed.
+SET LOCAL ROLE supabase_storage_admin;
+LOCK TABLE storage.objects,storage.buckets IN SHARE MODE;
+RESET ROLE;
+LOCK TABLE public.documentos,public.ausencias_anexos IN SHARE MODE;
+-- Validate the existing evidence without modifying/replacing it.
+DO $existing_backup$ DECLARE s text; BEGIN
+ WITH storage_owner AS (
+ SELECT e.name,pg_get_userbyid(c.relowner) owner,c.relrowsecurity rls,
+ CASE WHEN c.relowner IS NOT NULL THEN pg_has_role(session_user,c.relowner,'SET') ELSE false END can_set
+ FROM (VALUES ('storage.objects'),('storage.buckets')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)
+), backup_expected(name,source) AS (VALUES ('documentos','public.documentos'),('anexos','public.ausencias_anexos'),('objects','storage.objects'),('policies','pg_catalog.pg_policies'),('tables',NULL),('rpc',NULL)),
+backup_shape AS (
+ SELECT e.name,c.oid,
+ CASE WHEN e.source IS NOT NULL THEN
+ (SELECT jsonb_agg(jsonb_build_array(a.attname,a.atttypid,a.atttypmod) ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped)
+ IS NOT DISTINCT FROM
+ (SELECT jsonb_agg(jsonb_build_array(a.attname,a.atttypid,a.atttypmod) ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=to_regclass(e.source) AND a.attnum>0 AND NOT a.attisdropped)
+ ELSE
+ (SELECT jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod)) ORDER BY a.attnum) FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped)
+ = CASE e.name WHEN 'tables' THEN '[["oid","oid"],["relrowsecurity","boolean"],["relacl","aclitem[]"]]'::jsonb ELSE '[["signature","text"],["definition","text"],["proowner","oid"],["proacl","aclitem[]"],["proconfig","text[]"]]'::jsonb END END
+ AND c.relkind='r' AND NOT c.relrowsecurity AND NOT c.relforcerowsecurity
+ AND NOT EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND (a.attnotnull OR a.atthasdef OR a.attisdropped OR a.attgenerated<>'' OR a.attidentity<>''))
+ AND NOT EXISTS(SELECT 1 FROM pg_constraint x WHERE x.conrelid=c.oid)
+ AND NOT EXISTS(SELECT 1 FROM pg_trigger x WHERE x.tgrelid=c.oid)
+ AND NOT EXISTS(SELECT 1 FROM pg_index x WHERE x.indrelid=c.oid) shape_ok
+ FROM backup_expected e LEFT JOIN pg_class c ON c.oid=to_regclass('primeline_documentos_rh_backup.'||e.name)
+), backup_metadata AS (
+ SELECT to_regnamespace('primeline_documentos_rh_backup') IS NOT NULL backup_exists,
+ (SELECT bool_and(coalesce(c.relkind='r' AND (NOT c.relrowsecurity OR (SELECT r.rolsuper OR r.rolbypassrls FROM pg_roles r WHERE r.rolname=current_user) OR (NOT c.relforcerowsecurity AND pg_has_role(current_user,c.relowner,'USAGE'))),false)) FROM (VALUES ('public.documentos'),('public.ausencias_anexos'),('storage.objects')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)) backup_full_visibility,
+ (SELECT bool_and(coalesce(has_table_privilege(current_user,c.oid,'SELECT'),false)) FROM backup_expected e LEFT JOIN pg_class c ON c.oid=to_regclass('primeline_documentos_rh_backup.'||e.name))
+ AND (SELECT bool_and(coalesce(has_table_privilege(current_user,c.oid,'SELECT'),false)) FROM (VALUES ('public.documentos'),('public.ausencias_anexos'),('storage.objects')) e(name) LEFT JOIN pg_class c ON c.oid=to_regclass(e.name)) backup_readable,
+ EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspname='primeline_documentos_rh_backup' AND pg_get_userbyid(n.nspowner)='postgres'
+ AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(n.nspacl,acldefault('n',n.nspowner))) a WHERE a.grantee<>n.nspowner))
+ AND NOT EXISTS(SELECT 1 FROM pg_class c WHERE c.relnamespace=to_regnamespace('primeline_documentos_rh_backup') AND (pg_get_userbyid(c.relowner)<>'postgres' OR EXISTS(SELECT 1 FROM aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE a.grantee<>c.relowner) OR EXISTS(SELECT 1 FROM pg_attribute x CROSS JOIN LATERAL aclexplode(x.attacl) a WHERE x.attrelid=c.oid AND a.grantee<>c.relowner))) backup_private,
+ (SELECT count(*) FROM pg_class c WHERE c.relnamespace=to_regnamespace('primeline_documentos_rh_backup'))=6
+ AND (SELECT bool_and(coalesce(shape_ok,false)) FROM backup_shape)
+ AND NOT EXISTS(SELECT 1 FROM pg_proc p WHERE p.pronamespace=to_regnamespace('primeline_documentos_rh_backup')) backup_shape_ok,
+ to_regnamespace('primeline_documentos_rh_privado') IS NOT NULL OR to_regclass('primeline_documentos_rh_backup.instalacao') IS NOT NULL
+ OR EXISTS(SELECT 1 FROM pg_policy p WHERE p.polname IN('rh_empresa_guard','rh_anexo_empresa_guard','rh_storage_empresa_guard') AND p.polrelid IN(to_regclass('public.documentos'),to_regclass('public.ausencias_anexos'),to_regclass('storage.objects'))) migration_partial
+), backup_comparison AS (
+ SELECT CASE WHEN backup_exists AND backup_private AND backup_shape_ok AND backup_readable AND backup_full_visibility AND NOT migration_partial
+ THEN (xpath('/table/row/value/text()',query_to_xml('SELECT jsonb_agg(to_jsonb(d) ORDER BY object)::text value FROM (SELECT ''documentos'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT * FROM public.documentos) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.documentos) UNION ALL (SELECT * FROM primeline_documentos_rh_backup.documentos EXCEPT ALL SELECT * FROM (SELECT * FROM public.documentos) live)) difference UNION ALL SELECT ''anexos'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT * FROM public.ausencias_anexos) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.anexos) UNION ALL (SELECT * FROM primeline_documentos_rh_backup.anexos EXCEPT ALL SELECT * FROM (SELECT * FROM public.ausencias_anexos) live)) difference UNION ALL SELECT ''objects'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT * FROM storage.objects) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.objects) UNION ALL (SELECT * FROM primeline_documentos_rh_backup.objects EXCEPT ALL SELECT * FROM (SELECT * FROM storage.objects) live)) difference UNION ALL SELECT ''policies'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT * FROM pg_policies WHERE (schemaname=''public'' AND tablename IN(''documentos'',''ausencias_anexos'')) OR (schemaname=''storage'' AND tablename=''objects'')) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.policies) UNION ALL (SELECT * FROM primeline_documentos_rh_backup.policies EXCEPT ALL SELECT * FROM (SELECT * FROM pg_policies WHERE (schemaname=''public'' AND tablename IN(''documentos'',''ausencias_anexos'')) OR (schemaname=''storage'' AND tablename=''objects'')) live)) difference UNION ALL SELECT ''tables'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT c.oid,c.relrowsecurity,c.relacl FROM pg_class c WHERE c.oid IN(''public.documentos''::regclass,''public.ausencias_anexos''::regclass,''storage.objects''::regclass)) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.tables) UNION ALL (SELECT * FROM primeline_documentos_rh_backup.tables EXCEPT ALL SELECT * FROM (SELECT c.oid,c.relrowsecurity,c.relacl FROM pg_class c WHERE c.oid IN(''public.documentos''::regclass,''public.ausencias_anexos''::regclass,''storage.objects''::regclass)) live)) difference UNION ALL SELECT ''rpc'' object, count(*)::bigint delta FROM ((SELECT * FROM (SELECT p.oid::regprocedure::text AS signature,pg_get_functiondef(p.oid) AS definition,p.proowner,p.proacl,p.proconfig FROM pg_proc p WHERE p.oid IN(to_regprocedure(''public.fn_apagar_anexo_rnc(uuid)''),to_regprocedure(''public.fn_apagar_documento_obra(uuid)''),to_regprocedure(''public.fn_registar_documento_obra(uuid,text,text,text)''),to_regprocedure(''public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text)''),to_regprocedure(''public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text)''),to_regprocedure(''public.fn_apagar_documento_entidade(uuid)''),to_regprocedure(''public.fn_apagar_anexo_imovel(uuid)''),to_regprocedure(''public.fn_apagar_anexo_pedido_orcamento(uuid)''),to_regprocedure(''public.fn_apagar_imovel_empresa(uuid)''),to_regprocedure(''public.fn_apagar_reuniao_condominio(uuid)''),to_regprocedure(''public.fn_apagar_versao_pedido_orcamento(uuid)''),to_regprocedure(''public.fn_cancelar_pedido_orcamento(uuid)''),to_regprocedure(''public.fn_gerir_registo_frota(text,uuid,text,jsonb)''))) live EXCEPT ALL SELECT * FROM primeline_documentos_rh_backup.rpc) UNION ALL (SELECT * FROM primeline_documentos_rh_backup.rpc EXCEPT ALL SELECT * FROM (SELECT p.oid::regprocedure::text AS signature,pg_get_functiondef(p.oid) AS definition,p.proowner,p.proacl,p.proconfig FROM pg_proc p WHERE p.oid IN(to_regprocedure(''public.fn_apagar_anexo_rnc(uuid)''),to_regprocedure(''public.fn_apagar_documento_obra(uuid)''),to_regprocedure(''public.fn_registar_documento_obra(uuid,text,text,text)''),to_regprocedure(''public.fn_alterar_responsavel_viatura(integer,uuid,uuid,integer,uuid,text)''),to_regprocedure(''public.fn_guardar_validade_viatura(integer,uuid,text,text,date,date,text,date,text,text)''),to_regprocedure(''public.fn_apagar_documento_entidade(uuid)''),to_regprocedure(''public.fn_apagar_anexo_imovel(uuid)''),to_regprocedure(''public.fn_apagar_anexo_pedido_orcamento(uuid)''),to_regprocedure(''public.fn_apagar_imovel_empresa(uuid)''),to_regprocedure(''public.fn_apagar_reuniao_condominio(uuid)''),to_regprocedure(''public.fn_apagar_versao_pedido_orcamento(uuid)''),to_regprocedure(''public.fn_cancelar_pedido_orcamento(uuid)''),to_regprocedure(''public.fn_gerir_registo_frota(text,uuid,text,jsonb)''))) live)) difference) d',false,false,'')))[1]::text::jsonb ELSE NULL END differences FROM backup_metadata
+), backup_resume AS (
+ SELECT m.*,c.differences,coalesce((SELECT bool_and((x->>'delta')::bigint=0) FROM jsonb_array_elements(c.differences) x),false) backup_matches_live,
+ CASE WHEN NOT backup_exists AND NOT migration_partial THEN 'CLEAN_START'
+ WHEN backup_exists AND backup_private AND backup_shape_ok AND NOT migration_partial AND coalesce((SELECT bool_and((x->>'delta')::bigint=0) FROM jsonb_array_elements(c.differences) x),false) THEN 'VALID_EXISTING_BACKUP_RESUME'
+ ELSE 'PARTIAL_OR_UNKNOWN_STATE' END resume_state
+ FROM backup_metadata m CROSS JOIN backup_comparison c
+) SELECT resume_state INTO s FROM backup_resume;
+ IF s IS DISTINCT FROM 'VALID_EXISTING_BACKUP_RESUME' THEN RAISE EXCEPTION 'DOCUMENT_BACKUP_RESUME_BLOCKED: %',s; END IF;
+END $existing_backup$;
 CREATE SCHEMA primeline_documentos_rh_privado AUTHORIZATION postgres;
 REVOKE ALL ON SCHEMA primeline_documentos_rh_privado FROM PUBLIC,anon,authenticated,service_role;
 GRANT USAGE ON SCHEMA primeline_documentos_rh_privado TO authenticated;
@@ -48,7 +109,6 @@ REVOKE ALL ON FUNCTION primeline_documentos_rh_privado.empresa(uuid),primeline_d
 GRANT EXECUTE ON FUNCTION primeline_documentos_rh_privado.empresa(uuid),primeline_documentos_rh_privado.entidade(text,uuid,uuid),primeline_documentos_rh_privado.objeto(text) TO authenticated;
 ALTER TABLE public.documentos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ausencias_anexos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 -- Restrictive tenant check for the existing document namespaces. Existing role policies still apply.
 CREATE FUNCTION primeline_documentos_rh_privado.objeto_empresa(bucket text,nome text) RETURNS boolean
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -82,9 +142,14 @@ CREATE POLICY rh_empresa_guard ON public.documentos AS RESTRICTIVE FOR ALL TO au
  WITH CHECK(primeline_documentos_rh_privado.empresa(empresa_id) AND (entidade_tipo NOT IN('colaborador','viatura') OR primeline_documentos_rh_privado.entidade(entidade_tipo,entidade_id,empresa_id)));
 CREATE POLICY rh_anexo_empresa_guard ON public.ausencias_anexos AS RESTRICTIVE FOR ALL TO authenticated
  USING(primeline_documentos_rh_privado.entidade('ausencia',ausencia_id,NULL)) WITH CHECK(primeline_documentos_rh_privado.entidade('ausencia',ausencia_id,NULL));
+-- Temporary name-resolution privilege only; removed in the same transaction.
+GRANT USAGE ON SCHEMA primeline_documentos_rh_privado TO supabase_storage_admin;
+SET LOCAL ROLE supabase_storage_admin;
 CREATE POLICY rh_storage_empresa_guard ON storage.objects AS RESTRICTIVE FOR ALL TO authenticated
  USING(primeline_documentos_rh_privado.objeto_empresa(bucket_id,name))
  WITH CHECK(primeline_documentos_rh_privado.objeto_empresa(bucket_id,name));
+RESET ROLE;
+REVOKE USAGE ON SCHEMA primeline_documentos_rh_privado FROM supabase_storage_admin;
 -- Tighten the dedicated permissive policy as well; no new Storage operations are granted.
 DROP POLICY IF EXISTS pl_documentos_rh ON public.documentos;
 CREATE POLICY pl_documentos_rh ON public.documentos FOR ALL TO authenticated

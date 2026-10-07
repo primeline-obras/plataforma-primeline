@@ -83,6 +83,7 @@ test('consolidated rollout: reconstructed hotfix → documents → Folha; all dr
   await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-storage-hosted-owner.sql'));
  await t.test('final precheck returns ONE normal JSON result and recognises vulnerable known baseline',async()=>{
   const sql=await read('../supabase/pacote2_precheck_real_final_20261007.sql');
   assert.doesNotMatch(sql,/RAISE NOTICE|CREATE\s+(?:TABLE|FUNCTION|SCHEMA)|GRANT\s|REVOKE\s/i);

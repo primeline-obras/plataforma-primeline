@@ -21,6 +21,7 @@ test('AUDIT: bucket security metadata must be pinned',{skip:!bin||!deps,timeout:
  await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-storage-hosted-owner.sql'));
  await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
  // Independent negative drift cases; candidate scripts stay unchanged.
  const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');
@@ -37,11 +38,11 @@ test('AUDIT: bucket security metadata must be pinned',{skip:!bin||!deps,timeout:
   ['bucket helper ACL','GRANT EXECUTE ON FUNCTION public.audit_bucket_helper(text) TO PUBLIC'],
   ['bucket table ACL','GRANT UPDATE ON storage.buckets TO authenticated'],
   ['bucket column ACL','GRANT UPDATE(public) ON storage.buckets TO authenticated'],
-  ['bucket RLS','ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY'],
+  ['bucket RLS','ALTER TABLE storage.buckets DISABLE ROW LEVEL SECURITY'],
   ['bucket owner','ALTER TABLE storage.buckets OWNER TO service_role'],
   ['bucket policy','ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY; CREATE POLICY audit_bucket ON storage.buckets FOR UPDATE TO authenticated USING(true) WITH CHECK(true)']
  ]) await t.test(label+' drift must fail documentary postcheck',async()=>{
-  await q('BEGIN');try {await q(mutation);await assert.rejects(q(post),/DOCUMENT_CATALOG_DRIFT/);}finally{await q('ROLLBACK');}
+  await q('BEGIN');try {await q(mutation);await assert.rejects(q(post),label==='bucket RLS'||label==='bucket owner'?/STORAGE_OWNER_OR_RLS_DRIFT/:/DOCUMENT_CATALOG_DRIFT/);}finally{await q('ROLLBACK');}
  });
  }finally{for(const c of clients)await c.end().catch(()=>{});if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}
 });

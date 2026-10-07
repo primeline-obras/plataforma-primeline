@@ -17,6 +17,7 @@ test('RH documents: independent PostgreSQL RLS and main-compatible scripts',{ski
  await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-storage-hosted-owner.sql'));
  await q(await read('../supabase/documentos_rh_tenant_precheck.sql'));await q(await read('../supabase/documentos_rh_tenant_backup.sql'));await q(await read('../supabase/documentos_rh_tenant.sql'));await q(await read('../supabase/documentos_rh_tenant_postcheck.sql'));
  await t.test('postcheck rejects every policy/helper/ACL delta against the reviewed installation',async()=>{
   const post=await read('../supabase/documentos_rh_tenant_postcheck.sql');

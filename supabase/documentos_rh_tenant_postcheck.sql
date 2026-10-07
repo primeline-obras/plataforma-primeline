@@ -1,4 +1,8 @@
 BEGIN READ ONLY;
+DO $storage_baseline$ BEGIN
+ IF (SELECT count(*) FROM pg_class c WHERE c.oid IN(to_regclass('storage.objects'),to_regclass('storage.buckets')) AND pg_get_userbyid(c.relowner)='supabase_storage_admin' AND c.relrowsecurity)<>2
+ THEN RAISE EXCEPTION 'STORAGE_OWNER_OR_RLS_DRIFT'; END IF;
+END $storage_baseline$;
 DO $document_catalog$
 DECLARE actual jsonb; expected jsonb;
 BEGIN

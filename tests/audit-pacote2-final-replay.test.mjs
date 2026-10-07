@@ -73,6 +73,7 @@ test('AUDIT: core replay must revalidate reduced permissions',{timeout:240000,sk
  await q(await read('./fixtures/documentos-rh-correlatos-base.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-baseline.sql'));
  await q(await read('./fixtures/documentos-rh-rpc-correlatos-baseline.sql'));
+ await q(await read('./fixtures/documentos-rh-storage-hosted-owner.sql'));
  for(const step of ['precheck','backup','','postcheck'])await q(await read('../supabase/documentos_rh_tenant'+(step?'_'+step:'')+'.sql'));
  await q(await read('../supabase/folha_ponto_v2_backup.sql'));
  await q(await read('../supabase/folha_ponto_v2.sql'));
