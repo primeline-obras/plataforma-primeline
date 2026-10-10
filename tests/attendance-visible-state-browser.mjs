@@ -45,8 +45,8 @@ try{
   },role);
   let text=await page.locator('#root').innerText();assert.match(text,/REGISTO LEGADO/);assert.match(text,/0 pendentes.*DIA COMPLETO/);
   assert.equal(await page.locator('[data-sheet-edit]').count(),0);assert.equal(await page.locator('[data-sheet-remove]').count(),0);
-  await page.locator('[data-sheet-history]').click();await page.waitForFunction(()=>document.querySelector('[data-sheet-legacy]'));
-  text=await page.locator('[data-sheet-detail]').innerText();assert.match(text,/HISTÓRICO FOLHA V2\s+Sem alterações registadas/);assert.match(text,/REGISTO LEGADO/);
+  await page.locator('[data-sheet-work-history]').click();await page.waitForFunction(()=>document.querySelector('[data-sheet-legacy]'));
+  text=await page.locator('[data-sheet-detail]').innerText();assert.match(text,/Horas registadas nesta obra/);assert.match(text,/REGISTO LEGADO/);
   assert.equal(await page.locator('[data-sheet-legacy] button').count(),0);pass++;
   await page.screenshot({path:path.join(screenshots,role+'-'+width+'-legacy.png'),fullPage:true});
   if(['encarregado','administrativo'].includes(role)){
@@ -73,7 +73,7 @@ try{
    }
    pass++;
   }
-  assert.ok(await page.locator('[data-sheet-history]').isVisible());
+  assert.ok(await page.locator('[data-sheet-work-history]').isVisible());
   if(role==='administrativo'){
    await page.evaluate(async()=>{
     const {createAttendanceManagementModule}=await import('/src/attendance-management.js');

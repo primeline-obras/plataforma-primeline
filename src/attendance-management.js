@@ -1,4 +1,4 @@
-import {createAttendanceManagementClient} from './attendance-client.js?v=6';
+import {createAttendanceManagementClient} from './attendance-client.js?v=7';
 import {vacationSelection,SHEET_STATES} from './attendance-domain.js?v=8';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={reported:'Conclusão reportada',confirmed:'Conclusão confirmada',potential:'Potencial HE',pending_validation:'Aguarda validação administrativa',validated_pending_rule:'Validada · regra financeira pendente',pending_rule:'Regra pendente',rejected:'Rejeitada',draft:'Rascunho',validated:'Validado',closed:'Fechado',ausente_pendente:'Justificação pendente',justificada:'Justificada',confirmada:'Confirmada',em_execucao:'Em execução',por_iniciar:'Por iniciar',concluido:'Concluído'};

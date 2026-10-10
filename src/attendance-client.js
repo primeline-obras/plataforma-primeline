@@ -15,7 +15,7 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
     if(j?.version!==2 || !Array.isArray(j.works) || !Array.isArray(j.rows) || !Array.isArray(j.external_rows) || !j.permissions || ['write','external_write','allocation_write'].some(k=>typeof j.permissions[k]!=='boolean') || j.date!==date || (workId && j.work_id!==workId))throw new Error('Resposta da Folha inválida.');
     return j;
   }
-  async function operate(action,data) {
+  async function operate(action,data,confirmationMessage=null) {
     if(busy)throw new Error('Aguarde a operação em curso.');
     busy=true;
     const fingerprint=JSON.stringify({action,data});
@@ -25,7 +25,7 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
       const endpoint=action.startsWith('team_')?'fn_equipa_operar_v2':FOLHA_RPCS.operate;
       const preview=await rpc(endpoint,{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
       if(preview?.version!==2 || preview.committed!==false || typeof preview.versao!=='string' || !preview.versao)throw new Error('Pré-visualização inválida.');
-      if(!await confirm(preview.summary || 'Confirmar esta alteração?')) {pending=null;return null;}
+      if(!await confirm(confirmationMessage || preview.summary || 'Confirmar esta alteração?')) {pending=null;return null;}
       const result=await rpc(endpoint,{p_acao:action,p_dados:body,p_confirmar:true,p_versao:preview.versao});
       const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.external_id?[data.external_id]:data.people?.map(x=>x.person_id)||data.items?.map(x=>x.key.person_id);
       const validKeys=Array.isArray(result?.changed_keys) && result.changed_keys.length>0 && result.changed_keys.every(k=>
@@ -41,7 +41,20 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
       throw error;
     } finally {busy=false;}
   }
-  return {context,operate,candidates:async(date,workId)=>{
+  async function workHistory(from,to,workId){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(from)||!/^\d{4}-\d{2}-\d{2}$/.test(to))throw new Error('Selecione as datas do período.');
+    const start=Date.parse(from+'T12:00:00Z'),end=Date.parse(to+'T12:00:00Z');
+    if(!Number.isFinite(start)||!Number.isFinite(end)||new Date(start).toISOString().slice(0,10)!==from||new Date(end).toISOString().slice(0,10)!==to||end<start||end-start>30*86400000)throw new Error('Selecione um período até 31 dias.');
+    const entries=[];
+    for(let t=start;t<=end;t+=86400000){const date=new Date(t).toISOString().slice(0,10),c=await context(date,workId);
+      for(const [kind,rows] of [['primeline',c.rows],['external',c.external_rows]])for(const r of rows){
+        if(r.sheet)entries.push({date,name:r.name,role:r.role,kind,intervals:r.sheet.intervals||[],state:r.sheet.state||r.sheet.estado,conflict:r.conflict,source:'v2'});
+        if(r.legacy){const h=await rpc(FOLHA_RPCS.history,{p_chave:{person_id:r.person_id,kind,date,work_id:workId}});if(h?.version!==2||!Array.isArray(h.legacy)||h.legacy_interpretation!=='original')throw new Error('Histórico legado inválido.');for(const x of h.legacy){if(x.obra_id!==workId||x.data!==date)throw new Error('Histórico fora da obra/data.');entries.push({date,name:r.name,role:r.role,kind,source:'legacy',hours:x.horas,state:x.estado,conflict:!!r.sheet,intervals:[{start:x.entrada_manha,end:x.saida_manha},{start:x.entrada_tarde,end:x.saida_tarde}].filter(i=>i.start)});}}
+      }
+    }
+    return entries;
+  }
+  return {context,operate,workHistory,candidates:async(date,workId)=>{
     const j=await rpc(FOLHA_RPCS.candidates,{p_data:date,p_obra_id:workId});
     if(j?.version!==2 || !Array.isArray(j.people))throw new Error('Lista de pessoas inválida.');return j.people;
   },history:async(key)=>{

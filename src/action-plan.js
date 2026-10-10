@@ -1,4 +1,4 @@
-import {createAttendanceManagementClient} from './attendance-client.js?v=6';
+import {createAttendanceManagementClient} from './attendance-client.js?v=7';
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
 import { activePlanningTasks } from "./attendance-domain.js?v=8";
 
@@ -144,9 +144,9 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
 
   root.addEventListener("click", async event => {
     const button=event.target.closest('[data-action-report]');
-    if(button){if(busy||getRole()!=='encarregado')return;const item=state.items.find(x=>x.id===button.dataset.actionReport),work=item&&workFor(item);if(!work||reports.has(item.id)||item.estado==='concluido')return;busy=true;button.disabled=true;const token=epoch,roleAtStart=getRole();
+    if(button){if(busy||getRole()!=='encarregado')return;const item=state.items.find(x=>x.id===button.dataset.actionReport),work=item&&workFor(item);if(!work||reports.has(item.id)||item.estado==='concluido')return;busy=true;const originalLabel=button.textContent;button.textContent='A PREPARAR CONFIRMAÇÃO…';button.disabled=true;const token=epoch,roleAtStart=getRole();
       try{const result=await client.execute('task_report',{task_id:item.id,work_id:work.id,expected_revision:0});if(token!==epoch||getRole()!==roleAtStart)return;if(result){toast('Conclusão reportada. Aguarda confirmação do Diretor.');await load();}}
-      catch(error){if(token===epoch&&getRole()===roleAtStart){toast(error.message,'error');await load();}}finally{busy=false;if(button.isConnected)button.disabled=false;}return;
+      catch(error){if(token===epoch&&getRole()===roleAtStart){toast(error.message,'error');await load();}}finally{busy=false;if(button.isConnected){button.disabled=false;button.textContent=originalLabel;}}return;
     }
     const monthButton = event.target.closest("[data-action-month]");
     if (monthButton) { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + Number(monthButton.dataset.actionMonth), 1); render(); return; }

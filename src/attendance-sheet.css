@@ -23,3 +23,23 @@
 .sheet-v2 pre { white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; }
 .sheet-v2 details { overflow-wrap:anywhere; padding:8px 0; }
 @media(max-width:600px) { .sheet-toolbar { display:grid; grid-template-columns:minmax(0,1fr); }.sheet-person { display:block; }.sheet-person .sheet-actions { margin-top:12px; }.sheet-actions button { flex:1 1 130px; } }
+
+/* Context remains beside the person or action that opened the panel. */
+.sheet-v2 .sheet-panel { flex-basis:100%; width:100%; min-width:0; border-left:4px solid var(--accent,#345f72); padding:16px; margin:12px 0; background:var(--card); border-radius:8px; }
+.sheet-panel h3 { margin:0 0 12px; overflow-wrap:anywhere; }
+.sheet-panel form { display:grid; gap:16px; }
+.sheet-panel > button { margin-top:12px; }
+.sheet-v2 .sheet-primary { background:var(--accent,#345f72); color:white; font-weight:700; }
+.sheet-v2 .sheet-remove { color:var(--neg-text,#933); background:transparent; }
+.sheet-feedback { flex-basis:100%; padding:12px; font-weight:600; }
+.sheet-empty { padding:16px; border:1px dashed var(--card-border); border-radius:8px; }
+.sheet-history-event { padding:12px 0; border-bottom:1px solid var(--card-border); }
+.sheet-v2 .sheet-candidate { cursor:pointer; padding:8px; border:1px solid var(--card-border); border-radius:8px; }
+.sheet-panel p,.sheet-panel span { overflow-wrap:anywhere; }
+.sheet-v2 button:focus-visible,.sheet-v2 input:focus-visible { outline:3px solid var(--accent,#345f72); outline-offset:2px; }
+
+.sheet-panel-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.sheet-panel-heading h3 { flex:1 1 220px; margin:0; }
+.sheet-panel p { margin:8px 0; }
+.sheet-v2 .sheet-panel [data-sheet-form] { margin:0; padding:12px; }
+.sheet-v2 button[aria-expanded=true] { outline:3px solid var(--accent,#345f72); outline-offset:2px; }
