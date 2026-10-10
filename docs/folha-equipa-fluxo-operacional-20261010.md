@@ -14,6 +14,8 @@ A fonte de verdade da permanência é agora `public.quadro_equipa_permanencias`,
 
 As alocações antigas permanecem integralmente guardadas. Antes da primeira permanência deliberada da pessoa, continuam a ser lidas como alocações explícitas. Uma pessoa já alocada à mesma obra pode ser selecionada para **confirmar explicitamente a permanência**. Após essa data, retirada/transferência determina a lotação; linhas antigas não fazem a pessoa reaparecer noutra obra. Conflitos históricos não são limpos nem convertidos automaticamente.
 
+Os IDs virtuais são determinísticos por permanência/data, distintos entre dias e não correspondem a linhas gravadas. A resposta imediata usa a mesma projeção; o frontend recarrega toda a semana após alteração, preservando scroll. O Quadro exige confirmação humana do preview de permanência.
+
 Permanência não prova presença nem cria horas, ausência ou jornada teórica. As regras de Vencimentos e o cálculo monetário permanecem inalterados; os factos administrativos continuam a vir das fontes existentes. A nova fonte não cria automaticamente pendências salariais para todos os dias de calendário.
 
 ## Funcionamento operacional
@@ -106,8 +108,8 @@ Rollback restaura definições originais e remove exclusivamente a camada nova, 
 
 | Conjunto | Resultado final |
 |---|---|
-| PostgreSQL 17.6 nativo, unitários/contratos, sessão, Plano/Férias e estáticos correlatos | 72 PASS / 0 FAIL / 0 SKIP |
-| Browser dos novos fluxos, 375/430/768/1440 | 44 grupos PASS, 0 erros de consola/página |
+| PostgreSQL 17.6 nativo, unitários/contratos, sessão, Plano/Férias e estáticos correlatos | 88 PASS / 0 FAIL / 0 SKIP |
+| Browser dos novos fluxos, 375/430/768/1440 | 48 grupos PASS, 0 erros de consola/página |
 | Regressão browser Folha | 57 grupos PASS, 0 erros de página |
 | Estados visíveis backend→UI | 126 grupos PASS |
 | Reconciliação férias/ausências→Folha | 81 grupos PASS |
@@ -115,14 +117,14 @@ Rollback restaura definições originais e remove exclusivamente a camada nova, 
 | `git diff --check` e revisão de ficheiros/segredos | PASS |
 | Segunda worktree detached limpa no commit entregue | Mesmas suites repetidas, PASS |
 
-O total de grupos browser é 383, apresentado separado dos 72 testes Node. Não é evidência de UAT real nem de instalação na BD real. Fontes web foram simuladas nas fixtures para manter o browser local sem acesso externo. Screenshots sintéticos ficam em `%TEMP%\primeline-folha-equipa-20261010` e nos diretórios de cada suite; não entram no Git.
+O total de grupos browser é 387, apresentado separado dos 88 testes Node. Não é evidência de UAT real nem de instalação na BD real. Fontes web foram simuladas nas fixtures para manter o browser local sem acesso externo. Screenshots sintéticos ficam em `%TEMP%\primeline-folha-equipa-20261010` e nos diretórios de cada suite; não entram no Git.
 
 Matriz A–R reproduzida no teste PostgreSQL: A/B persistência/entrada, C retirada, D transferência, E/F cargo/recusa backend, G horas próprias sem equipa, H/I externo/total, J sem normal, K função externa, L tenant, M delegação, N férias globais mínimas sem DML, O reporte sem fecho, P alerta, Q fecho oficial, R legado CLOSED. Cobertura adicional de lote inválido atómico, ator inativo, obra não autorizada, idempotência, replay concorrente, revisão stale, calendário ausente e rollback vazio/com uso. As 227 alocações sintéticas originais são comparadas integralmente ao backup.
 
 Comando das suites Node:
 
 ```powershell
-node --test tests/folha-equipa-operacional.test.mjs tests/folha-equipa-ui-contract.test.mjs tests/attendance-domain.test.mjs tests/foreman-action-plan.test.mjs tests/foreman-scope.test.mjs tests/session-boundary.test.mjs tests/attendance-v2-static.test.mjs
+node --test tests/folha-equipa-operacional.test.mjs tests/folha-equipa-ui-contract.test.mjs tests/attendance-domain.test.mjs tests/foreman-action-plan.test.mjs tests/foreman-scope.test.mjs tests/session-boundary.test.mjs tests/attendance-v2-static.test.mjs tests/workforce-allocation-client.test.mjs tests/workforce-allocation-scroll.test.mjs
 ```
 
 Usar `QUADRO_PG_BIN` para PostgreSQL 17.6 local e `QUADRO_TEST_DEPS` para `pg`. Browser usa Playwright já instalado; `PLANNING_PLAYWRIGHT`/`PLANNING_CHROMIUM_EXE` permitem o runtime local existente. Não instalar nem ligar ao PostgreSQL remoto para estes testes.
@@ -142,9 +144,9 @@ Usar `QUADRO_PG_BIN` para PostgreSQL 17.6 local e `QUADRO_TEST_DEPS` para `pg`. 
 
 ## Ficheiros finais
 
-Frontend: `index.html`, `src/app.js`, `src/action-plan.js`, `src/attendance-client.js`, `src/attendance-domain.js`, `src/attendance-management.js`, `src/attendance-sheet.js`, `src/attendance-sheet.css`, `src/foreman-scope.js`.
+Frontend: `index.html`, `src/app.js`, `src/action-plan.js`, `src/attendance-client.js`, `src/attendance-domain.js`, `src/attendance-management.js`, `src/attendance-sheet.js`, `src/attendance-sheet.css`, `src/foreman-scope.js`, `src/workforce-allocation.js`.
 
-Backend: os cinco scripts acima. Testes novos: `tests/folha-equipa-operacional.test.mjs`, `tests/folha-equipa-ui-contract.test.mjs`, `tests/folha-equipa-operacional-browser.mjs`. Testes ajustados: `tests/attendance-domain.test.mjs`, `tests/foreman-action-plan.test.mjs`, `tests/attendance-sheet-browser.mjs`, `tests/attendance-adm-rules-browser.mjs`, `tests/attendance-v2-static.test.mjs`. Ajustes dos testes antigos refletem o novo contrato e o botão explícito de submissão; não reduzem verificações de autorização, história ou estados.
+Backend: os cinco scripts acima. Testes novos: `tests/folha-equipa-operacional.test.mjs`, `tests/folha-equipa-ui-contract.test.mjs`, `tests/folha-equipa-operacional-browser.mjs`. Testes ajustados: `tests/attendance-domain.test.mjs`, `tests/foreman-action-plan.test.mjs`, `tests/attendance-sheet-browser.mjs`, `tests/attendance-adm-rules-browser.mjs`, `tests/attendance-v2-static.test.mjs`, `tests/workforce-allocation-scroll.test.mjs`. Ajustes dos testes antigos refletem o novo contrato e o botão explícito de submissão; não reduzem verificações de autorização, história ou estados.
 
 ## Rollout único — somente após autorização expressa
 

@@ -1,4 +1,4 @@
-import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=3";
+import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=4";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, isSessionTransitioning, onSessionReset, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=8";
 import { installSessionBoundary } from "./session-boundary.js?v=1";
 import { loadForemanDirectory, loadForemanAbsences, loadForemanVacationMap } from "./foreman-scope.js?v=3";
@@ -1895,7 +1895,7 @@ function workforceFunctionTint(effective) {
   return `linear-gradient(90deg, ${stops.join(", ")})`;
 }
 
-function renderTeamPreservingScroll() {
+function renderTeamPreservingScroll(renderOperation=renderTeam) {
   const pagePosition = { x: window.scrollX, y: window.scrollY };
   const scrollPositions = [...document.querySelectorAll("#team-board, #team-board *")]
     .filter(element => element.scrollTop || element.scrollLeft)
@@ -1905,12 +1905,15 @@ function renderTeamPreservingScroll() {
       left: element.scrollLeft,
     }))
     .filter(item => item.selector);
-  renderTeam();
+  const restore=()=>{
   window.scrollTo(pagePosition.x, pagePosition.y);
   scrollPositions.forEach(position => {
     const element = document.querySelector(position.selector);
     if (element) element.scrollTo({ top: position.top, left: position.left, behavior: "instant" });
   });
+  };
+  const result=renderOperation();
+  return result?.then ? result.then(restore) : restore();
 }
 
 async function returnedAllocationRows(response) {
@@ -2428,7 +2431,11 @@ function workforceRevision(personId, date) {
   return teamData.quadroContext?.revisions?.find(row => row.colaborador_id === personId && row.data === date)?.revisao || 0;
 }
 
-function applyWorkforceResult(personId, date, result) {
+async function applyWorkforceResult(personId, date, result) {
+  if(result.team_contract===1){
+    selectedWorkforceSourceDate="";selectedWorkforceSourcePeriod="";selectedWorkforceSourceRowKey="";selectedWorkforceSourceIds=[];
+    await renderTeamPreservingScroll(()=>loadTeamData(true));$("#remove-workforce-allocation").hidden=true;return;
+  }
   replaceLocalAllocations(item => item.colaborador_id === personId && item.data === date, result.allocations);
   const context = teamData.quadroContext;
   if (context) context.revisions = [...context.revisions.filter(row => row.colaborador_id !== personId || row.data !== date),
@@ -2458,9 +2465,10 @@ async function saveWorkforceAllocation(personId, date, target) {
     const result = await workforceAllocationClient.execute("alocar", { colaborador_id: personId, data: date,
       periodo: selectedWorkforcePeriod, obra_id: workId, tipo_alocacao: type, descricao_livre: description,
       expected_revision: workforceRevision(personId, date) });
-    applyWorkforceResult(personId, date, result);
-    $("#workforce-edit-message").textContent = shortPersonName(person.nome) + " continua selecionado. Clique nos próximos dias/obras.";
-    toast("Alocação guardada. O íman continua selecionado.");
+    if(!result)return;
+    await applyWorkforceResult(personId, date, result);
+    $("#workforce-edit-message").textContent = result.team_contract===1 ? "Equipa atualizada a partir desta data. Não é necessário repetir nos dias seguintes." : shortPersonName(person.nome) + " continua selecionado. Clique nos próximos dias/obras.";
+    toast(result.team_contract===1 ? "Permanência da equipa guardada." : "Alocação guardada. O íman continua selecionado.");
   } catch (error) {
     toast(error.message, "error");
     $("#workforce-edit-message").textContent = error.message;
@@ -2474,8 +2482,9 @@ async function removeWorkforceAllocation() {
   try {
     const result = await workforceAllocationClient.execute("remover", { colaborador_id: personId, data: date,
       ids: selectedWorkforceSourceIds.filter(Boolean), expected_revision: workforceRevision(personId, date) });
-    applyWorkforceResult(personId, date, result);
-    toast("Alocação retirada.");
+    if(!result)return;
+    await applyWorkforceResult(personId, date, result);
+    toast(result.team_contract===1 ? "Permanência encerrada. Histórico preservado." : "Alocação retirada.");
   } catch (error) { toast(error.message, "error"); }
   finally { workforceSaving = false; }
 }

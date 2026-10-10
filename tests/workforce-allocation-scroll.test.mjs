@@ -7,7 +7,7 @@ const saveStart = app.indexOf("async function saveWorkforceAllocation(personId, 
 const saveEnd = app.indexOf("async function removeWorkforceAllocation()", saveStart);
 const saveAllocation = app.slice(saveStart, saveEnd);
 
-test("alocar atualiza o estado local sem recarregar todos os dados", () => {
+test("contrato diário mantém atualização local; permanência recarrega projeção semanal", () => {
   assert.match(saveAllocation, /workforceAllocationClient\.execute/);
   assert.match(saveAllocation, /applyWorkforceResult/);
   assert.match(app, /replaceLocalAllocations/);
@@ -15,7 +15,7 @@ test("alocar atualiza o estado local sem recarregar todos os dados", () => {
 });
 
 test("a atualização da grelha preserva o scroll da página e da grelha", () => {
-  assert.match(app, /function renderTeamPreservingScroll\(\)/);
+  assert.match(app, /function renderTeamPreservingScroll\(renderOperation=renderTeam\)/);
   assert.match(app, /window\.scrollX/);
   assert.match(app, /window\.scrollTo\(pagePosition\.x, pagePosition\.y\)/);
   assert.match(app, /element\.scrollTo\(\{ top: position\.top, left: position\.left/);

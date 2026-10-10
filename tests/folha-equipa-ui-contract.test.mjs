@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {daySummary,dayStatus,workedTime,delegationLabel} from '../src/attendance-domain.js';
 import {createSheetClient} from '../src/attendance-client.js';
 import {loadForemanVacationMap} from '../src/foreman-scope.js';
+import {createWorkforceAllocationClient} from '../src/workforce-allocation.js';
 test('dia vazio não completo; faltas parciais são em preenchimento',()=>{
  assert.equal(dayStatus(daySummary([])),'SEM EQUIPA');assert.equal(daySummary([]).complete,false);
  assert.equal(dayStatus(daySummary([{sheet:null}])),'NÃO INICIADO');
@@ -31,4 +32,16 @@ test('Folha não tem renderização/ação de tarefas; Plano usa somente reporte
  const management=readFileSync(new URL('../src/attendance-management.js',import.meta.url),'utf8'),plan=readFileSync(new URL('../src/action-plan.js',import.meta.url),'utf8');
  assert.doesNotMatch(management,/data-management-task=|TAREFAS ATIVAS|REPORTES DE CONCLUSÃO|\['tasks','TAREFAS'\]/);
  assert.match(plan,/client.execute\('task_report'/);assert.match(plan,/AGUARDA CONFIRMAÇÃO DO DIRETOR/);assert.doesNotMatch(plan,/method:\s*['"]PATCH|fn_atualizar_tarefa_encarregado/);
+});
+test('permanência no Quadro exige confirmação humana; cancelamento não escreve',async()=>{
+ for(const accepted of [true,false]){
+  const calls=[],prompts=[];const client=createWorkforceAllocationClient({requestId:()=> 'req',confirm:async message=>{prompts.push(message);return accepted;},supabase:async(url,opts)=>{const b=JSON.parse(opts.body);calls.push(b);return Response.json(b.p_confirmar?{version:1,committed:true,team_contract:1,revision:1,allocations:[]}:{version:1,committed:false,team_contract:1,versao:'token',summary:'Permanência até retirada. Confirmar?'});}});
+  const result=await client.execute('alocar',{colaborador_id:'p',data:'2026-10-10',expected_revision:0});assert.equal(prompts.length,1);assert.equal(calls.length,accepted?2:1);if(!accepted)assert.equal(result,null);else assert.equal(calls[1].p_versao,'token');
+ }
+});
+test('resultado de permanência recarrega a semana completa com preservação do scroll',async()=>{
+ const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8'),start=app.indexOf('async function applyWorkforceResult('),end=app.indexOf('\nasync function saveWorkforceAllocation(',start),calls=[];
+ const build=Function('loadTeamData','renderTeamPreservingScroll','$',`let selectedWorkforceSourceDate,selectedWorkforceSourcePeriod,selectedWorkforceSourceRowKey,selectedWorkforceSourceIds;${app.slice(start,end)};return applyWorkforceResult;`);
+ const run=build(async force=>calls.push(['reload',force]),async operation=>{calls.push(['scroll']);await operation();},()=>({hidden:false}));
+ await run('p','2026-10-10',{team_contract:1,allocations:[]});assert.deepEqual(calls,[['scroll'],['reload',true]]);
 });

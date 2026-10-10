@@ -12,6 +12,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.
 const browser=await chromium.launch({headless:true,...(process.env.PLANNING_CHROMIUM_EXE?{executablePath:process.env.PLANNING_CHROMIUM_EXE}:{})});let pass=0;const errors=[];
 const appSource=await readFile(path.join(repo,'src/app.js'),'utf8');
 const vacationRenderer=appSource.slice(appSource.indexOf('function renderVacationMap('),appSource.indexOf('\nfunction entityDocuments('));
+const scrollRenderer=appSource.slice(appSource.indexOf('function renderTeamPreservingScroll('),appSource.indexOf('\nasync function returnedAllocationRows('));
 async function setup(page){await page.goto(base);await page.evaluate(async()=>{
  const {createAttendanceModule}=await import('/src/attendance-sheet.js');window.calls=[];window.messages=[];window.team=[{id:'p',name:'Operacional sintético',role:'Pedreiro',delegation:null,start:'2026-10-01'}];window.facts={};window.externals=[];
  const row=p=>({person_id:p.id,name:p.name,role:p.role,delegation:p.delegation,can_write:true,can_remove:!window.facts[p.id],team_revision:1,revision:window.facts[p.id]?1:0,period:'dia_inteiro',expected_minutes:480,sheet:window.facts[p.id]||null});
@@ -68,6 +69,11 @@ try{
    const renderer=eval('('+source+')');document.querySelector('#root').innerHTML=renderer([{id:'p',nome:'Pedreiro sintético'},{id:'d',nome:'Diretor sintético'},{id:'a',nome:'Administrativo sintético'}],[{colaborador_id:'d',data:'2026-10-12',tipo:'ferias'}]);
   },vacationRenderer);
   assert.equal(await page.locator('.vacation-map-row').count(),3);assert.match(await page.locator('#root').textContent(),/Diretor sintético/);assert.equal(await page.locator('form,input,select').count(),0);assert.equal(await page.locator('.vacation-map-row i.vacation').count(),1);pass++;
+  const scroll=await page.evaluate(async source=>{
+   const renderTeam=()=>{document.querySelector('#root').innerHTML='<section id="team-board"><div id="test-grid" style="width:100%;height:100px;overflow:auto"><div style="width:3000px;height:300px">Projeção semanal sintética</div></div></section>';};
+   const preserve=eval('('+source+')');renderTeam();document.querySelector('#test-grid').scrollLeft=123;document.querySelector('#test-grid').scrollTop=45;
+   await preserve(async()=>renderTeam());return {left:document.querySelector('#test-grid').scrollLeft,top:document.querySelector('#test-grid').scrollTop};
+  },scrollRenderer);assert.deepEqual(scroll,{left:123,top:45});pass++;
   await page.close();
  }
  assert.deepEqual(errors,[]);console.log(JSON.stringify({pass,fail:0,consoleErrors:errors.length,screenshots:shots,backend:'Mocks sintéticos; autorização e persistência verificadas na suite PostgreSQL.'}));

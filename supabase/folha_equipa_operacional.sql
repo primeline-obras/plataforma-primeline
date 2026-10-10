@@ -73,7 +73,7 @@ RETURNS SETOF public.quadro_pessoal_alocacao LANGUAGE sql STABLE SECURITY DEFINE
  OR EXISTS(SELECT 1 FROM public.quadro_equipa_permanencias e WHERE e.colaborador_id=q.colaborador_id AND e.obra_id=q.obra_id AND e.inicio<=p_data AND (e.fim IS NULL OR e.fim>p_data)))
  UNION ALL
  SELECT (jsonb_populate_record(NULL::public.quadro_pessoal_alocacao,jsonb_build_object(
- 'id',e.id,'colaborador_id',e.colaborador_id,'obra_id',e.obra_id,'data',p_data,'semana_inicio',date_trunc('week',p_data)::date,
+ 'id',md5(e.id::text||':'||p_data::text)::uuid,'colaborador_id',e.colaborador_id,'obra_id',e.obra_id,'data',p_data,'semana_inicio',date_trunc('week',p_data)::date,
  'periodo','dia_inteiro','tipo_alocacao','obra','criado_por',e.criado_por,'criado_em',e.criado_em))).*
  FROM public.quadro_equipa_permanencias e JOIN public.colaboradores c ON c.id=e.colaborador_id
  WHERE e.empresa_id=(folha_privado.ator()).empresa_id AND e.inicio<=p_data AND (e.fim IS NULL OR e.fim>p_data)
@@ -538,7 +538,7 @@ BEGIN
  IF FOUND AND op.payload->'data' ? 'quadro_request' THEN
   IF op.payload->'data'->'quadro_request' IS DISTINCT FROM p_dados OR op.payload->'data'->>'quadro_action' IS DISTINCT FROM p_acao THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT'; END IF;
   r:=public.fn_equipa_operar_v2(op.payload->>'action',op.payload->'data',p_confirmar,p_versao);
-  IF NOT p_confirmar THEN RETURN r||jsonb_build_object('version',1); END IF;
+  IF NOT p_confirmar THEN RETURN r||jsonb_build_object('version',1,'team_contract',1); END IF;
   RETURN op.resultado->'quadro_result';
  END IF;
  IF NOT folha_privado.elegivel_equipa(p,d) THEN
@@ -555,7 +555,7 @@ BEGIN
  IF (p_dados->>'expected_revision')::integer IS DISTINCT FROM (CASE WHEN e.id IS NULL THEN daily_rev ELSE rev END)
  THEN RAISE EXCEPTION 'STALE_REVISION' USING ERRCODE='40001'; END IF;
  IF p_acao='remover' THEN
-  IF e.id IS NULL OR p_dados->'ids' IS DISTINCT FROM jsonb_build_array(e.id) THEN RAISE EXCEPTION 'TEAM_HISTORY_READ_ONLY: retirar permanência pela Folha'; END IF;
+  IF e.id IS NULL OR p_dados->'ids' IS DISTINCT FROM (SELECT coalesce(jsonb_agg(q.id ORDER BY q.id),'[]'::jsonb) FROM public.fn_quadro_resolver_data(d) q WHERE q.colaborador_id=p) THEN RAISE EXCEPTION 'TEAM_HISTORY_READ_ONLY: retirar permanência pela Folha'; END IF;
   w:=e.obra_id;action:='team_remove';
  ELSE
   IF p_dados->>'periodo' IS DISTINCT FROM 'dia_inteiro' OR p_dados->>'tipo_alocacao' IS DISTINCT FROM 'obra'
@@ -565,7 +565,7 @@ BEGIN
  body:=jsonb_build_object('version',2,'request_id',p_dados->>'request_id','work_id',w,'date',d,
  'people',jsonb_build_array(jsonb_build_object('person_id',p,'expected_revision',rev,'source_work_id',e.obra_id)),'quadro_request',p_dados,'quadro_action',p_acao);
  r:=public.fn_equipa_operar_v2(action,body,p_confirmar,p_versao);
- r:=r||jsonb_build_object('version',1,'revision',rev+CASE WHEN p_confirmar THEN 1 ELSE 0 END,'allocations',public.fn_quadro_dia_explicito(p,d));
+ r:=r||jsonb_build_object('version',1,'team_contract',1,'revision',rev+CASE WHEN p_confirmar THEN 1 ELSE 0 END,'allocations',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY q.id),'[]'::jsonb) FROM public.fn_quadro_resolver_data(d) q WHERE q.colaborador_id=p));
  IF p_confirmar THEN UPDATE folha_privado.operacoes SET resultado=resultado||jsonb_build_object('quadro_result',r) WHERE empresa_id=u.empresa_id AND ator_id=u.id AND request_id=(p_dados->>'request_id')::uuid; END IF;
  RETURN r;
 END $$;

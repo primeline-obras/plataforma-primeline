@@ -107,12 +107,16 @@ test('Equipa persistente / Folha operacional — PostgreSQL local',{timeout:2400
   const body={version:1,request_id:id(request++),colaborador_id:id(29),obra_id:id(100),data:'2026-10-01',periodo:'dia_inteiro',tipo_alocacao:'obra',expected_revision:0};
   const preview=await call(a,10,'fn_quadro_operar_v1',['alocar',body,false,null]);assert.equal(preview.version,1);
   const committed=await call(a,10,'fn_quadro_operar_v1',['alocar',body,true,preview.versao]);assert.equal(committed.revision,1);
+  assert.equal(committed.allocations.length,1);assert.equal(preview.team_contract,1);
   assert.deepEqual(await call(a,10,'fn_quadro_operar_v1',['alocar',body,true,preview.versao]),committed);
   const c=await as(a,13,'SELECT fn_quadro_contexto_v1($1::date,$2::date) v',['2026-10-01','2026-10-02']);
   assert.equal(c.allocations.filter(x=>x.colaborador_id===id(29)).length,2);
+  assert.equal(new Set(c.allocations.filter(x=>x.colaborador_id===id(29)).map(x=>x.id)).size,2);
   assert.ok(!c.allocations.some(x=>x.obra_id===id(103)));
   // End the test membership without deleting history, so the next assertions have an isolated team.
-  await operate('team_remove',[member(29,1)],100,'2026-10-01');
+  const remove={version:1,request_id:id(request++),colaborador_id:id(29),data:'2026-10-01',ids:committed.allocations.map(x=>x.id),expected_revision:1};
+  const rp=await call(a,10,'fn_quadro_operar_v1',['remover',remove,false,null]);
+  const removed=await call(a,10,'fn_quadro_operar_v1',['remover',remove,true,rp.versao]);assert.deepEqual(removed.allocations,[]);
  });
  await t.test('A/B — inclusão múltipla persiste sem gerar linhas diárias; entrada histórica',async()=>{
   added=await operate('team_add',[member(22),member(23)]);
