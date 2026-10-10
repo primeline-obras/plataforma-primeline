@@ -36,10 +36,12 @@ test("impedimento exige observação e gera alerta urgente", () => {
   assert.match(migration, /'URGENTE · Tarefa impedida'/i);
 });
 
-test("Plano de Ação do encarregado é integralmente de leitura", () => {
+test("Plano de Ação permite reporte V2 sem conclusão oficial pelo encarregado", () => {
   assert.match(access, /encarregado:[\s\S]*"action-plan"/i);
   assert.match(actionPlan, /action-calendar-grid/i);
   assert.match(actionPlan, /ATRASADAS/i);
+  assert.match(actionPlan, /data-action-report/i);
+  assert.match(actionPlan, /client.execute\('task_report'/i);
   assert.doesNotMatch(actionPlan, /data-action-complete/i);
   assert.doesNotMatch(actionPlan, /data-action-block/i);
   assert.doesNotMatch(actionPlan, /rpc\/fn_atualizar_tarefa_encarregado/i);

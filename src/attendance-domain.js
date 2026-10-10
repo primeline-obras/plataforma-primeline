@@ -104,7 +104,21 @@ export function activePlanningTasks(items) {return items.filter(x=>x.estado!=='c
 export function daySummary(rows, options={}) {
   const states=rows.map(row=>row.conflict&&!row.sheet?.state&&!row.sheet?.estado?'regularization':analyseSheet({sheet:row.sheet,absence:row.absence,legacy:row.legacy,expectedMinutes:row.expected_minutes,...options}).state);
   const pending=states.filter((s,i)=>!['registered','vacation','absence','legacy'].includes(s)||rows[i].special_review_pending===true).length;
-  return {people:states.length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:pending===0};
+  return {people:states.length,started:rows.filter(r=>r.sheet||r.absence||r.legacy).length,registered:states.filter(s=>s==='registered').length,open:states.filter(s=>s==='open').length,pending,complete:states.length>0&&pending===0};
+}
+export function dayStatus(summary) {
+  if(!summary.people)return 'SEM EQUIPA';
+  if(summary.complete)return 'DIA COMPLETO ✓';
+  return !summary.started&&summary.pending===summary.people&&!summary.registered&&!summary.open?'NÃO INICIADO':'EM PREENCHIMENTO';
+}
+export function delegationLabel(personDelegation, contextDelegation) {
+  if(!personDelegation)return 'DELEGAÇÃO POR CONFIGURAR';
+  if(!['lisboa','algarve'].includes(personDelegation))throw new Error('Delegação inválida.');
+  return personDelegation===contextDelegation?'':personDelegation.toUpperCase();
+}
+export function workedTime(intervals) {
+  const facts=intervalFacts(intervals);
+  return `${Math.floor(facts.minutes/60)}h${facts.minutes%60?String(facts.minutes%60).padStart(2,'0'):''}${facts.open?' · Em aberto':''}`;
 }
 export function normalDaySelection(rows,{schedule,date,now,admin=false,correctionDays=1,specialDay=false}={}) {
  const eligible=[],excluded=[];

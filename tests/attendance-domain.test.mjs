@@ -5,7 +5,7 @@ import {createSheetClient} from '../src/attendance-client.js';
 const day='2026-10-05', full=[{start:'09:00',end:'13:00'},{start:'14:00',end:'18:00'}];
 test('resumo deriva pendências/abertos, ausência válida e DIA COMPLETO sem fecho',()=>{
  const rows=[{sheet:{intervals:full},expected_minutes:480},{absence:{tipo:'ferias'}},{absence:{tipo:'ausencia'}}];
- assert.deepEqual(daySummary(rows),{people:3,registered:1,open:0,pending:0,complete:true});
+ assert.deepEqual(daySummary(rows),{people:3,started:3,registered:1,open:0,pending:0,complete:true});
  assert.equal(daySummary([...rows,{sheet:null}]).complete,false);
  assert.equal(daySummary([{sheet:{intervals:[{start:'09:00',end:null}]}}]).open,1);
  assert.equal(daySummary([{absence:{tipo:'ferias'},conflict:'LEGACY_CONFLICT'}]).pending,1);

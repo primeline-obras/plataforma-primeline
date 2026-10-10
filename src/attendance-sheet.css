@@ -14,7 +14,8 @@
 .sheet-person em,.sheet-person span { color:var(--text-secondary); }
 .sheet-person strong { overflow-wrap:anywhere; }
 .sheet-v2 [data-sheet-form] { margin-top:16px; display:grid; gap:16px; padding:16px; border:1px solid var(--card-border); border-radius:10px; }
-.sheet-candidate { display:block; width:100%; text-align:left; margin:8px 0; }
+.sheet-v2 label.sheet-candidate { display:grid; grid-template-columns:32px minmax(0,1fr); align-items:center; min-height:48px; width:100%; text-align:left; margin:8px 0; }
+.sheet-v2 .sheet-candidate input[type=checkbox] { width:24px; height:24px; min-height:24px; padding:0; }
 .sheet-candidate[hidden] { display:none; }
 .sheet-v2 [role=alert] { color:var(--neg-text); }
 .sheet-v2 [data-sheet-management] { margin-top:24px; border-top:1px solid var(--card-border); padding-top:16px; }

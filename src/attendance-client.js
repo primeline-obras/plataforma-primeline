@@ -22,11 +22,12 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
     if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};
     const body={...data,version:2,request_id:pending.id};
     try {
-      const preview=await rpc(FOLHA_RPCS.operate,{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
+      const endpoint=action.startsWith('team_')?'fn_equipa_operar_v2':FOLHA_RPCS.operate;
+      const preview=await rpc(endpoint,{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
       if(preview?.version!==2 || preview.committed!==false || typeof preview.versao!=='string' || !preview.versao)throw new Error('Pré-visualização inválida.');
       if(!await confirm(preview.summary || 'Confirmar esta alteração?')) {pending=null;return null;}
-      const result=await rpc(FOLHA_RPCS.operate,{p_acao:action,p_dados:body,p_confirmar:true,p_versao:preview.versao});
-      const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.external_id?[data.external_id]:data.items?.map(x=>x.key.person_id);
+      const result=await rpc(endpoint,{p_acao:action,p_dados:body,p_confirmar:true,p_versao:preview.versao});
+      const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.external_id?[data.external_id]:data.people?.map(x=>x.person_id)||data.items?.map(x=>x.key.person_id);
       const validKeys=Array.isArray(result?.changed_keys) && result.changed_keys.length>0 && result.changed_keys.every(k=>
         k && ['primeline','external'].includes(k.kind) && typeof k.person_id==='string' && k.person_id &&
         k.date===data.date && (k.work_id===data.work_id || data.source_work_id&&k.work_id===data.source_work_id) &&

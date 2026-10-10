@@ -1,7 +1,7 @@
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=3";
 import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, isSessionTransitioning, onSessionReset, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=8";
 import { installSessionBoundary } from "./session-boundary.js?v=1";
-import { loadForemanDirectory, loadForemanAbsences } from "./foreman-scope.js?v=2";
+import { loadForemanDirectory, loadForemanAbsences, loadForemanVacationMap } from "./foreman-scope.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=26";
 import { createPlanningModule } from "./planning.js?v=17";
@@ -11,7 +11,7 @@ import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDeb
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
 import { createComparativeMapModule } from "./comparative-map.js?v=6";
-import { createActionPlanModule } from "./action-plan.js?v=6";
+import { createActionPlanModule } from "./action-plan.js?v=7";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=5";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
@@ -25,8 +25,8 @@ import { createManagementMapModule } from "./management-map.js?v=14";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceManagementClient } from "./attendance-client.js?v=5";
-import { createAttendanceModule } from "./attendance-sheet.js?v=8";
+import { createAttendanceManagementClient } from "./attendance-client.js?v=6";
+import { createAttendanceModule } from "./attendance-sheet.js?v=9";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -2193,7 +2193,7 @@ function renderTeam() {
   };
   const absenceStateLabels = { ausente_pendente: "Justificação pendente", justificada: "Justificada", confirmada: "Confirmada" };
   const absences = currentAbsences.filter(item => !isVacation(item)).sort((a, b) => String(a.data).localeCompare(String(b.data)));
-  const vacationMap = renderVacationMap(isForemanReadOnly ? boardPeople : collaborators, teamData.vacations);
+  const vacationMap = renderVacationMap(isForemanReadOnly ? (teamData.vacationPeople||[]) : collaborators, teamData.vacations);
   const vacationEditor = canManageTeam() ? `<details class="team-vacation-roster"><summary>EDIÇÃO SEMANAL DE FÉRIAS</summary><header><strong>REGISTAR / EDITAR VÁRIOS DIAS</strong><span>Selecione um colaborador para editar os dias úteis da semana.</span></header><div>${collaborators.map(person => `<button type="button" data-team-vacation-person="${person.id}"><span>${personInitials(person.nome)}</span><strong>${safeText(person.nome)}</strong></button>`).join("")}</div></details>` : `<div class="readonly-note">CONSULTA · MAPA DE FÉRIAS COMPLETO, SEM PERMISSÃO DE EDIÇÃO</div>`;
   const absenceForm = canManageAbsences() ? `<form class="absence-entry-form" id="absence-entry-form">
     <div><label>COLABORADOR<select name="colaborador_id" required><option value="">Selecionar colaborador</option>${collaborators.map(person => `<option value="${person.id}">${safeText(person.nome)}</option>`).join("")}</select></label>
@@ -2567,7 +2567,7 @@ async function loadTeamData(force = false) {
     (canManageTeam() || effectiveRole() === "encarregado") ? medicineClient.list(effectiveRole() === "encarregado" ? collaborators.filter(person => foremanMedicineIds.has(person.id)) : collaborators).then(rows=>Response.json(rows)) : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("documentos?select=id,empresa_id,entidade_tipo,entidade_id,tipo_documento,nome_arquivo,url_arquivo,data_emissao,data_validade,criado_em&entidade_tipo=in.(colaborador,viatura)&order=criado_em.desc") : Promise.resolve(new Response("[]", { status: 200 })),
     canManageTeam() ? supabase("colaboradores?select=id,nome,funcao,nivel,valor_hora,nif,email,contacto,morada,data_nascimento,data_admissao,data_saida,permite_multiplas_obras&data_saida=not.is.null&order=nome", { includeInactiveCollaborators: true }) : Promise.resolve(new Response("[]", { status: 200 })),
-    effectiveRole() === "encarregado" ? loadForemanAbsences(supabase, vacationBounds.start, vacationBounds.end, true) : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
+    effectiveRole() === "encarregado" ? loadForemanVacationMap(supabase, vacationBounds.start, vacationBounds.end) : supabase(`ausencias?select=id,colaborador_id,data,tipo,estado,comentario&tipo=eq.ferias&data=gte.${vacationBounds.start}&data=lte.${vacationBounds.end}&order=data`),
     supabase(`feriados_empresa?select=id,data,nome,ambito,municipio,folga&folga=eq.true&data=gte.${boardStart < vacationBounds.start ? boardStart : vacationBounds.start}&data=lte.${boardEnd > vacationBounds.end ? boardEnd : vacationBounds.end}&order=data`),
   ]);
   const names = ["alocações", "ausências", "anexos de ausências", "contratos", "horas extraordinárias", "responsáveis de obra", "utilizadores", "viaturas", "medicina do trabalho", "documentos de RH", "colaboradores inativos", "mapa global de férias", "feriados"];
@@ -2590,6 +2590,7 @@ async function loadTeamData(force = false) {
   const globalPayload = payloads[11];
   teamData.holidays = Array.isArray(payloads[12]) ? payloads[12] : [];
   if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
+  else if(globalPayload?.version===2){teamData.vacations=globalPayload.vacations;teamData.vacationPeople=globalPayload.people;}
   const essentialFailures = failures.filter(item => ["alocações", "ausências", "mapa global de férias"].includes(item.failed));
   if (essentialFailures.length) teamData.error = `Não foi possível ler ${essentialFailures.map(item => item.failed).join(", ")}. Confirme as políticas RLS do módulo Equipa.`;
   teamData.quadroReady = essentialFailures.length === 0 && Boolean(teamData.quadroContext);

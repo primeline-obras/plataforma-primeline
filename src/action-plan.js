@@ -1,5 +1,6 @@
-import { platformPrompt } from "./platform-dialogs.js?v=1";
-import { activePlanningTasks } from "./attendance-domain.js?v=1";
+import {createAttendanceManagementClient} from './attendance-client.js?v=6';
+import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
+import { activePlanningTasks } from "./attendance-domain.js?v=8";
 
 const DAY_MS = 86400000;
 
@@ -46,7 +47,9 @@ function calendarTaskLabel(item) {
   return words.slice(0, 4).join(" ") || "Tarefa";
 }
 
-export function createActionPlanModule({ root, supabase, isConfigured, getWorks, getRole }) {
+export function createActionPlanModule({ root, supabase, isConfigured, getWorks, getRole, toast=()=>{}, confirm=message=>platformConfirm(message,{title:'Reportar conclusão',confirmLabel:'REPORTAR'}) }) {
+  const client=createAttendanceManagementClient({supabase,confirm});let epoch=0,busy=false;
+  const reports=new Map();
   const state = { items: [], phases: [], month: new Date(), loading: false, error: "" };
 
   function workFor(item) {
@@ -57,6 +60,7 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
   function taskCard(item) {
     const work = workFor(item);
     const completed = item.estado === "concluido";
+    const report=reports.get(item.id);
     return `<article class="action-task ${item.impedido ? "blocked" : ""} ${completed ? "completed" : ""}">
       <span class="action-check" aria-hidden="true">${completed ? "✓" : ""}</span>
       <div><small>OBRA ${escapeHtml(work?.numero || "—")} · ${escapeHtml(item.codigo || "TAREFA")}</small>
@@ -64,7 +68,9 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
         <span>${isoDate(item.data_inicio_prevista) || "—"} → ${isoDate(item.data_fim_prevista) || "—"}</span>
         ${item.impedido ? `<em>${escapeHtml(item.observacao_impedimento)}</em>` : ""}
       </div>
-      <b class="action-state">${stateLabel(item)}</b>
+      <b class="action-state">${report?.estado==='reported'?'CONCLUSÃO REPORTADA · AGUARDA CONFIRMAÇÃO DO DIRETOR':stateLabel(item)}</b>
+      ${getRole()==='encarregado'&&!completed&&!report?`<button data-action-report="${escapeHtml(item.id)}">REPORTAR CONCLUSÃO</button>`:''}
+      ${report?`<span>Reportado em ${escapeHtml(new Date(report.reportado_em).toLocaleString('pt-PT',{timeZone:'Europe/Lisbon'}))} · ${escapeHtml(report.reportado_nome||'Utilizador identificado no histórico')}</span>`:''}
     </article>`;
   }
 
@@ -116,22 +122,32 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
   }
 
   async function load() {
-    state.loading = true; state.error = ""; render();
+    const token=++epoch,roleAtStart=getRole();reports.clear();state.items=[];state.phases=[];state.loading = true; state.error = ""; render();
     if (!isConfigured) { state.loading = false; state.items = []; state.phases = []; render(); return; }
     const workIds = getWorks().map(work => work.id);
     if (!workIds.length) { state.loading = false; state.items = []; state.phases = []; render(); return; }
     const phasesResponse = await supabase(`fases?select=id,obra_id,codigo,descricao&obra_id=in.(${workIds.map(encodeURIComponent).join(",")})&order=codigo`);
+    if(token!==epoch||getRole()!==roleAtStart)return;
     if (!phasesResponse.ok) { state.loading = false; state.error = `Não foi possível carregar as fases: ${await phasesResponse.text()}`; render(); return; }
-    state.phases = await phasesResponse.json();
+    const phases=await phasesResponse.json();if(token!==epoch||getRole()!==roleAtStart)return;state.phases=phases;
     const phaseIds = state.phases.map(phase => phase.id);
     if (!phaseIds.length) { state.loading = false; state.items = []; render(); return; }
     const response = await supabase(`planeamento_itens?select=id,fase_id,codigo,descricao,responsavel,data_inicio_prevista,data_fim_prevista,data_fim_real,estado,percentual_executado,impedido,observacao_impedimento,arquivado_em&fase_id=in.(${phaseIds.map(encodeURIComponent).join(",")})&order=data_fim_prevista,codigo`);
+    if(token!==epoch||getRole()!==roleAtStart)return;
     state.loading = false;
     if (!response.ok) { state.error = 'Não foi possível carregar as tarefas. Contacte a gestão da plataforma.'; render(); return; }
-    state.items = await response.json(); render();
+    const items=await response.json();if(token!==epoch||getRole()!==roleAtStart)return;
+    try{const contexts=await Promise.all(workIds.map(workId=>client.context({workId})));if(token!==epoch||getRole()!==roleAtStart)return;for(const c of contexts)for(const r of c.task_reports)reports.set(r.tarefa_id,r);}
+    catch(error){if(token!==epoch||getRole()!==roleAtStart)return;state.error=error.message;}
+    state.items=items;render();
   }
 
-  root.addEventListener("click", event => {
+  root.addEventListener("click", async event => {
+    const button=event.target.closest('[data-action-report]');
+    if(button){if(busy||getRole()!=='encarregado')return;const item=state.items.find(x=>x.id===button.dataset.actionReport),work=item&&workFor(item);if(!work||reports.has(item.id)||item.estado==='concluido')return;busy=true;button.disabled=true;const token=epoch,roleAtStart=getRole();
+      try{const result=await client.execute('task_report',{task_id:item.id,work_id:work.id,expected_revision:0});if(token!==epoch||getRole()!==roleAtStart)return;if(result){toast('Conclusão reportada. Aguarda confirmação do Diretor.');await load();}}
+      catch(error){if(token===epoch&&getRole()===roleAtStart){toast(error.message,'error');await load();}}finally{busy=false;if(button.isConnected)button.disabled=false;}return;
+    }
     const monthButton = event.target.closest("[data-action-month]");
     if (monthButton) { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + Number(monthButton.dataset.actionMonth), 1); render(); return; }
   });

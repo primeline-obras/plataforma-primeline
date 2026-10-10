@@ -7,7 +7,7 @@ const client=await read('src/attendance-client.js'),sheet=await read('src/attend
 test('Folha usa somente RPCs controladas, sem fallback/DML; motivo obrigatório fora da janela ADM',()=>{
  assert.doesNotMatch(client+sheet,/fn_guardar_ponto_obra|fn_listar_ponto_obra|method:\s*['"](?:PATCH|DELETE)['"]/);
  assert.match(sheet,/MOTIVO DA CORREÇÃO \(OBRIGATÓRIO\)/);assert.match(sql,/CORRECTION_REASON_REQUIRED/);
- assert.match(sheet,/remove_from_day/);assert.match(sheet,/daySummary/);assert.match(sheet,/reason:.*\|\|null/);
+ assert.match(sheet,/team_remove/);assert.match(sheet,/daySummary/);assert.match(sheet,/reason:.*\|\|null/);
  const vacation=app.slice(app.indexOf('async function saveVacationDays'),app.indexOf('async function loadTeamData'));
  assert.match(vacation,/vacation_replace/);assert.doesNotMatch(vacation,/method:\s*['"](?:POST|DELETE|PATCH)['"]|!isSupabaseConfigured\)\s*\{/);
 });

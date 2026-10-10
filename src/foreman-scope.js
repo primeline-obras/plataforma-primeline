@@ -33,3 +33,10 @@ export async function loadForemanAbsences(supabase, start, end, vacationsOnly = 
   if (!Array.isArray(rows)) return Response.json({message:'Resposta de disponibilidade inválida.'}, {status:502});
   return Response.json(vacationsOnly ? rows.filter(row=>row.tipo==='ferias') : rows);
 }
+
+export async function loadForemanVacationMap(supabase,start,end) {
+ const r=await supabase('rpc/fn_folha_ferias_mapa_v2',{method:'POST',body:JSON.stringify({p_inicio:start,p_fim:end})});
+ if(!r.ok)return r;const j=await r.json();
+ if(j?.version!==2||!Array.isArray(j.people)||!Array.isArray(j.vacations))return Response.json({message:'Mapa de férias inválido.'},{status:502});
+ return Response.json(j);
+}

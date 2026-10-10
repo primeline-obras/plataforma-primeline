@@ -78,8 +78,8 @@ try {for(const width of [1440,820,390])for(const role of ['administrativo','gest
   await page.locator('[data-sheet-date]').fill('2026-10-03');await page.locator('[data-sheet-work]').selectOption('own');await page.waitForFunction(()=>document.querySelector('[data-sheet-edit]'));
   assert.match(await page.locator('[data-sheet-summary]').textContent(),/1 pendentes/);assert.doesNotMatch(await page.locator('[data-sheet-summary]').textContent(),/DIA COMPLETO/);assert.equal(await page.locator('[data-sheet-bulk=normal]').isDisabled(),true);
   await page.locator('[data-sheet-edit]').click();assert.equal(await page.locator('[name=reason]').getAttribute('required'),'');
-  await page.locator('[data-sheet-form] button').click();assert.equal(await page.evaluate(()=>sheetCalls.filter(x=>x.b.p_acao==='save').length),0);
-  await page.locator('[name=reason]').fill('Correção administrativa sintética');await page.locator('[data-sheet-form] button').click();await page.waitForFunction(()=>actual.revision===2);
+  await page.locator('[data-sheet-form] button[type=submit]').click();assert.equal(await page.evaluate(()=>sheetCalls.filter(x=>x.b.p_acao==='save').length),0);
+  await page.locator('[name=reason]').fill('Correção administrativa sintética');await page.locator('[data-sheet-form] button[type=submit]').click();await page.waitForFunction(()=>actual.revision===2);
   assert.equal(await page.evaluate(()=>sheetCalls.find(x=>x.b.p_acao==='save').b.p_dados.reason),'Correção administrativa sintética');groups++;
  }
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));assert.ok(await page.evaluate(()=>calls.every(x=>x.name.startsWith('rpc/fn_folha_'))));
