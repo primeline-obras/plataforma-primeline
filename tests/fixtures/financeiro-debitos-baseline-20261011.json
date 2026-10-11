@@ -1,0 +1,360 @@
+{
+  "source": "Committed catalog capture 2026-10-07; must be reconfirmed read-only before real rollout",
+  "tables": [
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=ar/postgres}",
+      "rls": true,
+      "kind": "r",
+      "name": "debitos_diretos",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "acl": null,
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "obra_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": true
+        },
+        {
+          "acl": null,
+          "name": "descricao",
+          "type": "text",
+          "default": null,
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "categoria",
+          "type": "text",
+          "default": null,
+          "nullable": true
+        },
+        {
+          "acl": null,
+          "name": "valor_previsto",
+          "type": "numeric",
+          "default": null,
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "recorrencia",
+          "type": "text",
+          "default": null,
+          "nullable": true
+        },
+        {
+          "acl": null,
+          "name": "dia_mes",
+          "type": "integer",
+          "default": null,
+          "nullable": true
+        },
+        {
+          "acl": null,
+          "name": "data_inicio",
+          "type": "date",
+          "default": null,
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "data_fim",
+          "type": "date",
+          "default": null,
+          "nullable": true
+        },
+        {
+          "acl": null,
+          "name": "ativo",
+          "type": "boolean",
+          "default": "true",
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "criado_por",
+          "type": "uuid",
+          "default": null,
+          "nullable": true
+        },
+        {
+          "acl": null,
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "valid": true,
+          "definition": "CREATE UNIQUE INDEX debitos_diretos_pkey ON public.debitos_diretos USING btree (id)"
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "INSERT",
+          "qual": null,
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "debitos_diretos",
+          "permissive": "PERMISSIVE",
+          "policyname": "pl_debitos_diretos_insert",
+          "schemaname": "public",
+          "with_check": "(fn_e_administrativo() OR fn_e_financeiro())"
+        },
+        {
+          "cmd": "SELECT",
+          "qual": "(fn_e_administrativo() OR fn_e_financeiro() OR ((obra_id IS NOT NULL) AND fn_pode_ver_obra(obra_id)))",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "debitos_diretos",
+          "permissive": "PERMISSIVE",
+          "policyname": "pl_debitos_diretos_select",
+          "schemaname": "public",
+          "with_check": null
+        }
+      ],
+      "triggers": [
+        {
+          "name": "trg_auditoria_debitos_diretos",
+          "enabled": "O",
+          "function": "fn_registar_log_auditoria()",
+          "definition": "CREATE TRIGGER trg_auditoria_debitos_diretos AFTER INSERT OR DELETE OR UPDATE ON public.debitos_diretos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+        }
+      ],
+      "force_rls": false,
+      "constraints": [
+        {
+          "name": "debitos_diretos_categoria_check",
+          "type": "c",
+          "validated": true,
+          "definition": "CHECK ((categoria = ANY (ARRAY['renda'::text, 'seguro'::text, 'software'::text, 'emprestimo'::text, 'servico_publico'::text, 'remuneracoes_sede'::text, 'despesas_sede'::text, 'despesas_armazem'::text, 'outro'::text])))"
+        },
+        {
+          "name": "debitos_diretos_criado_por_fkey",
+          "type": "f",
+          "validated": true,
+          "definition": "FOREIGN KEY (criado_por) REFERENCES utilizadores(id)"
+        },
+        {
+          "name": "debitos_diretos_dia_mes_check",
+          "type": "c",
+          "validated": true,
+          "definition": "CHECK (((dia_mes >= 1) AND (dia_mes <= 31)))"
+        },
+        {
+          "name": "debitos_diretos_obra_id_fkey",
+          "type": "f",
+          "validated": true,
+          "definition": "FOREIGN KEY (obra_id) REFERENCES obras(id)"
+        },
+        {
+          "name": "debitos_diretos_pkey",
+          "type": "p",
+          "validated": true,
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "debitos_diretos_recorrencia_check",
+          "type": "c",
+          "validated": true,
+          "definition": "CHECK ((recorrencia = ANY (ARRAY['mensal'::text, 'trimestral'::text, 'anual'::text])))"
+        }
+      ],
+      "view_definition": null
+    },
+    {
+      "acl": "{postgres=arwdDxtm/postgres,service_role=arwdDxtm/postgres,authenticated=ar/postgres}",
+      "rls": true,
+      "kind": "r",
+      "name": "debitos_diretos_lancamentos",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "acl": null,
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "debito_direto_id",
+          "type": "uuid",
+          "default": null,
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "data",
+          "type": "date",
+          "default": null,
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "valor",
+          "type": "numeric",
+          "default": null,
+          "nullable": false
+        },
+        {
+          "acl": null,
+          "name": "criado_em",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "valid": true,
+          "definition": "CREATE UNIQUE INDEX debitos_diretos_lancamentos_debito_direto_id_data_key ON public.debitos_diretos_lancamentos USING btree (debito_direto_id, data)"
+        },
+        {
+          "valid": true,
+          "definition": "CREATE UNIQUE INDEX debitos_diretos_lancamentos_pkey ON public.debitos_diretos_lancamentos USING btree (id)"
+        }
+      ],
+      "policies": [
+        {
+          "cmd": "INSERT",
+          "qual": null,
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "debitos_diretos_lancamentos",
+          "permissive": "PERMISSIVE",
+          "policyname": "pl_debitos_lancamentos_insert",
+          "schemaname": "public",
+          "with_check": "(fn_e_administrativo() OR fn_e_financeiro())"
+        },
+        {
+          "cmd": "SELECT",
+          "qual": "(EXISTS ( SELECT 1\n   FROM debitos_diretos d\n  WHERE ((d.id = debitos_diretos_lancamentos.debito_direto_id) AND (fn_e_administrativo() OR fn_e_financeiro() OR ((d.obra_id IS NOT NULL) AND fn_pode_ver_obra(d.obra_id))))))",
+          "roles": [
+            "authenticated"
+          ],
+          "tablename": "debitos_diretos_lancamentos",
+          "permissive": "PERMISSIVE",
+          "policyname": "pl_debitos_lancamentos_select",
+          "schemaname": "public",
+          "with_check": null
+        }
+      ],
+      "triggers": [
+        {
+          "name": "trg_auditoria_debitos_diretos_lancamentos",
+          "enabled": "O",
+          "function": "fn_registar_log_auditoria()",
+          "definition": "CREATE TRIGGER trg_auditoria_debitos_diretos_lancamentos AFTER INSERT OR DELETE OR UPDATE ON public.debitos_diretos_lancamentos FOR EACH ROW EXECUTE FUNCTION fn_registar_log_auditoria('id')"
+        }
+      ],
+      "force_rls": false,
+      "constraints": [
+        {
+          "name": "debitos_diretos_lancamentos_debito_direto_id_data_key",
+          "type": "u",
+          "validated": true,
+          "definition": "UNIQUE (debito_direto_id, data)"
+        },
+        {
+          "name": "debitos_diretos_lancamentos_debito_direto_id_fkey",
+          "type": "f",
+          "validated": true,
+          "definition": "FOREIGN KEY (debito_direto_id) REFERENCES debitos_diretos(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "debitos_diretos_lancamentos_pkey",
+          "type": "p",
+          "validated": true,
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "view_definition": null
+    }
+  ],
+  "functions": [
+    {
+      "signature": "fn_e_administrativo()",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "c6fa029ddf68fac866607408dcb2069f594c9f0c571de513616ed0a1c45bde82"
+    },
+    {
+      "signature": "fn_e_financeiro()",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": [
+        "search_path=public"
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "f82ccdf4944e01e45091a93f402d685af2b9c46ae5c07073f16daf0bd8bd2ff3"
+    },
+    {
+      "signature": "fn_economico_ator_atual()",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog"
+      ],
+      "acl": "{postgres=X/postgres}",
+      "definition_sha256": "cd08aba6e6d90349350e53032199586dda6f42679fd1ba500b3758543b657e69"
+    },
+    {
+      "signature": "fn_financeiro_autorizar_obra(uuid,boolean)",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog"
+      ],
+      "acl": "{postgres=X/postgres}",
+      "definition_sha256": "53224866b2c7c7dfb6e620305327ecee0a01816c97987b62ad08b5f29c38daad"
+    },
+    {
+      "signature": "fn_importar_mapa_financeiro_xlsx(integer,jsonb,text)",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": [
+        "search_path=pg_catalog, public, pg_temp"
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "definition_sha256": "c832589ad6ddde447c94a350e90183f19fe10a4f15cd7647c9dd51dc4160e28d"
+    },
+    {
+      "signature": "fn_log_importacao_xlsx(text,text,integer,jsonb)",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": [
+        "search_path=public, pg_temp"
+      ],
+      "acl": "{postgres=X/postgres}",
+      "definition_sha256": "6a068375c1a8b09e41c3db1700509599b34597db440761bbc65a5c684ba6d457"
+    },
+    {
+      "signature": "fn_utilizador_atual_id()",
+      "owner": "postgres",
+      "security_definer": true,
+      "config": null,
+      "acl": "{=X/postgres,postgres=X/postgres}",
+      "definition_sha256": "299b4257f69e299760e1d925ca3b2e49ce5665dc5e02fba34fb7597cb71947be"
+    }
+  ]
+}

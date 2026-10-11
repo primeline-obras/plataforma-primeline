@@ -30,6 +30,7 @@ function activeInMonth(work, year, month) {
 }
 
 export function createFinancialMapModule({ root, supabase, isConfigured, getWorks, getProfile, euro, toast, onImportExcel }) {
+  let expensesImporter;
   const state = {
     year: new Date().getFullYear(), loaded: false, loading: false, error: "",
     contracts: [], investments: [], forecast: [], adjustments: [], debits: [], entries: [], editing: null,
@@ -179,7 +180,11 @@ export function createFinancialMapModule({ root, supabase, isConfigured, getWork
 
   root.addEventListener("click", async event => {
     if (event.target.closest("[data-import-financial-map]")) {
-      onImportExcel?.({ year: state.year, works: getWorks(), adjustments: state.adjustments, debits: state.debits, entries: state.entries, onComplete: () => load(true) });
+      try {
+        const { createFinancialExpensesImport } = await import('./financial-expenses-import.js?v=1');
+        expensesImporter ??= createFinancialExpensesImport({ supabase, getProfile, isConfigured, onComplete: () => load(true) });
+        expensesImporter.open({ year: state.year, works: getWorks() });
+      } catch (error) { toast(error.message, 'error'); }
       return;
     }
     const adjust = event.target.closest("[data-map-adjust]");
