@@ -171,7 +171,9 @@ test('Folha v2: PostgreSQL 17.6 local, contratos e isolamento',{timeout:240000,s
   await assert.rejects(call(a,10,'bulk',{...d,request_id:id(seq++)}),/NORMAL_DAY_CONFLICT/);
   await perform(13,'allocate',alloc(65,today));const future={...alloc(65,today),operation:'normal',items:[sheet(65,today)]};
   await q("UPDATE folha_horarios SET intervals='[{\"period\":\"manha\",\"start\":\"23:00\",\"end\":\"23:15\"},{\"period\":\"tarde\",\"start\":\"23:20\",\"end\":\"23:59\"}]'");
-  await assert.rejects(call(a,13,'bulk',future),/FUTURE_TIME/);
+  // The special-day guard precedes clock validation on Saturday/Sunday.
+  const specialToday=(await q('SELECT extract(isodow FROM $1::date)::int n',[today])).rows[0].n>5;
+  await assert.rejects(call(a,13,'bulk',future),specialToday?/SPECIAL_DAY_NO_NORMAL_FILL/:/FUTURE_TIME/);
   await q("UPDATE folha_horarios SET intervals='[{\"period\":\"manha\",\"start\":\"08:00\",\"end\":\"12:00\"},{\"period\":\"tarde\",\"start\":\"13:00\",\"end\":\"17:00\"}]'");
   const past={...alloc(65),operation:'normal',items:[{...sheet(65),intervals:[{start:'08:00',end:'12:00'},{start:'13:00',end:'17:00'}]}]};await perform(13,'allocate',alloc(65));await perform(10,'bulk',past);
   await q("UPDATE folha_horarios SET intervals='[{\"period\":\"manha\",\"start\":\"09:00\",\"end\":\"13:00\"},{\"period\":\"tarde\",\"start\":\"14:00\",\"end\":\"18:00\"}]'");

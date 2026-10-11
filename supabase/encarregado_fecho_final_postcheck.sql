@@ -1,0 +1,27 @@
+BEGIN TRANSACTION READ ONLY;
+DO $$ DECLARE r record; actual jsonb; expected text; BEGIN
+ FOR r IN SELECT * FROM (VALUES ('folha_privado.integridade_externo()','bc0cad927b37c7045864f53a2a538b22'),('folha_privado.facts(jsonb,date)','368c021c94a1856bc1e1aa568a3ffab9'),('folha_privado.local(uuid,uuid,boolean)','90c6366ddbdf88da388f2583c4d580ef'),('folha_privado.linha(uuid,uuid,date,text)','243c1e89dd622878bf0a00cecca64e2f'),('folha_privado.save(jsonb,uuid,date,uuid,boolean)','d8c2c332ac3a1bcd9b33e1042916fe57'),('folha_privado.normal(uuid,uuid,date)','fae9f197c1cd185a7e63ada59889ac52'),('public.fn_equipa_operar_v2(text,jsonb,boolean,text)','2db5f4faf22adecbc565f37a52107bcc'),('public.fn_folha_pessoas_v2(date,uuid)','c520c0fe94c8cb858393c9ea18424f4b'),('public.fn_folha_contexto_v2(date,uuid)','dcdb75eb1feb3a9c789e98267d25c6af'),('folha_privado.operar_final_base(text,jsonb,boolean,text)','36eda95490209f651c8114d3c2eb3640'),('folha_privado.normal_externo(uuid,date)','14028c6f6151d7f80ed109607f9d7621'),('folha_privado.operar_periodos(jsonb,boolean,text)','8a4b4ac6e9bd6c7525524241ba373005'),('folha_privado.operar_externo(text,jsonb,boolean,text)','6cf4e3d6a02e994a20e6a1e0a8e30728'),('public.fn_folha_operar_v2(text,jsonb,boolean,text)','0da20a7b529709db2e06e2abef2528cd'),('public.fn_listar_colegas_agenda()','9afb50281bd005dd8fe921bee1f3c724')) x(sig,hash) LOOP
+ IF (SELECT md5(prosrc) FROM pg_proc WHERE oid=to_regprocedure(r.sig)) IS DISTINCT FROM r.hash THEN RAISE EXCEPTION 'FINAL_FUNCTION_DIVERGENCE: %',r.sig; END IF; END LOOP;
+ SELECT prosrc INTO expected FROM pg_proc WHERE oid='folha_privado.save(jsonb,uuid,date,uuid,boolean)'::regprocedure;
+ expected:=replace(expected,'other.data=d AND other.obra_id IS DISTINCT FROM w','other.data=d AND other.obra_id IS DISTINCT FROM w AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(plano) target WHERE target->>''work_id'' IS NOT DISTINCT FROM other.obra_id::text)');
+ expected:=replace(expected,'expected:=(row->>''expected_minutes'')::integer;', 'expected:=(row->>''expected_minutes'')::integer; IF w IS NOT NULL THEN SELECT sum((extract(epoch FROM ((h.x->>''end'')::time-(h.x->>''start'')::time))/60)::integer) INTO expected FROM public.folha_horarios schedule CROSS JOIN LATERAL jsonb_array_elements(schedule.intervals) h(x) WHERE schedule.obra_id=w AND EXISTS(SELECT 1 FROM jsonb_array_elements(p->''intervals'') period WHERE period->>''period''=h.x->>''period''); END IF;');
+ expected:=replace(expected,'SET intervals=p->''intervals'',minutes=','SET expected_minutes=expected,intervals=p->''intervals'',minutes=');
+ IF (SELECT prosrc FROM pg_proc WHERE oid=to_regprocedure('folha_privado.save_periodo(jsonb,uuid,date,uuid,boolean,jsonb)')) IS DISTINCT FROM expected THEN RAISE EXCEPTION 'PERIOD_HELPER_DIVERGENCE'; END IF;
+ IF EXISTS(SELECT 1 FROM (VALUES('folha_privado.externos_revisoes'),('folha_privado.periodos_revisoes')) x(t) WHERE NOT EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass(x.t) AND relrowsecurity AND relowner='postgres'::regrole)) THEN RAISE EXCEPTION 'PRIVATE_REVISION_STRUCTURE_INVALID'; END IF;
+ IF EXISTS(SELECT 1 FROM (VALUES('public.fn_folha_operar_v2(text,jsonb,boolean,text)'),('public.fn_listar_colegas_agenda()')) x(sig) WHERE NOT has_function_privilege('authenticated',to_regprocedure(x.sig),'EXECUTE') OR has_function_privilege('anon',to_regprocedure(x.sig),'EXECUTE') OR has_function_privilege('service_role',to_regprocedure(x.sig),'EXECUTE')) THEN RAISE EXCEPTION 'PUBLIC_RPC_ACL_DIVERGENCE'; END IF;
+ FOR r IN SELECT * FROM primeline_encarregado_final_backup.privado LOOP
+ EXECUTE format('SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE "C"),''[]''::jsonb) FROM folha_privado.%I x',r.tabela) INTO actual;
+ IF actual IS DISTINCT FROM r.linhas THEN RAISE EXCEPTION 'PRIVATE_DATA_CHANGED: %',r.tabela; END IF;
+ END LOOP;
+ FOR r IN SELECT * FROM primeline_encarregado_final_backup.dados LOOP
+ EXECUTE format('SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text COLLATE "C"),''[]''::jsonb) FROM public.%I x',r.tabela) INTO actual;
+ IF actual IS DISTINCT FROM r.linhas THEN RAISE EXCEPTION 'OPERATIONAL_DATA_CHANGED: %',r.tabela; END IF;
+ END LOOP;
+
+ IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid='public.folha_externos_permanencias'::regclass AND relrowsecurity AND relowner='postgres'::regrole) OR EXISTS(SELECT 1 FROM public.folha_externos_permanencias) THEN RAISE EXCEPTION 'EXTERNAL_STRUCTURE_INVALID'; END IF;
+ IF EXISTS(SELECT 1 FROM aclexplode((SELECT relacl FROM pg_class WHERE oid='public.folha_externos_permanencias'::regclass)) WHERE grantee<>'postgres'::regrole) THEN RAISE EXCEPTION 'EXTERNAL_ACL_NOT_PRIVATE'; END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE n.nspname='folha_privado' AND p.proname IN('integridade_externo','save_periodo','normal_externo','operar_periodos','operar_externo','operar_final_base') AND (a.grantee<>'postgres'::regrole OR p.proowner<>'postgres'::regrole OR NOT ('search_path=pg_catalog'=ANY(p.proconfig)))) THEN RAISE EXCEPTION 'PRIVATE_HELPER_EXPOSED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.ponto_pessoal_obra'::regclass AND tgname='trg_01_folha_legacy_closed' AND tgenabled='O') THEN RAISE EXCEPTION 'LEGACY_NOT_CLOSED'; END IF;
+END $$;
+SELECT 'ENCARREGADO_FINAL_POSTCHECK_OK' AS resultado;
+COMMIT;

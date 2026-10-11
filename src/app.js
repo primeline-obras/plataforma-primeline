@@ -4,20 +4,20 @@ import { installSessionBoundary } from "./session-boundary.js?v=1";
 import { loadForemanDirectory, loadForemanAbsences, loadForemanVacationMap } from "./foreman-scope.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
 import { createProductionDashboard } from "./production-dashboard.js?v=26";
-import { createPlanningModule } from "./planning.js?v=17";
+import { createPlanningModule } from "./planning.js?v=18";
 import { createSubcontractorsModule } from "./subcontractors.js?v=10";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=16";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
 import { createProcurementModule } from "./procurement.js?v=4";
 import { createComparativeMapModule } from "./comparative-map.js?v=6";
-import { createActionPlanModule } from "./action-plan.js?v=8";
+import { createActionPlanModule } from "./action-plan.js?v=9";
 import { createDocumentsModule } from "./documents.js?v=3";
 import { createRncModule } from "./rnc.js?v=5";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
 import { createVehiclesModule } from "./vehicles.js?v=4";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
-import { createCalendarModule } from "./calendar.js?v=2";
+import { createCalendarModule } from "./calendar.js?v=3";
 import { createPropertiesModule } from "./properties.js?v=3";
 import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
@@ -26,7 +26,7 @@ import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceManagementClient } from "./attendance-client.js?v=7";
-import { createAttendanceModule } from "./attendance-sheet.js?v=10";
+import { createAttendanceModule } from "./attendance-sheet.js?v=11";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -867,7 +867,7 @@ function canReadWorkforce() {
 }
 
 function canManageWorkforce() {
-  return accessContext.profile?.ativo === true && (["administrativo", "gestao_plataforma", "encarregado"].includes(effectiveRole()))
+  return accessContext.profile?.ativo === true && (["administrativo", "gestao_plataforma"].includes(effectiveRole()))
     && Boolean(teamData.quadroContext) && teamData.quadroReady === true
     && (teamData.quadroContext.can_manage_global === true || teamData.quadroContext.edit_work_ids.length > 0);
 }
@@ -2077,6 +2077,7 @@ async function reactivateCollaborator(personId) {
 }
 
 function renderTeam() {
+  if (workforceEditing && !canManageWorkforce()) { setWorkforceEditing(false); return; }
   $("#edit-workforce").hidden = !canManageWorkforce();
   $("#workforce-movements").hidden = !canReadWorkforce();
   renderWorkforceLineEditor();
@@ -2335,7 +2336,7 @@ function renderTeam() {
 
 function setWorkforceEditing(enabled) {
   if (enabled && !canManageWorkforce()) {
-    toast("A edição do quadro está reservada à equipa técnica, ao Administrativo e à Gerência.", "error");
+    toast("A edição do Quadro está reservada ao Administrativo e à Gestão da Plataforma. Para registar a equipa, use a Folha de Ponto.", "error");
     return;
   }
   workforceEditing = enabled;

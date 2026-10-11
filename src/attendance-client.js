@@ -30,10 +30,10 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
       const people=data.key?[data.key.person_id]:data.person_id?[data.person_id]:data.external_id?[data.external_id]:data.people?.map(x=>x.person_id)||data.items?.map(x=>x.key.person_id);
       const validKeys=Array.isArray(result?.changed_keys) && result.changed_keys.length>0 && result.changed_keys.every(k=>
         k && ['primeline','external'].includes(k.kind) && typeof k.person_id==='string' && k.person_id &&
-        k.date===data.date && (k.work_id===data.work_id || data.source_work_id&&k.work_id===data.source_work_id) &&
-        (!data.key || k.kind===data.key.kind) && (action!=='external_register' || k.kind==='external') &&
+        k.date===data.date && (k.work_id===data.work_id || data.source_work_id&&k.work_id===data.source_work_id || action==='periods_save'&&data.sites?.some(site=>site.work_id===k.work_id)) &&
+        (!data.key || k.kind===data.key.kind) && (!['external_register','external_team_add','external_team_remove'].includes(action) || k.kind==='external') &&
         (!people || people.includes(k.person_id))) &&
-        (!people || people.every(id=>result.changed_keys.some(k=>k.person_id===id&&k.work_id===data.work_id)));
+        (!people || people.every(id=>result.changed_keys.some(k=>k.person_id===id&&(k.work_id===data.work_id||action==='periods_save'&&data.sites?.some(site=>site.work_id===k.work_id)))));
       if(result?.version!==2 || result.committed!==true || result.request_id!==body.request_id || !validKeys)throw new Error('Gravação não confirmada. Recarregue antes de repetir.');
       pending=null;return result;
     } catch(error) {

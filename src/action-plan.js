@@ -1,6 +1,6 @@
-import {createAttendanceManagementClient} from './attendance-client.js?v=7';
+import {createAttendanceManagementClient} from './attendance-client.js?v=8';
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
-import { activePlanningTasks } from "./attendance-domain.js?v=8";
+import { activePlanningTasks } from "./attendance-domain.js?v=9";
 
 const DAY_MS = 86400000;
 
@@ -69,7 +69,7 @@ export function createActionPlanModule({ root, supabase, isConfigured, getWorks,
         ${item.impedido ? `<em>${escapeHtml(item.observacao_impedimento)}</em>` : ""}
       </div>
       <b class="action-state">${report?.estado==='reported'?'CONCLUSÃO REPORTADA · AGUARDA CONFIRMAÇÃO DO DIRETOR':stateLabel(item)}</b>
-      ${getRole()==='encarregado'&&!completed&&!report?`<button data-action-report="${escapeHtml(item.id)}">REPORTAR CONCLUSÃO</button>`:''}
+      ${getRole()==='encarregado'&&!completed&&!report?`<button class="action-report-secondary" data-action-report="${escapeHtml(item.id)}">REPORTAR CONCLUSÃO</button>`:''}
       ${report?`<span>Reportado em ${escapeHtml(new Date(report.reportado_em).toLocaleString('pt-PT',{timeZone:'Europe/Lisbon'}))} · ${escapeHtml(report.reportado_nome||'Utilizador identificado no histórico')}</span>`:''}
     </article>`;
   }

@@ -150,9 +150,13 @@ try {
   assert.equal(await page.evaluate(()=>calls.filter(c=>c.resource==='rpc/fn_quadro_contexto_v1').length),beforeReload+1);
   assert.match(await page.locator('#workforce-edit-message').textContent(),/alterada por outro utilizador/);
   await page.evaluate(()=>{quadroFailure=null;});
-  for(const role of ['gerencia','diretor_obra','adjunto','preparador']) {
+  for(const role of ['gerencia','diretor_obra','adjunto','preparador','encarregado']) {
     await page.evaluate(value=>quadroTest.role(value),role);
     assert.equal(await page.locator('#edit-workforce').isVisible(),false);
+  }
+  assert.equal(await page.locator('#workforce-view').evaluate(el=>el.classList.contains('editing')),false);
+  for(const [name,width,height] of [['tablet-portrait',768,1024],['tablet-landscape',1024,768],['tablet',820,1180]]) {
+    await page.setViewportSize({width,height});await page.screenshot({path:path.join(screenshots,'quadro-encarregado-'+name+'.png'),fullPage:true,animations:'disabled'});
   }
   await page.evaluate(()=>quadroTest.role('administrativo'));
   assert.equal(await page.locator('#edit-workforce').isVisible(),true);

@@ -443,7 +443,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     return `<section class="planning-unified-detail"><header><div><p class="eyebrow">PLANEAMENTO DA OBRA</p><h3>Tarefas organizadas por fase</h3></div><span>${state.items.filter(item => !item._new && activeTask(item)).length} TAREFAS</span></header>
         <div class="planning-effective-toolbar">${readOnly() ? `<span>CONSULTA · O ENCARREGADO NÃO PODE CRIAR, EDITAR OU APAGAR TAREFAS</span>` : `<div><button type="button" data-open-import>⇧ IMPORTAR TAREFAS</button><button type="button" class="primary" data-new-task>＋ NOVA TAREFA</button></div><button type="button" data-save-batch ${!dirtyCount() || state.batchSaving || !state.dependenciesLoaded ? "disabled" : ""}>GUARDAR ALTERAÇÕES · ${dirtyCount()}</button>`}</div>
         ${!state.dependenciesLoaded ? `<p class="form-error" role="alert">${dependencyError}</p>` : ""}
-        ${renderBatchPreview()}${renderWeights()}${renderImportPanel()}${renderEditor()}
+        ${renderBatchPreview()}${renderImportPanel()}${renderEditor()}${renderWeights()}
       </section>`;
   }
 
@@ -530,7 +530,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
   function renderWeights() {
     const rows = state.phases.map(phase => {
       const weights = weightSummary(state.items.filter(item => item.fase_id === phase.id));
-      if (weights.count === 0) return "";
+      if (weights.count === 0 || weights.valid) return "";
       return `<div><strong>${escapeHtml(phase.codigo)}</strong> · PESO ATRIBUÍDO ${weights.assigned.toFixed(2)}% · FALTA DISTRIBUIR ${weights.missing.toFixed(2)}%${weights.excess ? ` · EXCESSO ${weights.excess.toFixed(2)}%` : ""}${readOnly() || weights.valid ? "" : `<button type="button" data-redistribute="${phase.id}" ${state.batchSaving ? "disabled" : ""}>REDISTRIBUIR PROPORCIONALMENTE</button>`}</div>`;
     }).join("");
     return rows ? `<div class="planning-weights">${rows}</div>` : "";
@@ -549,6 +549,7 @@ export function createPlanningModule({ supabase, isSupabaseConfigured, getWorks,
     if (input.name === "peso_percentual") {
       const panel = content.querySelector(".planning-weights");
       if (panel) panel.outerHTML = renderWeights();
+      else content.querySelector(".planning-unified-detail")?.insertAdjacentHTML("beforeend", renderWeights());
     }
     row.classList.toggle("dirty", planningChanges(state.original, [item]).length > 0);
     const button = content.querySelector("[data-save-batch]");

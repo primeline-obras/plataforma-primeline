@@ -62,6 +62,7 @@ try{
    if(hold&&identity===to){held++;await blocked;}
    if(resource==='utilizadores')return reply([{id:'u-'+identity,auth_user_id:identity,ativo:true,funcao:role,nome:'Sessão '+identity}]);
    if(resource==='rpc/fn_e_admin')return reply(role==='gestao_plataforma');
+   if(resource==='rpc/fn_folha_ferias_mapa_v2')return reply({version:2,people:[person],vacations:[]});
    if(resource==='obras')return reply(identity==='B'?[work]:[work,{id:'private-A',numero:'999',nome:'Obra privada',situacao:'em_curso'}]);
    if(resource==='colaboradores')return reply([person,{id:'outside',nome:'OUTSIDE_TEAM_PERSON',funcao:'Pedreiro',data_saida:null}]);
    if(resource==='rpc/fn_listar_ponto_obra')return reply({obras:[work],linhas:body.p_obra_id?[{colaborador_id:person.id,nome:person.nome,funcao:person.funcao,periodos:['manha','tarde']}]:[],pode_validar:false});

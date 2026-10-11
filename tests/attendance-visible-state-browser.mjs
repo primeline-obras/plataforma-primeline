@@ -50,7 +50,7 @@ try{
   assert.equal(await page.locator('[data-sheet-legacy] button').count(),0);pass++;
   await page.screenshot({path:path.join(screenshots,role+'-'+width+'-legacy.png'),fullPage:true});
   if(['encarregado','administrativo'].includes(role)){
-   for(const operation of ['start','finish','normal'])await page.locator(`[data-sheet-bulk="${operation}"]`).evaluate(e=>{e.disabled=false;e.click();});
+   assert.equal(await page.locator('[data-sheet-bulk=start],[data-sheet-bulk=finish],[data-sheet-bulk=normal]').count(),0);
    assert.equal(await page.evaluate(()=>calls.some(c=>c.name.endsWith('fn_folha_operar_v2'))),false);pass++;
   }
   for(const scene of ['pending','resolved','vacation','both','work_absence','missing','overtime','special']){
@@ -68,7 +68,7 @@ try{
    if(scene==='overtime')assert.match(text,/HE validada · regra financeira pendente/);
    if(scene==='special')assert.match(text,/DIA ESPECIAL · REQUER REVISÃO/);
    if(scene==='pending'&&['encarregado','administrativo'].includes(role)){
-    for(const operation of ['start','finish','normal'])await page.locator(`[data-sheet-bulk="${operation}"]`).evaluate(e=>{e.disabled=false;e.click();});
+    assert.equal(await page.locator('[data-sheet-bulk=start],[data-sheet-bulk=finish],[data-sheet-bulk=normal]').count(),0);
     assert.equal(await page.evaluate(()=>calls.some(c=>c.name.endsWith('fn_folha_operar_v2'))),false);
    }
    pass++;

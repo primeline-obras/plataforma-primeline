@@ -43,3 +43,12 @@
 .sheet-panel p { margin:8px 0; }
 .sheet-v2 .sheet-panel [data-sheet-form] { margin:0; padding:12px; }
 .sheet-v2 button[aria-expanded=true] { outline:3px solid var(--accent,#345f72); outline-offset:2px; }
+
+/* Approved tablet hierarchy: two main actions, two periods, contextual editor. */
+.sheet-v2 .sheet-self { border-left:4px solid var(--accent,#345f72); }
+.sheet-action-status { padding:12px 0; font-weight:600; }
+.sheet-period-work { grid-column:1/-1; }
+.action-plan .action-report-secondary,button.action-report-secondary { width:auto; min-width:0; max-width:100%; min-height:44px; padding:10px 16px; justify-self:end; background:transparent; color:var(--text); font-size:14px; line-height:1.2; }
+.planning-weights { font-size:14px; padding:10px 12px; }
+
+.action-task .action-report-secondary { grid-column:2/-1; justify-self:end; white-space:normal; }

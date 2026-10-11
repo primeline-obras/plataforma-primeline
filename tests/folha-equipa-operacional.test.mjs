@@ -97,6 +97,8 @@ test('Equipa persistente / Folha operacional — PostgreSQL local',{timeout:2400
  async function operate(action,people,work=100,date='2026-10-01',user=10){const body={version:2,request_id:id(request++),work_id:id(work),date,people};const preview=await call(a,user,'fn_equipa_operar_v2',[action,body,false,null]);assert.equal(preview.committed,false);const committed=await call(a,user,'fn_equipa_operar_v2',[action,body,true,preview.versao]);return {body,preview,committed};}
  const member=(p,rev=0,source)=>({person_id:id(p),expected_revision:rev,...(source?{source_work_id:id(source)}:{})});
  const context=(user,work,date)=>as(a,user,'SELECT fn_folha_contexto_v2($1::date,$2::uuid) v',[date,id(work)]);
+ // Manual fact scenarios use yesterday; membership/history fixtures retain their original dates.
+ const factDay=(await q("SELECT ((now() AT TIME ZONE 'Europe/Lisbon')::date-1)::text d")).rows[0].d;
  await t.test('estrutura vazia e legado integral preservado; rollback vazio e reinstalação',async()=>{
   await q(await read('../supabase/folha_equipa_operacional_rollback.sql'));
   assert.equal((await q("SELECT to_regclass('quadro_equipa_permanencias') v")).rows[0].v,null);
@@ -162,13 +164,13 @@ test('Equipa persistente / Folha operacional — PostgreSQL local',{timeout:2400
   await assert.rejects(call(a,10,'fn_equipa_operar_v2',['team_add',body,true,old.versao]),e=>e.code==='40001');
  });
  await t.test('G — horas próprias do Diretor não criam equipa física',async()=>{
-  const body={version:2,request_id:id(request++),date:'2026-10-09',work_id:id(100),key:{kind:'primeline',person_id:id(60),work_id:id(100),date:'2026-10-09'},expected_revision:0,intervals:[{start:'08:00',end:'11:00'}]};
+  const body={version:2,request_id:id(request++),date:factDay,work_id:id(100),key:{kind:'primeline',person_id:id(60),work_id:id(100),date:factDay},expected_revision:0,intervals:[{start:'08:00',end:'11:00'}]};
   const preview=await call(a,14,'fn_folha_operar_v2',['save',body,false,null]);await call(a,14,'fn_folha_operar_v2',['save',body,true,preview.versao]);
   assert.equal((await q('SELECT count(*)::int n FROM quadro_equipa_permanencias WHERE colaborador_id=$1',[id(60)])).rows[0].n,0);
-  assert.ok(!(await context(13,100,'2026-10-09')).rows.some(x=>x.person_id===id(60)));
-  assert.ok((await context(14,100,'2026-10-09')).rows.some(x=>x.person_id===id(60)));
-  assert.equal((await context(14,100,'2026-10-09')).management,true);
-  assert.equal((await context(13,100,'2026-10-09')).management,false);
+  assert.ok(!(await context(13,100,factDay)).rows.some(x=>x.person_id===id(60)));
+  assert.ok((await context(14,100,factDay)).rows.some(x=>x.person_id===id(60)));
+  assert.equal((await context(14,100,factDay)).management,true);
+  assert.equal((await context(13,100,factDay)).management,false);
   for(const [person,user] of [[61,15],[62,16]]){
    const own={...body,request_id:id(request++),key:{...body.key,person_id:id(person)}};
    const p=await call(a,user,'fn_folha_operar_v2',['save',own,false,null]);await call(a,user,'fn_folha_operar_v2',['save',own,true,p.versao]);
@@ -177,7 +179,7 @@ test('Equipa persistente / Folha operacional — PostgreSQL local',{timeout:2400
  });
  await t.test('H/I/J/K — externo factual 6h/7h, função obrigatória, sem payroll/HE',async()=>{
   for(const [n,intervals,total] of [[1,[{start:'10:00',end:'16:00'}],360],[2,[{start:'08:00',end:'12:00'},{start:'13:00',end:'16:00'}],420]]){
-   const body={version:2,request_id:id(request++),date:'2026-10-09',work_id:id(100),provider_id:id(300),name:'Externo sintético '+n,role:'servente',intervals};
+   const body={version:2,request_id:id(request++),date:factDay,work_id:id(100),provider_id:id(300),name:'Externo sintético '+n,role:'servente',intervals};
    const preview=await call(a,10,'fn_folha_operar_v2',['external_register',body,false,null]);await call(a,10,'fn_folha_operar_v2',['external_register',body,true,preview.versao]);
    assert.equal((await q('SELECT minutes FROM folha_registos WHERE externo_id=$1',[body.request_id])).rows[0].minutes,total);
    const factual=(await q('SELECT estado,expected_minutes FROM folha_registos WHERE externo_id=$1',[body.request_id])).rows[0];assert.equal(factual.estado,'registered');assert.equal(factual.expected_minutes,null);
@@ -186,7 +188,7 @@ test('Equipa persistente / Folha operacional — PostgreSQL local',{timeout:2400
    await assert.rejects(call(a,10,'fn_folha_operar_v2',['bulk',normal,false,null]),/ABSENCE_CONFLICT/);
    assert.equal((await q('SELECT count(*)::int n FROM folha_vencimentos WHERE colaborador_id=$1',[body.request_id])).rows[0].n,0);
   }
-  const invalid={version:2,request_id:id(request++),date:'2026-10-09',work_id:id(100),provider_id:id(300),name:'Inválido',role:'diretor_obra',intervals:[{start:'10:00',end:'16:00'}]};
+  const invalid={version:2,request_id:id(request++),date:factDay,work_id:id(100),provider_id:id(300),name:'Inválido',role:'diretor_obra',intervals:[{start:'10:00',end:'16:00'}]};
   await assert.rejects(call(a,10,'fn_folha_operar_v2',['external_register',invalid,false,null]),/função externa/);
  });
  await t.test('M/N — delegações explícitas/NULL; férias globais mínimas sem escrita',async()=>{
@@ -226,7 +228,7 @@ test('Equipa persistente / Folha operacional — PostgreSQL local',{timeout:2400
   await assert.rejects(call(a,13,'fn_folha_operar_v2',['save',own,false,null]),e=>e.code==='42501');
  });
  await t.test('manual sem calendário funciona; automático exige calendário; sem dados futuros inventados',async()=>{
-  const date='2026-10-09',body={version:2,request_id:id(request++),date,work_id:id(100),key:{kind:'primeline',person_id:id(23),work_id:id(100),date},expected_revision:0,intervals:[{start:'08:00',end:'12:00'}]};
+  const date=factDay,body={version:2,request_id:id(request++),date,work_id:id(100),key:{kind:'primeline',person_id:id(23),work_id:id(100),date},expected_revision:0,intervals:[{start:'08:00',end:'12:00'}]};
   const preview=await call(a,13,'fn_folha_operar_v2',['save',body,false,null]);await call(a,13,'fn_folha_operar_v2',['save',body,true,preview.versao]);
   assert.equal((await q('SELECT minutes FROM folha_registos WHERE colaborador_id=$1',[id(23)])).rows[0].minutes,240);
   await q("SELECT set_config('test.actor',$1,false)",[id(10)]);

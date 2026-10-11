@@ -18,7 +18,7 @@ test('sem folha não inventa presença nem horas',()=>assert.equal(analyseSheet(
 test('entrada sem saída fica em aberto; sem hora de saída inventada',()=>{const r=analyseSheet({sheet:{intervals:[{start:'08:00',end:null}]},expectedMinutes:480});assert.equal(r.state,'open');assert.equal(r.minutes,0);});
 test('8h deslocadas são normais, não HE',()=>{const r=analyseSheet({sheet:{intervals:full},expectedMinutes:480});assert.equal(r.state,'registered');assert.equal(r.overtime,'none');});
 test('horário normal pode ser configurado por obra e período',()=>{const s={intervals:[{period:'manha',start:'09:00',end:'13:00'},{period:'tarde',start:'14:00',end:'18:00'}]};assert.deepEqual(normalIntervals(s),full);assert.equal(normalIntervals(s,'manha').length,1);assert.throws(()=>normalIntervals(null));});
-test('saída futura, entrada futura e dia futuro são recusados',()=>{const options={date:day,now:{date:day,time:'10:00'}};assert.throws(()=>intervalFacts(full,options),/futura/);assert.throws(()=>intervalFacts([{start:'11:00',end:null}],options),/futura/);assert.throws(()=>intervalFacts([{start:'08:00',end:null}],{date:'2026-10-06',now:options.now}),/futura/);});
+test('Folha diária permite o horário completo hoje; dias futuros continuam recusados',()=>{const options={date:day,now:{date:day,time:'10:00'}};assert.equal(intervalFacts(full,options).minutes,480);assert.equal(intervalFacts([{start:'11:00',end:null}],options).open,true);assert.throws(()=>intervalFacts([{start:'08:00',end:null}],{date:'2026-10-06',now:options.now}),/futuro/);});
 test('intervalos negativos, inválidos e sobrepostos são recusados',()=>{for(const a of [[{start:null,end:'09:00'}],[{start:'24:00',end:null}],[{start:'08:00',end:'07:00'}],[{start:'08:00',end:'12:00'},{start:'11:00',end:'13:00'}],[{start:'08:00',end:null},{start:'14:00',end:null}]])assert.throws(()=>intervalFacts(a));});
 test('horas em falta, férias e ausência/trabalho não são corrigidos silenciosamente',()=>{assert.equal(analyseSheet({sheet:{intervals:[{start:'08:00',end:'12:00'}]},expectedMinutes:480}).state,'missing');const vacation=analyseSheet({absence:{tipo:'ferias'},expectedMinutes:480});assert.equal(vacation.expectedMinutes,0);assert.equal(vacation.overtime,'none');assert.equal(analyseSheet({absence:{tipo:'ferias'},sheet:{intervals:full}}).state,'regularization');assert.equal(analyseSheet({absence:{tipo:'ausencia'}}).state,'absence');});
 test('sem horário esperado não inventa horas em falta nem folha válida',()=>assert.equal(analyseSheet({sheet:{intervals:full}}).state,'regularization'));
@@ -50,10 +50,10 @@ test('confirmação sem chaves válidas ou com pessoa/obra/data diferente não s
   }
 });
 
-test('dia normal exige fim da jornada completa, exclui ausências/conflitos/folhas e respeita retroativos',()=>{
+test('dia normal não depende do relógio, exclui ausências/conflitos/folhas e respeita retroativos',()=>{
  const schedule={intervals:[{period:'manha',start:'09:00',end:'13:00'},{period:'tarde',start:'14:00',end:'18:00'}]};
  const rows=[{person_id:'ok',can_write:true,period:'manha'},{person_id:'v',can_write:true,absence:{}},{person_id:'c',can_write:true,conflict:'CONFLICT'},{person_id:'s',can_write:true,sheet:{}}];
  const choose=(time,extra={})=>normalDaySelection(rows,{schedule,date:day,now:{date:day,time},...extra});
- assert.equal(choose('17:59').eligible.length,0);const done=choose('18:00');assert.equal(done.eligible.length,1);assert.equal(done.excluded.length,3);assert.deepEqual(done.eligible[0].intervals,[{start:'09:00',end:'13:00'}]);
+ assert.equal(choose('08:00').eligible.length,1);assert.equal(choose('17:59').eligible.length,1);const done=choose('18:00');assert.equal(done.eligible.length,1);assert.equal(done.excluded.length,3);assert.deepEqual(done.eligible[0].intervals,[{start:'09:00',end:'13:00'}]);
  assert.equal(choose('18:00',{date:'2026-10-04',correctionDays:1}).eligible.length,0);assert.equal(choose('18:00',{date:'2026-10-04',admin:true}).eligible.length,0);assert.equal(choose('18:00',{date:'2026-10-02',admin:true}).eligible.length,1);
 });

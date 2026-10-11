@@ -20,7 +20,7 @@ export function intervalFacts(intervals = [], { date, now } = {}) {
     if (!x.start) throw new Error('Registe a entrada antes da saída.');
     const start = minutes(x.start), end = x.end ? minutes(x.end) : null;
     if (end != null && end <= start) throw new Error('A saída deve ser posterior à entrada.');
-    if (date && now && (date > now.date || date === now.date && Math.max(start,end ?? start) > minutes(now.time))) throw new Error('Não pode registar uma hora futura como realizada.');
+    if (date && now && (date > now.date)) throw new Error('Não pode registar um dia futuro como realizado.');
     ranges.push({start,end});
     if (end == null) open = true;
   }
