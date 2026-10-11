@@ -98,17 +98,59 @@ test('Fecho final Encarregado — PostgreSQL local',{timeout:240000,skip:!bin||!
  const member=(p,rev=0,source)=>({person_id:id(p),expected_revision:rev,...(source?{source_work_id:id(source)}:{})});
  const context=(user,work,date)=>as(a,user,'SELECT fn_folha_contexto_v2($1::date,$2::uuid) v',[date,id(work)]);
 
- const agenda=(await read('../supabase/calendario_compromissos.sql'));await q(agenda.slice(agenda.indexOf('create or replace function public.fn_listar_colegas_agenda()'),agenda.indexOf('create or replace function public.fn_pode_ver_compromisso')));
+ // Captured real definitions and ACL; preserve CRLF and exclude production data/OIDs.
+ const realBaseline=JSON.parse(await read('./fixtures/encarregado-final-baseline-real-20261011.json'));
+ async function installRealBaseline(normalize=false){for(const f of realBaseline.functions){
+  await q(normalize?f.definicao.replace(/\r\n/g,'\n'):f.definicao);
+  await q('REVOKE ALL ON FUNCTION '+f.assinatura+' FROM PUBLIC,anon,authenticated,service_role');
+  for(const acl of f.metadata.acl_efetiva)await q('GRANT EXECUTE ON FUNCTION '+f.assinatura+' TO '+acl.grantee);
+ }}
+ await t.test('captura completa coincide com migrations anteriores executadas no bootstrap',async()=>{
+  for(const f of realBaseline.functions.filter(f=>!f.assinatura.includes('fn_listar_colegas_agenda'))){
+   const definition=(await q('SELECT pg_get_functiondef($1::regprocedure) v',[f.assinatura])).rows[0].v;
+   assert.equal(definition.replace(/\r\n/g,'\n'),f.definicao.replace(/\r\n/g,'\n'),f.assinatura);
+  }
+ });
+ await installRealBaseline();
+ await t.test('baseline real CRLF/LF, contrato e permissões detectam drift',async()=>{
+  await q(await read('../supabase/encarregado_fecho_final_precheck.sql'));
+  await installRealBaseline(true);await q(await read('../supabase/encarregado_fecho_final_precheck.sql'));await installRealBaseline();
+  for(const change of [
+   'ALTER FUNCTION folha_privado.local(uuid,uuid,boolean) SECURITY INVOKER',
+   'ALTER FUNCTION folha_privado.local(uuid,uuid,boolean) SET search_path=public',
+   'GRANT EXECUTE ON FUNCTION folha_privado.local(uuid,uuid,boolean) TO authenticated',
+   'GRANT EXECUTE ON FUNCTION public.fn_folha_operar_v2(text,jsonb,boolean,text) TO anon',
+   'GRANT EXECUTE ON FUNCTION public.fn_folha_operar_v2(text,jsonb,boolean,text) TO service_role',
+   'REVOKE EXECUTE ON FUNCTION public.fn_folha_operar_v2(text,jsonb,boolean,text) FROM authenticated',
+   'ALTER FUNCTION folha_privado.local(uuid,uuid,boolean) STABLE',
+   'ALTER FUNCTION folha_privado.local(uuid,uuid,boolean) OWNER TO authenticated',
+   'ALTER FUNCTION folha_privado.local(uuid,uuid,boolean) STRICT'
+  ]){await q('BEGIN');await q(change);await assert.rejects(q(await read('../supabase/encarregado_fecho_final_precheck.sql')),/BASELINE_DIVERGENCE/);await q('ROLLBACK');}
+  const altered=realBaseline.functions.find(f=>f.assinatura==='folha_privado.local(uuid,uuid,boolean)').definicao.replace('BEGIN',"BEGIN RAISE EXCEPTION 'synthetic drift';");
+  await q('BEGIN');await q(altered);await assert.rejects(q(await read('../supabase/encarregado_fecho_final_precheck.sql')),/BASELINE_DIVERGENCE/);await q('ROLLBACK');
+ });
  await q(await read('../supabase/encarregado_fecho_final_precheck.sql'));
+ await t.test('backup recusa drift sem criar schema privado',async()=>{
+  await q('BEGIN');await q('GRANT EXECUTE ON FUNCTION folha_privado.save(jsonb,uuid,date,uuid,boolean) TO anon');
+  await assert.rejects(q(await read('../supabase/encarregado_fecho_final_backup.sql')),/BASELINE_DIVERGENCE/);await q('ROLLBACK');
+  assert.equal((await q("SELECT to_regnamespace('primeline_encarregado_final_backup') v")).rows[0].v,null);
+ });
  await q(await read('../supabase/encarregado_fecho_final_backup.sql'));
+ await t.test('migration recusa metadados alterados depois do backup',async()=>{
+  await q('BEGIN');await q('ALTER FUNCTION folha_privado.local(uuid,uuid,boolean) SECURITY INVOKER');
+  await assert.rejects(q(await read('../supabase/encarregado_fecho_final.sql')),/BASELINE_DIVERGENCE/);await q('ROLLBACK');
+  assert.equal((await q("SELECT to_regclass('public.folha_externos_permanencias') v")).rows[0].v,null);
+ });
  await t.test('rollout recusa backup desatualizado antes de criar estruturas',async()=>{
   await q('BEGIN');await q('UPDATE quadro_pessoal_alocacao SET descricao_livre=$1 WHERE id=$2',['Alteração sintética posterior ao backup',id(1003)]);
   await assert.rejects(q(await read('../supabase/encarregado_fecho_final.sql')),/BACKUP_OPERATIONAL_DIVERGENCE/);await q('ROLLBACK');
   assert.equal((await q("SELECT to_regclass('public.folha_externos_permanencias') v")).rows[0].v,null);
  });
- await q(await read('../supabase/encarregado_fecho_final.sql'));
+ // Also exercise manual SQL transport with CRLF in every installed function body.
+ await q((await read('../supabase/encarregado_fecho_final.sql')).replace(/\n/g,'\r\n'));
  await q(await read('../supabase/encarregado_fecho_final_postcheck.sql'));
  await q(await read('../supabase/encarregado_fecho_final_rollback.sql'));
+ for(const f of realBaseline.functions)assert.equal((await q('SELECT pg_get_functiondef($1::regprocedure) v',[f.assinatura])).rows[0].v,f.definicao,'rollback byte a byte: '+f.assinatura);
  await q(await read('../supabase/encarregado_fecho_final.sql'));
  await q(await read('../supabase/encarregado_fecho_final_postcheck.sql'));
  await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao,utilizador_id) VALUES($1,$2,'Próprio sintético encarregado','Encarregado','2026-01-01',$3)",[id(63),id(1),id(13)]);

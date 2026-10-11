@@ -121,3 +121,7 @@ Calendário do Plano de Ação com ampliação por dia não foi implementado; pe
 - `tests/encarregado-fecho-final-browser.mjs`
 - `tests/encarregado-fecho-final-run.mjs`
 - `tests/encarregado-fecho-final.test.mjs`
+
+## Reconciliação posterior da baseline — 11/10/2026
+
+A captura real explicou as nove divergências de hash (CRLF/LF e formatação de Agenda). Os gates deste pacote foram reforçados e a suite agora instala as definições reais capturadas, sem dados operacionais. Ver [reconciliação da baseline](reconciliacao-baseline-encarregado-20261011.md) para fingerprints, metadados, backups e testes. Esta reconciliação não configura dados reais nem instala o pacote.
