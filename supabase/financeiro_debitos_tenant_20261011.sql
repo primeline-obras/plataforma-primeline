@@ -84,6 +84,7 @@ DECLARE u public.utilizadores; BEGIN
 END $fn$;
 CREATE FUNCTION public.fn_debitos_tenant_leitura(p_empresa uuid,p_obra uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $fn$
  SELECT p_empresa IS NOT NULL AND (SELECT count(*) FROM public.utilizadores WHERE auth_user_id=auth.uid() AND ativo IS TRUE)=1 AND EXISTS(SELECT 1 FROM public.utilizadores u WHERE u.auth_user_id=auth.uid() AND u.ativo IS TRUE AND u.empresa_id=p_empresa)
+ AND (public.fn_e_administrativo() OR public.fn_e_financeiro() OR (p_obra IS NOT NULL AND public.fn_pode_ver_obra(p_obra)))
  AND (p_obra IS NULL OR EXISTS(SELECT 1 FROM public.obras o WHERE o.id=p_obra AND o.empresa_id=p_empresa));
 $fn$;
 CREATE FUNCTION financeiro_debitos_privado.guarda() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $fn$
