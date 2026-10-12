@@ -1,0 +1,122 @@
+[
+  {
+    "sig": "folha_privado.diaria_guardar()",
+    "hash": "440624d5c86058347cac07255bfd51fabcd88acde6c2e8887296bea33ff4b03c",
+    "public": false,
+    "sd": false
+  },
+  {
+    "sig": "folha_privado.diaria_pessoal(uuid,date)",
+    "hash": "03fb5ffb45b103bbc0c5cbcdbabad0fcc12ee28bc67aa3a065f8e5a6d1e82a27",
+    "public": false,
+    "sd": false
+  },
+  {
+    "sig": "folha_privado.diaria_referencia(uuid,date)",
+    "hash": "fa4c9436d48a1b3d6fbfe3ca6b3cb093a0a711893911756a245bb4deee7a417a",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.diaria_factos(uuid,date)",
+    "hash": "a5a358ea43d938bf2935b577a7cb0049532030b2b24dcb4b025d3446bd481db8",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.diaria_decisao_hash(text,integer,jsonb)",
+    "hash": "8fd6e4a7f725d6d72656e9c693f5f62b3cac669791c1cb2eaddf9cb8a588380d",
+    "public": false,
+    "sd": false
+  },
+  {
+    "sig": "folha_privado.diaria_recalcular(uuid,date,uuid)",
+    "hash": "9fd5bbf3050106ab8e51f5e833cd620267df0008bdf962b09dec914f05889aa1",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.diaria_reconciliar_trigger()",
+    "hash": "982b6808f69f55a0f2f9d42b259382d5df605f06423b49551b34e72b1728d63d",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.diaria_config_guardar()",
+    "hash": "d54e4916df22a509016a7a496205b85900dc830052a32fa9f76cdadc8d920202",
+    "public": false,
+    "sd": false
+  },
+  {
+    "sig": "public.fn_folha_diaria_gestao_v2(text,jsonb,boolean,text)",
+    "hash": "189eb93caeea512629b5823403657032ddabab49358d9b66901caaf244d357fb",
+    "public": true,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.save(jsonb,uuid,date,uuid,boolean)",
+    "hash": "55fe8bdeb8a088560b35c832b6a3f7eaa447d20635c7b36115802f4cfa7f5c64",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.save_periodo(jsonb,uuid,date,uuid,boolean,jsonb)",
+    "hash": "383e0418e07e24242e2d3d6fd1e0c86e6c96974a660e0d77c49a7302cb6e6d0b",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.operar_periodos(jsonb,boolean,text)",
+    "hash": "8485fa5e91cd889604ec673f77c6687fa53cbc0004d0b9b8635a1545bedcfb00",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.reconciliar_he(public.folha_registos)",
+    "hash": "02de40125f22581126e578462103b3cb11e1b1f93e47c16d26c10225b6d8d120",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.reconciliar_dia(uuid,date,uuid,text)",
+    "hash": "76db734ed6559168edc3e346fd55cf27c43a95e6b7c705d31d5f1534f6c98aa3",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.linha(uuid,uuid,date,text)",
+    "hash": "02a106e4d393d7c0aa86961018e94ac4159c3754ffee8555498b307bde3ea380",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.normal(uuid,uuid,date)",
+    "hash": "18402c32159f3c9decfea2dadade38b026307a51bd8e83571efe0b000767d053",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.payroll_facts(uuid,date)",
+    "hash": "95b73294972f4aad1da81bef1e78a52a112497ab32b60db1894ec1a4965f51d0",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "folha_privado.diaria_gestao_preservada(text,jsonb,boolean,text)",
+    "hash": "6f774d5927b0c30a03893dde98f4ceb1ec28650fbd7909c09ff7fd6de58ac19d",
+    "public": false,
+    "sd": true
+  },
+  {
+    "sig": "public.fn_folha_gestao_contexto_v2(uuid,uuid,date)",
+    "hash": "7b5ee125ea2120943095fbf156a46ce990fc2844a58b25355a154a82eb84540b",
+    "public": true,
+    "sd": true
+  },
+  {
+    "sig": "public.fn_folha_gestao_v2(text,jsonb,boolean,text)",
+    "hash": "3752c8498c131ecf8862862fcbc5a918ec984d86333a2ad2f77b029d8491e5f9",
+    "public": true,
+    "sd": true
+  }
+]

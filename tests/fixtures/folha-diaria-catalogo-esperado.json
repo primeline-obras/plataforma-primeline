@@ -1,0 +1,717 @@
+[
+  {
+    "rls": true,
+    "owner": "postgres",
+    "table": "folha_avaliacoes_diarias",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "default": "gen_random_uuid()",
+        "not_null": true
+      },
+      {
+        "name": "empresa_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "colaborador_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "data",
+        "type": "date",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "ativa",
+        "type": "boolean",
+        "default": "true",
+        "not_null": true
+      },
+      {
+        "name": "modo_dia",
+        "type": "text",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "revision",
+        "type": "integer",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "referencia_estado",
+        "type": "text",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "referencia_origem",
+        "type": "text",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "referencia_revision",
+        "type": "integer",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "permanencia_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "obra_origem_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "horario_versao_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "permanencia_snapshot",
+        "type": "jsonb",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "horario_snapshot",
+        "type": "jsonb",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "contexto_snapshot",
+        "type": "jsonb",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "expected_minutes",
+        "type": "integer",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "referencia_motivo",
+        "type": "text",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "referencia_evidencia",
+        "type": "jsonb",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "capturado_por",
+        "type": "uuid",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "capturado_em",
+        "type": "timestamp with time zone",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "captura_request_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "realizado_minutes",
+        "type": "integer",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "falta_minutes",
+        "type": "integer",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "excedente_minutes",
+        "type": "integer",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "estado",
+        "type": "text",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "he_estado",
+        "type": "text",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "pendencias",
+        "type": "text[]",
+        "default": "'{}'::text[]",
+        "not_null": true
+      },
+      {
+        "name": "factos_revisoes",
+        "type": "jsonb",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "factos_fingerprint",
+        "type": "text",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "fingerprint_version",
+        "type": "text",
+        "default": "'folha_factos_v1'::text",
+        "not_null": true
+      },
+      {
+        "name": "regra_avaliacao_version",
+        "type": "text",
+        "default": "'diaria_v1'::text",
+        "not_null": true
+      },
+      {
+        "name": "decisao_fingerprint",
+        "type": "text",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "he_decidido_por",
+        "type": "uuid",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "he_decidido_em",
+        "type": "timestamp with time zone",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "he_motivo",
+        "type": "text",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "criado_por",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "atualizado_por",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "criado_em",
+        "type": "timestamp with time zone",
+        "default": "now()",
+        "not_null": true
+      },
+      {
+        "name": "atualizado_em",
+        "type": "timestamp with time zone",
+        "default": "now()",
+        "not_null": true
+      },
+      {
+        "name": "avaliado_por",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "avaliado_em",
+        "type": "timestamp with time zone",
+        "default": "now()",
+        "not_null": true
+      },
+      {
+        "name": "request_id_inicial",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "ultimo_request_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX folha_diaria_competencia ON public.folha_avaliacoes_diarias USING btree (empresa_id, colaborador_id, data) WHERE ativa",
+      "CREATE UNIQUE INDEX folha_avaliacoes_diarias_empresa_id_colaborador_id_data_key ON public.folha_avaliacoes_diarias USING btree (empresa_id, colaborador_id, data)",
+      "CREATE UNIQUE INDEX folha_avaliacoes_diarias_pkey ON public.folha_avaliacoes_diarias USING btree (id)"
+    ],
+    "triggers": [
+      {
+        "name": "folha_diaria_integridade",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER folha_diaria_integridade BEFORE INSERT OR DELETE OR UPDATE ON public.folha_avaliacoes_diarias FOR EACH ROW EXECUTE FUNCTION folha_privado.diaria_guardar()"
+      },
+      {
+        "name": "folha_diaria_vencimentos",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER folha_diaria_vencimentos AFTER INSERT OR UPDATE ON public.folha_avaliacoes_diarias FOR EACH ROW EXECUTE FUNCTION folha_privado.reconciliar_vencimentos()"
+      }
+    ],
+    "force_rls": false,
+    "constraints": [
+      {
+        "name": "folha_avaliacoes_diarias_atualizado_por_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (atualizado_por) REFERENCES public.utilizadores(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_avaliado_por_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (avaliado_por) REFERENCES public.utilizadores(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_capturado_por_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (capturado_por) REFERENCES public.utilizadores(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((ativa = (estado <> 'inativa'::text)))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check1",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((num_nonnulls(falta_minutes, excedente_minutes) = ANY (ARRAY[0, 2])))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check2",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((falta_minutes IS NULL) OR ((expected_minutes IS NOT NULL) AND (falta_minutes = GREATEST(0, (expected_minutes - realizado_minutes))) AND (excedente_minutes = GREATEST(0, (realizado_minutes - expected_minutes))))))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check3",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((((referencia_estado = 'pendente'::text) AND (expected_minutes IS NULL) AND (NULLIF(btrim(referencia_motivo), ''::text) IS NOT NULL)) OR ((referencia_estado = 'capturada'::text) AND (expected_minutes IS NOT NULL) AND (horario_snapshot IS NOT NULL) AND (capturado_por IS NOT NULL) AND (capturado_em IS NOT NULL) AND (captura_request_id IS NOT NULL))))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check4",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((referencia_estado <> 'capturada'::text) OR (referencia_origem <> 'automatico'::text) OR (num_nonnulls(permanencia_id, obra_origem_id, horario_versao_id, permanencia_snapshot) = 4)))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check5",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((referencia_origem <> 'administrativo'::text) OR ((referencia_evidencia IS NOT NULL) AND (NULLIF(btrim(referencia_motivo), ''::text) IS NOT NULL))))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check6",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((((he_estado = ANY (ARRAY['validada'::text, 'nao_considerada'::text])) AND (excedente_minutes > 0) AND (num_nonnulls(decisao_fingerprint, he_decidido_por, he_decidido_em, he_motivo) = 4) AND (NULLIF(btrim(he_motivo), ''::text) IS NOT NULL)) OR ((he_estado <> ALL (ARRAY['validada'::text, 'nao_considerada'::text])) AND (num_nonnulls(decisao_fingerprint, he_decidido_por, he_decidido_em, he_motivo) = 0))))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check7",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((NOT ativa) OR (he_estado <> 'pendente'::text) OR ('he_diaria_pendente'::text = ANY (pendencias))))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_check8",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((NOT ativa) OR (he_estado <> 'validada'::text) OR ('he_validada_aguarda_processamento'::text = ANY (pendencias))))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_colaborador_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (colaborador_id) REFERENCES public.colaboradores(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_criado_por_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (criado_por) REFERENCES public.utilizadores(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_decisao_fingerprint_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((decisao_fingerprint ~ '^[0-9a-f]{64}$'::text))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_empresa_id_colaborador_id_data_key",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "UNIQUE (empresa_id, colaborador_id, data)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_empresa_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (empresa_id) REFERENCES public.empresas(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_estado_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((estado = ANY (ARRAY['regular'::text, 'horas_em_falta'::text, 'potencial_he'::text, 'referencia_pendente'::text, 'intervalo_aberto'::text, 'conflito'::text, 'outras_pendencias'::text, 'inativa'::text])))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_excedente_minutes_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((excedente_minutes >= 0))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_expected_minutes_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((expected_minutes >= 1) AND (expected_minutes <= 1440)))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_factos_fingerprint_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((factos_fingerprint ~ '^[0-9a-f]{64}$'::text))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_factos_revisoes_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((jsonb_typeof(factos_revisoes) = 'array'::text))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_falta_minutes_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((falta_minutes >= 0))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_fingerprint_version_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((fingerprint_version = 'folha_factos_v1'::text))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_he_decidido_por_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (he_decidido_por) REFERENCES public.utilizadores(id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_he_estado_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((he_estado = ANY (ARRAY['nenhum'::text, 'nao_avaliavel'::text, 'pendente'::text, 'validada'::text, 'nao_considerada'::text])))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_he_motivo_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((length(he_motivo) <= 1000))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_horario_versao_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (horario_versao_id) REFERENCES public.folha_horarios_versoes(id) ON DELETE RESTRICT"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_modo_dia_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((modo_dia = ANY (ARRAY['personalizado'::text, 'misto'::text])))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_obra_origem_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (obra_origem_id) REFERENCES public.obras(id) ON DELETE RESTRICT"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_permanencia_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (permanencia_id) REFERENCES public.quadro_equipa_permanencias(id) ON DELETE RESTRICT"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_pkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_realizado_minutes_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((realizado_minutes >= 0) AND (realizado_minutes <= 1440)))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_referencia_estado_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((referencia_estado = ANY (ARRAY['capturada'::text, 'pendente'::text])))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_referencia_motivo_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((length(referencia_motivo) <= 1000))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_referencia_origem_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((referencia_origem = ANY (ARRAY['automatico'::text, 'administrativo'::text])))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_referencia_revision_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((referencia_revision > 0))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_regra_avaliacao_version_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((regra_avaliacao_version = 'diaria_v1'::text))"
+      },
+      {
+        "name": "folha_avaliacoes_diarias_revision_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((revision > 0))"
+      }
+    ]
+  },
+  {
+    "rls": true,
+    "owner": "postgres",
+    "table": "folha_horarios_versoes",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "default": "gen_random_uuid()",
+        "not_null": true
+      },
+      {
+        "name": "empresa_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "obra_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "revision",
+        "type": "integer",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "snapshot",
+        "type": "jsonb",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "vigente_desde",
+        "type": "date",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "vigente_ate",
+        "type": "date",
+        "default": null,
+        "not_null": false
+      },
+      {
+        "name": "criado_por",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "criado_em",
+        "type": "timestamp with time zone",
+        "default": "now()",
+        "not_null": true
+      },
+      {
+        "name": "request_id",
+        "type": "uuid",
+        "default": null,
+        "not_null": true
+      },
+      {
+        "name": "motivo",
+        "type": "text",
+        "default": null,
+        "not_null": false
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX folha_horarios_versoes_vigencia ON public.folha_horarios_versoes USING btree (empresa_id, obra_id, vigente_desde, vigente_ate)",
+      "CREATE UNIQUE INDEX folha_horarios_versoes_obra_id_revision_key ON public.folha_horarios_versoes USING btree (obra_id, revision)",
+      "CREATE UNIQUE INDEX folha_horarios_versoes_pkey ON public.folha_horarios_versoes USING btree (id)"
+    ],
+    "triggers": [
+      {
+        "name": "folha_horario_versao_integridade",
+        "enabled": "O",
+        "definition": "CREATE TRIGGER folha_horario_versao_integridade BEFORE INSERT OR DELETE OR UPDATE ON public.folha_horarios_versoes FOR EACH ROW EXECUTE FUNCTION folha_privado.diaria_guardar()"
+      }
+    ],
+    "force_rls": false,
+    "constraints": [
+      {
+        "name": "folha_horarios_versoes_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((vigente_ate IS NULL) OR (vigente_ate >= vigente_desde)))"
+      },
+      {
+        "name": "folha_horarios_versoes_criado_por_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (criado_por) REFERENCES public.utilizadores(id)"
+      },
+      {
+        "name": "folha_horarios_versoes_empresa_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (empresa_id) REFERENCES public.empresas(id)"
+      },
+      {
+        "name": "folha_horarios_versoes_motivo_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((length(motivo) <= 1000))"
+      },
+      {
+        "name": "folha_horarios_versoes_obra_id_fkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "FOREIGN KEY (obra_id) REFERENCES public.obras(id)"
+      },
+      {
+        "name": "folha_horarios_versoes_obra_id_revision_key",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "UNIQUE (obra_id, revision)"
+      },
+      {
+        "name": "folha_horarios_versoes_pkey",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "folha_horarios_versoes_revision_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK ((revision > 0))"
+      },
+      {
+        "name": "folha_horarios_versoes_snapshot_check",
+        "deferred": false,
+        "validated": true,
+        "deferrable": false,
+        "definition": "CHECK (((jsonb_typeof(snapshot) = 'object'::text) AND (snapshot ? 'intervals'::text) AND (snapshot ? 'expected_minutes'::text)))"
+      }
+    ]
+  }
+]
