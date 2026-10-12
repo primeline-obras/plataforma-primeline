@@ -1,0 +1,128 @@
+{
+  "screens": 24,
+  "additionalTechnicalScreens": 3,
+  "viewports": 3,
+  "errors": [],
+  "results": [
+    {
+      "viewport": "desktop",
+      "state": 1,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 2,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 3,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 4,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 5,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 6,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 7,
+      "pass": true
+    },
+    {
+      "viewport": "desktop",
+      "state": 8,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 1,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 2,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 3,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 4,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 5,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 6,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 7,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-paisagem",
+      "state": 8,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 1,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 2,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 3,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 4,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 5,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 6,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 7,
+      "pass": true
+    },
+    {
+      "viewport": "tablet-retrato",
+      "state": 8,
+      "pass": true
+    }
+  ]
+}

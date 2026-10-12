@@ -1,0 +1,116 @@
+ const ownPlan=async(person,actor,sites)=>{const body=await plan(person,sites);const pre=await call(a,actor,'fn_folha_operar_v2',['periods_save',body,false,null]);return call(a,actor,'fn_folha_operar_v2',['periods_save',body,true,pre.versao]);};
+ await q("INSERT INTO obra_responsaveis(obra_id,utilizador_id,papel) VALUES($1,$2,'diretor_obra') ON CONFLICT DO NOTHING",[id(101),id(14)]);
+ await q("INSERT INTO quadro_pessoal_alocacao(id,colaborador_id,obra_id,semana_inicio,data,periodo,criado_por) VALUES($1,$2,$3,$4,$4,'dia_inteiro',$5)",[id(seq++),id(47),id(100),today,id(10)]);
+
+ await t.test('AD03 avaliação individual real: multiobra 2h + 6h, esperado uma única vez',async()=>{
+  await ownPlan(60,14,[[100,[custom('08:00','10:00')]],[101,[custom('10:00','12:00'),custom('13:00','17:00')]]]);
+  const d=await daily(60);assert.equal(d.expected_minutes,480);assert.equal(d.realizado_minutes,480);assert.equal(d.falta_minutes,0);assert.equal(d.excedente_minutes,0);assert.equal(d.referencia_origem,'individual');assert.ok(d.jornada_versao_id);
+  const sheets=(await q('SELECT * FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(60),today])).rows;assert.equal(sheets.length,2);assert.ok(sheets.every(x=>x.expected_minutes===null));
+ });
+ await t.test('AD03 dia misto e edição de facto preservam versão e jornada habitual',async()=>{
+  const old=await daily(60);const scheduleBefore=(await q('SELECT * FROM folha_jornadas_individuais_versoes WHERE colaborador_id=$1 ORDER BY revision',[id(60)])).rows;
+  await ownPlan(60,14,[[100,[normal('08:00','12:00','manha')]],[101,[custom('13:00','17:00')]]]);
+  let d=await daily(60);assert.equal(d.modo_dia,'misto');assert.equal(d.realizado_minutes,480);assert.equal(d.expected_minutes,480);assert.deepEqual(d.horario_snapshot,old.horario_snapshot);
+  await ownPlan(60,14,[[100,[custom('08:00','11:00')]],[101,[custom('13:00','17:00')]]]);
+  d=await daily(60);assert.equal(d.falta_minutes,60);assert.equal(d.jornada_versao_id,old.jornada_versao_id);assert.deepEqual((await q('SELECT * FROM folha_jornadas_individuais_versoes WHERE colaborador_id=$1 ORDER BY revision',[id(60)])).rows,scheduleBefore);
+ });
+ await t.test('AD03 referência desconhecida aceita trabalho, bloqueia fecho e não inventa HE/falta',async()=>{
+  await savePlan(47,[[100,[custom('08:00','12:00')]]]);
+  const d=await daily(47);assert.equal(d.referencia_estado,'pendente');assert.equal(d.falta_minutes,null);assert.equal(d.excedente_minutes,null);assert.equal(d.he_estado,'nao_avaliavel');assert.ok(d.pendencias.includes('referencia_diaria_pendente'));
+  await assert.rejects(closeAttempt(47),/DAILY|PENDING|PAYROLL/);
+ });
+ await t.test('AD03 exceção administrativa do dia preserva horas e jornada habitual',async()=>{
+  const sheets=(await q('SELECT * FROM folha_registos WHERE colaborador_id=$1',[id(47)])).rows;
+  const versions=(await q('SELECT * FROM folha_jornadas_individuais_versoes WHERE colaborador_id=$1',[id(47)])).rows;
+  await adminOp('daily_reference_correct',{person_id:id(47),date:today,expected_revision:(await daily(47)).revision,schedule:{intervals:[{start:'08:00',end:'12:00'}],expected_minutes:240},evidence:{document:'Exceção sintética'},reason:'Referência individual excecional comprovada'});
+  const d=await daily(47);assert.equal(d.referencia_origem,'administrativo');assert.equal(d.jornada_versao_id,null);assert.equal(d.expected_minutes,240);assert.equal(d.falta_minutes,0);
+  assert.deepEqual((await q('SELECT * FROM folha_registos WHERE colaborador_id=$1',[id(47)])).rows,sheets);assert.deepEqual((await q('SELECT * FROM folha_jornadas_individuais_versoes WHERE colaborador_id=$1',[id(47)])).rows,versions);
+ });
+ await t.test('AD03 folga excecional conhecida e trabalho fora da jornada não criam HE paga',async()=>{
+  const beforeHE=(await q('SELECT count(*)::integer n FROM folha_he')).rows[0].n;
+  await adminOp('daily_reference_correct',{person_id:id(47),date:today,expected_revision:(await daily(47)).revision,schedule:{day_type:'folga',intervals:[],expected_minutes:0},evidence:{document:'Folga comprovada sintética'},reason:'Exceção administrativa de folga'});
+  const d=await daily(47);assert.equal(d.expected_minutes,0);assert.equal(d.falta_minutes,0);assert.equal(d.excedente_minutes,240);assert.equal(d.he_estado,'pendente');assert.equal((await q('SELECT count(*)::integer n FROM folha_he')).rows[0].n,beforeHE);
+  await adminOp('daily_he_disregard',{person_id:id(47),date:today,expected_revision:d.revision,reason:'Teste: sem HE remunerada'});assert.equal((await daily(47)).he_estado,'nao_considerada');
+ });
+ await t.test('AD03 próprio Encarregado tem referência sem elegibilidade/permanência fictícia',async()=>{
+  await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao,utilizador_id) VALUES($1,$2,'Encarregado sintético','Encarregado','2026-01-01',$3)",[id(63),id(1),id(13)]);
+  await assign(10,jbody(63));assert.equal((await jcall(13,'read',{person_id:id(63)})).versions.length,1);
+  await ownPlan(63,13,[[100,[custom('08:00','12:00'),custom('13:00','17:00')]]]);const d=await daily(63);assert.equal(d.referencia_origem,'individual');assert.equal(d.expected_minutes,480);
+  assert.equal((await q('SELECT count(*)::integer n FROM quadro_equipa_permanencias WHERE colaborador_id=$1',[id(63)])).rows[0].n,0);
+ });
+ await t.test('AD03 captura congelada recusa referência de outra pessoa/empresa e zero não-folga',async()=>{
+  const before=await snapJ(),d=await daily(60);
+  for(const sql of ["UPDATE folha_avaliacoes_diarias SET jornada_versao_id=(SELECT id FROM folha_jornadas_individuais_versoes WHERE colaborador_id='"+id(61)+"' LIMIT 1) WHERE id='"+d.id+"'",
+    "UPDATE folha_avaliacoes_diarias SET expected_minutes=0,horario_snapshot='{\"day_type\":\"prevista\",\"intervals\":[],\"expected_minutes\":0}'::jsonb WHERE id='"+d.id+"'"])
+   await assert.rejects(q(sql),e=>e.code==='23514');
+  assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 recusa alterar vigência atravessando avaliação congelada e preview invalidado',async()=>{
+  const before=await snapJ();await assert.rejects(q("UPDATE folha_jornadas_individuais_versoes SET vigente_ate=$1 WHERE colaborador_id=$2 AND revision=1",[today,id(60)]),/JORNADA_FROZEN_REFERENCE_CONFLICT|JORNADA_HISTORY_IMMUTABLE|check constraint/);assert.deepEqual(await snapJ(),before);
+  const body=jbody(45),pre=await jcall(10,'assign',body);await assign(10,{...body,request_id:id(seq++)});
+  await assert.rejects(jcall(10,'assign',body,true,pre.versao),e=>e.code==='40001');
+ });
+
+
+
+ await t.test('AD03 atribuição inicial preserva avaliações antigas já capturadas pela equipa',async()=>{
+  const old=await daily(34);await assign(10,jbody(34,'operacional'));assert.deepEqual(await daily(34),old);
+  await savePlan(34,[[100,[normal('08:00','12:00','manha')]],[101,[custom('13:00','17:00')]]]);
+  const after=await daily(34);assert.equal(after.referencia_origem,old.referencia_origem);assert.equal(after.jornada_versao_id,null);assert.deepEqual(after.horario_snapshot,old.horario_snapshot);
+ });
+ await t.test('AD03 folga sem trabalho não gera falta; remoção desativa avaliação sem inventar horas',async()=>{
+  await a.query('BEGIN');await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);await a.query('DELETE FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(47),today]);await a.query('COMMIT');const d=await daily(47);assert.equal(d.realizado_minutes,0);assert.equal(d.expected_minutes,0);assert.equal(d.falta_minutes,0);assert.equal(d.excedente_minutes,0);assert.equal(d.ativa,false);assert.equal(d.estado,'inativa');
+ });
+ await t.test('AD03 Gerência não configura exceção diária e Gestão pode confirmá-la',async()=>{
+  const current=await daily(63);const body={version:2,request_id:id(seq++),person_id:id(63),date:today,expected_revision:current.revision,schedule:{intervals:[{start:'08:00',end:'12:00'},{start:'13:00',end:'17:00'}],expected_minutes:480},evidence:{document:'Confirmação sintética'},reason:'Exceção comprovada'};
+  await assert.rejects(call(a,11,'fn_folha_diaria_gestao_v2',['daily_reference_correct',body,false,null]),e=>e.code==='42501');
+  const preview=await call(a,12,'fn_folha_diaria_gestao_v2',['daily_reference_correct',body,false,null]);await call(a,12,'fn_folha_diaria_gestao_v2',['daily_reference_correct',body,true,preview.versao]);assert.equal((await daily(63)).referencia_origem,'administrativo');
+ });
+
+
+ await t.test('AD03 captura concorrente aguarda atribuição; preview anterior fica stale sem horas parciais',async()=>{
+  await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao,utilizador_id) VALUES($1,$2,'Encarregado concorrente sintético','Encarregado','2026-01-01',$3)",[id(64),id(1),id(18)]);
+  await q("INSERT INTO obra_responsaveis(obra_id,utilizador_id,papel) VALUES($1,$2,'encarregado') ON CONFLICT DO NOTHING",[id(100),id(18)]);
+  const body=await plan(64,[[100,[custom('08:00','12:00'),custom('13:00','17:00')]]]);
+  const stale=await call(b,18,'fn_folha_operar_v2',['periods_save',body,false,null]);
+  const assignment=jbody(64),pre=await jcall(10,'assign',assignment);
+  await a.query('BEGIN');await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);
+  await a.query('SELECT fn_folha_jornadas_v2($1,$2,$3,$4)',['assign',assignment,true,pre.versao]);
+  let finished=false;const pending=call(b,18,'fn_folha_operar_v2',['periods_save',body,false,null]).then(x=>{finished=true;return x;});
+  await delay(80);assert.equal(finished,false);await a.query('COMMIT');
+  const current=await pending;assert.equal(current.daily_reference.referencia_origem,'individual');
+  await assert.rejects(call(b,18,'fn_folha_operar_v2',['periods_save',body,true,stale.versao]),e=>e.code==='40001');
+  assert.equal(await daily(64),undefined);
+  await call(b,18,'fn_folha_operar_v2',['periods_save',body,true,current.versao]);assert.equal((await daily(64)).expected_minutes,480);
+ });
+
+
+ await t.test('AD03 regressão AD14 após instalação: estados impossíveis e JSON null continuam recusados',async()=>{
+  const d=await daily(60),before=await snapJ();
+  for(const change of ["estado='regular'","horario_snapshot='null'::jsonb","he_estado='validada',excedente_minutes=NULL"]){
+   await a.query('BEGIN');try{await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);
+    await assert.rejects((async()=>{await a.query('UPDATE folha_avaliacoes_diarias SET '+change+' WHERE id=$1',[d.id]);await a.query('SET CONSTRAINTS ALL IMMEDIATE');})(),e=>e.code==='23514');
+   }finally{await a.query('ROLLBACK');}
+  }assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 regressão AD15 após instalação: custos/contexto de outra empresa continuam 42501',async()=>{
+  const before=await snapJ(),d=await daily(63),body={version:2,request_id:id(seq++),person_id:id(63),date:today,expected_revision:d.revision,work_id:id(103),reason:'Contexto proibido sintético'};
+  for(const confirm of [false,true])await assert.rejects(call(a,10,'fn_folha_diaria_gestao_v2',['daily_he_validate',body,confirm,null]),e=>e.code==='42501');assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 jornada individual legítima reduzida 4h aceita sem inferência por cargo',async()=>{
+  const week=(await q("SELECT folha_privado.jornada_ad03_modelo('operacional') w")).rows[0].w;
+  for(let i=1;i<=5;i++)week[i]={day_type:'prevista',intervals:[{start:'08:00',end:'12:00'}],expected_minutes:240};
+  await assign(10,jbody(44,'personalizado',{people:[{person_id:id(44),model:'personalizado',expected_revision:0,week}]}));const r=await jref(44,today);assert.equal(r.expected_minutes,240);assert.equal(r.referencia_origem,'individual');
+ });
+
+
+ await t.test('AD03 autor histórico inativo não impede versão futura por Gestão; ator inativo não escreve',async()=>{
+  const from=(await q("SELECT ($1::date+14)::text d",[today])).rows[0].d;
+  await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(10)]);
+  try{
+   await assert.rejects(jcall(10,'assign',jbody(43)),e=>e.code==='42501');
+   await assign(12,jbody(46,'tecnica',{effective_from:from,people:[{person_id:id(46),model:'tecnica',expected_revision:1}]}));
+   const rows=(await q('SELECT revision,criado_por FROM folha_jornadas_individuais_versoes WHERE colaborador_id=$1 ORDER BY revision',[id(46)])).rows;
+   assert.equal(rows.length,2);assert.equal(rows[0].criado_por,id(10));assert.equal(rows[1].criado_por,id(12));
+  }finally{await q('UPDATE utilizadores SET ativo=true WHERE id=$1',[id(10)]);}
+ });

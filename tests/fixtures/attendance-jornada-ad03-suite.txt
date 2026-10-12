@@ -1,0 +1,113 @@
+
+const ad03Tests=String.raw`{
+
+ await t.test('AD03 antes: técnico sem permanência não tem referência automática individual',async()=>{
+  await a.query('BEGIN');try{await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);
+   const r=(await a.query('SELECT folha_privado.diaria_referencia($1,$2) r',[id(60),today])).rows[0].r;
+   assert.equal(r.referencia_estado,'pendente');assert.equal(r.expected_minutes,null);assert.equal(r.referencia_motivo,'origem_principal_nao_inequivoca');
+  }finally{await a.query('ROLLBACK');}
+ });
+
+
+await t.test('AD03 pacote: precheck, backup, migration, postcheck, rollback e reinstalação sem dados alterados',async()=>{
+  for(const file of ['precheck','backup',''])await q(await read('../supabase/folha_jornada_ad03'+(file?'_'+file:'')+'.sql'));
+  await q(await read('../supabase/folha_jornada_ad03_postcheck.sql'));
+
+  const script=await read('../supabase/folha_jornada_ad03_postcheck.sql');
+  for(const [label,alter,undo,pattern] of [
+   ['ACL helper','GRANT EXECUTE ON FUNCTION folha_privado.jornada_ad03_modelo(text) TO anon','REVOKE EXECUTE ON FUNCTION folha_privado.jornada_ad03_modelo(text) FROM anon',/AD03_FUNCTION_DRIFT|AD03_PRIVATE_HELPER_GRANT/],
+   ['SD helper','ALTER FUNCTION folha_privado.jornada_ad03_avaliacao_valida(public.folha_avaliacoes_diarias) SECURITY INVOKER','ALTER FUNCTION folha_privado.jornada_ad03_avaliacao_valida(public.folha_avaliacoes_diarias) SECURITY DEFINER',/AD03_FUNCTION_DRIFT/],
+   ['trilho privado','GRANT SELECT ON primeline_ad03_backup.dados TO anon','REVOKE SELECT ON primeline_ad03_backup.dados FROM anon',/AD03_BACKUP_NOT_PRIVATE/],
+   ['trigger desativado','ALTER TABLE folha_jornadas_individuais_versoes DISABLE TRIGGER folha_jornada_ad03_guardar','ALTER TABLE folha_jornadas_individuais_versoes ENABLE TRIGGER folha_jornada_ad03_guardar',/AD03_SCHEMA_DRIFT/]
+  ]){await q(alter);try{await assert.rejects(q(script),pattern);}finally{await q('ROLLBACK');await q(undo);}await q(script);}
+
+
+await q(await read('../supabase/folha_jornada_ad03_rollback.sql'));
+  await q(await read('../supabase/folha_jornada_ad03_precheck.sql'));
+  await q(await read('../supabase/folha_jornada_ad03.sql'));
+  await q(await read('../supabase/folha_jornada_ad03_postcheck.sql'));
+ });
+ const jcall=(actor,action,body,confirm=false,token=null,client=a)=>call(client,actor,'fn_folha_jornadas_v2',[action,body,confirm,token]);
+ const cut=(await q('SELECT avaliacao_diaria_data_ativacao::text d FROM folha_config_empresa WHERE empresa_id=$1',[id(1)])).rows[0].d;
+ const jbody=(person,model='operacional',extra={})=>({version:2,request_id:id(seq++),effective_from:cut,people:[{person_id:id(person),expected_revision:0,model}],reason:'Atribuição sintética aprovada',evidence:{source:'confirmação sintética'},...extra});
+ const assign=async(actor,body)=>{const pre=await jcall(actor,'assign',body);return jcall(actor,'assign',body,true,pre.versao);};
+ const jref=async(person,date,actor=10)=>{await a.query('BEGIN');try{await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(actor)]);return (await a.query('SELECT folha_privado.diaria_referencia($1,$2) r',[id(person),date])).rows[0].r;}finally{await a.query('ROLLBACK');}};
+ const snapJ=async()=> (await q("SELECT jsonb_build_object('jornadas',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_jornadas_individuais_versoes x),'evals',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_avaliacoes_diarias x),'history',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_gestao_historico x),'ops',(SELECT jsonb_agg(to_jsonb(x) ORDER BY request_id) FROM folha_privado.operacoes x)) s")).rows[0].s;
+ await t.test('AD03 modelos semanais: operacional, técnico segunda-quinta, sexta e folgas',async()=>{
+  const models=(await q("SELECT folha_privado.jornada_ad03_modelo('operacional') o,folha_privado.jornada_ad03_modelo('tecnica') t")).rows[0];
+  for(let d=1;d<=5;d++)assert.equal(models.o[d].expected_minutes,480);
+  assert.equal(models.t[1].intervals[0].start,'09:00');assert.equal(models.t[4].intervals[1].end,'18:00');
+  assert.deepEqual(models.t[5].intervals.map(x=>[x.start,x.end]),[['08:00','13:00'],['14:00','17:00']]);assert.equal(models.t[5].expected_minutes,480);
+  for(const m of [models.o,models.t])for(const d of [6,7]){assert.equal(m[d].day_type,'folga');assert.equal(m[d].expected_minutes,0);assert.deepEqual(m[d].intervals,[]);}
+ });
+ await t.test('AD03 validação semanal recusa JSON null, sobreposição, 4h declaradas 8h e dias ausentes',async()=>{
+  const valid=(await q("SELECT folha_privado.jornada_ad03_modelo('operacional') w")).rows[0].w;
+  for(const w of [null,{}, {...valid,1:null},{...valid,1:{...valid[1],expected_minutes:240}},{...valid,6:{day_type:'folga',expected_minutes:480,intervals:[]}}, {...valid,1:{day_type:'prevista',expected_minutes:480,intervals:[{start:'08:00',end:'13:00'},{start:'12:00',end:'15:00'}]}}])
+   assert.equal((await q('SELECT folha_privado.jornada_ad03_semana_valida($1) v',[JSON.stringify(w)])).rows[0].v,false);
+ });
+ await t.test('AD03 propostas são apenas leitura e exigem confirmação do cargo',async()=>{
+  const before=await snapJ();const result=await jcall(10,'propose',{});assert.ok(result.people.length);assert.equal(result.committed,false);assert.ok(result.people.every(x=>x.requires_role_confirmation));assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 Administrativo atribui técnico sem permanência; Gestão atribui operacional',async()=>{
+  await assign(10,jbody(60,'tecnica'));await assign(12,jbody(61,'operacional'));
+  assert.equal((await q('SELECT count(*)::integer n FROM quadro_equipa_permanencias WHERE colaborador_id IN($1,$2)',[id(60),id(61)])).rows[0].n,0);
+  for(const [person,dayType] of [[60,'individual'],[61,'individual']])assert.equal((await jref(person,today)).referencia_origem,dayType);
+ });
+ await t.test('AD03 batch não sobrescreve jornada aprovada; falha integral',async()=>{
+  const before=await snapJ();const body=jbody(62);body.people.push({person_id:id(60),model:'tecnica',expected_revision:0});
+  await assert.rejects(assign(10,body),e=>e.code==='40001');assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 batch legítimo inclui equipa interna; preview não grava; replay estável',async()=>{
+  const body=jbody(62,'tecnica');body.people.push({person_id:id(48),model:'operacional',expected_revision:0});
+  const before=await snapJ(),preview=await jcall(10,'assign',body);assert.deepEqual(await snapJ(),before);
+  const first=await jcall(10,'assign',body,true,preview.versao),replay=await jcall(10,'assign',body,true,preview.versao);assert.deepEqual(replay,first);
+  await assert.rejects(jcall(10,'assign',{...body,reason:'outro'},true,preview.versao),/IDEMPOTENCY_CONFLICT/);
+ });
+ await t.test('AD03 Gerência consulta mas não altera; Diretor/Adjunto/Preparador consultam próprios',async()=>{
+  assert.equal((await jcall(11,'read',{person_id:id(60)})).versions.length,1);
+  for(const actor of [11,13,14,15,16,18])await assert.rejects(jcall(actor,'assign',jbody(47)),e=>e.code==='42501');
+  for(const [actor,person] of [[14,60],[15,61],[16,62]])assert.equal((await jcall(actor,'read',{person_id:id(person)})).versions.length,1);
+  await assert.rejects(jcall(14,'read',{person_id:id(61)}),e=>e.code==='42501');
+ });
+ await t.test('AD03 tenant antes do replay: pessoa, empresa e work_id falsos recusados sem efeitos',async()=>{
+  const before=await snapJ();
+  for(const body of [jbody(49),jbody(47,'operacional',{empresa_id:id(2)}),jbody(47,'operacional',{work_id:id(100)})])
+   await assert.rejects(jcall(10,'assign',body),e=>e.code==='42501');
+  await assert.rejects(jcall(17,'read',{person_id:id(60)}),e=>e.code==='42501');assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 jornada desconhecida não herda obra/escritório; registos efetivos preservados',async()=>{
+  const w=(await q("SELECT folha_privado.jornada_ad03_modelo('operacional') w")).rows[0].w;
+  for(let i=1;i<=7;i++)w[i]={day_type:'desconhecida',intervals:[],expected_minutes:null};
+  await assign(10,jbody(47,'personalizado',{people:[{person_id:id(47),expected_revision:0,model:'personalizado',week:w}]}));
+  const ref=await jref(47,today);assert.equal(ref.referencia_estado,'pendente');assert.equal(ref.expected_minutes,null);assert.equal(ref.referencia_motivo,'jornada_individual_desconhecida');
+ });
+ await t.test('AD03 folga tem esperado zero conhecido, sem falta e sem HE monetária',async()=>{
+  const day=(await q("SELECT ($1::date+((6-extract(isodow FROM $1::date)::integer+7)%7))::text d",[today])).rows[0].d;
+  const ref=await jref(60,day);assert.equal(ref.expected_minutes,0);assert.equal(ref.horario_snapshot.day_type,'folga');assert.equal(ref.referencia_estado,'capturada');
+  await a.query('BEGIN');try{await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);
+   // Synthetic actual fact: immutable reference is tested, no production.
+   const context={data_ativacao:cut,regra:'diaria_v1'};
+   await a.query("SELECT folha_privado.diaria_recalcular($1,$2,$3)",[id(60),today,id(seq++)]); // no personalized record => no evaluation
+   assert.equal((await a.query('SELECT count(*)::integer n FROM folha_avaliacoes_diarias WHERE colaborador_id=$1',[id(60)])).rows[0].n,0);
+  }finally{await a.query('ROLLBACK');}
+ });
+ await t.test('AD03 concorrência/revisão em atribuição: um resultado e replay; payloads concorrentes stale',async()=>{
+  const body=jbody(46),pre=await jcall(10,'assign',body);
+  const done=await Promise.all([jcall(10,'assign',body,true,pre.versao,a),jcall(10,'assign',body,true,pre.versao,b)]);assert.deepEqual(done[0],done[1]);
+  const other={...body,request_id:id(seq++)};await assert.rejects(jcall(10,'assign',other,true,pre.versao),e=>e.code==='40001');
+ });
+ await t.test('AD03 versão futura, registo retroativo e referência congelada',async()=>{
+  const prior=(await jref(60,today));const from=(await q("SELECT ($1::date+7)::text d",[today])).rows[0].d;
+  const body=jbody(60,'operacional',{effective_from:from,people:[{person_id:id(60),model:'operacional',expected_revision:1}]});
+  await assign(10,body);
+  assert.deepEqual(await jref(60,today),prior);assert.equal((await jref(60,from)).contexto_snapshot.modelo,'operacional');
+  assert.equal((await q('SELECT count(*)::integer n FROM folha_jornadas_individuais_versoes WHERE colaborador_id=$1',[id(60)])).rows[0].n,2);
+  const before=await snapJ();await assert.rejects(q('UPDATE folha_jornadas_individuais_versoes SET semana=$1 WHERE colaborador_id=$2',[{},id(60)]),/JORNADA_HISTORY_IMMUTABLE|check constraint/);assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('AD03 DML/grants privados e rollback após utilização fail-closed',async()=>{
+  await a.query('BEGIN');try{await a.query('SET LOCAL ROLE authenticated');await assert.rejects(a.query('SELECT * FROM folha_jornadas_individuais_versoes'),e=>e.code==='42501');}finally{await a.query('ROLLBACK');}
+  const before=await snapJ();await assert.rejects(q(await read('../supabase/folha_jornada_ad03_rollback.sql')),/AD03_DATA_DRIFT|AD03_ROLLBACK_AFTER_USE_FORBIDDEN/);await q('ROLLBACK');assert.deepEqual(await snapJ(),before);
+ });
+}
+`;
+suite=suite.replace(' }finally{for(const c of clients)',ad03Tests.replace('await t.test(' + String.fromCharCode(39) + 'AD03 DML/grants',fs.readFileSync('tests/fixtures/attendance-jornada-ad03-integration.txt','utf8')+'await t.test(' + String.fromCharCode(39) + 'AD03 DML/grants')+' }finally{for(const c of clients)');

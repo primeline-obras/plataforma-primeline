@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-const read=p=>readFile(new URL(p,import.meta.url),'utf8');
+const read=p=>readFile(new URL(p,import.meta.url),'utf8').then(s=>s.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n'));
 const migration=await read('../supabase/folha_avaliacao_diaria.sql');
 test('migration é completa, transacional e não ativa empresas',()=>{assert.match(migration,/^.*\nBEGIN;/);assert.match(migration,/COMMIT;\s*$/);assert.match(migration,/DAILY_INSTALLED_NOT_ACTIVATED/);assert.doesNotMatch(migration,/EXECUTE\s+s\b|s\s*:=\s*replace\(/i);assert.doesNotMatch(migration,/SELECT\s+public\.fn_folha_diaria_gestao_v2/i);});
 test('tabelas novas possuem RLS, ACL fechada e FKs reais de autores/pessoa',()=>{for(const name of ['folha_avaliacoes_diarias','folha_horarios_versoes'])assert.match(migration,new RegExp('ALTER TABLE public\\.'+name+' ENABLE ROW LEVEL SECURITY'));assert.match(migration,/colaborador_id uuid NOT NULL REFERENCES public.colaboradores\(id\)/);assert.match(migration,/capturado_por uuid REFERENCES public.utilizadores\(id\)/);assert.match(migration,/UNIQUE\(empresa_id,colaborador_id,data\)/);});
