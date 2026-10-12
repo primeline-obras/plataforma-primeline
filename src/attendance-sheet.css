@@ -52,3 +52,10 @@
 .planning-weights { font-size:14px; padding:10px 12px; }
 
 .action-task .action-report-secondary { grid-column:2/-1; justify-self:end; white-space:normal; }
+
+/* Contextual occurrence: compact touch options, without changing team layout. */
+.sheet-v2 .sheet-person .sheet-panel { flex-basis:100%; width:100%; }
+.sheet-v2 .sheet-absence-option { display:flex; align-items:center; gap:10px; min-height:44px; padding:8px 10px; border:1px solid var(--card-border); border-radius:8px; }
+.sheet-v2 .sheet-absence-option input { width:20px; height:20px; min-height:20px; margin:0; padding:0; flex:0 0 20px; }
+.sheet-v2 [data-sheet-absence-form] { display:grid; gap:10px; }
+.sheet-v2 [data-sheet-absence],.sheet-v2 [data-sheet-absence-form] button { white-space:nowrap; }

@@ -22,7 +22,7 @@ export function createSheetClient({ supabase, requestId=()=>crypto.randomUUID(),
     if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};
     const body={...data,version:2,request_id:pending.id};
     try {
-      const endpoint=action.startsWith('team_')?'fn_equipa_operar_v2':FOLHA_RPCS.operate;
+      const endpoint=action==='absence_report'?'fn_folha_falta_v2':action.startsWith('team_')?'fn_equipa_operar_v2':FOLHA_RPCS.operate;
       const preview=await rpc(endpoint,{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
       if(preview?.version!==2 || preview.committed!==false || typeof preview.versao!=='string' || !preview.versao)throw new Error('Pré-visualização inválida.');
       if(!await confirm(confirmationMessage || preview.summary || 'Confirmar esta alteração?')) {pending=null;return null;}
@@ -72,12 +72,13 @@ export function createAttendanceManagementClient({supabase,confirm,requestId=()=
       const fingerprint=JSON.stringify({action,data});if(pending?.fingerprint!==fingerprint)pending={fingerprint,id:requestId()};
       const body={...data,version:2,request_id:pending.id};
       try{
-        const p=await call('fn_folha_gestao_v2',{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
+        const endpoint=action==='absence_classify'?'fn_folha_falta_v2':'fn_folha_gestao_v2';
+        const p=await call(endpoint,{p_acao:action,p_dados:body,p_confirmar:false,p_versao:null});
         if(p?.version!==2||p.committed!==false||typeof p.versao!=='string'||!p.versao)throw new Error('Pré-visualização inválida.');
         const vacationPreview=p.preview?.dates;const consumption=p.preview?.calendar_pending?'Calendário por validar; consumo ainda não definitivo.':p.preview?.consumed_days!=null?`${p.preview.consumed_days} dias úteis consumidos.`:'';
         const message=action.startsWith('vacation_')&&Array.isArray(vacationPreview)?`Confirmar ${vacationPreview.length} dias úteis? ${consumption}${action==='vacation_replace'?' Os dias desmarcados deste período serão retirados.':''}`:action==='vacation_replace'?`Confirmar os ${data.dates.length} dias de férias selecionados? Os dias desmarcados deste período serão retirados.`:'Confirmar esta alteração?';
         if(!await confirm(message)){pending=null;return null;}
-        const r=await call('fn_folha_gestao_v2',{p_acao:action,p_dados:body,p_confirmar:true,p_versao:p.versao});
+        const r=await call(endpoint,{p_acao:action,p_dados:body,p_confirmar:true,p_versao:p.versao});
         if(r?.version!==2||r.committed!==true||r.request_id!==body.request_id||r.revision!==data.expected_revision+1)throw new Error('Gravação não confirmada. Recarregue antes de repetir.');
         pending=null;return r;
       }catch(e){if(['40001','42501','STALE_REVISION'].includes(e.code))pending=null;throw e;}finally{busy=false;}
