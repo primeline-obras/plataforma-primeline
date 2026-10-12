@@ -1,0 +1,144 @@
+const ad13Mode=MODE;
+const ad13Point=" const readRollback=await read('../supabase/folha_avaliacao_diaria_rollback.sql');";
+const ad13Before=String.raw`
+ await t.test('AD-13 original: 4h declaradas 8h são ativadas e versionadas antes da correção',async()=>{
+  await a.query('BEGIN');try{
+   await a.query('INSERT INTO folha_config_empresa(empresa_id) VALUES($1)',[id(2)]);
+   const intervals=[{start:'08:00',end:'10:00',period:'manha'},{start:'13:00',end:'15:00',period:'tarde'}];
+   await a.query('INSERT INTO folha_horarios VALUES($1,$2,$3,480,1)',[id(103),id(2),JSON.stringify(intervals)]);
+   const body={version:2,request_id:id(790000),date:(await a.query("SELECT (now() AT TIME ZONE 'Europe/Lisbon')::date::text d")).rows[0].d,expected_revision:1};
+   const preview=await call(a,17,'fn_folha_diaria_gestao_v2',['daily_activation',body,false,null]);
+   const done=await call(a,17,'fn_folha_diaria_gestao_v2',['daily_activation',body,true,preview.versao]);assert.equal(done.committed,true);
+   const row=(await a.query('SELECT snapshot FROM folha_horarios_versoes WHERE obra_id=$1',[id(103)])).rows[0];assert.equal(row.snapshot.expected_minutes,480);
+   console.log('AD13_BEFORE '+JSON.stringify({committed:true,actual_minutes:240,expected_minutes:480,contract:'FAIL'}));
+  }finally{await a.query('ROLLBACK');}
+ });
+`;
+if(ad13Mode==='before')suite=suite.replace(ad13Point,ad13Before+ad13Point);
+if(ad13Mode==='after'){
+ const ad13Install=String.raw`
+ await t.test('AD-13 precheck recusa legado incoerente antes da instalação, sem reparar',async()=>{
+  await a.query('BEGIN');try{
+   await a.query('INSERT INTO folha_config_empresa(empresa_id) VALUES($1)',[id(2)]);
+   await a.query('INSERT INTO folha_horarios VALUES($1,$2,$3,480,1)',[id(103),id(2),JSON.stringify([{start:'08:00',end:'10:00',period:'manha'},{start:'13:00',end:'15:00',period:'tarde'}])]);
+   const pre=(await read('../supabase/folha_horarios_ad13_precheck.sql')).replace('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;','').replace(/COMMIT;\s*$/,'');
+   await assert.rejects(a.query(pre),/AD13_EXISTING_SCHEDULE_INCOHERENT/);
+  }finally{await a.query('ROLLBACK');}
+ });
+ await t.test('AD-13 scripts: precheck/backup/migration/postcheck/rollback/reinstall sem modificar dados',async()=>{
+  await q(await read('../supabase/folha_horarios_ad13_precheck.sql'));
+  await q(await read('../supabase/folha_horarios_ad13_backup.sql'));
+  await q(await read('../supabase/folha_horarios_ad13.sql'));
+  await q(await read('../supabase/folha_horarios_ad13_postcheck.sql'));
+  const definition=(await q("SELECT pg_get_constraintdef(oid) d FROM pg_constraint WHERE conname='folha_horario_ad13_coerencia'")).rows[0].d;
+  await q('ALTER TABLE folha_horarios DROP CONSTRAINT folha_horario_ad13_coerencia');await q('ALTER TABLE folha_horarios ADD CONSTRAINT folha_horario_ad13_coerencia CHECK(true)');
+  try{await assert.rejects(q(await read('../supabase/folha_horarios_ad13_postcheck.sql')),/AD13_CONSTRAINT_DRIFT/);}finally{await q('ROLLBACK');await q('ALTER TABLE folha_horarios DROP CONSTRAINT folha_horario_ad13_coerencia');await q('ALTER TABLE folha_horarios ADD CONSTRAINT folha_horario_ad13_coerencia '+definition);}
+  await q('ALTER TABLE folha_config_empresa DISABLE TRIGGER folha_diaria_ad13_ativacao');try{await assert.rejects(q(await read('../supabase/folha_horarios_ad13_postcheck.sql')),/AD13_TRIGGER_DRIFT/);}finally{await q('ROLLBACK');await q('ALTER TABLE folha_config_empresa ENABLE TRIGGER folha_diaria_ad13_ativacao');}
+  await q(await read('../supabase/folha_horarios_ad13_postcheck.sql'));
+  await q(await read('../supabase/folha_horarios_ad13_rollback.sql'));
+  await q(await read('../supabase/folha_horarios_ad13_precheck.sql'));
+  await q(await read('../supabase/folha_horarios_ad13.sql'));
+  await q(await read('../supabase/folha_horarios_ad13_postcheck.sql'));
+ });
+ await t.test('AD-13 ativação original inválida: preview/confirm recusados, zero efeitos parciais',async()=>{
+  await a.query('BEGIN');try{
+   await a.query('ALTER TABLE folha_horarios DROP CONSTRAINT folha_horario_ad13_coerencia');
+   await a.query('INSERT INTO folha_config_empresa(empresa_id) VALUES($1)',[id(2)]);
+   await a.query('INSERT INTO folha_horarios VALUES($1,$2,$3,480,1)',[id(103),id(2),JSON.stringify([{start:'08:00',end:'10:00',period:'manha'},{start:'13:00',end:'15:00',period:'tarde'}])]);
+   const snap=async()=>(await a.query("SELECT jsonb_build_object('cfg',(SELECT jsonb_agg(to_jsonb(x) ORDER BY empresa_id) FROM folha_config_empresa x),'versions',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_horarios_versoes x),'history',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_gestao_historico x),'ops',(SELECT jsonb_agg(to_jsonb(x) ORDER BY request_id) FROM folha_privado.operacoes x)) v")).rows[0].v;
+   const before=await snap();const body={version:2,request_id:id(790001),date:(await a.query("SELECT (now() AT TIME ZONE 'Europe/Lisbon')::date::text d")).rows[0].d,expected_revision:1};
+   await a.query("SELECT set_config('test.actor',$1,false)",[id(17)]);
+   for(const confirm of [false,true]){
+    await a.query('SET ROLE authenticated');await a.query('SAVEPOINT invalid_activation');
+    try{await assert.rejects(a.query('SELECT public.fn_folha_diaria_gestao_v2($1,$2,$3,$4)',['daily_activation',body,confirm,null]),e=>e.code==='23514');}finally{await a.query('ROLLBACK TO invalid_activation');await a.query('RESET ROLE');}
+    assert.deepEqual(await snap(),before);
+   }
+   console.log('AD13_AFTER '+JSON.stringify({sqlstate:'23514',partial_writes:false,contract:'PASS'}));
+  }finally{await a.query('ROLLBACK');}
+ });
+ for(const minutes of [480,240])await t.test('AD-13 configuração/ativação legítima '+minutes+' minutos; replay estável',async()=>{
+  await a.query('BEGIN');try{
+   await a.query('INSERT INTO folha_config_empresa(empresa_id) VALUES($1)',[id(2)]);
+   const xs=minutes===480?[{start:'08:00',end:'12:00',period:'manha'},{start:'13:00',end:'17:00',period:'tarde'}]:[{start:'08:00',end:'10:00',period:'manha'},{start:'13:00',end:'15:00',period:'tarde'}];
+   const cfgBody={version:2,request_id:id(790000+minutes),work_id:id(103),intervals:xs,expected_minutes:minutes,expected_revision:0};
+   const pre=await call(a,17,'fn_folha_diaria_gestao_v2',['configure_schedule',cfgBody,false,null]);await call(a,17,'fn_folha_diaria_gestao_v2',['configure_schedule',cfgBody,true,pre.versao]);
+   const activate={version:2,request_id:id(791000+minutes),date:(await a.query("SELECT (now() AT TIME ZONE 'Europe/Lisbon')::date::text d")).rows[0].d,expected_revision:1};
+   const p=await call(a,17,'fn_folha_diaria_gestao_v2',['daily_activation',activate,false,null]);const done=await call(a,17,'fn_folha_diaria_gestao_v2',['daily_activation',activate,true,p.versao]);assert.equal(done.committed,true);
+   assert.deepEqual(await call(a,17,'fn_folha_diaria_gestao_v2',['daily_activation',activate,true,p.versao]),done);
+   const row=(await a.query('SELECT snapshot FROM folha_horarios_versoes WHERE obra_id=$1',[id(103)])).rows[0];assert.equal(row.snapshot.expected_minutes,minutes);assert.deepEqual(row.snapshot.intervals,xs);
+  }finally{await a.query('ROLLBACK');}
+ });
+`;
+ suite=suite.replace(ad13Point,ad13Install+ad13Point);
+ // Old stage rollbacks must refuse the newer RPC definition. Their original files remain unchanged.
+ suite=suite.replace("/AD15_DATA_DRIFT/","/AD15_FIXED_FUNCTION_DRIFT/").replace("/AD14_DATA_DRIFT/","/AD14_AD15_REQUIRED_OR_DRIFT/");
+ // Reconstruct the exact predecessor in the already-isolated AD-14 precheck probe.
+ const oldPrecheckPoint="   const text=(await read('../supabase/folha_avaliacao_ad14_precheck.sql'))";
+ suite=suite.replace(oldPrecheckPoint,"   await q(\"DO $restore_stage$ DECLARE src text; BEGIN SELECT definicao INTO src FROM primeline_ad13_backup.rpc;EXECUTE src;END $restore_stage$\");\n"+oldPrecheckPoint);
+ const ad13Extra=String.raw`
+ const template=(xs,expected)=>({intervals:xs,expected_minutes:expected});
+ const normal8=[{start:'08:00',end:'12:00',period:'manha'},{start:'13:00',end:'17:00',period:'tarde'}];
+ const normal4=[{start:'08:00',end:'10:00',period:'manha'},{start:'13:00',end:'15:00',period:'tarde'}];
+ const badTemplates=[
+  ['4h declaradas 8h',template(normal4,480)],
+  ['sobreposição',template([{start:'08:00',end:'12:00',period:'manha'},{start:'11:00',end:'15:00',period:'tarde'}],480)],
+  ['horas inválidas',template([{start:'99:00',end:'99:30',period:'manha'},normal8[1]],270)],
+  ['end ausente',template([{start:'08:00',period:'manha'},normal8[1]],480)],
+  ['end JSON null',template([{start:'08:00',end:null,period:'manha'},normal8[1]],480)],
+  ['intervals JSON null',template(null,480)],
+  ['intervals SQL field ausente',{expected_minutes:480}],
+  ['snapshot JSON null',null],
+  ['snapshot array',[]],
+  ['expected JSON null',template(normal8,null)],
+  ['expected ausente',{intervals:normal8}],
+  ['expected textual',template(normal8,'480')],
+  ['expected fracionária',template(normal8,480.5)],
+  ['expected zero',template(normal8,0)],
+  ['períodos duplicados',template([normal8[0],{...normal8[1],period:'manha'}],480)],
+  ['period JSON null',template([{...normal8[0],period:null},normal8[1]],480)],
+  ['períodos invertidos',template([{...normal8[0],period:'tarde'},{...normal8[1],period:'manha'}],480)],
+  ['apenas um período normal',template([{start:'08:00',end:'12:00',period:'manha'}],240)],
+  ['mode personalizado indevido',template([{...normal8[0],mode:'personalizado'},normal8[1]],480)],
+  ['fim anterior ao início',template([{start:'12:00',end:'08:00',period:'manha'},normal8[1]],480)],
+  ['intervals vazio',template([],480)]
+ ];
+ for(const [label,snapshot] of badTemplates)await t.test('AD-13 negativo: '+label,async()=>{
+  assert.equal((await q('SELECT folha_privado.horario_ad13_valido($1,true) v',[snapshot])).rows[0].v,false);
+  const h=(await q('SELECT revision FROM folha_horarios WHERE obra_id=$1',[id(100)])).rows[0];const body={version:2,request_id:id(seq++),work_id:id(100),expected_revision:h.revision,...(snapshot&&typeof snapshot==='object'&&!Array.isArray(snapshot)?snapshot:{intervals:null,expected_minutes:null})};const before=await snapshotAll13();
+  for(const confirm of [false,true])await assert.rejects(call(a,10,'fn_folha_diaria_gestao_v2',['configure_schedule',body,confirm,null]),e=>e.code==='23514');
+  assert.deepEqual(await snapshotAll13(),before);
+ });
+ async function snapshotAll13(){return (await q("SELECT jsonb_build_object('schedules',(SELECT jsonb_agg(to_jsonb(x) ORDER BY obra_id) FROM folha_horarios x),'versions',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_horarios_versoes x),'evaluations',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_avaliacoes_diarias x),'history',(SELECT jsonb_agg(to_jsonb(x) ORDER BY id) FROM folha_gestao_historico x),'ops',(SELECT jsonb_agg(to_jsonb(x) ORDER BY request_id) FROM folha_privado.operacoes x)) v")).rows[0].v;}
+
+ await t.test('AD-13 distingue SQL NULL e JSON null em snapshot/intervalos/carga',async()=>{
+  const row=(await q("SELECT folha_privado.horario_ad13_valido(NULL,true) sql_null,folha_privado.horario_ad13_valido('null'::jsonb,true) json_null,folha_privado.horario_ad13_valido('{\"intervals\":null,\"expected_minutes\":480}'::jsonb,true) intervals_null,folha_privado.horario_ad13_valido('{\"intervals\":[],\"expected_minutes\":null}'::jsonb,true) expected_null")).rows[0];assert.deepEqual(row,{sql_null:false,json_null:false,intervals_null:false,expected_null:false});
+ });
+ await t.test('AD-13 snapshots históricos incoerentes recusados pela constraint de tabela',async()=>{
+  for(const snap of [template(normal4,480),{intervals:null,expected_minutes:480},template([{start:'08:00',end:null,period:'manha'}],240)]){
+   await q('BEGIN');try{await assert.rejects(q('INSERT INTO folha_horarios_versoes(empresa_id,obra_id,revision,snapshot,vigente_desde,vigente_ate,criado_por,request_id) VALUES($1,$2,$3,$4,$5,$5,$6,$7)',[id(1),id(100),seq++,snap,today,id(10),id(seq++)]),e=>e.code==='23514');}finally{await q('ROLLBACK');}
+  }
+ });
+ await t.test('AD-13 snapshot administrativo com intervalos livres coerentes continua permitido',async()=>{
+  assert.equal((await q('SELECT folha_privado.horario_ad13_valido($1,false) v',[template([{start:'09:00',end:'17:00'}],480)])).rows[0].v,true);
+  const before=await snapshotAll13();await q('BEGIN');try{await assert.rejects(q("UPDATE folha_avaliacoes_diarias SET horario_snapshot=jsonb_set(horario_snapshot,'{intervals}','[{\"start\":\"08:00\",\"end\":\"10:00\",\"period\":\"manha\"},{\"start\":\"13:00\",\"end\":\"15:00\",\"period\":\"tarde\"}]'::jsonb) WHERE colaborador_id=$1 AND data=$2",[id(34),today]),e=>e.code==='23514');}finally{await q('ROLLBACK');}assert.deepEqual(await snapshotAll13(),before);
+ });
+ await t.test('AD-13 jornada formal não usa relógio/futuro dos factos laborais',async()=>{
+  const h=(await q('SELECT revision FROM folha_horarios WHERE obra_id=$1',[id(103)])).rows[0];const xs=[{start:'23:40',end:'23:50',period:'manha'},{start:'23:50',end:'23:59',period:'tarde'}];
+  const body={version:2,request_id:id(seq++),work_id:id(103),intervals:xs,expected_minutes:19,expected_revision:h.revision};const pre=await call(a,17,'fn_folha_diaria_gestao_v2',['configure_schedule',body,false,null]);await call(a,17,'fn_folha_diaria_gestao_v2',['configure_schedule',body,true,pre.versao]);
+  assert.equal((await q('SELECT expected_minutes FROM folha_horarios WHERE obra_id=$1',[id(103)])).rows[0].expected_minutes,19);
+ });
+ await t.test('AD-13 alteração legítima 4h versiona, mantém snapshots anteriores e referências congeladas',async()=>{
+  const oldVersions=(await q('SELECT * FROM folha_horarios_versoes WHERE obra_id=$1 ORDER BY revision',[id(103)])).rows;const oldEvaluations=(await q('SELECT * FROM folha_avaliacoes_diarias WHERE obra_origem_id=$1 ORDER BY id',[id(103)])).rows;
+  const h=(await q('SELECT revision FROM folha_horarios WHERE obra_id=$1',[id(103)])).rows[0];const body={version:2,request_id:id(seq++),work_id:id(103),intervals:normal4,expected_minutes:240,expected_revision:h.revision};const pre=await call(a,17,'fn_folha_diaria_gestao_v2',['configure_schedule',body,false,null]);await call(a,17,'fn_folha_diaria_gestao_v2',['configure_schedule',body,true,pre.versao]);
+  const versions=(await q('SELECT * FROM folha_horarios_versoes WHERE obra_id=$1 ORDER BY revision',[id(103)])).rows;assert.equal(versions.length,oldVersions.length+1);for(const old of oldVersions)assert.deepEqual(versions.find(v=>v.id===old.id).snapshot,old.snapshot);assert.deepEqual((await q('SELECT * FROM folha_avaliacoes_diarias WHERE obra_origem_id=$1 ORDER BY id',[id(103)])).rows,oldEvaluations);
+ });
+ await t.test('AD-13 concorrência de horário/revisão, replay e payload diferente preservados',async()=>{
+  const h=(await q('SELECT revision FROM folha_horarios WHERE obra_id=$1',[id(100)])).rows[0];const body={version:2,request_id:id(seq++),work_id:id(100),intervals:normal8,expected_minutes:480,expected_revision:h.revision};const pre=await call(a,10,'fn_folha_diaria_gestao_v2',['configure_schedule',body,false,null]);
+  const done=await Promise.all([call(a,10,'fn_folha_diaria_gestao_v2',['configure_schedule',body,true,pre.versao]),call(b,10,'fn_folha_diaria_gestao_v2',['configure_schedule',body,true,pre.versao])]);assert.deepEqual(done[0],done[1]);
+  await assert.rejects(call(a,10,'fn_folha_diaria_gestao_v2',['configure_schedule',{...body,expected_minutes:240,intervals:normal4},true,pre.versao]),/IDEMPOTENCY_CONFLICT/);
+  const before=await snapshotAll13();await assert.rejects(call(a,10,'fn_folha_diaria_gestao_v2',['configure_schedule',{...body,request_id:id(seq++)},true,pre.versao]),e=>e.code==='40001');assert.deepEqual(await snapshotAll13(),before);
+ });
+ await t.test('AD-13 rollback após uso recusa alteração de factos',async()=>{const before=await snapshotAll13();await assert.rejects(q(await read('../supabase/folha_horarios_ad13_rollback.sql')),/AD13_DATA_DRIFT/);await q('ROLLBACK');assert.deepEqual(await snapshotAll13(),before);});
+ `;
+ suite=suite.replace(' }finally{for(const c of clients)',ad13Extra+' }finally{for(const c of clients)');
+}
