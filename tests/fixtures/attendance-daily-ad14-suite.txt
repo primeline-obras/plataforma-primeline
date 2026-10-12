@@ -1,0 +1,120 @@
+
+const ad14Mode=MODE;
+if(ad14Mode==='after'){
+ const point=" const readRollback=await read('../supabase/folha_avaliacao_diaria_rollback.sql');";
+ suite=suite.replace(point,String.raw`
+ await t.test('AD-14 scripts local: precheck/backup/migration/postcheck/rollback/reinstall, AD-15 untouched',async()=>{
+  await q(await read('../supabase/folha_avaliacao_ad14_precheck.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14_backup.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14_postcheck.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14_rollback.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14_precheck.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14.sql'));
+  await q(await read('../supabase/folha_avaliacao_ad14_postcheck.sql'));
+ });
+`+point);
+}
+const ad14Tests=String.raw`
+ const ad14Stage=STAGE;
+ async function ad14Probe(label,person,fields,originalBug=false){
+  const before=await snapshot();let error=null;
+  await q('BEGIN');try{await q('UPDATE folha_avaliacoes_diarias SET '+fields+' WHERE colaborador_id=$1 AND data=$2',[id(person),today]);await q('SET CONSTRAINTS ALL IMMEDIATE');}catch(e){error=e;}finally{await q('ROLLBACK');}
+  assert.deepEqual(await snapshot(),before,label+' changed facts/history');
+  if(ad14Stage==='before'&&originalBug){assert.equal(error,null,label+' baseline should reproduce');console.log('AD14_BEFORE '+JSON.stringify({label,accepted:true,contract:'FAIL'}));}
+  else {assert.ok(error,label+' invalid state accepted');assert.equal(error.code,'23514',label+' wrong rejection');console.log('AD14_AFTER '+JSON.stringify({label,sqlstate:error.code,contract:'PASS'}));}
+ }
+ const cases=[
+  ['regular com falta',32,"estado='regular'",true],
+  ['regular com HE pendente',33,"estado='regular',he_estado='pendente',pendencias=ARRAY['he_diaria_pendente'],decisao_fingerprint=NULL,he_decidido_por=NULL,he_decidido_em=NULL,he_motivo=NULL",true],
+  ['snapshot JSON null',34,"horario_snapshot='null'::jsonb",true],
+  ['HE validada com excedente SQL NULL',33,"he_estado='validada',falta_minutes=NULL,excedente_minutes=NULL,pendencias=ARRAY['he_validada_aguarda_processamento'],estado='potencial_he'",true],
+  ['snapshot SQL NULL',34,'horario_snapshot=NULL'],
+  ['capturada sem autor',34,'capturado_por=NULL'],
+  ['capturada sem timestamp',34,'capturado_em=NULL'],
+  ['capturada sem request',34,'captura_request_id=NULL'],
+  ['carga esperada zero',34,'expected_minutes=0'],
+  ['carga esperada NULL capturada',34,'expected_minutes=NULL'],
+  ['modo inválido',34,"modo_dia='normal'"],
+  ['referência estado inválido',34,"referencia_estado='inventada'"],
+  ['referência origem inválida',34,"referencia_origem='cliente'"],
+  ['revisão zero',34,'revision=0'],
+  ['referência revisão zero',34,'referencia_revision=0'],
+  ['fingerprint factual inválido',34,"factos_fingerprint='inválido'"],
+  ['diferenças com só um NULL',34,'falta_minutes=NULL'],
+  ['HE decidida sem excedente positivo',33,'excedente_minutes=0'],
+  ['pendência vazia',34,"pendencias=ARRAY['  ']"],
+  ['snapshot boolean',34,"horario_snapshot='true'::jsonb"],
+  ['snapshot array',34,"horario_snapshot='[]'::jsonb"],
+  ['snapshot vazio',34,"horario_snapshot='{}'::jsonb"],
+  ['snapshot expected JSON null',34,"horario_snapshot=jsonb_set(horario_snapshot,'{expected_minutes}','null'::jsonb)"],
+  ['snapshot expected textual',34,"horario_snapshot=jsonb_set(horario_snapshot,'{expected_minutes}','\"480\"'::jsonb)"],
+  ['snapshot sem intervals',34,"horario_snapshot=horario_snapshot-'intervals'"],
+  ['snapshot intervals JSON null',34,"horario_snapshot=jsonb_set(horario_snapshot,'{intervals}','null'::jsonb)"],
+  ['snapshot intervalos vazios',34,"horario_snapshot=jsonb_set(horario_snapshot,'{intervals}','[]'::jsonb)"],
+  ['snapshot intervalo sem fim',34,"horario_snapshot=jsonb_set(horario_snapshot,'{intervals}','[{\"start\":\"08:00\",\"end\":null}]'::jsonb)"],
+  ['snapshot intervalo formato inválido',34,"horario_snapshot=jsonb_set(horario_snapshot,'{intervals}','[{\"start\":\"99:00\",\"end\":\"99:30\"}]'::jsonb)"],
+  ['snapshot intervalo reverso',34,"horario_snapshot=jsonb_set(horario_snapshot,'{intervals}','[{\"start\":\"17:00\",\"end\":\"08:00\"}]'::jsonb)"],
+  ['permanencia snapshot JSON null',34,"permanencia_snapshot='null'::jsonb"],
+  ['permanencia snapshot UUID incoerente',34,"permanencia_snapshot=jsonb_set(permanencia_snapshot,'{colaborador_id}',to_jsonb('00000000-0000-4000-8000-000000000032'::text))"],
+  ['contexto snapshot JSON null',34,"contexto_snapshot='null'::jsonb"],
+  ['referencia pendente com carga',39,'expected_minutes=480'],
+  ['referencia pendente com captura',39,"capturado_por=criado_por,capturado_em=now(),captura_request_id=request_id_inicial"],
+  ['decisão HE sem autor',33,'he_decidido_por=NULL'],
+  ['decisão HE sem motivo',33,'he_motivo=NULL'],
+  ['decisão HE motivo vazio',33,"he_motivo='  '"],
+  ['decisão HE sem fingerprint',33,'decisao_fingerprint=NULL'],
+  ['decisão HE fingerprint inválido',33,"decisao_fingerprint='inválido'"],
+  ['decisão HE fingerprint bem formado mas incorreto',33,"decisao_fingerprint=repeat('0',64)"],
+  ['nenhum HE com decisão residual',33,"he_estado='nenhum'"],
+  ['inativa com estado regular',34,"ativa=false,estado='regular'"],
+  ['ativa com estado inativa',34,"estado='inativa'"],
+  ['minutos negativos',34,'realizado_minutes=-1'],
+  ['minutos acima do limite',34,'realizado_minutes=1441'],
+  ['diferenças aritméticas incoerentes',34,'falta_minutes=30'],
+  ['dia mensurável sem diferenças',34,'falta_minutes=NULL,excedente_minutes=NULL'],
+  ['intervalo aberto com diferenças',40,'falta_minutes=480-realizado_minutes,excedente_minutes=0'],
+  ['estado inválido',34,"estado='inventado'"],
+  ['HE estado inválido',34,"he_estado='processada'"],
+  ['estado horas em falta sem falta',34,"estado='horas_em_falta'"],
+  ['estado potencial HE sem excedente',34,"estado='potencial_he'"],
+  ['falta sem pendência correspondente',32,"pendencias='{}'::text[]"],
+  ['pendência de referência fictícia',34,"pendencias=ARRAY['referencia_pendente']"],
+  ['pendência HE validada fictícia',34,"pendencias=ARRAY['he_validada_aguarda_processamento']"],
+  ['pendência com elemento NULL',34,"pendencias=ARRAY[NULL]::text[]"],
+  ['pendência duplicada',32,"pendencias=ARRAY['horas_em_falta','horas_em_falta']"],
+  ['revisões factuais JSON null',34,"factos_revisoes='null'::jsonb"],
+  ['revisão factual incompleta',34,"factos_revisoes='[{}]'::jsonb"],
+  ['revisão factual não positiva',34,"factos_revisoes='[{\"id\":\"00000000-0000-4000-8000-000000000034\",\"revision\":0}]'::jsonb"],
+  ['administrativa sem evidência',34,"referencia_origem='administrativo',permanencia_id=NULL,permanencia_snapshot=NULL,horario_versao_id=NULL,referencia_motivo='Prova',referencia_evidencia=NULL"],
+  ['administrativa evidência JSON null',34,"referencia_origem='administrativo',permanencia_id=NULL,permanencia_snapshot=NULL,horario_versao_id=NULL,referencia_motivo='Prova',referencia_evidencia='null'::jsonb"],
+  ['administrativa evidência vazia',34,"referencia_origem='administrativo',permanencia_id=NULL,permanencia_snapshot=NULL,horario_versao_id=NULL,referencia_motivo='Prova',referencia_evidencia='{}'::jsonb"],
+  ['administrativa sem motivo',34,"referencia_origem='administrativo',permanencia_id=NULL,permanencia_snapshot=NULL,horario_versao_id=NULL,referencia_motivo=NULL,referencia_evidencia='{\"document\":\"sintético\"}'::jsonb"]
+ ];
+ for(const [label,person,fields,originalBug] of cases.filter(x=>ad14Stage==='after'||x[3]))await t.test('AD-14 negativo: '+label,()=>ad14Probe(label,person,fields,originalBug));
+ if(ad14Stage==='after'){
+  await t.test('AD-14 estado não pode persistir inválido no COMMIT, mesmo sem SET CONSTRAINTS',async()=>{
+   const before=await snapshot();await q('BEGIN');await q("UPDATE folha_avaliacoes_diarias SET estado='regular' WHERE colaborador_id=$1",[id(32)]);await assert.rejects(q('COMMIT'),e=>e.code==='23514');await q('ROLLBACK');assert.deepEqual(await snapshot(),before);
+  });
+  await t.test('AD-14 transição temporária pode terminar válida sem bypass',async()=>{
+   const before=await snapshot();await q('BEGIN');await q("UPDATE folha_avaliacoes_diarias SET estado='regular' WHERE colaborador_id=$1",[id(32)]);await q("UPDATE folha_avaliacoes_diarias SET estado='horas_em_falta' WHERE colaborador_id=$1",[id(32)]);await q('COMMIT');assert.deepEqual(await snapshot(),before);
+  });
+  await t.test('AD-14 positivos: regular, falta, pendente, aberto, inativa e referência administrativa via RPC',async()=>{
+   for(const p of [32,34,35,38,39,40]){const row=(await q('SELECT * FROM folha_avaliacoes_diarias WHERE colaborador_id=$1 ORDER BY data LIMIT 1',[id(p)])).rows[0];assert.equal((await q('SELECT folha_privado.diaria_ad14_valida(a,true) v FROM folha_avaliacoes_diarias a WHERE id=$1',[row.id])).rows[0]?.v,true);}
+  });
+
+  await t.test('AD-14 positivos: conflito legítimo e HE não considerada regular sem pendência',async()=>{
+   const before=await snapshot();
+   await q('BEGIN');await q("UPDATE folha_avaliacoes_diarias SET estado='conflito',he_estado='nao_avaliavel',falta_minutes=NULL,excedente_minutes=NULL,pendencias=ARRAY['conflito_factos'] WHERE colaborador_id=$1 AND data=$2",[id(34),today]);await q('SET CONSTRAINTS ALL IMMEDIATE');await q('ROLLBACK');
+   await q('BEGIN');await q("UPDATE folha_avaliacoes_diarias SET estado='regular',pendencias='{}'::text[] WHERE colaborador_id=$1 AND data=$2",[id(33),today]);await q('SET CONSTRAINTS ALL IMMEDIATE');await q('ROLLBACK');
+   assert.deepEqual(await snapshot(),before);
+  });
+  await t.test('AD-14 precheck recusa dados inválidos existentes, sem corrigir e sem perder AD-15',async()=>{
+   await q('BEGIN');await q('ALTER TABLE folha_avaliacoes_diarias DROP CONSTRAINT folha_diaria_ad14_shape');await q('DROP TRIGGER folha_diaria_ad14_final ON folha_avaliacoes_diarias');await q('DROP FUNCTION folha_privado.diaria_ad14_final()');await q('DROP FUNCTION folha_privado.diaria_ad14_valida(public.folha_avaliacoes_diarias,boolean)');await q("UPDATE folha_avaliacoes_diarias SET estado='regular' WHERE colaborador_id=$1",[id(32)]);
+   const text=(await read('../supabase/folha_avaliacao_ad14_precheck.sql')).replace('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;','').replace(/COMMIT;\s*$/,'');
+   await assert.rejects(q(text),/AD14_EXISTING_INVALID_EVALUATIONS/);await q('ROLLBACK');
+  });
+  await t.test('AD-14 rollback após uso recusa sobrescrita de factos',async()=>{const before=await snapshot();await assert.rejects(q(await read('../supabase/folha_avaliacao_ad14_rollback.sql')),/AD14_DATA_DRIFT/);await q('ROLLBACK');assert.deepEqual(await snapshot(),before);});
+ }
+`;
+suite=suite.replace(' }finally{for(const c of clients)',ad14Tests.replace('STAGE',JSON.stringify(ad14Mode))+' }finally{for(const c of clients)');
