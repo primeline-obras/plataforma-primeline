@@ -1,0 +1,57 @@
+ // Minimal synthetic financial relations: only the fields read by conflict checks. Not a financial-schema audit.
+ await q('CREATE TABLE IF NOT EXISTS public.lancamentos_mao_obra(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),colaborador_id uuid REFERENCES colaboradores(id),obra_id uuid REFERENCES obras(id),data date NOT NULL)');
+ await q('CREATE TABLE IF NOT EXISTS public.horas_extraordinarias(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),colaborador_id uuid REFERENCES colaboradores(id),obra_id uuid REFERENCES obras(id),data date NOT NULL)');
+ // The old capture used by the synthetic bootstrap predates the legacy EXECUTE cutover.
+ // Explicit local closure is seeded before the new precheck; no production grants are changed.
+ await q('REVOKE ALL ON FUNCTION public.fn_guardar_ponto_obra(uuid,uuid,date,text,time,time,time,time,text) FROM PUBLIC,anon,authenticated,service_role');
+ await t.test('FALTOU lifecycle: exact precheck/private backup/install/postcheck/rollback/reinstall',async()=>{
+  for(const suffix of ['precheck','backup',''])await q(await read('../supabase/folha_faltou_neutro'+(suffix?'_'+suffix:'')+'.sql'));await q(await read('../supabase/folha_faltou_neutro_postcheck.sql'));
+  await q(await read('../supabase/folha_faltou_neutro_rollback.sql'));await q(await read('../supabase/folha_faltou_neutro_precheck.sql'));await q(await read('../supabase/folha_faltou_neutro.sql'));await q(await read('../supabase/folha_faltou_neutro_postcheck.sql'));
+ });
+ const faltouWorker=async(n,date=today)=>{await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao) VALUES($1,$2,'Pessoa sintética Faltou','Servente','2026-01-01')",[id(n),id(1)]);await operate('team_add',[member(n)],100,date);};
+ const fbody=(n,date=today)=>({version:2,request_id:id(seq++),date,work_id:id(100),key:{kind:'primeline',person_id:id(n),date,work_id:id(100)}});
+ const fcall=(actor,action,body,confirm=false,token=null,client=a)=>call(client,actor,'fn_folha_faltou_v2',[action,body,confirm,token]);
+ const freport=async(body,actor=13)=>{const pre=await fcall(actor,'absence_report',body);return fcall(actor,'absence_report',body,true,pre.versao);};
+ await t.test('FALTOU today neutral occurrence, no hours, permanence and author intact',async()=>{
+  await faltouWorker(700);const before=(await q('SELECT to_jsonb(m) m FROM quadro_equipa_permanencias m WHERE colaborador_id=$1',[id(700)])).rows[0].m;const body=fbody(700);const pre=await fcall(13,'absence_report',body);assert.equal((await q('SELECT count(*)::integer n FROM ausencias WHERE colaborador_id=$1',[id(700)])).rows[0].n,0);
+  const done=await fcall(13,'absence_report',body,true,pre.versao);assert.equal(done.committed,true);assert.equal(done.absence.tipo,'falta_reportada_pendente');assert.equal(done.absence.estado,'ausente_pendente');
+  assert.deepEqual((await q('SELECT to_jsonb(m) m FROM quadro_equipa_permanencias m WHERE colaborador_id=$1',[id(700)])).rows[0].m,before);assert.equal((await q('SELECT count(*)::integer n FROM folha_registos WHERE colaborador_id=$1',[id(700)])).rows[0].n,0);
+  const h=(await q("SELECT ator_id,action FROM folha_historico WHERE person_id=$1 AND action='absence_report'",[id(700)])).rows;assert.equal(h.length,1);assert.equal(h[0].ator_id,id(13));
+  const c=await as(a,13,'SELECT fn_folha_contexto_v2($1::date,$2::uuid) v',[today,id(100)]);assert.equal(c.rows.find(x=>x.person_id===id(700)).absence.tipo,'falta_reportada_pendente');
+  const {pathToFileURL}=await import('node:url'),{resolve}=await import('node:path');const {normalDaySelection}=await import(pathToFileURL(resolve('src/attendance-domain.js')));assert.ok(normalDaySelection(c.rows,{schedule:c.schedule,date:today,now:{date:today},admin:false}).excluded.some(x=>x.person_id===id(700)));
+  assert.deepEqual(await fcall(13,'absence_report',body,true,pre.versao),done);await assert.rejects(fcall(13,'absence_report',{...body,reason:'outro'},true,pre.versao),/IDEMPOTENCY_CONFLICT/);
+ });
+ await t.test('FALTOU yesterday accepted; old/future and remuneration choice refused',async()=>{
+  const yesterday=(await q('SELECT ($1::date-1)::text d',[today])).rows[0].d;await faltouWorker(701,yesterday);assert.equal((await freport(fbody(701,yesterday))).committed,true);
+  for(const delta of [-2,1]){const date=(await q('SELECT ($1::date+$2::integer)::text d',[today,delta])).rows[0].d;await assert.rejects(fcall(13,'absence_report',fbody(701,date)),/DATE_WINDOW/);}
+  await assert.rejects(fcall(13,'absence_report',{...fbody(701),choice:'justificada'}),/FALTOU_NEUTRAL_REPORT_ONLY/);
+ });
+ await t.test('FALTOU administrative classification: all three outcomes, motive and history; no foreman classification',async()=>{
+  for(const [n,classification] of [[702,'falta_justificada_com_remuneracao'],[703,'falta_justificada_sem_remuneracao'],[704,'falta_injustificada']]){
+   await faltouWorker(n);const report=await freport(fbody(n));const body={version:2,request_id:id(seq++),id:report.absence.id,expected_type:'falta_reportada_pendente',expected_state:'ausente_pendente',classification,reason:'Documentação sintética conferida pelo Administrativo'};
+   await assert.rejects(fcall(13,'absence_classify',body),e=>e.code==='42501');await assert.rejects(fcall(10,'absence_classify',{...body,reason:null}),/CLASSIFICATION_REASON_REQUIRED/);
+   const pre=await fcall(10,'absence_classify',body);const result=await fcall(10,'absence_classify',body,true,pre.versao);assert.equal(result.absence.tipo,classification);assert.notEqual(result.absence.estado,'ausente_pendente');
+   const h=(await q("SELECT * FROM folha_historico WHERE person_id=$1 AND action='absence_classify'",[id(n)])).rows;assert.equal(h.length,1);assert.equal(h[0].ator_id,id(10));assert.equal(h[0].antes.tipo,'falta_reportada_pendente');assert.equal(h[0].depois.tipo,classification);
+  }
+ });
+ await t.test('FALTOU direct authenticated spoof/new type cannot report or classify',async()=>{
+  await a.query('BEGIN');try{await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);await a.query('SET LOCAL ROLE authenticated');await a.query("SELECT set_config('folha.faltou_rpc','on',true)");await assert.rejects(a.query("UPDATE ausencias SET tipo='falta_injustificada',estado='confirmada' WHERE colaborador_id=$1",[id(700)]),e=>e.code==='42501');}finally{await a.query('ROLLBACK');}
+ });
+ await t.test('FALTOU point conflict preserves registered facts and creates no absence',async()=>{
+  await faltouWorker(705);await savePlan(705,[[100,[normal('08:00','12:00','manha')]]]);const before=(await q('SELECT to_jsonb(f) f FROM folha_registos f WHERE colaborador_id=$1',[id(705)])).rows[0].f;
+  await assert.rejects(fcall(13,'absence_report',fbody(705)),/POINT_CONFLICT/);assert.equal((await q('SELECT count(*)::integer n FROM ausencias WHERE colaborador_id=$1',[id(705)])).rows[0].n,0);assert.deepEqual((await q('SELECT to_jsonb(f) f FROM folha_registos f WHERE colaborador_id=$1',[id(705)])).rows[0].f,before);
+ });
+ await t.test('FALTOU tenant/external/non-member/other role denied; no old writer opened',async()=>{
+  for(const [actor,body] of [[10,fbody(700)],[13,{...fbody(700),key:{...fbody(700).key,kind:'external'}}],[13,{...fbody(700),empresa_id:id(2)}],[13,fbody(60)]])await assert.rejects(fcall(actor,'absence_report',body),e=>e.code==='42501');
+  assert.equal((await q("SELECT to_regprocedure('public.fn_folha_falta_v2(text,jsonb,boolean,text)') p")).rows[0].p,null);
+  assert.equal((await q("SELECT has_function_privilege('authenticated','public.fn_guardar_ponto_obra(uuid,uuid,date,text,time,time,time,time,text)','EXECUTE') allowed")).rows[0].allowed,false);
+  await assert.rejects(as(a,13,'SELECT fn_guardar_ponto_obra($1::uuid,$2::uuid,$3::date,$4::text,$5::time,$6::time,$7::time,$8::time,$9::text) v',[id(100),id(700),today,'presente','08:00','12:00','13:00','17:00',null]),e=>e.code==='42501');
+ });
+ await t.test('FALTOU two independent connections: same request one occurrence/history, idempotent response',async()=>{
+  await faltouWorker(706);const body=fbody(706),pre=await fcall(13,'absence_report',body);const outcomes=await Promise.all([fcall(13,'absence_report',body,true,pre.versao,a),fcall(13,'absence_report',body,true,pre.versao,b)]);assert.deepEqual(outcomes[0],outcomes[1]);assert.equal((await q('SELECT count(*)::integer n FROM ausencias WHERE colaborador_id=$1',[id(706)])).rows[0].n,1);assert.equal((await q("SELECT count(*)::integer n FROM folha_historico WHERE person_id=$1 AND action='absence_report'",[id(706)])).rows[0].n,1);
+ });
+ await t.test('FALTOU duplicate date with different requests does not duplicate occurrence',async()=>{
+  await faltouWorker(707);const x=fbody(707),y=fbody(707),p=await fcall(13,'absence_report',x),p2=await fcall(13,'absence_report',y);const outcomes=await Promise.allSettled([fcall(13,'absence_report',x,true,p.versao,a),fcall(13,'absence_report',y,true,p2.versao,b)]);assert.equal(outcomes.filter(x=>x.status==='fulfilled').length,1);assert.match(outcomes.find(x=>x.status==='rejected').reason.message,/ABSENCE_CONFLICT/);assert.equal((await q('SELECT count(*)::integer n FROM ausencias WHERE colaborador_id=$1',[id(707)])).rows[0].n,1);
+ });
+ await t.test('FALTOU rollback after use refuses history/operational data loss',async()=>{await assert.rejects(q(await read('../supabase/folha_faltou_neutro_rollback.sql')),/FALTOU_DATA_DRIFT/);await q('ROLLBACK');assert.equal((await q('SELECT count(*)::integer n FROM ausencias WHERE colaborador_id=$1',[id(700)])).rows[0].n,1);});
+ await t.test('FALTOU preview is bound to its administrative author',async()=>{const absence=(await q('SELECT id,tipo,estado FROM ausencias WHERE colaborador_id=$1',[id(700)])).rows[0];const body={version:2,request_id:id(seq++),id:absence.id,expected_type:absence.tipo,expected_state:absence.estado,classification:'falta_injustificada',reason:'Revisão administrativa sintética'};const preview=await fcall(10,'absence_classify',body);await assert.rejects(fcall(12,'absence_classify',body,true,preview.versao),/STALE_PREVIEW/);assert.equal((await q('SELECT tipo FROM ausencias WHERE id=$1',[absence.id])).rows[0].tipo,absence.tipo);});

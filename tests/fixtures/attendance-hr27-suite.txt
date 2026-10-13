@@ -1,0 +1,48 @@
+
+ await t.test('HR27 lifecycle local: precheck/backup/install/postcheck/rollback/reinstall, same data',async()=>{
+  for(const suffix of ['precheck','backup',''])await q(await read('../supabase/folha_hr27'+(suffix?'_'+suffix:'')+'.sql'));
+  await q(await read('../supabase/folha_hr27_postcheck.sql'));
+  const post=await read('../supabase/folha_hr27_postcheck.sql');
+  await q('GRANT SELECT(linhas) ON primeline_hr27_backup.dados TO authenticated');try{await assert.rejects(q(post),/HR27_BACKUP_NOT_PRIVATE/);}finally{await q('ROLLBACK');await q('REVOKE SELECT(linhas) ON primeline_hr27_backup.dados FROM authenticated');}await q(post);
+  await q(await read('../supabase/folha_hr27_rollback.sql'));await q(await read('../supabase/folha_hr27_precheck.sql'));await q(await read('../supabase/folha_hr27.sql'));await q(post);
+ });
+ await t.test('HR27 normal processing RPC refuses paid/processed; historical marks untouched',async()=>{
+  const before=(await q('SELECT coalesce(jsonb_agg(to_jsonb(h) ORDER BY id),\'[]\') s FROM folha_he h')).rows[0].s;
+  await assert.rejects(call(a,10,'fn_folha_gestao_v2',['he_process',{version:2,request_id:id(seq++),id:id(1)},false,null]),/HR27_HE_INFORMATIONAL_ONLY/);
+  assert.deepEqual((await q('SELECT coalesce(jsonb_agg(to_jsonb(h) ORDER BY id),\'[]\') s FROM folha_he h')).rows[0].s,before);
+ });
+ await t.test('HR27 pending HE still blocks monthly payroll',async()=>{
+  await ownPlan(64,18,[[100,[custom('08:00','12:00'),custom('13:00','18:00')]]]);const x=await daily(64);assert.equal(x.he_estado,'pendente');assert.equal(x.excedente_minutes,60);
+  await assert.rejects(call(a,10,'fn_folha_gestao_v2',['payroll_validate',{version:2,request_id:id(seq++),person_id:id(64),month:today.slice(0,7)+'-01',expected_revision:0},false,null]),/PAYROLL_DAILY_PENDING/);
+ });
+ await t.test('HR27 recognized HE informational: hours/expected/author/history preserved; no processing pending',async()=>{
+  const current=await daily(64),beforeFacts=(await q('SELECT to_jsonb(f) f FROM folha_registos f WHERE colaborador_id=$1 AND data=$2',[id(64),today])).rows[0].f;
+  const body={version:2,request_id:id(seq++),person_id:id(64),date:today,expected_revision:current.revision,reason:'HR-27 confirmação sintética',ator_id:id(17)};
+  const pre=await call(a,10,'fn_folha_diaria_gestao_v2',['daily_he_validate',body,false,null]);assert.deepEqual(await daily(64),current);
+  const first=await call(a,10,'fn_folha_diaria_gestao_v2',['daily_he_validate',body,true,pre.versao]);assert.equal(first.committed,true);
+  const x=await daily(64);assert.equal(x.he_estado,'validada');assert.equal(x.he_decidido_por,id(10));assert.equal(x.estado,'regular');assert.equal(x.realizado_minutes,540);assert.equal(x.expected_minutes,480);assert.equal(x.excedente_minutes,60);assert.deepEqual(x.pendencias,[]);
+  assert.deepEqual((await q('SELECT to_jsonb(f) f FROM folha_registos f WHERE colaborador_id=$1 AND data=$2',[id(64),today])).rows[0].f,beforeFacts);
+  const history=(await q("SELECT depois FROM folha_gestao_historico WHERE entidade_id=$1 AND action='daily_he_validate' ORDER BY at DESC LIMIT 1",[x.id])).rows[0].depois;assert.equal(history.he_policy,'HR-27');assert.equal(history.financial_effect,false);
+  const replay=await call(a,10,'fn_folha_diaria_gestao_v2',['daily_he_validate',body,true,pre.versao]);assert.deepEqual(replay,first);
+  await assert.rejects(call(a,10,'fn_folha_diaria_gestao_v2',['daily_he_validate',{...body,reason:'outro'},true,pre.versao]),/IDEMPOTENCY_CONFLICT/);
+ });
+ await t.test('HR27 AD15 tenant/global context remains closed',async()=>{
+  const x=await daily(64),before=await snapJ();for(const extra of [{work_id:id(100)},{work_id:id(103)},{empresa_id:id(2)},{person_id:id(49)}])await assert.rejects(call(a,10,'fn_folha_diaria_gestao_v2',['daily_he_validate',{version:2,request_id:id(seq++),person_id:id(64),date:today,expected_revision:x.revision,reason:'sintético',...extra},false,null]),e=>e.code==='42501');assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('HR27 AD14 recognized HE still requires coherent quantity, author and decision fingerprint',async()=>{
+  const d=await daily(64);for(const change of ['he_decidido_por=NULL','excedente_minutes=NULL',"decisao_fingerprint=repeat('a',64)","horario_snapshot='null'::jsonb","estado='horas_em_falta'"]){await a.query('BEGIN');try{await a.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(10)]);await assert.rejects((async()=>{await a.query('UPDATE folha_avaliacoes_diarias SET '+change+' WHERE id=$1',[d.id]);await a.query('SET CONSTRAINTS ALL IMMEDIATE');})(),e=>e.code==='23514');}finally{await a.query('ROLLBACK');}}
+ });
+ await t.test('HR27 monthly payroll validates/closes recognized HE only; reopening is explicit',async()=>{
+  const month=today.slice(0,7)+'-01';const cfg=(await q('SELECT * FROM folha_config_empresa WHERE empresa_id=$1',[id(1)])).rows[0];const configBody={version:2,request_id:id(seq++),expected_revision:cfg.revision,office_expected_minutes:cfg.office_expected_minutes,correction_days:1,overtime_enabled:cfg.overtime_enabled,calendar_complete:true,calendar_validated_years:[Number(today.slice(0,4))],holiday_dates:[],payroll_rules_ready:cfg.payroll_rules_ready,official_template_hash:cfg.official_template_hash};const cp=await call(a,10,'fn_folha_gestao_v2',['configure_company',configBody,false,null]);await call(a,10,'fn_folha_gestao_v2',['configure_company',configBody,true,cp.versao]);const op=async(action,expected_revision,extra={})=>{const body={version:2,request_id:id(seq++),person_id:id(64),month,expected_revision,...extra};const pre=await call(a,10,'fn_folha_gestao_v2',[action,body,false,null]);return call(a,10,'fn_folha_gestao_v2',[action,body,true,pre.versao]);};
+  const saved=await op('payroll_save',0,{manual:{km:0,allowance:0,note:'Teste HR27'}});assert.equal(saved.committed,true);
+  const validated=await op('payroll_validate',saved.revision);assert.equal(validated.committed,true);const closed=await op('payroll_close',validated.revision);assert.equal(closed.committed,true);
+  await assert.rejects(ownPlan(64,18,[[100,[custom('08:00','12:00'),custom('13:00','17:30')]]]),/PAYROLL_CLOSED_FACTS_CHANGED/);
+  const reopened=await op('payroll_reopen',closed.revision);assert.equal(reopened.committed,true);assert.equal((await daily(64)).realizado_minutes,540);
+ });
+ await t.test('HR27 fact edit invalidates recognized decision, keeps historical decision and frozen reference',async()=>{
+  const before=await daily(64);await ownPlan(64,18,[[100,[custom('08:00','12:00'),custom('13:00','17:30')]]]);const x=await daily(64);assert.equal(x.he_estado,'pendente');assert.equal(x.excedente_minutes,30);assert.equal(x.he_decidido_por,null);assert.deepEqual(x.horario_snapshot,before.horario_snapshot);
+  assert.ok((await q("SELECT count(*)::integer n FROM folha_gestao_historico WHERE entidade_id=$1 AND action='daily_he_invalidate'",[x.id])).rows[0].n>0);assert.ok((await q("SELECT count(*)::integer n FROM folha_gestao_historico WHERE entidade_id=$1 AND action='daily_he_validate'",[x.id])).rows[0].n>0);
+ });
+ await t.test('HR27 rollback after operational use refuses data overwrite and keeps history',async()=>{
+  const before=await snapJ();await assert.rejects(q(await read('../supabase/folha_hr27_rollback.sql')),/HR27_DATA_DRIFT/);await q('ROLLBACK');assert.deepEqual(await snapJ(),before);
+ });

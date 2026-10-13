@@ -1,0 +1,30 @@
+ let readerExternalId;
+ await t.test('HOURS external fixture: controlled registration/save/recovery/replay, no internal payroll',async()=>{
+  const body={version:2,request_id:id(seq++),date:today,work_id:id(100),external_id:null,provider_id:id(300),name:'Externo leitores sintético',role:'servente',expected_revision:0};const pre=await call(a,10,'fn_folha_operar_v2',['external_team_add',body,false,null]);const created=await call(a,10,'fn_folha_operar_v2',['external_team_add',body,true,pre.versao]);readerExternalId=created.changed_keys[0].person_id;
+  const record={version:2,request_id:id(seq++),date:today,work_id:id(100),key:{kind:'external',person_id:readerExternalId,date:today,work_id:id(100)},expected_revision:0,intervals:[{start:'08:00',end:'12:00'},{start:'13:00',end:'17:00'}]};const preview=await call(a,10,'fn_folha_operar_v2',['save',record,false,null]);const saved=await call(a,10,'fn_folha_operar_v2',['save',record,true,preview.versao]);assert.equal(saved.committed,true);assert.deepEqual(await call(a,10,'fn_folha_operar_v2',['save',record,true,preview.versao]),saved);
+  assert.equal((await q('SELECT minutes FROM folha_registos WHERE externo_id=$1',[readerExternalId])).rows[0].minutes,480);assert.equal((await q('SELECT count(*)::integer n FROM folha_vencimentos WHERE colaborador_id=$1',[readerExternalId])).rows[0].n,0);
+ });
+ await t.test('HOURS readers lifecycle: preserve source rows, rollback/reinstall and private backup',async()=>{
+  for(const suffix of ['precheck','backup',''])await q(await read('../supabase/folha_horas_leituras'+(suffix?'_'+suffix:'')+'.sql'));await q(await read('../supabase/folha_horas_leituras_postcheck.sql'));await q(await read('../supabase/folha_horas_leituras_rollback.sql'));await q(await read('../supabase/folha_horas_leituras.sql'));await q(await read('../supabase/folha_horas_leituras_postcheck.sql'));
+ });
+ const hreport=(actor,kind=null,work=100,provider=null)=>as(a,actor,'SELECT fn_folha_relatorio_horas_v3($1::uuid,$2::date,$3::date,$4::text,$5::uuid) v',[id(work),today,today,kind,provider]);
+ await t.test('HOURS factual read: 9h stays 9h, scope totals exact, no HE/cost exposure',async()=>{
+  const before=await snapJ();const r=await hreport(13);assert.equal(r.version,3);assert.equal(r.classification_included,false);assert.equal(r.financial_effect,false);
+  assert.equal(r.records.reduce((n,x)=>n+x.minutes,0),r.daily.reduce((n,x)=>n+x.minutes,0));assert.equal(r.records.reduce((n,x)=>n+x.minutes,0),r.weekly.reduce((n,x)=>n+x.minutes,0));assert.equal(r.records.reduce((n,x)=>n+x.minutes,0),r.monthly.reduce((n,x)=>n+x.minutes,0));
+  assert.ok(r.records.length);for(const x of r.records){assert.equal(x.he_estado,undefined);assert.equal(x.overtime,undefined);assert.equal(x.expected_minutes,undefined);assert.equal(x.valor_hora,undefined);}
+  assert.deepEqual(await snapJ(),before);
+ });
+ await t.test('HOURS reader invalid range/tenant/foreign supplier denied',async()=>{
+  await assert.rejects(hreport(17),e=>e.code==='42501');await assert.rejects(hreport(13,null,103),e=>e.code==='42501');await assert.rejects(hreport(13,null,100,id(9999)),e=>e.code==='42501');
+  const far=(await q('SELECT ($1::date-31)::text d',[today])).rows[0].d;await assert.rejects(as(a,13,'SELECT fn_folha_relatorio_horas_v3($1::uuid,$2::date,$3::date,NULL,NULL) v',[id(100),far,today]),/REPORT_RANGE_INVALID/);
+ });
+ await t.test('HOURS external read excludes internal and legacy, no price fabricated',async()=>{const r=await hreport(13,'external');assert.ok(r.records.every(x=>x.kind==='external'));assert.equal(r.records.find(x=>x.person_id===readerExternalId).minutes,480);assert.equal(r.records.find(x=>x.person_id===readerExternalId).provider_id,id(300));assert.deepEqual(r.legacy,[]);assert.equal(r.financial_effect,false);});
+ await t.test('HOURS own/team context provides approved individual suggestions without edit capability',async()=>{
+  const r=await as(a,18,'SELECT fn_folha_horas_contexto_v3($1::date,$2::uuid) v',[today,id(100)]);const own=r.rows.find(x=>x.person_id===id(64));assert.equal(own.individual_reference.confirmed,true);assert.equal(own.individual_reference.week[1].expected_minutes,480);assert.equal(r.reference_edit_capability,false);assert.equal(r.operational_write_capabilities.free_destinations,false);
+  assert.equal(r.operational_write_capabilities.normal_individual_evaluation,false);
+ });
+ await t.test('HOURS RH context internal only, tenant controlled, not a fictitious approval',async()=>{
+  const m=today.slice(0,7)+'-01';const r=await as(a,10,'SELECT fn_folha_conferencia_contexto_v3($1::uuid,$2::date) v',[id(64),m]);assert.equal(r.person_id,id(64));assert.equal(r.he_policy,'HR-27');assert.equal(r.conference_write_capability,false);assert.equal(r.expected_monthly_minutes,null);assert.ok(r.records.length);
+  await assert.rejects(as(a,13,'SELECT fn_folha_conferencia_contexto_v3($1::uuid,$2::date) v',[id(64),m]),e=>e.code==='42501');await assert.rejects(as(a,10,'SELECT fn_folha_conferencia_contexto_v3($1::uuid,$2::date) v',[id(49),m]),e=>e.code==='42501');
+ });
+ await t.test('HOURS authenticated read changes no facts, history or ledger',async()=>{await q(await read('../supabase/folha_horas_leituras_postcheck.sql'));});

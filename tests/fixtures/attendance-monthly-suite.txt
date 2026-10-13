@@ -1,0 +1,48 @@
+ await t.test('MONTHLY lifecycle: empty protected tables, exact precheck/private backup/postcheck/rollback/reinstall',async()=>{
+  for(const suffix of ['precheck','backup',''])await q(await read('../supabase/folha_conferencia_mensal'+(suffix?'_'+suffix:'')+'.sql'));await q(await read('../supabase/folha_conferencia_mensal_postcheck.sql'));await q(await read('../supabase/folha_conferencia_mensal_rollback.sql'));await q(await read('../supabase/folha_conferencia_mensal.sql'));await q(await read('../supabase/folha_conferencia_mensal_postcheck.sql'));
+ });
+ const monthCall=(actor,action,body,confirm=false,token=null,client=a)=>call(client,actor,'fn_folha_conferencia_v3',[action,body,confirm,token]);
+ const monthRow=async(person,month)=>(await q('SELECT * FROM folha_conferencias_mensais WHERE colaborador_id=$1 AND competencia=$2',[id(person),month])).rows[0];
+ const monthBody=async(person,month,extra={})=>({version:3,request_id:id(seq++),person_id:id(person),month,expected_revision:(await monthRow(person,month))?.revision||0,...extra});
+ const monthOp=async(actor,action,body)=>{const preview=await monthCall(actor,action,body);return monthCall(actor,action,body,true,preview.versao);};
+ const monthContext=(actor,person,month)=>as(a,actor,'SELECT fn_folha_conferencia_contexto_v3($1::uuid,$2::date) v',[id(person),month]);
+ await t.test('MONTHLY current competence: facts can be conferred once; unknown references and current month cannot validate',async()=>{
+  const m=today.slice(0,7)+'-01',body=await monthBody(64,m);const pre=await monthCall(10,'conferir',body);assert.equal(await monthRow(64,m),undefined);const out=await monthCall(10,'conferir',body,true,pre.versao);assert.equal(out.committed,true);assert.equal(out.conference.estado,'conferida');
+  const context=await monthContext(10,64,m);assert.equal(context.conference_write_capability,true);assert.equal(context.expected_monthly_minutes,null);assert.ok(context.snapshot.pending.length);assert.deepEqual(await monthCall(10,'conferir',body,true,pre.versao),out);
+  await assert.rejects(monthCall(10,'validar',await monthBody(64,m)),/COMPETENCIA_EM_CURSO|MONTHLY_PENDING_FACTS/);
+ });
+ await t.test('MONTHLY actor/tenant/external/global-work boundaries before any write',async()=>{
+  const m=today.slice(0,7)+'-01';for(const actor of [11,13,14,15,16,17,18])await assert.rejects(monthCall(actor,'conferir',await monthBody(64,m)),e=>e.code==='42501');
+  await assert.rejects(monthCall(10,'conferir',await monthBody(49,m)),e=>e.code==='42501');await assert.rejects(monthCall(10,'conferir',await monthBody(64,m,{work_id:id(100)})),e=>e.code==='42501');await assert.rejects(monthCall(10,'conferir',await monthBody(64,m,{empresa_id:id(2)})),e=>e.code==='42501');
+ });
+ await t.test('MONTHLY factual correction by authorized foreman invalidates conference, no daily approval required',async()=>{
+  const m=today.slice(0,7)+'-01',before=await monthRow(64,m);await ownPlan(64,18,[[100,[custom('08:00','12:00'),custom('13:00','17:45')]]]);const after=await monthRow(64,m);assert.equal(after.estado,'requer_revalidacao');assert.ok(after.revision>before.revision);assert.ok((await q("SELECT count(*)::integer n FROM folha_conferencia_historico WHERE conferencia_id=$1 AND action='source_change'",[after.id])).rows[0].n>0);assert.deepEqual(after.referencias[today],before.referencias[today]);
+ });
+ await t.test('MONTHLY return request requires reason/current record revision; acknowledgement remains administrative',async()=>{
+  const m=today.slice(0,7)+'-01',f=(await q('SELECT id,revision FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(64),today])).rows[0];
+  await assert.rejects(monthCall(10,'devolver',await monthBody(64,m,{records:[f]})),/CORRECTION_REASON_RECORDS_REQUIRED/);
+  const out=await monthOp(10,'devolver',await monthBody(64,m,{records:[f],reason:'Confirmar saída documentada'}));assert.equal(out.conference.estado,'devolvida');assert.equal(out.conference.pedidos_correcao.length,1);
+  await assert.rejects(monthCall(10,'conferir',await monthBody(64,m)),/CORRECTION_ACKNOWLEDGEMENT_REASON_REQUIRED/);
+  const current=await monthOp(10,'conferir',await monthBody(64,m,{reason:'Factos revistos pelo Administrativo; pedido resolvido'}));assert.deepEqual(current.conference.pedidos_correcao,[]);
+ });
+ await t.test('MONTHLY table/history DML and fake GUC remain closed',async()=>{
+  await a.query('BEGIN');try{await a.query('SET LOCAL ROLE authenticated');await a.query("SELECT set_config('folha.monthly_rpc','on',true)");await assert.rejects(a.query('UPDATE folha_conferencias_mensais SET estado=\'validada_para_integracao\''),e=>e.code==='42501');}finally{await a.query('ROLLBACK');}
+  await a.query('BEGIN');try{await a.query('SET LOCAL ROLE authenticated');await assert.rejects(a.query('DELETE FROM folha_conferencia_historico'),e=>e.code==='42501');}finally{await a.query('ROLLBACK');}
+ });
+ await t.test('MONTHLY same request concurrently: one confirmation/history; different payload rejected',async()=>{
+  const m=today.slice(0,7)+'-01',body=await monthBody(64,m),p=await monthCall(10,'conferir',body);const outcomes=await Promise.all([monthCall(10,'conferir',body,true,p.versao,a),monthCall(10,'conferir',body,true,p.versao,b)]);assert.deepEqual(outcomes[0],outcomes[1]);assert.equal((await q('SELECT count(*)::integer n FROM folha_conferencia_historico WHERE request_id=$1',[body.request_id])).rows[0].n,1);await assert.rejects(monthCall(10,'conferir',{...body,reason:'payload divergente'},true,p.versao),/IDEMPOTENCY_CONFLICT/);
+ });
+ await t.test('MONTHLY historical positive fixture: facts and daily references proven explicitly, never inferred from current schedule',async()=>{
+  const m=(await q("SELECT (date_trunc('month',$1::date)-interval '1 month')::date::text d",[today])).rows[0].d;await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao) VALUES($1,$2,'Mensal sintético','Servente','2026-01-01')",[id(740),id(1)]);
+  const teamBody={version:2,request_id:id(seq++),date:m,work_id:id(100),people:[{person_id:id(740),expected_revision:0}],reason:'Vínculo histórico sintético comprovado'};const tp=await call(a,10,'fn_equipa_operar_v2',['team_add',teamBody,false,null]);await call(a,10,'fn_equipa_operar_v2',['team_add',teamBody,true,tp.versao]);
+  const dates=(await q("SELECT d::date::text date,extract(isodow FROM d)::integer dow FROM generate_series($1::date,($1::date+interval '1 month')::date-1,'1 day') d",[m])).rows;
+  for(const day of dates){const weekend=day.dow>5,xs=weekend?[custom('08:00','09:00')]:[custom('08:00','12:00'),custom('13:00','17:00')];const body=await plan(740,[[100,xs]],day.date);const p=await call(a,10,'fn_folha_operar_v2',['periods_save',body,false,null]);await call(a,10,'fn_folha_operar_v2',['periods_save',body,true,p.versao]);let ev=(await q('SELECT * FROM folha_avaliacoes_diarias WHERE colaborador_id=$1 AND data=$2',[id(740),day.date])).rows[0];assert.equal(ev.referencia_estado,'pendente');
+   await adminOp('daily_reference_correct',{person_id:id(740),date:day.date,expected_revision:ev.revision,schedule:weekend?{day_type:'folga',expected_minutes:0,intervals:[]}:{intervals:schedule,expected_minutes:480},evidence:{document:'Prova histórica sintética da jornada'},reason:'Referência histórica comprovada, não inferida'});
+   if(weekend){const f=(await q('SELECT id,revision FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(740),day.date])).rows[0];const review={version:2,request_id:id(seq++),id:f.id,expected_revision:f.revision};const rp=await call(a,10,'fn_folha_gestao_v2',['special_review',review,false,null]);await call(a,10,'fn_folha_gestao_v2',['special_review',review,true,rp.versao]);ev=(await q('SELECT * FROM folha_avaliacoes_diarias WHERE colaborador_id=$1 AND data=$2',[id(740),day.date])).rows[0];await adminOp('daily_he_validate',{person_id:id(740),date:day.date,expected_revision:ev.revision,reason:'HE reconhecida informativa, HR27'});}
+  }
+  const c=await monthContext(10,740,m);assert.equal(c.snapshot.unknown_reference_days,0);assert.deepEqual(c.snapshot.pending,[]);assert.equal(c.snapshot.actual_minutes,dates.reduce((n,x)=>n+(x.dow>5?60:480),0));assert.equal(c.expected_monthly_minutes,dates.filter(x=>x.dow<=5).length*480);
+  const beforeHE=(await q('SELECT count(*)::integer n FROM folha_he h JOIN folha_registos f ON f.id=h.folha_id WHERE f.colaborador_id=$1',[id(740)])).rows[0].n;assert.equal(beforeHE,0);
+  const confer=await monthOp(10,'conferir',await monthBody(740,m));assert.equal(confer.conference.estado,'conferida');const done=await monthOp(10,'validar',await monthBody(740,m));assert.equal(done.conference.estado,'validada_para_integracao');assert.equal(done.financial_effect,false);assert.equal((await q('SELECT count(*)::integer n FROM folha_vencimentos WHERE colaborador_id=$1',[id(740)])).rows[0].n,0);
+ });
+ await t.test('MONTHLY rollback after use refuses to destroy conferences or history',async()=>{await assert.rejects(q(await read('../supabase/folha_conferencia_mensal_rollback.sql')),/MONTHLY_USED_ROLLBACK_FORBIDDEN|MONTHLY_DATA_DRIFT/);await q('ROLLBACK');});
+ await t.test('MONTHLY preview cannot be confirmed by a different authorized actor',async()=>{const m=today.slice(0,7)+'-01',body=await monthBody(64,m),preview=await monthCall(10,'conferir',body);const before=await monthRow(64,m);await assert.rejects(monthCall(12,'conferir',body,true,preview.versao),/STALE_PREVIEW/);assert.deepEqual(await monthRow(64,m),before);});
