@@ -1,0 +1,1 @@
+PASS painéis montados e HR29: referência/horários intactos, obra encerrada, motivo, revisão/histórico, tarifa explícita, prova/vigência, stale e consulta; 0 erros JS. Capturas C:\Users\conta\.codex\worktrees\validacao-profunda-203-20261014\primeline-go-urgente\docs\auditorias\engenharia-qualidade-noturna-20261014\ENGENHARIA-QUALIDADE\hours-prepared

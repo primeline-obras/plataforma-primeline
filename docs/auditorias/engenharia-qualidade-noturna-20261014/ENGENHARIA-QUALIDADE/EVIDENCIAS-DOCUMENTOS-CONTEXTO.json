@@ -1,0 +1,63 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "DEEP-DOC-RACE",
+      "classification": "FALHA FRONTEND COMPROVADA",
+      "severity": "P2",
+      "expected": "Resposta antiga A não altera contexto B",
+      "observed": {
+        "work": "B",
+        "docs": [
+          "A"
+        ]
+      },
+      "source": "src/documents.js load",
+      "limit": "Transporte sintético; mesma identidade e obras autorizadas. Não demonstra bypass tenant."
+    },
+    {
+      "id": "DEEP-DOC-UPLOAD-CONTEXT",
+      "classification": "PEDIDO INCONSISTENTE COMPROVADO",
+      "severity": "P2",
+      "expected": "Obra dos bytes e dos metadados idêntica",
+      "observed": [
+        {
+          "stage": "bytes",
+          "work": "A"
+        },
+        {
+          "stage": "metadata",
+          "body": {
+            "obra_id": "B",
+            "tipo": "ata",
+            "nome_arquivo": "synthetic.pdf",
+            "arquivo_url": "A/ata/synthetic.pdf",
+            "enviado_por": "synthetic-user",
+            "destinatarios": null,
+            "numero_documento": null,
+            "revisao": null
+          }
+        }
+      ],
+      "source": "src/documents.js submitUpload",
+      "limit": "Não executa Storage nem confirma persistência do pedido inconsistente; validar policy/trigger antes de afirmar exposição."
+    },
+    {
+      "id": "DOC-FILE-REJECT",
+      "classification": "PASS CLIENTE",
+      "unsupported_no_request": true,
+      "oversized_no_request": true,
+      "safe_filename": true,
+      "limit": "Transporte substituído; não prova Storage/tenant"
+    },
+    {
+      "id": "DOC-FILE-CONTENT-VALIDATION",
+      "classification": "LACUNA CLIENTE OBSERVADA",
+      "severity": "P3",
+      "zero_byte_reaches_transport": true,
+      "mime_mismatch_reaches_transport": true,
+      "limit": "Serviço Storage pode rejeitar; não foi provada aceitação backend nem ficheiro malicioso."
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "REST-gestao_plataforma",
+      "status": "PASS",
+      "http": 200,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": null
+    },
+    {
+      "id": "REST-gerencia",
+      "status": "PASS",
+      "http": 200,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": null
+    },
+    {
+      "id": "REST-administrativo",
+      "status": "PASS",
+      "http": 403,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": true
+    },
+    {
+      "id": "REST-financeiro",
+      "status": "PASS",
+      "http": 200,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": null
+    },
+    {
+      "id": "REST-diretor_obra",
+      "status": "PASS",
+      "http": 403,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": true
+    },
+    {
+      "id": "REST-adjunto",
+      "status": "PASS",
+      "http": 403,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": true
+    },
+    {
+      "id": "REST-preparador",
+      "status": "PASS",
+      "http": 403,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": true
+    },
+    {
+      "id": "REST-encarregado",
+      "status": "PASS",
+      "http": 403,
+      "scope": "PARTIAL_RPC",
+      "identity": "JWT HS256 sintético validado por PostgREST; authenticator NOINHERIT",
+      "no_write_on_denial": true
+    },
+    {
+      "id": "SECOND-foreign",
+      "status": "PASS",
+      "http": 403,
+      "sqlstate": "42501",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-missing",
+      "status": "PASS",
+      "http": 403,
+      "sqlstate": "42501",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-inactive",
+      "status": "PASS",
+      "http": 403,
+      "sqlstate": "42501",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-revoked",
+      "status": "PASS",
+      "http": 403,
+      "sqlstate": "42501",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-expired",
+      "status": "PASS",
+      "http": 401,
+      "sqlstate": "PGRST303",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-bad_signature",
+      "status": "PASS",
+      "http": 401,
+      "sqlstate": "PGRST301",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-anonymous",
+      "status": "PASS",
+      "http": 401,
+      "sqlstate": "42501",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-null",
+      "status": "PASS",
+      "http": 400,
+      "sqlstate": "P0001",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-zero",
+      "status": "PASS",
+      "http": 400,
+      "sqlstate": "P0001",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-negative",
+      "status": "PASS",
+      "http": 400,
+      "sqlstate": "P0001",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-overpaid",
+      "status": "PASS",
+      "http": 400,
+      "sqlstate": "P0001",
+      "unchanged": true
+    },
+    {
+      "id": "SECOND-stale",
+      "status": "PASS",
+      "http": 400,
+      "sqlstate": "P0001",
+      "unchanged": true
+    },
+    {
+      "id": "METAMORPHIC-SPLIT",
+      "status": "PASS",
+      "total": 500,
+      "balance": 43,
+      "movements": 2,
+      "replay_no_duplicate": true
+    }
+  ],
+  "login_gotrue_not_tested": true
+}

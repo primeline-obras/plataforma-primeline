@@ -1,0 +1,78 @@
+[
+  {
+    "action": "POINT_SAVE",
+    "profile": "administrativo",
+    "expected": "PERMITIR",
+    "observed": {
+      "committed": true
+    },
+    "result": "PASS",
+    "preview_no_write": true,
+    "replay": true,
+    "no_write_on_denial": null,
+    "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+    "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada",
+    "evidence": "EVIDENCIAS-HORAS-PERFIS.json#proofs/2"
+  },
+  {
+    "action": "TASK_REPORT",
+    "profile": "encarregado",
+    "expected": "PERMITIR",
+    "observed": {
+      "committed": true
+    },
+    "result": "PASS",
+    "preview_no_write": true,
+    "replay": true,
+    "no_write_on_denial": null,
+    "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+    "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada",
+    "evidence": "EVIDENCIAS-HORAS-PERFIS.json#proofs/63"
+  },
+  {
+    "action": "TASK_CONFIRM",
+    "profile": "diretor_obra",
+    "expected": "PERMITIR",
+    "observed": {
+      "committed": true
+    },
+    "result": "PASS",
+    "preview_no_write": true,
+    "replay": true,
+    "no_write_on_denial": null,
+    "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+    "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada",
+    "evidence": "EVIDENCIAS-HORAS-PERFIS.json#proofs/68"
+  },
+  {
+    "action": "TASK_CONFIRM",
+    "profile": "adjunto",
+    "expected": "PERMITIR",
+    "observed": {
+      "committed": true
+    },
+    "result": "PASS",
+    "preview_no_write": true,
+    "replay": true,
+    "no_write_on_denial": null,
+    "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+    "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada",
+    "evidence": "EVIDENCIAS-HORAS-PERFIS.json#proofs/69"
+  },
+  {
+    "action": "TASK_CONFIRM",
+    "profile": "preparador",
+    "expected": "RECUSAR",
+    "observed": {
+      "code": "42501",
+      "message": "PERMISSION_DENIED: perfil"
+    },
+    "result": "PASS",
+    "preview_no_write": null,
+    "replay": null,
+    "no_write_on_denial": true,
+    "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+    "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada",
+    "evidence": "EVIDENCIAS-HORAS-PERFIS.json#proofs/70"
+  }
+]

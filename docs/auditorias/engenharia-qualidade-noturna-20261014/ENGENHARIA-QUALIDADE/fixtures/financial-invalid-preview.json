@@ -1,0 +1,69 @@
+{
+  "input": {
+    "SheetNames": [
+      "Mapa"
+    ],
+    "Sheets": {
+      "Mapa": [
+        [
+          "Obra",
+          "Jan",
+          "Fev",
+          "Mar",
+          "Abr",
+          "Mai",
+          "Jun",
+          "Jul",
+          "Ago",
+          "Set",
+          "Out",
+          "Nov",
+          "Dez"
+        ],
+        [
+          "120 · Obra sintética",
+          "texto123",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      ]
+    }
+  },
+  "output": [
+    {
+      "row": 2,
+      "label": "120 · Obra sintética",
+      "errors": [],
+      "warnings": [],
+      "duplicate": false,
+      "selected": true,
+      "payload": {
+        "tipo": "obra",
+        "obra_id": "synthetic-work",
+        "meses": [
+          123,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  ]
+}

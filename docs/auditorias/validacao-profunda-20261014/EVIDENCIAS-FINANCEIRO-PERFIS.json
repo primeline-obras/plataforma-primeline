@@ -1,0 +1,495 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": "00000000-0000-4000-8000-000000000012",
+        "contrato_id": null,
+        "aprovado_por": null,
+        "numero_fatura": null,
+        "data_aprovacao": null,
+        "data_pagamento": "2026-10-14",
+        "descricao_auto": null,
+        "valor_recebido": 543,
+        "data_recebimento": "2026-10-14",
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "pago",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": "00000000-0000-4000-8000-000000000013",
+        "contrato_id": null,
+        "aprovado_por": null,
+        "numero_fatura": null,
+        "data_aprovacao": null,
+        "data_pagamento": "2026-10-14",
+        "descricao_auto": null,
+        "valor_recebido": 543,
+        "data_recebimento": "2026-10-14",
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "pago",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "financeiro",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": "00000000-0000-4000-8000-000000000017",
+        "contrato_id": null,
+        "aprovado_por": null,
+        "numero_fatura": null,
+        "data_aprovacao": null,
+        "data_pagamento": "2026-10-14",
+        "descricao_auto": null,
+        "valor_recebido": 543,
+        "data_recebimento": "2026-10-14",
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "pago",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "diretor_obra",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "adjunto",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "preparador",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "billing": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "emitida",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": 10,
+          "data_recebimento": "2026-10-14",
+          "estado_aprovacao": "aprovado",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        },
+        "version": 1,
+        "committed": true
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "billing": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "emitida",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": 10,
+          "data_recebimento": "2026-10-14",
+          "estado_aprovacao": "aprovado",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        },
+        "version": 1,
+        "committed": true
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "financeiro",
+      "expected": "PERMITIR",
+      "observed": {
+        "billing": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "emitida",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": 10,
+          "data_recebimento": "2026-10-14",
+          "estado_aprovacao": "aprovado",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        },
+        "version": 1,
+        "committed": true
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "diretor_obra",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "adjunto",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "preparador",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": null,
+        "contrato_id": null,
+        "aprovado_por": "00000000-0000-4000-8000-000000000012",
+        "numero_fatura": null,
+        "data_aprovacao": "2026-10-14T22:31:20.505149+01:00",
+        "data_pagamento": null,
+        "descricao_auto": null,
+        "valor_recebido": 0,
+        "data_recebimento": null,
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "por_pagar",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": null,
+        "contrato_id": null,
+        "aprovado_por": "00000000-0000-4000-8000-000000000013",
+        "numero_fatura": null,
+        "data_aprovacao": "2026-10-14T22:31:20.51282+01:00",
+        "data_pagamento": null,
+        "descricao_auto": null,
+        "valor_recebido": 0,
+        "data_recebimento": null,
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "por_pagar",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para decidir esta fatura."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para decidir esta fatura."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": null,
+        "contrato_id": null,
+        "aprovado_por": "00000000-0000-4000-8000-000000000014",
+        "numero_fatura": null,
+        "data_aprovacao": "2026-10-14T22:31:20.537572+01:00",
+        "data_pagamento": null,
+        "descricao_auto": null,
+        "valor_recebido": 0,
+        "data_recebimento": null,
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "por_pagar",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": null,
+        "contrato_id": null,
+        "aprovado_por": "00000000-0000-4000-8000-000000000015",
+        "numero_fatura": null,
+        "data_aprovacao": "2026-10-14T22:31:20.545534+01:00",
+        "data_pagamento": null,
+        "descricao_auto": null,
+        "valor_recebido": 0,
+        "data_recebimento": null,
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "por_pagar",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "00000000-0000-4000-8000-000000009880",
+        "valor": 543,
+        "estado": "emitida",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "pago_por": null,
+        "contrato_id": null,
+        "aprovado_por": "00000000-0000-4000-8000-000000000016",
+        "numero_fatura": null,
+        "data_aprovacao": "2026-10-14T22:31:20.554898+01:00",
+        "data_pagamento": null,
+        "descricao_auto": null,
+        "valor_recebido": 0,
+        "data_recebimento": null,
+        "estado_aprovacao": "aprovado",
+        "estado_pagamento": "por_pagar",
+        "data_emissao_auto": null,
+        "data_emissao_fatura": null
+      },
+      "unchanged": false,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para decidir esta fatura."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    }
+  ]
+}

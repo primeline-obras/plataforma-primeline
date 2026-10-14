@@ -1,0 +1,1334 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "rascunho",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": null,
+          "data_recebimento": null,
+          "estado_aprovacao": "pendente",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "rascunho",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": null,
+          "data_recebimento": null,
+          "estado_aprovacao": "pendente",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "rascunho",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": null,
+          "data_recebimento": null,
+          "estado_aprovacao": "pendente",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "rascunho",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": null,
+          "data_recebimento": null,
+          "estado_aprovacao": "pendente",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "valor": 543,
+          "estado": "rascunho",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "pago_por": null,
+          "contrato_id": null,
+          "aprovado_por": null,
+          "numero_fatura": null,
+          "data_aprovacao": null,
+          "data_pagamento": null,
+          "descricao_auto": null,
+          "valor_recebido": null,
+          "data_recebimento": null,
+          "estado_aprovacao": "pendente",
+          "estado_pagamento": "por_pagar",
+          "data_emissao_auto": null,
+          "data_emissao_fatura": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "atual": {
+            "id": "00000000-0000-4000-8000-000000000600",
+            "revisao": 1,
+            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "resultado": "apto",
+            "anulado_em": null,
+            "request_id": null,
+            "anulado_por": null,
+            "registado_por": null,
+            "colaborador_id": "00000000-0000-4000-8000-000000000030",
+            "data_ultima_consulta": "2026-10-14",
+            "data_proxima_consulta": null
+          },
+          "version": 1,
+          "can_write": true,
+          "consultas": [
+            {
+              "id": "00000000-0000-4000-8000-000000000600",
+              "revisao": 1,
+              "criado_em": "2026-10-14T22:37:35.806278+01:00",
+              "resultado": "apto",
+              "anulado_em": null,
+              "request_id": null,
+              "anulado_por": null,
+              "registado_por": null,
+              "colaborador_id": "00000000-0000-4000-8000-000000000030",
+              "data_ultima_consulta": "2026-10-14",
+              "data_proxima_consulta": null
+            }
+          ],
+          "historico": []
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "atual": {
+            "id": "00000000-0000-4000-8000-000000000600",
+            "revisao": 1,
+            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "resultado": "apto",
+            "anulado_em": null,
+            "request_id": null,
+            "anulado_por": null,
+            "registado_por": null,
+            "colaborador_id": "00000000-0000-4000-8000-000000000030",
+            "data_ultima_consulta": "2026-10-14",
+            "data_proxima_consulta": null
+          },
+          "version": 1,
+          "can_write": true,
+          "consultas": [
+            {
+              "id": "00000000-0000-4000-8000-000000000600",
+              "revisao": 1,
+              "criado_em": "2026-10-14T22:37:35.806278+01:00",
+              "resultado": "apto",
+              "anulado_em": null,
+              "request_id": null,
+              "anulado_por": null,
+              "registado_por": null,
+              "colaborador_id": "00000000-0000-4000-8000-000000000030",
+              "data_ultima_consulta": "2026-10-14",
+              "data_proxima_consulta": null
+            }
+          ],
+          "historico": []
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "administrativo",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "atual": {
+            "id": "00000000-0000-4000-8000-000000000600",
+            "revisao": 1,
+            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "resultado": "apto",
+            "anulado_em": null,
+            "request_id": null,
+            "anulado_por": null,
+            "registado_por": null,
+            "colaborador_id": "00000000-0000-4000-8000-000000000030",
+            "data_ultima_consulta": "2026-10-14",
+            "data_proxima_consulta": null
+          },
+          "version": 1,
+          "can_write": true,
+          "consultas": [
+            {
+              "id": "00000000-0000-4000-8000-000000000600",
+              "revisao": 1,
+              "criado_em": "2026-10-14T22:37:35.806278+01:00",
+              "resultado": "apto",
+              "anulado_em": null,
+              "request_id": null,
+              "anulado_por": null,
+              "registado_por": null,
+              "colaborador_id": "00000000-0000-4000-8000-000000000030",
+              "data_ultima_consulta": "2026-10-14",
+              "data_proxima_consulta": null
+            }
+          ],
+          "historico": []
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "diretor_obra",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "adjunto",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "preparador",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "encarregado",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "atual": {
+            "id": "00000000-0000-4000-8000-000000000600",
+            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "resultado": "apto",
+            "colaborador_id": "00000000-0000-4000-8000-000000000030",
+            "data_ultima_consulta": "2026-10-14",
+            "data_proxima_consulta": null
+          },
+          "version": 1,
+          "can_write": false
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "idempotent": false,
+          "viatura_id": "00000000-0000-4000-8000-000000009880",
+          "historico_id": "bb2263a3-16fc-42d4-b786-404fbec08b14",
+          "atribuicao_revisao": 1,
+          "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
+          "colaborador_anterior_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "idempotent": false,
+          "viatura_id": "00000000-0000-4000-8000-000000009880",
+          "historico_id": "eb02cf0e-27c3-4453-8c0f-b5f3aaacb672",
+          "atribuicao_revisao": 1,
+          "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
+          "colaborador_anterior_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "administrativo",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "idempotent": false,
+          "viatura_id": "00000000-0000-4000-8000-000000009880",
+          "historico_id": "d019817e-5541-4ce7-bde7-53c1b9365cca",
+          "atribuicao_revisao": 1,
+          "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
+          "colaborador_anterior_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "diretor_obra",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "adjunto",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "preparador",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "9b2f1ac6-097f-454f-9ef4-af468ca5f8d9",
+          "estado": "em_consulta",
+          "fase_id": "00000000-0000-4000-8000-000000009882",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "trabalho": "Especialidade sintética",
+          "criado_em": null,
+          "data_pedido": "2026-10-14",
+          "preco_venda": null,
+          "custo_direto": null,
+          "data_contrato": null,
+          "data_proposta": null,
+          "fornecedor_id": null,
+          "margem_prevista": null,
+          "planeamento_item_id": "00000000-0000-4000-8000-000000009883"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "21cd430f-8c56-4d39-966c-688bf9938341",
+          "estado": "em_consulta",
+          "fase_id": "00000000-0000-4000-8000-000000009882",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "trabalho": "Especialidade sintética",
+          "criado_em": null,
+          "data_pedido": "2026-10-14",
+          "preco_venda": null,
+          "custo_direto": null,
+          "data_contrato": null,
+          "data_proposta": null,
+          "fornecedor_id": null,
+          "margem_prevista": null,
+          "planeamento_item_id": "00000000-0000-4000-8000-000000009883"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar consultas nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar consultas nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "88986f7f-fbdc-4c6e-8272-c06582b58354",
+          "estado": "em_consulta",
+          "fase_id": "00000000-0000-4000-8000-000000009882",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "trabalho": "Especialidade sintética",
+          "criado_em": null,
+          "data_pedido": "2026-10-14",
+          "preco_venda": null,
+          "custo_direto": null,
+          "data_contrato": null,
+          "data_proposta": null,
+          "fornecedor_id": null,
+          "margem_prevista": null,
+          "planeamento_item_id": "00000000-0000-4000-8000-000000009883"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "c2a4bb6c-6dbe-4f87-bd92-c88c02893403",
+          "estado": "em_consulta",
+          "fase_id": "00000000-0000-4000-8000-000000009882",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "trabalho": "Especialidade sintética",
+          "criado_em": null,
+          "data_pedido": "2026-10-14",
+          "preco_venda": null,
+          "custo_direto": null,
+          "data_contrato": null,
+          "data_proposta": null,
+          "fornecedor_id": null,
+          "margem_prevista": null,
+          "planeamento_item_id": "00000000-0000-4000-8000-000000009883"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "68af897b-28b9-4845-b21a-1e7a4f871bcc",
+          "estado": "em_consulta",
+          "fase_id": "00000000-0000-4000-8000-000000009882",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "trabalho": "Especialidade sintética",
+          "criado_em": null,
+          "data_pedido": "2026-10-14",
+          "preco_venda": null,
+          "custo_direto": null,
+          "data_contrato": null,
+          "data_proposta": null,
+          "fornecedor_id": null,
+          "margem_prevista": null,
+          "planeamento_item_id": "00000000-0000-4000-8000-000000009883"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar consultas nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "mapa_id": "00000000-0000-4000-8000-000000009880",
+          "itens_restantes": 0,
+          "mapas_restantes": 0,
+          "itens_eliminados": 0,
+          "precos_restantes": 0,
+          "ajustes_restantes": 0,
+          "precos_eliminados": 0,
+          "ajustes_eliminados": 0,
+          "propostas_restantes": 0,
+          "propostas_eliminadas": 0
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "mapa_id": "00000000-0000-4000-8000-000000009880",
+          "itens_restantes": 0,
+          "mapas_restantes": 0,
+          "itens_eliminados": 0,
+          "precos_restantes": 0,
+          "ajustes_restantes": 0,
+          "precos_eliminados": 0,
+          "ajustes_eliminados": 0,
+          "propostas_restantes": 0,
+          "propostas_eliminadas": 0
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para eliminar este mapa comparativo."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para eliminar este mapa comparativo."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "mapa_id": "00000000-0000-4000-8000-000000009880",
+          "itens_restantes": 0,
+          "mapas_restantes": 0,
+          "itens_eliminados": 0,
+          "precos_restantes": 0,
+          "ajustes_restantes": 0,
+          "precos_eliminados": 0,
+          "ajustes_eliminados": 0,
+          "propostas_restantes": 0,
+          "propostas_eliminadas": 0
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "mapa_id": "00000000-0000-4000-8000-000000009880",
+          "itens_restantes": 0,
+          "mapas_restantes": 0,
+          "itens_eliminados": 0,
+          "precos_restantes": 0,
+          "ajustes_restantes": 0,
+          "precos_eliminados": 0,
+          "ajustes_eliminados": 0,
+          "propostas_restantes": 0,
+          "propostas_eliminadas": 0
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "mapa_id": "00000000-0000-4000-8000-000000009880",
+          "itens_restantes": 0,
+          "mapas_restantes": 0,
+          "itens_eliminados": 0,
+          "precos_restantes": 0,
+          "ajustes_restantes": 0,
+          "precos_eliminados": 0,
+          "ajustes_eliminados": 0,
+          "propostas_restantes": 0,
+          "propostas_eliminadas": 0
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para eliminar este mapa comparativo."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.310778+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000012",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "gestao_plataforma",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000012",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.390806+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000013",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "gerencia",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000013",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "administrativo",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.472563+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000011",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "administrativo",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000011",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "financeiro",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.551942+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000017",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "financeiro",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000017",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.645306+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000014",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "diretor_obra",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000014",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.733104+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000015",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "adjunto",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000015",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "tipo": null,
+          "estado": "resolvido",
+          "titulo": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": null,
+          "expira_em": null,
+          "empresa_id": "00000000-0000-4000-8000-000000000001",
+          "entidade_id": null,
+          "recorrencia": null,
+          "data_gatilho": null,
+          "enviar_email": null,
+          "resolvido_em": "2026-10-14T22:37:39.816739+01:00",
+          "entidade_tipo": null,
+          "resolvido_por": "00000000-0000-4000-8000-000000000016",
+          "ocorrencia_chave": null,
+          "antecedencia_dias": null,
+          "destinatario_role": "preparador",
+          "data_evento_referencia": null,
+          "destinatario_utilizador_id": "00000000-0000-4000-8000-000000000016",
+          "destinatario_colaborador_id": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para resolver este alerta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "cdc0e452-d195-4274-9019-a5530c64d65f",
+          "estado": "aberto",
+          "numero": 1,
+          "origem": "execucao_propria",
+          "fase_id": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": "Descrição sintética",
+          "gravidade": "menor",
+          "data_fecho": null,
+          "data_deteccao": "2026-10-14",
+          "reportado_por": "00000000-0000-4000-8000-000000000012",
+          "acao_corretiva": null,
+          "prazo_correcao": null,
+          "verificado_por": null,
+          "local_ocorrencia": "Local sintético",
+          "subempreitada_id": null,
+          "responsavel_correcao": null,
+          "observacao_verificacao": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "d624f1e7-b0f5-405c-ac07-9c669111e8d3",
+          "estado": "aberto",
+          "numero": 1,
+          "origem": "execucao_propria",
+          "fase_id": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": "Descrição sintética",
+          "gravidade": "menor",
+          "data_fecho": null,
+          "data_deteccao": "2026-10-14",
+          "reportado_por": "00000000-0000-4000-8000-000000000013",
+          "acao_corretiva": null,
+          "prazo_correcao": null,
+          "verificado_por": null,
+          "local_ocorrencia": "Local sintético",
+          "subempreitada_id": null,
+          "responsavel_correcao": null,
+          "observacao_verificacao": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "99f33699-a84f-4176-a765-27032f99066f",
+          "estado": "aberto",
+          "numero": 1,
+          "origem": "execucao_propria",
+          "fase_id": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": "Descrição sintética",
+          "gravidade": "menor",
+          "data_fecho": null,
+          "data_deteccao": "2026-10-14",
+          "reportado_por": "00000000-0000-4000-8000-000000000014",
+          "acao_corretiva": null,
+          "prazo_correcao": null,
+          "verificado_por": null,
+          "local_ocorrencia": "Local sintético",
+          "subempreitada_id": null,
+          "responsavel_correcao": null,
+          "observacao_verificacao": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "531f48f4-d48b-4529-b09a-bab5f366ec68",
+          "estado": "aberto",
+          "numero": 1,
+          "origem": "execucao_propria",
+          "fase_id": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": "Descrição sintética",
+          "gravidade": "menor",
+          "data_fecho": null,
+          "data_deteccao": "2026-10-14",
+          "reportado_por": "00000000-0000-4000-8000-000000000015",
+          "acao_corretiva": null,
+          "prazo_correcao": null,
+          "verificado_por": null,
+          "local_ocorrencia": "Local sintético",
+          "subempreitada_id": null,
+          "responsavel_correcao": null,
+          "observacao_verificacao": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "d68daf78-43e3-4122-aa43-ee2396648cca",
+          "estado": "aberto",
+          "numero": 1,
+          "origem": "execucao_propria",
+          "fase_id": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": "Descrição sintética",
+          "gravidade": "menor",
+          "data_fecho": null,
+          "data_deteccao": "2026-10-14",
+          "reportado_por": "00000000-0000-4000-8000-000000000016",
+          "acao_corretiva": null,
+          "prazo_correcao": null,
+          "verificado_por": null,
+          "local_ocorrencia": "Local sintético",
+          "subempreitada_id": null,
+          "responsavel_correcao": null,
+          "observacao_verificacao": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "encarregado",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "id": "b2a4fc23-0df3-4338-ba83-3aed9877770e",
+          "estado": "aberto",
+          "numero": 1,
+          "origem": "execucao_propria",
+          "fase_id": null,
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "criado_em": null,
+          "descricao": "Descrição sintética",
+          "gravidade": "menor",
+          "data_fecho": null,
+          "data_deteccao": "2026-10-14",
+          "reportado_por": "00000000-0000-4000-8000-000000000010",
+          "acao_corretiva": null,
+          "prazo_correcao": null,
+          "verificado_por": null,
+          "local_ocorrencia": "Local sintético",
+          "subempreitada_id": null,
+          "responsavel_correcao": null,
+          "observacao_verificacao": null
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+    }
+  ]
+}

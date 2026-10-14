@@ -1,0 +1,43 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "FIN-INVALID-SOURCE-0",
+      "classification": "FALHA LOCAL COMPROVADA",
+      "severity": "P2",
+      "input": "texto",
+      "preview_errors": [],
+      "persisted": 0,
+      "source": "xlsx-operational-import number/parseFinancial -> fn_importar_mapa_financeiro_xlsx",
+      "limit": "Confirmação SQL sintética explícita; sem XLSX binário nem dados reais. Não é falha de tenant."
+    },
+    {
+      "id": "FIN-INVALID-SOURCE-1",
+      "classification": "FALHA LOCAL COMPROVADA",
+      "severity": "P2",
+      "input": "texto123",
+      "preview_errors": [],
+      "persisted": 123,
+      "source": "xlsx-operational-import number/parseFinancial -> fn_importar_mapa_financeiro_xlsx",
+      "limit": "Confirmação SQL sintética explícita; sem XLSX binário nem dados reais. Não é falha de tenant."
+    },
+    {
+      "id": "FIN-INVALID-SOURCE-2",
+      "classification": "FALHA LOCAL COMPROVADA",
+      "severity": "P2",
+      "input": "=123",
+      "preview_errors": [],
+      "persisted": 123,
+      "source": "xlsx-operational-import number/parseFinancial -> fn_importar_mapa_financeiro_xlsx",
+      "limit": "Confirmação SQL sintética explícita; sem XLSX binário nem dados reais. Não é falha de tenant."
+    },
+    {
+      "id": "FIN-IMPORT-REPEAT",
+      "classification": "PASS",
+      "rows": 1,
+      "value": 1234.56,
+      "limit": "Idempotência do valor/unique de mês; auditoria pode registar cada importação"
+    }
+  ]
+}

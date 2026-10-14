@@ -1,0 +1,4 @@
+PASS equipa tablet-retrato: âmbito, Dia Normal interno/externo, exclusões, cancel, erro, loading, data visual, sem overflow
+PASS equipa tablet-paisagem: âmbito, Dia Normal interno/externo, exclusões, cancel, erro, loading, data visual, sem overflow
+PASS equipa mobile: âmbito, Dia Normal interno/externo, exclusões, cancel, erro, loading, data visual, sem overflow
+0 erros JS. Capturas C:\Users\conta\.codex\worktrees\validacao-profunda-203-20261014\primeline-go-urgente\docs\auditorias\engenharia-qualidade-noturna-20261014\ENGENHARIA-QUALIDADE\hours-team

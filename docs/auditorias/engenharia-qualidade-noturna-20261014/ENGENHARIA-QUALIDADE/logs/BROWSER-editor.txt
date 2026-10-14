@@ -1,0 +1,4 @@
+PASS editor real tablet-retrato: modos, gravar/recuperar DTO, cancelar, falta neutra, stale, permissões, 44px, sem overflow
+PASS editor real tablet-paisagem: modos, gravar/recuperar DTO, cancelar, falta neutra, stale, permissões, 44px, sem overflow
+PASS editor real mobile: modos, gravar/recuperar DTO, cancelar, falta neutra, stale, permissões, 44px, sem overflow
+0 erros JS. Capturas C:\Users\conta\.codex\worktrees\validacao-profunda-203-20261014\primeline-go-urgente\docs\auditorias\engenharia-qualidade-noturna-20261014\ENGENHARIA-QUALIDADE\hours-editor

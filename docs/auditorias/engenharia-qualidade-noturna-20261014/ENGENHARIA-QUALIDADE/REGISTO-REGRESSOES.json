@@ -1,0 +1,45 @@
+{
+  "production_access": false,
+  "runs": [
+    {
+      "id": "REGRESSOES-MODULOS",
+      "exit": 0,
+      "scope": "Mistura de assertions textuais e comportamento JS; não prova de autorização backend",
+      "files": [
+        "xlsx-operational-import",
+        "planning-import",
+        "management-map-import-safety",
+        "document-version-subcontract-alert",
+        "employment-contract-alerts",
+        "alerts-expiry-resolution",
+        "vehicle-validity",
+        "calendar-commitments",
+        "company-documents",
+        "subcontract-contract-control",
+        "meeting-alerts",
+        "alert-resolver-user-fk",
+        "medicine-client",
+        "vehicle-assignment-client",
+        "attendance-monthly-client"
+      ]
+    },
+    {
+      "id": "BROWSER-editor",
+      "exit": 0,
+      "scope": "Frontend preparado real; transporte de dados sintético; não autorização",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\hours-editor"
+    },
+    {
+      "id": "BROWSER-team",
+      "exit": 0,
+      "scope": "Frontend preparado real; transporte de dados sintético; não autorização",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\hours-team"
+    },
+    {
+      "id": "BROWSER-prepared",
+      "exit": 0,
+      "scope": "Frontend preparado real; transporte de dados sintético; não autorização",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\hours-prepared"
+    }
+  ]
+}

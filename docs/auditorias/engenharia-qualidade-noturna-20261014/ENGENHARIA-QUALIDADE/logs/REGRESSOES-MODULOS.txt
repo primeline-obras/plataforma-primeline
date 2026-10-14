@@ -1,0 +1,71 @@
+Resolução de alertas usa utilizadores.id e não colaboradores.id.
+✔ tests\alert-resolver-user-fk.test.mjs (257.0298ms)
+Alert expiry and explicit resolution checks passed.
+✔ tests\alerts-expiry-resolution.test.mjs (279.566ms)
+✔ monthly richer context validated, no obsolete per-day approvals shape (98.3859ms)
+✔ monthly preview confirms same request without salary or financial processing (4.3166ms)
+✔ reset during confirmation prevents monthly write (5.2605ms)
+✔ reset during Faltou confirmation prevents write (3.9848ms)
+✔ monthly wrong identity/unconfirmed result cannot be accepted (9.0402ms)
+✔ monthly cancel only previews; stale revision does not replay (2.8453ms)
+✔ reset while reading context rejects late private response (1.8518ms)
+Agenda: permissões, marcação de colegas, alertas pessoais, edição, eliminação e interface validados.
+✔ tests\calendar-commitments.test.mjs (240.4229ms)
+Arquivo de documentos da empresa, validades e permissões validados.
+✔ tests\company-documents.test.mjs (283.493ms)
+✔ documentos mostram revisão atual e histórico auditável de envios (4.3351ms)
+✔ execução sem aprovação cria alerta para a gerência e não bloqueia (1.2322ms)
+Alertas escalonados de contratos de trabalho validados.
+✔ tests\employment-contract-alerts.test.mjs (204.6485ms)
+✔ a pré-visualização bloqueia as obras reservadas ao Saldo de Abertura (5.4967ms)
+✔ as restantes obras continuam permitidas na validação local (2.4727ms)
+✔ reconhece folhas sem distinguir caixa, espaços ou hífen e aceita Faturação em falta (3.4859ms)
+✔ reconhece nomes extensos e abreviados da folha de mão de obra (2.6262ms)
+✔ continua a exigir as quatro folhas operacionais (1.2288ms)
+✔ remove duplicados do próprio ficheiro antes de o enviar em lotes (1.3722ms)
+✔ lê a estrutura real com título na primeira linha e cabeçalhos na segunda (5.4122ms)
+✔ agrupa erros repetidos sem perder a contagem total da pré-visualização (1.4501ms)
+✔ lê colaborador de reembolso nas despesas de estaleiro sem fornecedor (4.6311ms)
+✔ estado ocupacional: sem consulta, NULL, vencida, hoje, 30/31 dias (2.5718ms)
+✔ registar não inclui identidade de consulta anterior; próxima NULL permitida (4.2836ms)
+✔ datas futuras, inexistentes e intervalo invertido são recusados (1.0186ms)
+✔ correção/anulação exigem motivo e revisão; anulado não pode ser editado (0.8708ms)
+✔ RPC de consulta é a fonte atual, preserva histórico e inativos sem filtrar (34.03ms)
+✔ replay repete payload/request, sem DML direto nem repetição automática (1.2354ms)
+✔ não simula sucesso: resposta incompleta, pessoa errada e committed false (3.3186ms)
+✔ stale, permissão e RPC ausente falham sem repetição (3.3298ms)
+✔ painel global usa a mesma RPC, inclui sem consulta e limita concorrência (22.314ms)
+✔ frontend não consulta nem escreve diretamente medicina_trabalho (3.1164ms)
+Meeting participant alerts are personal and informational.
+✔ tests\meeting-alerts.test.mjs (239.5686ms)
+✔ a colagem do Sheets preserva cabeçalhos e células tabulares (2.0577ms)
+✔ datas, percentagens e estados do formato português são normalizados (0.604ms)
+✔ datas calculadas das vistas de resumo e controlo são apresentáveis (1.7722ms)
+✔ a aba única apresenta a grelha operacional simples por fase (0.5719ms)
+✔ o planeamento oferece pré-visualização, criação, atualização e dependências (0.9276ms)
+Controlo contratual integrado validado.
+✔ TEE do cliente só aumenta o contrato quando ligado a aditamento aprovado (1.0764ms)
+✔ controlo expõe contrato, extras, faturado, pago, saldo e ultrapassagem (0.5642ms)
+✔ Diretor e Financeiro recebem alerta antes de ultrapassar o aprovado (0.8723ms)
+✔ aprovação técnica atualiza faturado sem o confundir com custo pago (0.2725ms)
+✔ assignment sends exact payload once and requires a confirmed matching result (43.4655ms)
+✔ assignment reports stale SQLSTATE, permission, validation and network without retry (2.113ms)
+✔ renovação usa anos de calendário e trata 29 de fevereiro (2.9827ms)
+✔ payload exato de edição inclui motivo, data esperada e idempotência (0.9977ms)
+✔ renovação envia data explícita apenas para Outra, preservando data esperada NULL (0.2502ms)
+✔ RPC só confirma versão 1, committed=true e viatura válida, sem repetição (34.4509ms)
+✔ stale revision, permissão e validação não modificam dados locais (1.0025ms)
+✔ o mesmo alerta de viatura é visível ao Administrativo, Gerência e destinatário (0.5036ms)
+✔ Subempreitadas valida o modelo, fornecedor e estado antes de gravar (5.3233ms)
+✔ TEEs liga cabeçalho e itens pelo Nº TEE e avisa quando não há itens (1.1488ms)
+✔ Mapa Financeiro reconhece Obra + Jan-Dez e os três grupos fixos (1.4098ms)
+✔ Os três ecrãs expõem o botão e a confirmação explícita (60.568ms)
+✔ o importador é inicializado antes dos módulos que o consomem (2.3245ms)
+ℹ tests 56
+ℹ suites 0
+ℹ pass 56
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 499.2875

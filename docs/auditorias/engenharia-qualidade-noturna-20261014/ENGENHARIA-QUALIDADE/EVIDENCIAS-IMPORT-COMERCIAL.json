@@ -1,0 +1,159 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "diagnostic_failures_not_test_assertion_passes": true,
+  "proofs": [
+    {
+      "id": "IMPORT-CSV-1000",
+      "result": "PASS",
+      "expected": 1001,
+      "observed": 1001,
+      "scope": "Parser CSV real; sem persistência backend",
+      "limit": ""
+    },
+    {
+      "id": "IMPORT-FORMULA-TEXT",
+      "result": "PASS",
+      "expected": null,
+      "observed": null,
+      "scope": "Parser CSV/number",
+      "limit": "Não prova tratamento de célula de fórmula num XLSX binário"
+    },
+    {
+      "id": "IMPORT-NUMBER-null",
+      "result": "PASS",
+      "expected": null,
+      "observed": null,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"\"",
+      "result": "PASS",
+      "expected": null,
+      "observed": null,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-0",
+      "result": "PASS",
+      "expected": 0,
+      "observed": 0,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"0\"",
+      "result": "PASS",
+      "expected": 0,
+      "observed": 0,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"1 234,56\"",
+      "result": "PASS",
+      "expected": 1234.56,
+      "observed": 1234.56,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"1.234,56\"",
+      "result": "PASS",
+      "expected": 1234.56,
+      "observed": 1234.56,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"texto\"",
+      "result": "FAIL",
+      "expected": null,
+      "observed": 0,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"texto123\"",
+      "result": "FAIL",
+      "expected": null,
+      "observed": 123,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"=123\"",
+      "result": "FAIL",
+      "expected": null,
+      "observed": 123,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-NUMBER-\"-10\"",
+      "result": "PASS",
+      "expected": -10,
+      "observed": -10,
+      "scope": "Conversor numérico operacional real",
+      "limit": "FAIL é comportamento diagnosticado; não equivale a gravação na BD"
+    },
+    {
+      "id": "IMPORT-INVALID-CALENDAR",
+      "result": "FAIL",
+      "expected": null,
+      "observed": "2026-02-31",
+      "scope": "Parser Planeamento",
+      "limit": "Backend e confirmação devem rejeitar; não demonstrada persistência inválida"
+    },
+    {
+      "id": "IMPORT-INVALID-ISO",
+      "result": "FAIL",
+      "expected": null,
+      "observed": "2026-13-40",
+      "scope": "Parser Planeamento",
+      "limit": "Sem conclusão de corrupção persistida"
+    },
+    {
+      "id": "IMPORT-FIN-TEXT",
+      "result": "FAIL",
+      "expected": true,
+      "observed": false,
+      "scope": "Preview Mapa Financeiro real",
+      "limit": "Entrada texto123 transformada em 123; fixture matriz, sem descodificação binária XLSX"
+    },
+    {
+      "id": "COMMERCIAL-SCALE",
+      "result": "PASS",
+      "expected": 450,
+      "observed": 450,
+      "scope": "Comparativo real",
+      "limit": "Não compara propostas com unidades/IVA incompatíveis"
+    },
+    {
+      "id": "COMMERCIAL-MARGIN-100",
+      "result": "PASS",
+      "expected": -20,
+      "observed": -20,
+      "scope": "Aritmética real",
+      "limit": "Não equivale a contrato/adjudicação/invoice ponta a ponta"
+    },
+    {
+      "id": "COMMERCIAL-MARGIN-0",
+      "result": "PASS",
+      "expected": 0,
+      "observed": 0,
+      "scope": "Aritmética real",
+      "limit": "Não equivale a contrato/adjudicação/invoice ponta a ponta"
+    },
+    {
+      "id": "COMMERCIAL-MARGIN-200",
+      "result": "PASS",
+      "expected": 80,
+      "observed": 80,
+      "scope": "Aritmética real",
+      "limit": "Não equivale a contrato/adjudicação/invoice ponta a ponta"
+    }
+  ]
+}

@@ -1,0 +1,540 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "importadas": 1
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "importadas": 1
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "importadas": 1
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "adjunto",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "preparador",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": "154"
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": "154"
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para editar esta consulta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para editar esta consulta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": "154"
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": "154"
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": "154"
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para editar esta consulta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "eb079266-ee4b-4695-9e4e-870293a82340",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "fase_id": "00000000-0000-4000-8000-000000070071",
+        "consulta_id": "00000000-0000-4000-8000-000000070078",
+        "fornecedor_id": "00000000-0000-4000-8000-000000070075",
+        "especialidade": "Sintético",
+        "valor_adjudicado": "55.00",
+        "tipo_pagamento": null,
+        "estado": "em_execucao",
+        "estado_aprovacao_gerencia": null,
+        "aprovado_por_gerencia": null,
+        "data_aprovacao_gerencia": null,
+        "criado_em": null,
+        "data_inicio_prevista": "2026-10-14",
+        "data_fim_prevista": "2026-10-14",
+        "condicao_pagamento": "30_dias",
+        "mapa_comparativo_id": null
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "3ca5a069-e94a-4f56-bf27-75c9638be32e",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "fase_id": "00000000-0000-4000-8000-000000070071",
+        "consulta_id": "00000000-0000-4000-8000-000000070078",
+        "fornecedor_id": "00000000-0000-4000-8000-000000070075",
+        "especialidade": "Sintético",
+        "valor_adjudicado": "55.00",
+        "tipo_pagamento": null,
+        "estado": "em_execucao",
+        "estado_aprovacao_gerencia": null,
+        "aprovado_por_gerencia": null,
+        "data_aprovacao_gerencia": null,
+        "criado_em": null,
+        "data_inicio_prevista": "2026-10-14",
+        "data_fim_prevista": "2026-10-14",
+        "condicao_pagamento": "30_dias",
+        "mapa_comparativo_id": null
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para adjudicar nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para adjudicar nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "494864d5-e124-4be4-920d-961d66b056ee",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "fase_id": "00000000-0000-4000-8000-000000070071",
+        "consulta_id": "00000000-0000-4000-8000-000000070078",
+        "fornecedor_id": "00000000-0000-4000-8000-000000070075",
+        "especialidade": "Sintético",
+        "valor_adjudicado": "55.00",
+        "tipo_pagamento": null,
+        "estado": "em_execucao",
+        "estado_aprovacao_gerencia": null,
+        "aprovado_por_gerencia": null,
+        "data_aprovacao_gerencia": null,
+        "criado_em": null,
+        "data_inicio_prevista": "2026-10-14",
+        "data_fim_prevista": "2026-10-14",
+        "condicao_pagamento": "30_dias",
+        "mapa_comparativo_id": null
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "1d329fb1-d562-4c26-a129-333b5bcf9e4b",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "fase_id": "00000000-0000-4000-8000-000000070071",
+        "consulta_id": "00000000-0000-4000-8000-000000070078",
+        "fornecedor_id": "00000000-0000-4000-8000-000000070075",
+        "especialidade": "Sintético",
+        "valor_adjudicado": "55.00",
+        "tipo_pagamento": null,
+        "estado": "em_execucao",
+        "estado_aprovacao_gerencia": null,
+        "aprovado_por_gerencia": null,
+        "data_aprovacao_gerencia": null,
+        "criado_em": null,
+        "data_inicio_prevista": "2026-10-14",
+        "data_fim_prevista": "2026-10-14",
+        "condicao_pagamento": "30_dias",
+        "mapa_comparativo_id": null
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "id": "53dcd976-87b0-4ce3-b99c-c158c878033e",
+        "obra_id": "00000000-0000-4000-8000-000000000120",
+        "fase_id": "00000000-0000-4000-8000-000000070071",
+        "consulta_id": "00000000-0000-4000-8000-000000070078",
+        "fornecedor_id": "00000000-0000-4000-8000-000000070075",
+        "especialidade": "Sintético",
+        "valor_adjudicado": "55.00",
+        "tipo_pagamento": null,
+        "estado": "em_execucao",
+        "estado_aprovacao_gerencia": null,
+        "aprovado_por_gerencia": null,
+        "data_aprovacao_gerencia": null,
+        "criado_em": null,
+        "data_inicio_prevista": "2026-10-14",
+        "data_fim_prevista": "2026-10-14",
+        "condicao_pagamento": "30_dias",
+        "mapa_comparativo_id": null
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "AWARD",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para adjudicar nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "gestao_plataforma",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "preserved": {
+            "closed_months": true,
+            "actual_movements": true,
+            "historical_measurements": true
+          },
+          "financial_summary": null,
+          "financial_recalculation": "pending"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "gerencia",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "preserved": {
+            "closed_months": true,
+            "actual_movements": true,
+            "historical_measurements": true
+          },
+          "financial_summary": null,
+          "financial_recalculation": "pending"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "administrativo",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sem permissão para editar esta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "financeiro",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sem permissão para editar esta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "diretor_obra",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "preserved": {
+            "closed_months": true,
+            "actual_movements": true,
+            "historical_measurements": true
+          },
+          "financial_summary": null,
+          "financial_recalculation": "pending"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "adjunto",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "preserved": {
+            "closed_months": true,
+            "actual_movements": true,
+            "historical_measurements": true
+          },
+          "financial_summary": null,
+          "financial_recalculation": "pending"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "preparador",
+      "expected": "PERMITIR",
+      "observed": {
+        "v": {
+          "version": 1,
+          "committed": true,
+          "preserved": {
+            "closed_months": true,
+            "actual_movements": true,
+            "historical_measurements": true
+          },
+          "financial_summary": null,
+          "financial_recalculation": "pending"
+        }
+      },
+      "result": "PASS",
+      "no_write_on_denial": null,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "encarregado",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sem permissão para editar esta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "Catálogo capturado com funções e ACL reais; seed sintético e migration consolidada",
+      "limit": "DML da fixture não reconstrói todas as constraints; persistência verificada dentro da transação revertida"
+    }
+  ]
+}

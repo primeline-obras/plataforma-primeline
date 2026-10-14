@@ -1,0 +1,24 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "ALERT-TECHNICAL-REVOKE",
+      "result": "PASS",
+      "distinct_events_preserved": true,
+      "work_revocation_filter": true,
+      "scope": "Filtros JS reais; não revogação backend nem geração de eventos"
+    },
+    {
+      "id": "ALERT-GROUPING",
+      "result": "PASS",
+      "events": 7,
+      "scope": "Agrupamento mantém eventos; não deduplicação do produtor SQL"
+    },
+    {
+      "id": "ALERT-FOREMAN",
+      "result": "PASS",
+      "scope": "Contrato do filtro overview; task_report é tratado em leitura distinta"
+    }
+  ]
+}

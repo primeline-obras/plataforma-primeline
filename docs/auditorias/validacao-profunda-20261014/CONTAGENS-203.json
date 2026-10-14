@@ -1,0 +1,18 @@
+{
+  "original": 203,
+  "reconciliados": 203,
+  "chaves_unicas": 203,
+  "aplicaveis": 203,
+  "nao_aplicaveis": 0,
+  "cobertos_prova_anterior": 0,
+  "cobertura": {
+    "BLOQUEADO": 24,
+    "EXECUTADO": 179
+  },
+  "resultados_backend": {
+    "NÃO EXECUTADO no backend; sem substituição por mock": 24,
+    "PASS": 179
+  },
+  "provas_suplementares": 5,
+  "limitacao": "Execução de variantes backend especificadas; não todos os fluxos frontend nem catálogo de produção atual"
+}
