@@ -2,3 +2,5 @@
 .hours-v3-review{color:var(--text-primary,#3B3830);background:var(--card,#FFFDF9);border-color:var(--card-border,#DDD8CC);font-family:inherit}.hours-v3-review button,.hours-v3-review select,.hours-v3-review textarea{color:var(--text-primary,#3B3830);border-color:var(--card-border,#DDD8CC)}.hours-v3-review th{font-weight:600;background:var(--bg-soft,#EFEBE1)}.hours-v3-review button[data-review-action=validar],.hours-v3-review button[data-review-action=confirm]{background:var(--action,#4A5568);color:#FFFDF9}
 
 .hours-review-correction{display:flex!important;align-items:center;gap:8px}.hours-review-correction input{flex:0 0 auto}.hours-admin-toolbar{display:flex;gap:16px;flex-wrap:wrap}.hours-admin-toolbar label{min-width:180px}.hours-admin-nav{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+
+.hours-v3-review input:not([type=checkbox]){font:inherit;min-height:44px;padding:8px;border:1px solid var(--card-border,#DDD8CC);border-radius:6px;box-sizing:border-box;max-width:100%}.hours-v3-review label{font-family:inherit}.hours-v3-review article{padding:12px 0;border-bottom:1px solid var(--card-border,#DDD8CC)}

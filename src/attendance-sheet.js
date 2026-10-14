@@ -1,5 +1,5 @@
-import {createHoursPreparationClient} from './attendance-hours-client.js?v=3';
-import {createHoursAdminModule} from './attendance-hours-admin.js?v=1';
+import {createHoursPreparationClient} from './attendance-hours-client.js?v=4';
+import {createHoursAdminModule} from './attendance-hours-admin.js?v=2';
 import {createHoursOperationalTeam} from './attendance-hours-team.js?v=1';
 import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary, normalDaySelection, dayStatus, workedTime, delegationLabel } from './attendance-domain.js?v=9';
 import { createSheetClient } from './attendance-client.js?v=8';
@@ -10,7 +10,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
   const client=createSheetClient({supabase,confirm});
   const hoursClient=createHoursPreparationClient({supabase,confirm});let hoursTeam=null,hoursAdmin=null;
   const adminHoursClient=createHoursPreparationClient({supabase,confirm});
-  function mountHoursAdmin(){if(!integratedHours||state.loading||!state.context)return;const host=root.querySelector('[data-hours-admin]');if(!host)return;hoursAdmin=createHoursAdminModule({root:host,client:adminHoursClient,date:state.date,workId:state.workId,today:localClock(now()).date,onBusy:flag=>{state.busy=flag;root.querySelectorAll('.sheet-toolbar button,.sheet-toolbar input,.sheet-toolbar select,.sheet-v2>.sheet-actions button').forEach(b=>b.disabled=flag);}});hoursAdmin.load();}
+  function mountHoursAdmin(){if(!integratedHours||state.loading||!isConfigured)return;const host=root.querySelector('[data-hours-admin]');if(!host)return;hoursAdmin=createHoursAdminModule({root:host,client:adminHoursClient,date:state.date,workId:state.workId,today:localClock(now()).date,onBusy:flag=>{state.busy=flag;root.querySelectorAll('.sheet-toolbar button,.sheet-toolbar input,.sheet-toolbar select,.sheet-v2>.sheet-actions button').forEach(b=>b.disabled=flag);}});hoursAdmin.load();}
   const management=createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning,onFactsChanged:refreshFacts});
   const state={date:localClock(now()).date,workId:null,context:null,loading:false,error:'',editor:null,candidates:null,busy:false,history:null,panelToken:0,notice:null,historyRequest:0};
   let epoch=0;
@@ -64,7 +64,7 @@ export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=
       if(token!==epoch)return;
       if(state.workId && !c.works.some(w=>w.id===state.workId))throw new Error('Obra indisponível para esta sessão.');
       state.context=c;
-    }catch(e){if(token===epoch)state.error=e.message;}finally{if(token===epoch){state.loading=false;render();}}
+    }catch(e){if(token===epoch)state.error=e.code==='42501'?'Registo operacional não autorizado neste contexto. Consulte os painéis disponíveis abaixo.':e.message;}finally{if(token===epoch){state.loading=false;render();}}
   }
   function find(id,external){return (external?state.context.external_rows:state.context.rows).find(r=>r.person_id===id);}
   async function refreshFacts(action){
