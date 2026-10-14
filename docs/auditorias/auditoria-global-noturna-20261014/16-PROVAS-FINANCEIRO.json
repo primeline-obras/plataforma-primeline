@@ -1,0 +1,62 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "evidence": [
+    {
+      "id": "N-FIN-01",
+      "classification": "CONFIRMADO código/fixture HTTP",
+      "drafts_committed": 2,
+      "links_committed": 0,
+      "product_not_changed": true
+    },
+    {
+      "id": "N-FIN-02",
+      "classification": "CONFIRMADO cálculo; interpretação financeira precisa decisão",
+      "draft_auto": 250,
+      "calculated_billed": 250
+    },
+    {
+      "id": "N-FIN-03",
+      "classification": "CONFIRMADO comportamento; validade de zero precisa decisão",
+      "declared_effective_zero": true,
+      "fallback_sale": 1000,
+      "fallback_cost": 500
+    },
+    {
+      "id": "N-FIN-04",
+      "classification": "CONFIRMADO helper; existência da duplicação nas fontes NÃO VERIFICADA",
+      "same_economic_fact_inputs": 2,
+      "outgoing": 200
+    },
+    {
+      "id": "N-FIN-05",
+      "classification": "CONFIRMADO SQL atual do hotfix em DB sintética; produção NÃO VERIFICADA",
+      "invoice": 1000,
+      "receipt": 100,
+      "status": "pago",
+      "remaining_receipt": "refused",
+      "authorization_helpers": "synthetic allowed; this test verifies monetary semantics only"
+    },
+    {
+      "id": "N-FIN-06",
+      "classification": "CONFIRMADO trigger repositório; produção NÃO VERIFICADA",
+      "client_tee_state": "recusado",
+      "task_state": "em_execucao"
+    },
+    {
+      "id": "N-ADM-07",
+      "classification": "CONFIRMADO render sintético",
+      "gestao_create_action": false,
+      "gerencia_create_action": true,
+      "rule": "Gestão funcional superutilizador; sem alterar tenant/autorização"
+    },
+    {
+      "id": "N-ADM-08",
+      "classification": "CONFIRMADO data sintética",
+      "utc_default": "2026-10-14",
+      "lisbon_day": "2026-10-15",
+      "utc_instant": "2026-10-14T23:30:00Z",
+      "product_not_changed": true
+    }
+  ]
+}

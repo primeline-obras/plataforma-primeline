@@ -20,3 +20,14 @@
 5. Testes focados, decisões, backlog e consolidação.
 
 A execução não garante temporizador. Não iniciar análise longa após 05h30 Lisboa; terminar em oportunidade segura às 06h00. Se concluída antes, não prolongar artificialmente.
+
+## Checkpoint 1 — inventário e provas novas (14/10/2026)
+
+- 56 JS, 265 SQL e 242 MJS do topo tests abrangidos pelo levantamento estático (não é revisão funcional exaustiva).
+- 218 referências estáticas REST/RPC; 588 ocorrências CREATE FUNCTION, incluindo restauros/versões.
+- 38 áreas inventariadas; os perfis CSV são autorização da vista, não concessão de cada ação.
+- Financeiro: 108 PASS; novas provas finais: 9 PASS. PASS nas provas significa reprodução dos achados, não ausência de problema.
+- Administrativo estático: 70 PASS; dois SKIPs de ambiente reexecutados com binários locais disponíveis.
+- Reexecução nativa Medicina/Viaturas: 46 PASS /0 FAIL /0 SKIP. Não instalaram dependências.
+- Achados novos: fatura/links não atómicos; parcial fecha recebimento; TEE revogado mantém tarefa; Gestão sem criar RNC. Sem correções.
+- Provas aritméticas adicionais (zeros/faturado/dupla fonte) são contratos a reconciliar, não prova de dados reais errados.

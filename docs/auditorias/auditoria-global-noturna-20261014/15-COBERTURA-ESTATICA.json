@@ -1,0 +1,9 @@
+{
+  "src_js_files": 56,
+  "supabase_sql_files": 265,
+  "test_mjs_files": 242,
+  "endpoint_references": 218,
+  "sql_definitions": 588,
+  "imports_count": 79,
+  "production_inspected": false
+}
