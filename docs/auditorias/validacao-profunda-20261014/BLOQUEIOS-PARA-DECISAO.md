@@ -15,3 +15,7 @@ A primeira tentativa ficou presa no teardown após saída do processo PostgREST.
 ## Decisões anteriores preservadas
 
 AGUARDA DECISÃO: mitigação HR38, conceitos financeiros e TEE pendentes do backlog anterior; nenhuma mudança de contrato realizada. FALTOU recusa Gestão no código atual por exigir literalmente Encarregado; confrontar com regra global de superutilizador funcional antes de alterar. Esta verificação de contrato não se converte automaticamente em autorização para mudar a regra.
+
+## VALIDAÇÃO BLOQUEADA PELO AMBIENTE
+
+24 fluxos completos de login/documento/download exigem serviços locais GoTrue/Storage. SQL de metadados é parcial e não os desbloqueia.2 pares possuem falha parcial de RLS na baseline; não declarar segurança aprovada por falta de serviço. Verificar catálogo hospedado exigiria autorização futura; não aceder nesta missão. O impacto persistente do DELETE de PDF após resposta ambígua também depende de Storage/commit, não demonstrado.

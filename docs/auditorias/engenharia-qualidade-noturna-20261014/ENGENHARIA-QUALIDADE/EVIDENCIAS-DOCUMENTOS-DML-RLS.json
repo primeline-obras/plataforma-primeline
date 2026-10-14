@@ -1,0 +1,101 @@
+{
+  "environment": "PostgreSQL local; RLS ativo, role authenticated sem BYPASSRLS; não é catálogo real nem Storage",
+  "proofs": [
+    {
+      "action": "DOCUMENT_METADATA_SELECT",
+      "profile": "gestao_plataforma",
+      "variant": "own",
+      "result": "PASS",
+      "expected": "UMA LINHA PRÓPRIA",
+      "observed": [
+        {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "nome_arquivo": "Contrato sintético de controlo.pdf"
+        }
+      ],
+      "actor_company": "00000000-0000-4000-8000-000000000001",
+      "target_company": "00000000-0000-4000-8000-000000000001",
+      "context": {
+        "role": "authenticated",
+        "row_security": "on",
+        "bypass": false,
+        "table_rls": true
+      },
+      "no_write": true,
+      "limit": "Policy/grants capturados em20261004 + hotfix e RPCs documentais atuais; scripts revisados não trocam documentos_obra RLS. Não prova catálogo hospedado ou leitura de bytes."
+    },
+    {
+      "action": "DOCUMENT_METADATA_SELECT",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "result": "FAIL",
+      "expected": "SEM LINHA FORA DO TENANT",
+      "observed": [
+        {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "obra_id": "00000000-0000-4000-8000-000000000200",
+          "nome_arquivo": "Contrato sintético de controlo.pdf"
+        }
+      ],
+      "actor_company": "00000000-0000-4000-8000-000000000001",
+      "target_company": "00000000-0000-4000-8000-000000000002",
+      "context": {
+        "role": "authenticated",
+        "row_security": "on",
+        "bypass": false,
+        "table_rls": true
+      },
+      "no_write": true,
+      "limit": "Policy/grants capturados em20261004 + hotfix e RPCs documentais atuais; scripts revisados não trocam documentos_obra RLS. Não prova catálogo hospedado ou leitura de bytes."
+    },
+    {
+      "action": "DOCUMENT_METADATA_SELECT",
+      "profile": "gerencia",
+      "variant": "own",
+      "result": "PASS",
+      "expected": "UMA LINHA PRÓPRIA",
+      "observed": [
+        {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "obra_id": "00000000-0000-4000-8000-000000000120",
+          "nome_arquivo": "Contrato sintético de controlo.pdf"
+        }
+      ],
+      "actor_company": "00000000-0000-4000-8000-000000000001",
+      "target_company": "00000000-0000-4000-8000-000000000001",
+      "context": {
+        "role": "authenticated",
+        "row_security": "on",
+        "bypass": false,
+        "table_rls": true
+      },
+      "no_write": true,
+      "limit": "Policy/grants capturados em20261004 + hotfix e RPCs documentais atuais; scripts revisados não trocam documentos_obra RLS. Não prova catálogo hospedado ou leitura de bytes."
+    },
+    {
+      "action": "DOCUMENT_METADATA_SELECT",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "result": "FAIL",
+      "expected": "SEM LINHA FORA DO TENANT",
+      "observed": [
+        {
+          "id": "00000000-0000-4000-8000-000000009880",
+          "obra_id": "00000000-0000-4000-8000-000000000200",
+          "nome_arquivo": "Contrato sintético de controlo.pdf"
+        }
+      ],
+      "actor_company": "00000000-0000-4000-8000-000000000001",
+      "target_company": "00000000-0000-4000-8000-000000000002",
+      "context": {
+        "role": "authenticated",
+        "row_security": "on",
+        "bypass": false,
+        "table_rls": true
+      },
+      "no_write": true,
+      "limit": "Policy/grants capturados em20261004 + hotfix e RPCs documentais atuais; scripts revisados não trocam documentos_obra RLS. Não prova catálogo hospedado ou leitura de bytes."
+    }
+  ]
+}

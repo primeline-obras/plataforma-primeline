@@ -1,0 +1,9 @@
+import csv,re,subprocess,json
+from pathlib import Path
+Q=Path('docs/auditorias/engenharia-qualidade-noturna-20261014/ENGENHARIA-QUALIDADE');rows=list(csv.DictReader((Q/'BRANCH-ASSINATURAS-QUADRO.csv').open(encoding='utf-8-sig')));out=[]
+for r in rows:
+ s=subprocess.check_output(['git','show',r['sha']+':'+r['ficheiro']],encoding='utf-8',errors='replace');start=sum(len(x)+1 for x in s.splitlines()[:int(r['linha'])-1]);tail=s[start:];tag=re.search(r'\bAS\s+(\$\w*\$)',tail,re.I)
+ if not tag:continue
+ end=tail.find(tag.group(1),tag.end());body=tail[tag.end():end];x=dict(r);x['helpers']=';'.join(sorted(set(re.findall(r'\bfn_[a-z_0-9]+(?=\s*\()',body,re.I))));x['marcadores']=';'.join(sorted(set(re.findall(r'(?:current_setting|set_config)\(\s*\'([^\']+)',body,re.I))));x['dml_alvos']=';'.join(sorted(set(re.findall(r'(?:insert\s+into|update|delete\s+from)\s+([\w.]+)',body,re.I))));x['guarda_sessao_ativa_lexical']='fn_autorizacao_sessao_ativa'in body;x['erro_42501_lexical']='42501'in body;out.append(x)
+with(Q/'BRANCH-GUARDAS-QUADRO.csv').open('w',encoding='utf-8-sig',newline='')as f:w=csv.DictWriter(f,fieldnames=list(out[0]));w.writeheader();w.writerows(out)
+p=Q/'FRONTE-11-BRANCHES.md';s=p.read_text(encoding='utf-8')+'\nBRANCH-GUARDAS-QUADRO.csv compara helpers, marcadores de contexto, alvos DML e presença lexical da guarda de sessão/42501 por definição. As quatro funções têm assinaturas coincidentes nas duas linhas históricas (fn_quadro_operar text,jsonb,boolean,text; três triggers sem argumentos). São candidatas reais a sobreposição de corpo, distintas das quatro fixtures. Não basta a presença de42501 para certificar autorização; revisão do fluxo e manifest de instalação continuam necessários antes de integração autorizada.\n';p.write_text(s,encoding='utf-8');print('Contract bodies inventoried:',len(out))

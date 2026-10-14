@@ -9,3 +9,5 @@ Próximos: ampliar estados das interfaces/importadores e invariantes restantes; 
 Novas provas posteriores:73 variantes negativas dos contratos restantes;72 de inatividade Horas; integrações Subempreitadas/TEE; falhas por etapa documental; teclado/modal/contraste. Consultar COBERTURA-SEGUNDA-PASSAGEM.md e LIMITE-TIPOGRAFIA.md. A missão continua parcial, com trabalho seguro ainda na fila.
 
 Checkpoint anterior bce6b3f. Novas provas: inativos179PASS; outra empresa173PASS/6FAIL; revogação38PASS,140 não aplicáveis e1 contrato pendente nas203 chaves. Alertas4 perfis afetados, RNC2; continuam2 causas P1. Ver MATRIZ-SEGUNDA-PASSAGEM-203.csv. A missão não está encerrada.
+
+Progresso posterior ao checkpoint d93435c: RH nativo5 cenários/9 contagens; metadados RPC9 cenários/13 contagens; RLS direta2 controlos PASS/2 recusas FAIL na baseline, sem prova de produção; compensação PDF após2xx é P2 condicional. Matriz203:172PASS/6FAIL/1contrato/24bloqueados, com2FAIL parciais de metadados dentro dos bloqueados. Consultar RLS-DOCUMENTAL-BASELINE.md e coluna resultado_parcial. Continuar fila independente; não encerrar a missão por estes bloqueios.

@@ -1,0 +1,25 @@
+{
+  "environment": "Catálogo capturado e hotfix reais; PostgreSQL nativo; sem helper de autorização simulado; defaults/constraints/triggers parciais; sem Auth/Storage; sem dados reais",
+  "proofs": [
+    {
+      "case": "rh_preview_write_stale_repeat",
+      "result": "PASS",
+      "preview_no_write": true,
+      "audits": 1,
+      "stale": {
+        "code": "25P02",
+        "message": "current transaction is aborted, commands ignored until end of transaction block"
+      },
+      "repeat_changed": false
+    },
+    {
+      "case": "rh_batch_atomicity",
+      "result": "PASS",
+      "error": {
+        "code": "25P02",
+        "message": "current transaction is aborted, commands ignored until end of transaction block"
+      },
+      "no_partial_effect": true
+    }
+  ]
+}

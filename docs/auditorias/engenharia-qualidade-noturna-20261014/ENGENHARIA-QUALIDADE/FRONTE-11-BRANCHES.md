@@ -30,3 +30,9 @@ Expectativa desatualizada concreta: tests/planning-browser.mjs:55 e69 exige resu
 Segunda divergência de fixture: medicine-browser.mjs não preparava fn_folha_ferias_mapa_v2, hoje lida no percurso RH; o adapter sintético adiciona DTO vazio version2. A falha inicial não demonstra regressão de Medicina. Logs iniciais e finais preservados.
 
 Refs são locais, sem fetch. As8 RPCs sem referência SQL no delta antigo são um sinal de rastreabilidade, não prova de função ausente no ambiente hospedado. Backend independente pode ter sido instalado por outro pacote; confirmar catálogo/precheck num futuro escopo autorizado. Fase B e Financeiro continuam preparados e não integrados.
+
+## Assinaturas das quatro funções
+
+BRANCH-ASSINATURAS-QUADRO.csv preserva cabeçalhos, tipos, retornos, ficheiros e SHAs. Nomes sobrepostos não bastam para afirmar colisão de overloads. Verificar assinaturas e sequência de instalação antes de qualquer proposta de integração. Os corpos históricos múltiplos continuam sem eleição automática por data/nome.
+
+BRANCH-GUARDAS-QUADRO.csv compara helpers, marcadores de contexto, alvos DML e presença lexical da guarda de sessão/42501 por definição. As quatro funções têm assinaturas coincidentes nas duas linhas históricas (fn_quadro_operar text,jsonb,boolean,text; três triggers sem argumentos). São candidatas reais a sobreposição de corpo, distintas das quatro fixtures. Não basta a presença de42501 para certificar autorização; revisão do fluxo e manifest de instalação continuam necessários antes de integração autorizada.

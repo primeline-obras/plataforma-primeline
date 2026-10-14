@@ -1,0 +1,63 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (42.5859ms)
+  ✔ drift de coluna/policy/grant/definer aborta (125.0507ms)
+  ✔ migration sem backup privado recusa (44.3903ms)
+  ✔ metadados obra próprios registam/apagam; não certifica bytes/auditoria (9.9545ms)
+  ✔ metadados obra: foreign_create (7.2962ms)
+  ✔ metadados obra: foreign_delete (5.0219ms)
+  ✔ metadados obra: wrong_path (5.673ms)
+  ✔ metadados obra: foreman_write (4.9189ms)
+  ✔ metadados obra: missing_document (4.4185ms)
+  ✖ metadados entidade: foreign_entity (8.6759ms)
+  ✖ metadados entidade: orphan_entity (5.8883ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11333.5001ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 9
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11584.1891
+
+✖ failing tests:
+
+test at tests\deep-quality-document-metadata.test.mjs:112:67
+✖ metadados entidade: foreign_entity (8.6759ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '42883' !== '42501'
+  
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-metadata.test.mjs:112:619)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-metadata.test.mjs:112:59)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '42883',
+    expected: '42501',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-document-metadata.test.mjs:112:67
+✖ metadados entidade: orphan_entity (5.8883ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  '42883' !== '42501'
+  
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-metadata.test.mjs:112:619)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-metadata.test.mjs:112:59)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '42883',
+    expected: '42501',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

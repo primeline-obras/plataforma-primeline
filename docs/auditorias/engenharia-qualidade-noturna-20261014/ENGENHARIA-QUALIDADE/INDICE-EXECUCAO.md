@@ -1,16 +1,18 @@
-# Engenharia de qualidade — índice em execução
+# Engenharia de qualidade — índice progressivo
 
-- Frente01: INTERFACES — PARCIAL
-- Frente02: IMPORTADORES — PARCIAL
-- Frente03: DOCUMENTOS — PARCIAL
-- Frente04: ALERTAS — PARCIAL
-- Frente05: FINANCEIRO — PARCIAL
-- Frente06: FORNECEDORES — PARCIAL
-- Frente07: TEE-ADMINISTRACAO — CONCLUÍDA
-- Frente08: RH — PARCIAL
-- Frente09: VISUAL — PARCIAL
+Estado: **EM EXECUÇÃO / PARCIAL — NO-GO LOCAL**.
+
+- Frente1: INTERFACES — PARCIAL
+- Frente2: IMPORTADORES — PARCIAL
+- Frente3: DOCUMENTOS — PARCIAL
+- Frente4: ALERTAS — PARCIAL
+- Frente5: FINANCEIRO — PARCIAL
+- Frente6: FORNECEDORES — PARCIAL
+- Frente7: TEE-ADMINISTRACAO — CONCLUÍDA
+- Frente8: RH — PARCIAL
+- Frente9: VISUAL — PARCIAL
 - Frente10: ASSINCRONIA — PARCIAL
-- Frente11: BRANCHES — CONCLUÍDA
+- Frente11: BRANCHES — PARCIAL
 - Frente12: AUTO-REVISAO — EM EXECUÇÃO
 
-Ver COBERTURA-REAL.csv para provas/limites. Esta é uma execução parcial; frentes com trabalho independente pendente continuam na fila. Não chamar todas as frentes concluídas por existir um relatório.
+Matrizes: COBERTURA-REAL.csv; FILA-SUBTAREFAS.csv; MATRIZ-INTERFACES-ESTADOS.csv. Segurança: NOVAS-DESCOBERTAS.csv e CONSOLIDACAO-BACKLOG.csv (registos, não causas únicas). Tipografia: LIMITE-TIPOGRAFIA.md. Instrumentação: INCIDENTES-DO-HARNESS.csv. Nenhum produto/produção/push/merge/deploy alterado.

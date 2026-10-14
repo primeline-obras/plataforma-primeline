@@ -2,6 +2,9 @@ import json,re,csv
 from pathlib import Path
 Q=Path('docs/auditorias/engenharia-qualidade-noturna-20261014/ENGENHARIA-QUALIDADE');R=Path('docs/auditorias/validacao-profunda-20261014')
 # Initializer only: preserve reports extended by independent follow-up reviews.
+if (Q/'COBERTURA-REAL.csv').exists():
+ print('Initializer já executado; preservar relatórios aprofundados e matrizes atuais.');raise SystemExit(0)
+
 def doc(name,text):
  p=Q/name
  if not p.exists():p.write_text(text.strip()+'\n',encoding='utf-8')

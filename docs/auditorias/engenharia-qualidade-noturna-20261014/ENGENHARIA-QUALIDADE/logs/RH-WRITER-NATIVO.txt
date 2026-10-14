@@ -1,0 +1,18 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (42.2883ms)
+  ✔ drift de coluna/policy/grant/definer aborta (122.731ms)
+  ✔ migration sem backup privado recusa (42.4964ms)
+  ✔ RH preview não escreve; alteração auditada; versão antiga recusa; repetição atual não duplica (37.3405ms)
+  ✔ RH lote misto com colaborador de outra empresa não deixa primeira linha gravada (13.2527ms)
+  ✔ RH confidencial recusado ao diretor_obra (7.0798ms)
+  ✔ RH confidencial recusado ao adjunto (7.7588ms)
+  ✔ RH confidencial recusado ao preparador (6.1471ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11325.7395ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11550.6173

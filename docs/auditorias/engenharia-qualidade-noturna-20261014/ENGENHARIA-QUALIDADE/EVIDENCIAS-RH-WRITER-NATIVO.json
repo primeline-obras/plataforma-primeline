@@ -1,0 +1,58 @@
+{
+  "environment": "Catálogo capturado e hotfix reais; PostgreSQL nativo; sem helper de autorização simulado; defaults/constraints/triggers parciais; sem Auth/Storage; sem dados reais",
+  "proofs": [
+    {
+      "case": "rh_preview_write_stale_repeat",
+      "result": "PASS",
+      "preview_no_write": true,
+      "audits": 1,
+      "stale": {
+        "code": "P0001",
+        "message": "Cadastro alterado entretanto. Reabra ou exporte novamente o modelo."
+      },
+      "repeat_changed": false
+    },
+    {
+      "case": "rh_batch_atomicity",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "Lote cancelado; nenhuma alteração guardada. [{\"id\": \"00000000-0000-4000-8000-000000000030\", \"ok\": true, \"avisos\": [], \"alterado\": true}, {\"id\": \"00000000-0000-4000-8000-000000000035\", \"ok\": false, \"erro\": \"Colaborador não encontrado nesta empresa.\"}]"
+      },
+      "no_partial_effect": true
+    },
+    {
+      "case": "rh_private_reader",
+      "profile": "diretor_obra",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "Sem permissão para gerir estes dados de RH."
+      },
+      "no_partial_effect": true,
+      "scope": "Leitor RH real da captura; não login GoTrue nem prova de todos os caminhos de custo"
+    },
+    {
+      "case": "rh_private_reader",
+      "profile": "adjunto",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "Sem permissão para gerir estes dados de RH."
+      },
+      "no_partial_effect": true,
+      "scope": "Leitor RH real da captura; não login GoTrue nem prova de todos os caminhos de custo"
+    },
+    {
+      "case": "rh_private_reader",
+      "profile": "preparador",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "Sem permissão para gerir estes dados de RH."
+      },
+      "no_partial_effect": true,
+      "scope": "Leitor RH real da captura; não login GoTrue nem prova de todos os caminhos de custo"
+    }
+  ]
+}

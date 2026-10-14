@@ -1,0 +1,53 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (42.1214ms)
+  ✔ drift de coluna/policy/grant/definer aborta (116.7121ms)
+  ✔ migration sem backup privado recusa (42.7187ms)
+  ✔ DML documental SELECT gestao_plataforma / own (7.3346ms)
+  ✖ DML documental SELECT gestao_plataforma / foreign (7.5363ms)
+  ✔ DML documental SELECT gerencia / own (8.0606ms)
+  ✖ DML documental SELECT gerencia / foreign (5.7102ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (10806.2554ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 5
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11039.4224
+
+✖ failing tests:
+
+test at tests\deep-quality-document-dml.test.mjs:109:115
+✖ DML documental SELECT gestao_plataforma / foreign (7.5363ms)
+  AssertionError [ERR_ASSERTION]: {"action":"DOCUMENT_METADATA_SELECT","profile":"gestao_plataforma","variant":"foreign","result":"FAIL","expected":"SEM LINHA FORA DO TENANT","observed":[{"id":"00000000-0000-4000-8000-000000009880","obra_id":"00000000-0000-4000-8000-000000000200","nome_arquivo":"Contrato sintético de controlo.pdf"}],"actor_company":"00000000-0000-4000-8000-000000000001","target_company":"00000000-0000-4000-8000-000000000002","context":{"role":"authenticated","row_security":"on","bypass":false,"table_rls":true},"no_write":true,"limit":"Policy/grants capturados em20261004 + hotfix e RPCs documentais atuais; scripts revisados não trocam documentos_obra RLS. Não prova catálogo hospedado ou leitura de bytes."}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-dml.test.mjs:109:1925)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-dml.test.mjs:109:107)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-document-dml.test.mjs:109:115
+✖ DML documental SELECT gerencia / foreign (5.7102ms)
+  AssertionError [ERR_ASSERTION]: {"action":"DOCUMENT_METADATA_SELECT","profile":"gerencia","variant":"foreign","result":"FAIL","expected":"SEM LINHA FORA DO TENANT","observed":[{"id":"00000000-0000-4000-8000-000000009880","obra_id":"00000000-0000-4000-8000-000000000200","nome_arquivo":"Contrato sintético de controlo.pdf"}],"actor_company":"00000000-0000-4000-8000-000000000001","target_company":"00000000-0000-4000-8000-000000000002","context":{"role":"authenticated","row_security":"on","bypass":false,"table_rls":true},"no_write":true,"limit":"Policy/grants capturados em20261004 + hotfix e RPCs documentais atuais; scripts revisados não trocam documentos_obra RLS. Não prova catálogo hospedado ou leitura de bytes."}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-dml.test.mjs:109:1925)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-document-dml.test.mjs:109:107)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

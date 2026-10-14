@@ -1,26 +1,26 @@
-﻿acao,perfil,cobertura,risco_residual,proximo_passo
-LOGIN,gestao_plataforma,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,gerencia,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,administrativo,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,financeiro,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,diretor_obra,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,adjunto,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,preparador,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-LOGIN,encarregado,BLOQUEADO,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
-ABSENCE_REPORT,gestao_plataforma,EXECUTADO,Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada; teste de recusa não aprova a regra funcional,"Reconciliar requisito específico de reporte FALTOU com regra global já aprovada, sem alterar permissões"
-DOCUMENT,gestao_plataforma,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,gerencia,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,administrativo,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,financeiro,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,diretor_obra,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,adjunto,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,preparador,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOCUMENT,encarregado,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,gestao_plataforma,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,gerencia,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,administrativo,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,financeiro,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,diretor_obra,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,adjunto,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,preparador,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
-DOWNLOAD,encarregado,BLOQUEADO,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+﻿acao,perfil,cobertura,resultado_parcial,risco_residual,proximo_passo
+LOGIN,gestao_plataforma,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,gerencia,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,administrativo,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,financeiro,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,diretor_obra,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,adjunto,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,preparador,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+LOGIN,encarregado,BLOQUEADO,,Serviço local GoTrue para login real,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local GoTrue para login real
+ABSENCE_REPORT,gestao_plataforma,EXECUTADO,,Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada; teste de recusa não aprova a regra funcional,"Reconciliar requisito específico de reporte FALTOU com regra global já aprovada, sem alterar permissões"
+DOCUMENT,gestao_plataforma,BLOQUEADO,FAIL — leitura SQL de metadados noutra empresa na RLS capturada; catálogo real não validado,Serviço local Storage e Auth para o percurso completo de bytes/metadados; P1 da baseline RLS: pl_admin_total não filtra empresa; não certificar bytes ou catálogo hospedado,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,gerencia,BLOQUEADO,FAIL — leitura SQL de metadados noutra empresa na RLS capturada; catálogo real não validado,Serviço local Storage e Auth para o percurso completo de bytes/metadados; P1 da baseline RLS: pl_admin_total não filtra empresa; não certificar bytes ou catálogo hospedado,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,administrativo,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,financeiro,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,diretor_obra,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,adjunto,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,preparador,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOCUMENT,encarregado,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,gestao_plataforma,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,gerencia,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,administrativo,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,financeiro,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,diretor_obra,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,adjunto,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,preparador,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados
+DOWNLOAD,encarregado,BLOQUEADO,,Serviço local Storage e Auth para o percurso completo de bytes/metadados,DEPENDÊNCIA TÉCNICA — disponibilizar Serviço local Storage e Auth para o percurso completo de bytes/metadados

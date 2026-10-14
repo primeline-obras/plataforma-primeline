@@ -1,0 +1,86 @@
+{
+  "environment": "RPCs exatas de documentos_rh_tenant.sql; helper privado real; catálogo histórico/hotfix locais; sem Storage/Auth e sem certificação da rota DML direta do frontend",
+  "proofs": [
+    {
+      "case": "work_metadata_roundtrip",
+      "result": "PASS",
+      "limit": "Nenhum objeto Storage criado; triggers de auditoria não reconstruídos integralmente."
+    },
+    {
+      "case": "foreign_create",
+      "result": "PASS",
+      "error": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_OUTSIDE_COMPANY"
+      },
+      "no_metadata_change": true,
+      "limit": "RPC SQL; não teste de Storage/rota direta de documentos_obra."
+    },
+    {
+      "case": "foreign_delete",
+      "result": "PASS",
+      "error": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_OUTSIDE_COMPANY"
+      },
+      "no_metadata_change": true,
+      "limit": "RPC SQL; não teste de Storage/rota direta de documentos_obra."
+    },
+    {
+      "case": "wrong_path",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "O caminho do documento não pertence à obra indicada."
+      },
+      "no_metadata_change": true,
+      "limit": "RPC SQL; não teste de Storage/rota direta de documentos_obra."
+    },
+    {
+      "case": "foreman_write",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "Sem permissão para enviar documentos para esta obra."
+      },
+      "no_metadata_change": true,
+      "limit": "RPC SQL; não teste de Storage/rota direta de documentos_obra."
+    },
+    {
+      "case": "missing_document",
+      "result": "PASS",
+      "error": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_OUTSIDE_COMPANY"
+      },
+      "no_metadata_change": true,
+      "limit": "RPC SQL; não teste de Storage/rota direta de documentos_obra."
+    },
+    {
+      "case": "own_entity",
+      "result": "PASS",
+      "no_metadata_change": false,
+      "limit": "Empresa do documento explícita; relação de entidade real; sem Storage."
+    },
+    {
+      "case": "foreign_entity",
+      "result": "PASS",
+      "error": {
+        "code": "42501",
+        "message": "DOCUMENT_OUTSIDE_COMPANY_OR_ENTITY"
+      },
+      "no_metadata_change": true,
+      "limit": "Empresa do documento explícita; relação de entidade real; sem Storage."
+    },
+    {
+      "case": "orphan_entity",
+      "result": "PASS",
+      "error": {
+        "code": "42501",
+        "message": "DOCUMENT_OUTSIDE_COMPANY_OR_ENTITY"
+      },
+      "no_metadata_change": true,
+      "limit": "Empresa do documento explícita; relação de entidade real; sem Storage."
+    }
+  ]
+}

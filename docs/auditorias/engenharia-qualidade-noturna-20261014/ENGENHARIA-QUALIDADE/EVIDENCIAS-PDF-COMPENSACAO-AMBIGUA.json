@@ -1,0 +1,49 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "case": "success_control",
+      "result": "PASS",
+      "calls": [
+        "upload",
+        "rpc",
+        "reload",
+        "toast"
+      ]
+    },
+    {
+      "case": "explicit_rejection_control",
+      "result": "PASS",
+      "calls": [
+        "upload",
+        "rpc",
+        "delete_bytes"
+      ]
+    },
+    {
+      "case": "upload_failure_control",
+      "result": "PASS",
+      "calls": [
+        "upload"
+      ]
+    },
+    {
+      "case": "ambiguous_success_cleanup",
+      "classification": "FALHA DO PROTOCOLO CLIENTE COMPROVADA; EFEITO PERSISTENTE CONDICIONAL",
+      "functional_result": "FAIL_CONDITIONAL",
+      "severity": "P2",
+      "success_headers": true,
+      "body_read_failed": true,
+      "delete_requested": true,
+      "simulated_reference_remains": true,
+      "calls": [
+        "upload",
+        "rpc",
+        "delete_bytes"
+      ],
+      "source": "src/comparative-map.js:276-282",
+      "limit": "Metadados e bytes simulados. Não prova persistência PostgREST/Storage real; prova que a compensação é disparada também após2xx com corpo perdido."
+    }
+  ]
+}

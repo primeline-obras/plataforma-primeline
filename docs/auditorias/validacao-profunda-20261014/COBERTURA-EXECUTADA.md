@@ -13,12 +13,13 @@
     "EXECUTADO": 179
   },
   "resultados_backend": {
-    "NÃO EXECUTADO no backend; sem substituição por mock": 24,
+    "FLUXO COMPLETO NÃO EXECUTADO": 24,
     "PASS": 172,
     "PENDENTE CONTRATO": 1,
     "FAIL": 6
   },
   "provas_suplementares": 5,
+  "falhas_parciais_metadados": 2,
   "limitacao": "Execução de variantes backend especificadas; não todos os fluxos frontend nem catálogo de produção atual"
 }
 ```

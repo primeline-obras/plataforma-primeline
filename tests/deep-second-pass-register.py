@@ -5,7 +5,7 @@ for file in files:
  for i,p in enumerate(json.loads((R/file).read_text(encoding='utf-8'))['proofs']):proofs.append((p,file+'#proofs/'+str(i)))
 rows=list(csv.DictReader((R/'MATRIZ-203-PARES.csv').open(encoding='utf-8-sig')));out=[]
 for r in rows:
- key=(r['acao'],r['perfil']);x=dict(acao=key[0],perfil=key[1],primeira_passagem=r['resultado_observado'].split(' — ')[0])
+ key=(r['acao'],r['perfil']);x=dict(acao=key[0],perfil=key[1],primeira_passagem=r['resultado_observado'].split(' — ')[0],resultado_parcial=r.get('resultado_parcial',''))
  for field,variants in [('inativo',{'inactive'}),('outra_empresa',{'foreign'}),('responsabilidade_revogada',{'revoked','responsibility_revoked'})]:
   hit=[(p,f)for p,f in proofs if(p.get('action'),p.get('profile'))==key and p.get('variant')in variants]
   x[field]=';'.join(sorted({p['result']for p,f in hit}))if hit else'BLOQUEADO — SERVIÇO LOCAL'if r['cobertura']=='BLOQUEADO'else'SEM PROVA ESPECÍFICA';x[field+'_evidencia']=';'.join(f for p,f in hit)

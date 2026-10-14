@@ -6,9 +6,17 @@ DEEP-SEC-01: fn_criar_rnc aceita alvo de outra empresa para Gestão/Gerência na
 
 A fixture usa funções reais capturadas, hotfix consolidado e guarda documental posterior de Viaturas. Não reconstrói todos os triggers/constraints do sistema nem confirma o catálogo hospedado. Os achados são locais e devem orientar correção/revisão, sem alegar exploração em produção. Viaturas recusou ambos os atores estrangeiros com o wrapper atual.
 
+## Leitura direta de metadados — baseline local
+
+DEEP-SEC-03 reforça a classe N-SEC-02: Gestão/Gerência leem uma linha documental estrangeira com role authenticated, RLS on, BYPASSRLS false e tabela com RLS ativo. São2 recusas falhadas parciais; os24 fluxos completos Auth/Storage continuam bloqueados. A policy é a capturada na baseline20261004; não afirmar que o catálogo hospedado atual contém a mesma policy sem consulta futura autorizada.
+
 ## Qualidade
 
 Documentos: resposta obsoleta A em contexto B; pedido de metadados pode usar obraB com ficheiro de A. Importação: texto inválido transformado em número e gravado localmente; duplicações contraditórias sobrescrevem o ajuste sem aviso, enquanto linha desconhecida desaparece do preview. Ver NOVAS-DESCOBERTAS.csv na pasta ENGENHARIA-QUALIDADE.
+
+## Risco condicional adicional
+
+DEEP-DOC-03: o cliente de proposta PDF pede DELETE após resposta2xx cujo corpo falha. O pedido de compensação é comprovado; perda persistente depende do commit e de aceitação pelo Storage, não certificados nesta prova. Ver EVIDENCIAS-PDF-COMPENSACAO-AMBIGUA.json na Engenharia de Qualidade. Não contabilizar a assertion diagnóstica como aprovação funcional.
 
 ## Preservado
 

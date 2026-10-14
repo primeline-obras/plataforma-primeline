@@ -1,0 +1,22 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (40.4645ms)
+  ✔ drift de coluna/policy/grant/definer aborta (115.9854ms)
+  ✔ migration sem backup privado recusa (42.2179ms)
+  ✔ metadados obra próprios registam/apagam; não certifica bytes/auditoria (9.5767ms)
+  ✔ metadados obra: foreign_create (6.4006ms)
+  ✔ metadados obra: foreign_delete (5.978ms)
+  ✔ metadados obra: wrong_path (6.1612ms)
+  ✔ metadados obra: foreman_write (7.6383ms)
+  ✔ metadados obra: missing_document (4.3951ms)
+  ✔ metadados entidade: own_entity (10.461ms)
+  ✔ metadados entidade: foreign_entity (8.9969ms)
+  ✔ metadados entidade: orphan_entity (9.1734ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11240.8175ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11452.6632
