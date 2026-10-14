@@ -68,7 +68,8 @@
               "hash": "360d6f7e41d83fb18543954112126d6fbe4ec7a3d7c3ba676cb65beb252560d6"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "FIXTURES DE TESTE; NÃO É CONFLITO DE PRODUÇÃO"
         },
         {
           "name": "public.fn_e_admin",
@@ -97,7 +98,8 @@
               "hash": "9127e51de098ad1f01ad1e4f856bdcfca86ef16270049004203ab489d013e8f2"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "FIXTURES DE TESTE; NÃO É CONFLITO DE PRODUÇÃO"
         },
         {
           "name": "public.fn_pode_ver_obra",
@@ -114,7 +116,8 @@
               "hash": "5c3b0dedd92d22d8e12120b43ee99c3407eaf42ae398154266f8d56fdc02aec3"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "FIXTURES DE TESTE; NÃO É CONFLITO DE PRODUÇÃO"
         },
         {
           "name": "public.fn_quadro_notificar_movimentacao_encarregado",
@@ -135,7 +138,8 @@
               "hash": "ca248d155af676a53f792734de816ff4746618cbe09da1e3ddfb0c7aeb0926b5"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "MIGRATIONS EM AMBOS OS DELTAS"
         },
         {
           "name": "public.fn_quadro_operar",
@@ -172,7 +176,8 @@
               "hash": "8ffe11222a093397099cfaafac4f6c1324ecb5f894407db0f5202b3651a6d37f"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "MIGRATIONS EM AMBOS OS DELTAS"
         },
         {
           "name": "public.fn_quadro_proteger_escrita",
@@ -205,7 +210,8 @@
               "hash": "9282a3f67b6aad4fd49d63541daf78df82a4a6bef3f488ce685c1291d27f5540"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "MIGRATIONS EM AMBOS OS DELTAS"
         },
         {
           "name": "public.fn_registar_movimento_quadro",
@@ -226,7 +232,8 @@
               "hash": "215ab10ea0e2fedc66874f7c654c4247a1ae3b5034e1b58e40a988a088406974"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "MIGRATIONS EM AMBOS OS DELTAS"
         },
         {
           "name": "public.fn_utilizador_atual_id",
@@ -259,7 +266,8 @@
               "hash": "02f963fbab5978b06965f2537b219537ae9d2743544c627f9e1b475ec26ba23d"
             }
           ],
-          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO",
+          "origin_triage": "FIXTURES DE TESTE; NÃO É CONFLITO DE PRODUÇÃO"
         }
       ],
       "frontend_rpc_tokens_without_sql_reference": [

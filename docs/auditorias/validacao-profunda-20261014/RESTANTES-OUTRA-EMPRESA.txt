@@ -1,0 +1,99 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (44.9198ms)
+  ✔ drift de coluna/policy/grant/definer aborta (123.0195ms)
+  ✔ migration sem backup privado recusa (42.5656ms)
+  ✔ foreign CUSTOMER_CREATE / gestao_plataforma (214.9355ms)
+  ✔ foreign CUSTOMER_CREATE / gerencia (112.0586ms)
+  ✔ foreign CUSTOMER_CREATE / administrativo (119.5133ms)
+  ✔ foreign CUSTOMER_CREATE / financeiro (119.4709ms)
+  ✔ foreign CUSTOMER_CREATE / diretor_obra (162.9952ms)
+  ✔ foreign CUSTOMER_CREATE / adjunto (80.8789ms)
+  ✔ foreign CUSTOMER_CREATE / preparador (138.9894ms)
+  ✔ foreign CUSTOMER_CREATE / encarregado (73.7462ms)
+  ✔ foreign MEDICINE / gestao_plataforma (94.628ms)
+  ✔ foreign MEDICINE / gerencia (75.0258ms)
+  ✔ foreign MEDICINE / administrativo (69.2774ms)
+  ✔ foreign MEDICINE / financeiro (71.3182ms)
+  ✔ foreign MEDICINE / diretor_obra (80.9059ms)
+  ✔ foreign MEDICINE / adjunto (64.7057ms)
+  ✔ foreign MEDICINE / preparador (67.0581ms)
+  ✔ foreign MEDICINE / encarregado (84.713ms)
+  ✔ foreign VEHICLE / administrativo (130.8706ms)
+  ✔ foreign VEHICLE / financeiro (92.0586ms)
+  ✔ foreign VEHICLE / diretor_obra (72.7247ms)
+  ✔ foreign VEHICLE / adjunto (66.652ms)
+  ✔ foreign VEHICLE / preparador (90.0106ms)
+  ✔ foreign VEHICLE / encarregado (69.9891ms)
+  ✔ foreign CONSULT_CREATE / gestao_plataforma (72.8365ms)
+  ✔ foreign CONSULT_CREATE / gerencia (69.1707ms)
+  ✔ foreign CONSULT_CREATE / administrativo (78.8667ms)
+  ✔ foreign CONSULT_CREATE / financeiro (84.4612ms)
+  ✔ foreign CONSULT_CREATE / diretor_obra (100.1159ms)
+  ✔ foreign CONSULT_CREATE / adjunto (81.1868ms)
+  ✔ foreign CONSULT_CREATE / preparador (84.0751ms)
+  ✔ foreign CONSULT_CREATE / encarregado (63.5152ms)
+  ✔ foreign COMPARATIVE_DELETE / gestao_plataforma (129.9403ms)
+  ✔ foreign COMPARATIVE_DELETE / gerencia (99.7166ms)
+  ✔ foreign COMPARATIVE_DELETE / administrativo (64.8631ms)
+  ✔ foreign COMPARATIVE_DELETE / financeiro (66.4451ms)
+  ✔ foreign COMPARATIVE_DELETE / diretor_obra (58.8449ms)
+  ✔ foreign COMPARATIVE_DELETE / adjunto (60.4077ms)
+  ✔ foreign COMPARATIVE_DELETE / preparador (69.4627ms)
+  ✔ foreign COMPARATIVE_DELETE / encarregado (65.3498ms)
+  ✖ foreign ALERT_RESOLVE / administrativo (78.1564ms)
+  ✖ foreign ALERT_RESOLVE / financeiro (77.5283ms)
+  ✔ foreign ALERT_RESOLVE / diretor_obra (88.515ms)
+  ✔ foreign ALERT_RESOLVE / adjunto (105.1053ms)
+  ✔ foreign ALERT_RESOLVE / preparador (69.2043ms)
+  ✔ foreign ALERT_RESOLVE / encarregado (76.6131ms)
+  ✔ foreign RNC_CREATE / administrativo (69.5407ms)
+  ✔ foreign RNC_CREATE / financeiro (70.1392ms)
+  ✔ foreign RNC_CREATE / diretor_obra (69.4806ms)
+  ✔ foreign RNC_CREATE / adjunto (60.4866ms)
+  ✔ foreign RNC_CREATE / preparador (82.5284ms)
+  ✔ foreign RNC_CREATE / encarregado (63.1391ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (16538.5611ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 51
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16701.4159
+
+✖ failing tests:
+
+test at tests\deep-quality-remaining-foreign.test.mjs:110:219
+✖ foreign ALERT_RESOLVE / administrativo (78.1564ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"administrativo","variant":"foreign","expected":"RECUSAR","observed":{"v":{"id":"00000000-0000-4000-8000-000000009880","tipo":null,"estado":"resolvido","titulo":null,"obra_id":"00000000-0000-4000-8000-000000000120","criado_em":null,"descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000001","entidade_id":null,"recorrencia":null,"data_gatilho":null,"enviar_email":null,"resolvido_em":"2026-10-15T00:08:12.976885+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000330011","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"administrativo","data_evento_referencia":null,"destinatario_utilizador_id":"00000000-0000-4000-8000-000000330011","destinatario_colaborador_id":null}},"result":"FAIL","no_write_on_denial":false,"environment":"PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada","limit":"Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-remaining-foreign.test.mjs:122:494)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-remaining-foreign.test.mjs:110:211)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'FAIL',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-remaining-foreign.test.mjs:110:219
+✖ foreign ALERT_RESOLVE / financeiro (77.5283ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"financeiro","variant":"foreign","expected":"RECUSAR","observed":{"v":{"id":"00000000-0000-4000-8000-000000009880","tipo":null,"estado":"resolvido","titulo":null,"obra_id":"00000000-0000-4000-8000-000000000120","criado_em":null,"descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000001","entidade_id":null,"recorrencia":null,"data_gatilho":null,"enviar_email":null,"resolvido_em":"2026-10-15T00:08:13.055374+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000330017","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"financeiro","data_evento_referencia":null,"destinatario_utilizador_id":"00000000-0000-4000-8000-000000330017","destinatario_colaborador_id":null}},"result":"FAIL","no_write_on_denial":false,"environment":"PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada","limit":"Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-remaining-foreign.test.mjs:122:494)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-remaining-foreign.test.mjs:110:211)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'FAIL',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }

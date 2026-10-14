@@ -1,0 +1,37 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (43.1169ms)
+  ✔ drift de coluna/policy/grant/definer aborta (124.2368ms)
+  ✔ migration sem backup privado recusa (44.1672ms)
+  ✔ foreign CUSTOMER_RECEIVE / gestao_plataforma (14.446ms)
+  ✔ foreign CUSTOMER_RECEIVE / gerencia (9.7117ms)
+  ✔ foreign CUSTOMER_RECEIVE / administrativo (12.0004ms)
+  ✔ foreign CUSTOMER_RECEIVE / financeiro (11.2176ms)
+  ✔ foreign CUSTOMER_RECEIVE / diretor_obra (9.1404ms)
+  ✔ foreign CUSTOMER_RECEIVE / adjunto (10.4922ms)
+  ✔ foreign CUSTOMER_RECEIVE / preparador (8.377ms)
+  ✔ foreign CUSTOMER_RECEIVE / encarregado (9.4121ms)
+  ✔ foreign PARTIAL_RPC / gestao_plataforma (8.998ms)
+  ✔ foreign PARTIAL_RPC / gerencia (9.7147ms)
+  ✔ foreign PARTIAL_RPC / administrativo (9.6099ms)
+  ✔ foreign PARTIAL_RPC / financeiro (9.7013ms)
+  ✔ foreign PARTIAL_RPC / diretor_obra (10.4003ms)
+  ✔ foreign PARTIAL_RPC / adjunto (8.1446ms)
+  ✔ foreign PARTIAL_RPC / preparador (11.4532ms)
+  ✔ foreign PARTIAL_RPC / encarregado (12.1604ms)
+  ✔ foreign CUSTOMER_DECIDE / gestao_plataforma (7.9884ms)
+  ✔ foreign CUSTOMER_DECIDE / gerencia (7.2586ms)
+  ✔ foreign CUSTOMER_DECIDE / administrativo (6.063ms)
+  ✔ foreign CUSTOMER_DECIDE / financeiro (8.4962ms)
+  ✔ foreign CUSTOMER_DECIDE / diretor_obra (6.7589ms)
+  ✔ foreign CUSTOMER_DECIDE / adjunto (9.0683ms)
+  ✔ foreign CUSTOMER_DECIDE / preparador (6.916ms)
+  ✔ foreign CUSTOMER_DECIDE / encarregado (8.7924ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (12079.4768ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12252.7493

@@ -1,0 +1,25 @@
+{
+  "environment": "PostgreSQL local; parsers reais/SheetJS; RLS/ACL reconstruídos; triggers/defaults parciais; sem Storage/Auth",
+  "proofs": [
+    {
+      "kind": "SUB",
+      "result": "PASS",
+      "source_rows": 500,
+      "preview_rows": 500,
+      "persisted": 500,
+      "total": 50000,
+      "writer_elapsed_ms": 356,
+      "limit": "Medição desta base local parcial; não performance de produção, não dinheiro recebido e nenhuma decisão salarial."
+    },
+    {
+      "kind": "TEE",
+      "result": "PASS",
+      "source_rows": 500,
+      "preview_rows": 500,
+      "persisted": 500,
+      "total": 50000,
+      "writer_elapsed_ms": 276,
+      "limit": "Medição desta base local parcial; não performance de produção, não dinheiro recebido e nenhuma decisão salarial."
+    }
+  ]
+}

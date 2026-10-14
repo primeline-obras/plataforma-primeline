@@ -7,3 +7,5 @@ Próximos: ampliar estados das interfaces/importadores e invariantes restantes; 
 24 pares dependem de Auth/Storage locais e não foram certificados por mocks. PostgREST funciona com QUADRO_PG_BIN no PATH do processo. A tentativa anterior de encerrar PID foi rejeitada; não repetir essa ação. O harness corrigido encerra apenas o child que ele próprio cria. Nenhum SQL real/push/merge/deploy.
 
 Novas provas posteriores:73 variantes negativas dos contratos restantes;72 de inatividade Horas; integrações Subempreitadas/TEE; falhas por etapa documental; teclado/modal/contraste. Consultar COBERTURA-SEGUNDA-PASSAGEM.md e LIMITE-TIPOGRAFIA.md. A missão continua parcial, com trabalho seguro ainda na fila.
+
+Checkpoint anterior bce6b3f. Novas provas: inativos179PASS; outra empresa173PASS/6FAIL; revogação38PASS,140 não aplicáveis e1 contrato pendente nas203 chaves. Alertas4 perfis afetados, RNC2; continuam2 causas P1. Ver MATRIZ-SEGUNDA-PASSAGEM-203.csv. A missão não está encerrada.

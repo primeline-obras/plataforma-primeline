@@ -2,17 +2,17 @@
 
 Estado geral: **EM EXECUÇÃO — COM BLOQUEIOS PARCIAIS**.
 
-Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint locala93fd8e; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
+Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint localbce6b3f; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
 
 ## Pares
 
-203 reconciliados;179 executados;174 aprovados,4 FAIL,1 contrato pendente;24 dependem de Auth/Storage local. Os4 FAIL representam2 achados P1 locais, sem afirmar ocorrência em produção.
+203 reconciliados;179 executados;172 aprovados,6 FAIL,1 contrato pendente;24 dependem de Auth/Storage local. Os6 FAIL representam2 achados P1 locais, sem afirmar ocorrência em produção.
 
 ## Fila
 
 - Reconciliação203: **CONCLUÍDA** — Chaves exatas, sem duplicações.
 - Primeira execução backend: **PARCIAL** — 179 executados;24 BLOQUEADO por serviços locais.
-- Segunda passagem: **PARCIAL** — REST30 cenários; económica76; restantes73; escopo12 incluindo4 FAIL.
+- Segunda passagem: **PARCIAL** — 203 chaves reconciliadas:179 recusas por inatividade;173PASS/6FAIL noutra empresa;38PASS por revogação; Auth/Storage24 bloqueados.
 - Consumidores: **PARCIAL** — Importação/ledger/RH e documentos; ligações restantes explicitadas.
 - Interfaces: **PARCIAL** — 21 vistas/80 capturas, módulos detalhados e6 viewports; ampliar estados.
 - Importadores: **PARCIAL** — CSV1000, XLSX reais, MQT/sub/TEE500linhas; regressões RH.
@@ -27,4 +27,4 @@ Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint loca
 - Branches: **CONCLUÍDA** — Seis refs locais; sem merge/fetch.
 - Autorrevisão: **EM EXECUÇÃO** — Links, contagens, segredos e arquivos por validar no fecho.
 
-Subtarefas de qualidade inventariadas: 234; estados progressivos em ENGENHARIA-QUALIDADE/FILA-SUBTAREFAS.csv. Não foram marcadas completas apenas por existir relatório. Próxima execução segura: interfaces com obra sintética e matriz RH por precondição; depois contratos e autorrevisão.
+Itens da instrução inventariados (incluindo restrições): 234; estados progressivos em ENGENHARIA-QUALIDADE/FILA-SUBTAREFAS.csv. Não foram marcadas completas apenas por existir relatório. Próxima execução segura: interfaces com obra sintética e matriz RH por precondição; depois contratos e autorrevisão.

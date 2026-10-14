@@ -1,0 +1,342 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "preparador",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_RECEIVE",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "O pagamento está reservado ao papel Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "preparador",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "PARTIAL_RPC",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: operação reservada ao Financeiro."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "preparador",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    },
+    {
+      "action": "CUSTOMER_DECIDE",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "result": "PASS",
+      "environment": "PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o",
+      "limit": "Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"
+    }
+  ]
+}

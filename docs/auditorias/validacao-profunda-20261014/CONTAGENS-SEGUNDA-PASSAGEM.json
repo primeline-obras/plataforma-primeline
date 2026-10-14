@@ -1,0 +1,18 @@
+{
+  "inativo": {
+    "BLOQUEADO — SERVIÇO LOCAL": 24,
+    "PASS": 179
+  },
+  "outra_empresa": {
+    "BLOQUEADO — SERVIÇO LOCAL": 24,
+    "PASS": 173,
+    "FAIL": 6
+  },
+  "responsabilidade_revogada": {
+    "BLOQUEADO — SERVIÇO LOCAL": 24,
+    "NÃO APLICÁVEL — AUTORIZAÇÃO POR PAPEL/EMPRESA": 48,
+    "NÃO APLICÁVEL — PAPEL JÁ SEM AÇÃO": 92,
+    "PASS": 38,
+    "PENDENTE CONTRATO": 1
+  }
+}

@@ -25,3 +25,7 @@ O exportador do produto gerou external-product-export.xlsx com dois períodos, t
 EVIDENCIAS-IMPORT-COMERCIAL-INTEGRADO.json liga os parsers reais/SheetJS às RPCs que confirmImport chama: fn_importar_subempreitadas_xlsx e fn_importar_tees_xlsx. Um cabeçalho por família e um item TEE persistem conforme esperado na transação local. Lote com primeira linha válida e segunda inválida recusa e reverte todos os objetos observados.8 contagens Node PASS/0 FAIL/0 SKIP, incluindo3 prechecks e grupo.
 
 A primeira execução encontrou tabela não capturada no inventário do próprio teste, abortando a transação25P02. Corrigido usando to_regclass antes da leitura; log anterior guardado em logs/IMPORT-COMERCIAL-FIRST-FIXTURE-ERROR.txt. Não é falha do produto. Limites: estruturas/defaults/triggers parcialmente reconstruídos; não prova catálogo real ou importação integral de500 linhas no backend.
+
+## Lotes500 até ao writer
+
+Dois cenários novos:500 Subempreitadas e500 TEEs/itens. Cada preview manteve500 linhas selecionadas; cada RPC gravou500 cabeçalhos, TEE também500 itens. Soma50.000 por família; todas as operações revertidas depois das verificações.6 contagens Node incluindo prechecks/grupo. Prova EVIDENCIAS-IMPORT-LOTE500.json e logs/IMPORT-LOTE500.txt. Duração do writer local cerca de0.3s não é benchmark de produção.

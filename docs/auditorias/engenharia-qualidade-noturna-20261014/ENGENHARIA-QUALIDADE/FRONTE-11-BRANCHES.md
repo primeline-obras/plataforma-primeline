@@ -20,3 +20,13 @@ CONTRATOS-BRANCHES.json compara também funções SQL e tokensRPC. Sobreposiçõ
 - chore/fase-b-readiness-20261011: 0 ficheiros partilhados; 0 nomes de função em ambos os deltas; RPCs sem referência SQL: [].
 - fix/despesas-gerais-tenant-20261011: 0 ficheiros partilhados; 0 nomes de função em ambos os deltas; RPCs sem referência SQL: [].
 - codex/auditoria-global-noturna-20261014: 0 ficheiros partilhados; 0 nomes de função em ambos os deltas; RPCs sem referência SQL: [].
+
+## Triagem de origem e expectativas
+
+BRANCH-CONTRATOS-TRIAGEM.csv separa os8 nomes:4 são exclusivamente fixtures (auth.uid, fn_e_admin, fn_pode_ver_obra, fn_utilizador_atual_id). Não são4 conflitos adicionais de migrations de produção. Os4 restantes são fn_quadro_notificar_movimentacao_encarregado, fn_quadro_operar, fn_quadro_proteger_escrita e fn_registar_movimento_quadro: comparar semântica/ACL/marcadores e ordem aprovada antes de qualquer integração. Hash diferente não prova sozinho incompatibilidade.
+
+Expectativa desatualizada concreta: tests/planning-browser.mjs:55 e69 exige resumo de pesos resolvidos/100% visível. O contrato visual aprovado oculta pesos resolvidos; deep-quality-expanded-browser-run.mjs aplica adaptação apenas à cópia de teste e a regressão expandida passou. Não modificar produto para satisfazer a expectativa antiga.
+
+Segunda divergência de fixture: medicine-browser.mjs não preparava fn_folha_ferias_mapa_v2, hoje lida no percurso RH; o adapter sintético adiciona DTO vazio version2. A falha inicial não demonstra regressão de Medicina. Logs iniciais e finais preservados.
+
+Refs são locais, sem fetch. As8 RPCs sem referência SQL no delta antigo são um sinal de rastreabilidade, não prova de função ausente no ambiente hospedado. Backend independente pode ter sido instalado por outro pacote; confirmar catálogo/precheck num futuro escopo autorizado. Fase B e Financeiro continuam preparados e não integrados.

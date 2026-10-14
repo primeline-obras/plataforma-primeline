@@ -1,0 +1,377 @@
+▶ Avaliação diária personalizada — PostgreSQL 17.6 local
+  ✔ migration recusa ACL de função alterada após backup, sem instalação parcial (12.1718ms)
+  ✔ postcheck negativo: ACL tabela (23.4529ms)
+  ✔ postcheck negativo: ACL coluna (22.6671ms)
+  ✔ postcheck negativo: trigger disabled (28.6194ms)
+  ✔ postcheck negativo: função alterada (29.6526ms)
+  ✔ postcheck negativo: CHECK retirado (34.8495ms)
+  ✔ postcheck negativo: backup público (19.0208ms)
+  ✔ AD-15 scripts: precheck/backup/migration/postcheck/rollback/reinstall, no data change (95.5474ms)
+  ✔ AD-14 scripts local: precheck/backup/migration/postcheck/rollback/reinstall, AD-15 untouched (127.4888ms)
+  ✔ AD-13 precheck recusa legado incoerente antes da instalação, sem reparar (38.7352ms)
+  ✔ AD-13 scripts: precheck/backup/migration/postcheck/rollback/reinstall sem modificar dados (157.2151ms)
+AD13_AFTER {"sqlstate":"23514","partial_writes":false,"contract":"PASS"}
+  ✔ AD-13 ativação original inválida: preview/confirm recusados, zero efeitos parciais (30.3653ms)
+  ✔ AD-13 configuração/ativação legítima 480 minutos; replay estável (24.4901ms)
+  ✔ AD-13 configuração/ativação legítima 240 minutos; replay estável (13.8077ms)
+  ✔ migration mantém factos existentes e não ativa empresas (1.4523ms)
+  ✔ ativação explícita cria versões-base, sem factos ou avaliações (1.6141ms)
+  ✔ dias exclusivamente normais não criam avaliação diária (129.7543ms)
+  ✔ personalizado 8h regular, period NULL e expected factual NULL (61.5122ms)
+  ✔ 7h30 em jornada 8h falta 30min (53.6768ms)
+  ✔ 9h potencial HE 1h sem folha_he (50.763ms)
+  ✔ HE pendente bloqueia gate (3.225ms)
+  ✔ HE validada permanece potencial e bloqueia aguardando processamento (22.5892ms)
+  ✔ não considerar remove somente a pendência HE (24.0112ms)
+  ✔ dia misto agrega normal e personalizado uma vez (91.4568ms)
+  ✔ multiobra 4h + 1h30 + 1h30 = 7h, esperado único 8h (121.0695ms)
+  ✔ 10:30–14:30 permanece intervalo único (55.5127ms)
+  ✔ edição preserva snapshot e invalida decisão HE anterior (49.0024ms)
+  ✔ remover último personalizado desativa e reintroduzir reativa mesma referência (94.0506ms)
+  ✔ mudança de equipa posterior não recaptura referência (51.8225ms)
+  ✔ alteração de horário hoje cria versão, referência antiga permanece (103.0958ms)
+  ✔ horário futuro recusado (2.6603ms)
+  ✔ data anterior ao corte não usa horário atual (44.8788ms)
+  ✔ sem origem inequívoca fica pendente sem inventar jornada (68.163ms)
+  ✔ revisão antiga e token stale não gravam (82.591ms)
+  ✔ replay é idempotente e payload diferente recusado (53.533ms)
+  ✔ DML direto e GUC falsificado não autorizam escrita (2.2972ms)
+  ✔ duas ligações: mesma revisão, apenas uma confirmação (254.8439ms)
+  ✔ duas ligações: mesmo request/payload produz um histórico de lote (154.8153ms)
+  ✔ duas ligações: mesmo request/payload diferente é conflito (171.4444ms)
+  ✔ competência fechada recusa factos e decisão sem alteração parcial (56.0206ms)
+  ✔ referência administrativa comprovada regulariza pré-corte sem mudar factos (17.5344ms)
+  ✔ intervalo aberto fica pendente sem inventar duração final (57.5908ms)
+  ✔ limites 4 destinos/16 intervalos e sobreposição preservados (12.6202ms)
+  ✔ preview é read-only e token inclui referência candidata (19.0134ms)
+  ✔ rollback após ativação recusa destruir referência/histórico (3.7443ms)
+  ✔ retroativo usa versão vigente na data, nunca horário atual (176.0501ms)
+  ✔ Dia Normal recusa autofill sobre dia personalizado e mantém equipa (4.0541ms)
+  ✔ decisão diária exige Administrativo/Gestão; replay respeita permissão corrente (8.5826ms)
+  ✔ cliente administrativo atual configura horário e aceita revisão +1 (36.322ms)
+  ✔ configuração corrente mantém revisão cliente +1 depois de correção histórica (8.26ms)
+  ✔ replay administrativo não duplica decisão e recusa papel reduzido (18.8826ms)
+AD15_ORIGINAL_AFTER {"sqlstate":"42501","partial_writes":false,"contract":"PASS"}
+  ✔ AD-15 original: empresa 1/work empresa 2 rejected 42501 with zero partial writes (35.4268ms)
+  ✔ AD-15 HE disregard and public wrapper reject foreign work (64.7625ms)
+  ✔ AD-15 same-tenant arbitrary work also rejected; global decision has no fabricated work (33.0785ms)
+  ✔ AD-15 foreign person/evaluation/company rejected on preview and confirm (97.9838ms)
+  ✔ AD-15 other daily operations: foreign reference/work and activation arbitrary work rejected (117.7233ms)
+  ✔ AD-15 legitimate no-work decision: consistent history and true actor; pending HE preserved until decided (93.4245ms)
+  ✔ AD-15 disregard removes only HE pending; facts and other pending unchanged (17.5959ms)
+  ✔ AD-15 concurrency: same request confirms once; distinct stale decision refuses atomically (59.6773ms)
+  ✔ AD-15 replay revalidates person and source-work tenant (22.9107ms)
+  ✔ AD-15 person/source-work locks prevent tenant changes during confirm transaction (545.0205ms)
+  ✔ AD-15 RLS/direct grants/private helper and SD stay closed (20.8083ms)
+  ✔ AD-15 Gestão legitimate decision preserves administrative permissions (12.5704ms)
+  ✔ AD-15 rollback after use refuses drift without destroying history (34.6074ms)
+AD14_AFTER {"label":"regular com falta","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: regular com falta (32.297ms)
+AD14_AFTER {"label":"regular com HE pendente","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: regular com HE pendente (35.248ms)
+AD14_AFTER {"label":"snapshot JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot JSON null (30.1071ms)
+AD14_AFTER {"label":"HE validada com excedente SQL NULL","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: HE validada com excedente SQL NULL (38.7928ms)
+AD14_AFTER {"label":"snapshot SQL NULL","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot SQL NULL (30.4304ms)
+AD14_AFTER {"label":"capturada sem autor","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: capturada sem autor (31.1254ms)
+AD14_AFTER {"label":"capturada sem timestamp","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: capturada sem timestamp (34.7552ms)
+AD14_AFTER {"label":"capturada sem request","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: capturada sem request (31.7325ms)
+AD14_AFTER {"label":"carga esperada zero","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: carga esperada zero (29.9206ms)
+AD14_AFTER {"label":"carga esperada NULL capturada","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: carga esperada NULL capturada (29.8477ms)
+AD14_AFTER {"label":"modo inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: modo inválido (30.7651ms)
+AD14_AFTER {"label":"referência estado inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: referência estado inválido (31.3857ms)
+AD14_AFTER {"label":"referência origem inválida","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: referência origem inválida (30.4415ms)
+AD14_AFTER {"label":"revisão zero","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: revisão zero (32.8953ms)
+AD14_AFTER {"label":"referência revisão zero","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: referência revisão zero (33.2314ms)
+AD14_AFTER {"label":"fingerprint factual inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: fingerprint factual inválido (30.799ms)
+AD14_AFTER {"label":"diferenças com só um NULL","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: diferenças com só um NULL (40.2341ms)
+AD14_AFTER {"label":"HE decidida sem excedente positivo","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: HE decidida sem excedente positivo (30.3938ms)
+AD14_AFTER {"label":"pendência vazia","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: pendência vazia (33.6759ms)
+AD14_AFTER {"label":"snapshot boolean","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot boolean (34.3042ms)
+AD14_AFTER {"label":"snapshot array","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot array (36.2982ms)
+AD14_AFTER {"label":"snapshot vazio","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot vazio (31.6861ms)
+AD14_AFTER {"label":"snapshot expected JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot expected JSON null (29.9241ms)
+AD14_AFTER {"label":"snapshot expected textual","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot expected textual (30.0189ms)
+AD14_AFTER {"label":"snapshot sem intervals","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot sem intervals (30.9854ms)
+AD14_AFTER {"label":"snapshot intervals JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot intervals JSON null (31.112ms)
+AD14_AFTER {"label":"snapshot intervalos vazios","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot intervalos vazios (32.5257ms)
+AD14_AFTER {"label":"snapshot intervalo sem fim","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot intervalo sem fim (33.0455ms)
+AD14_AFTER {"label":"snapshot intervalo formato inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot intervalo formato inválido (30.2396ms)
+AD14_AFTER {"label":"snapshot intervalo reverso","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: snapshot intervalo reverso (31.621ms)
+AD14_AFTER {"label":"permanencia snapshot JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: permanencia snapshot JSON null (35.3258ms)
+AD14_AFTER {"label":"permanencia snapshot UUID incoerente","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: permanencia snapshot UUID incoerente (31.7088ms)
+AD14_AFTER {"label":"contexto snapshot JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: contexto snapshot JSON null (32.3259ms)
+AD14_AFTER {"label":"referencia pendente com carga","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: referencia pendente com carga (32.7533ms)
+AD14_AFTER {"label":"referencia pendente com captura","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: referencia pendente com captura (31.5754ms)
+AD14_AFTER {"label":"decisão HE sem autor","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: decisão HE sem autor (31.0996ms)
+AD14_AFTER {"label":"decisão HE sem motivo","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: decisão HE sem motivo (30.4285ms)
+AD14_AFTER {"label":"decisão HE motivo vazio","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: decisão HE motivo vazio (33.282ms)
+AD14_AFTER {"label":"decisão HE sem fingerprint","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: decisão HE sem fingerprint (30.12ms)
+AD14_AFTER {"label":"decisão HE fingerprint inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: decisão HE fingerprint inválido (29.3663ms)
+AD14_AFTER {"label":"decisão HE fingerprint bem formado mas incorreto","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: decisão HE fingerprint bem formado mas incorreto (34.4772ms)
+AD14_AFTER {"label":"nenhum HE com decisão residual","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: nenhum HE com decisão residual (29.5516ms)
+AD14_AFTER {"label":"inativa com estado regular","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: inativa com estado regular (30.8739ms)
+AD14_AFTER {"label":"ativa com estado inativa","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: ativa com estado inativa (31.494ms)
+AD14_AFTER {"label":"minutos negativos","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: minutos negativos (29.9361ms)
+AD14_AFTER {"label":"minutos acima do limite","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: minutos acima do limite (29.5226ms)
+AD14_AFTER {"label":"diferenças aritméticas incoerentes","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: diferenças aritméticas incoerentes (30.2551ms)
+AD14_AFTER {"label":"dia mensurável sem diferenças","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: dia mensurável sem diferenças (34.6768ms)
+AD14_AFTER {"label":"intervalo aberto com diferenças","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: intervalo aberto com diferenças (31.2418ms)
+AD14_AFTER {"label":"estado inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: estado inválido (29.9042ms)
+AD14_AFTER {"label":"HE estado inválido","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: HE estado inválido (31.8301ms)
+AD14_AFTER {"label":"estado horas em falta sem falta","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: estado horas em falta sem falta (33.9909ms)
+AD14_AFTER {"label":"estado potencial HE sem excedente","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: estado potencial HE sem excedente (35.8113ms)
+AD14_AFTER {"label":"falta sem pendência correspondente","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: falta sem pendência correspondente (34.6517ms)
+AD14_AFTER {"label":"pendência de referência fictícia","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: pendência de referência fictícia (35.8458ms)
+AD14_AFTER {"label":"pendência HE validada fictícia","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: pendência HE validada fictícia (32.2552ms)
+AD14_AFTER {"label":"pendência com elemento NULL","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: pendência com elemento NULL (30.9225ms)
+AD14_AFTER {"label":"pendência duplicada","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: pendência duplicada (31.5077ms)
+AD14_AFTER {"label":"revisões factuais JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: revisões factuais JSON null (31.7569ms)
+AD14_AFTER {"label":"revisão factual incompleta","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: revisão factual incompleta (32.4547ms)
+AD14_AFTER {"label":"revisão factual não positiva","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: revisão factual não positiva (32.4968ms)
+AD14_AFTER {"label":"administrativa sem evidência","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: administrativa sem evidência (31.2238ms)
+AD14_AFTER {"label":"administrativa evidência JSON null","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: administrativa evidência JSON null (31.7663ms)
+AD14_AFTER {"label":"administrativa evidência vazia","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: administrativa evidência vazia (33.0013ms)
+AD14_AFTER {"label":"administrativa sem motivo","sqlstate":"23514","contract":"PASS"}
+  ✔ AD-14 negativo: administrativa sem motivo (32.8228ms)
+  ✔ AD-14 estado não pode persistir inválido no COMMIT, mesmo sem SET CONSTRAINTS (33.0801ms)
+  ✔ AD-14 transição temporária pode terminar válida sem bypass (35.7729ms)
+  ✔ AD-14 positivos: regular, falta, pendente, aberto, inativa e referência administrativa via RPC (21.0416ms)
+  ✔ AD-14 positivos: conflito legítimo e HE não considerada regular sem pendência (36.8796ms)
+  ✔ AD-14 precheck recusa dados inválidos existentes, sem corrigir e sem perder AD-15 (15.4643ms)
+  ✔ AD-14 rollback após uso recusa sobrescrita de factos (33.8796ms)
+  ✔ AD-13 negativo: 4h declaradas 8h (35.3934ms)
+  ✔ AD-13 negativo: sobreposição (33.2476ms)
+  ✔ AD-13 negativo: horas inválidas (36.4611ms)
+  ✔ AD-13 negativo: end ausente (34.7305ms)
+  ✔ AD-13 negativo: end JSON null (33.4729ms)
+  ✔ AD-13 negativo: intervals JSON null (34.0757ms)
+  ✔ AD-13 negativo: intervals SQL field ausente (35.7807ms)
+  ✔ AD-13 negativo: snapshot JSON null (33.8378ms)
+  ✔ AD-13 negativo: snapshot array (34.2593ms)
+  ✔ AD-13 negativo: expected JSON null (35.0776ms)
+  ✔ AD-13 negativo: expected ausente (38.3862ms)
+  ✔ AD-13 negativo: expected textual (35.9688ms)
+  ✔ AD-13 negativo: expected fracionária (35.8106ms)
+  ✔ AD-13 negativo: expected zero (35.5962ms)
+  ✔ AD-13 negativo: períodos duplicados (34.3167ms)
+  ✔ AD-13 negativo: period JSON null (36.5866ms)
+  ✔ AD-13 negativo: períodos invertidos (34.0957ms)
+  ✔ AD-13 negativo: apenas um período normal (33.5879ms)
+  ✔ AD-13 negativo: mode personalizado indevido (36.0799ms)
+  ✔ AD-13 negativo: fim anterior ao início (36.2137ms)
+  ✔ AD-13 negativo: intervals vazio (35.4091ms)
+  ✔ AD-13 distingue SQL NULL e JSON null em snapshot/intervalos/carga (1.2759ms)
+  ✔ AD-13 snapshots históricos incoerentes recusados pela constraint de tabela (11.616ms)
+  ✔ AD-13 snapshot administrativo com intervalos livres coerentes continua permitido (33.7974ms)
+  ✔ AD-13 jornada formal não usa relógio/futuro dos factos laborais (9.0342ms)
+  ✔ AD-13 alteração legítima 4h versiona, mantém snapshots anteriores e referências congeladas (12.2432ms)
+  ✔ AD-13 concorrência de horário/revisão, replay e payload diferente preservados (41.0425ms)
+  ✔ AD-13 rollback após uso recusa alteração de factos (39.1601ms)
+  ✔ AD03 antes: técnico sem permanência não tem referência automática individual (2.1289ms)
+  ✔ AD03 pacote: precheck, backup, migration, postcheck, rollback e reinstalação sem dados alterados (638.9497ms)
+  ✔ AD03 modelos semanais: operacional, técnico segunda-quinta, sexta e folgas (1.9726ms)
+  ✔ AD03 validação semanal recusa JSON null, sobreposição, 4h declaradas 8h e dias ausentes (9.438ms)
+  ✔ AD03 propostas são apenas leitura e exigem confirmação do cargo (39.6504ms)
+  ✔ AD03 Administrativo atribui técnico sem permanência; Gestão atribui operacional (23.4384ms)
+  ✔ AD03 batch não sobrescreve jornada aprovada; falha integral (32.8765ms)
+  ✔ AD03 batch legítimo inclui equipa interna; preview não grava; replay estável (41.1992ms)
+  ✔ AD03 Gerência consulta mas não altera; Diretor/Adjunto/Preparador consultam próprios (21.7677ms)
+  ✔ AD03 tenant antes do replay: pessoa, empresa e work_id falsos recusados sem efeitos (41.7204ms)
+  ✔ AD03 jornada desconhecida não herda obra/escritório; registos efetivos preservados (13.795ms)
+  ✔ AD03 folga tem esperado zero conhecido, sem falta e sem HE monetária (8.3047ms)
+  ✔ AD03 concorrência/revisão em atribuição: um resultado e replay; payloads concorrentes stale (14.5115ms)
+  ✔ AD03 versão futura, registo retroativo e referência congelada (46.9189ms)
+  ✔ AD03 avaliação individual real: multiobra 2h + 6h, esperado uma única vez (101.739ms)
+  ✔ AD03 dia misto e edição de facto preservam versão e jornada habitual (194.2039ms)
+  ✔ AD03 referência desconhecida aceita trabalho, bloqueia fecho e não inventa HE/falta (55.6041ms)
+  ✔ AD03 exceção administrativa do dia preserva horas e jornada habitual (22.5808ms)
+  ✔ AD03 folga excecional conhecida e trabalho fora da jornada não criam HE paga (31.8638ms)
+  ✔ AD03 próprio Encarregado tem referência sem elegibilidade/permanência fictícia (61.5532ms)
+  ✔ AD03 captura congelada recusa referência de outra pessoa/empresa e zero não-folga (44.002ms)
+  ✔ AD03 recusa alterar vigência atravessando avaliação congelada e preview invalidado (53.1466ms)
+  ✔ AD03 atribuição inicial preserva avaliações antigas já capturadas pela equipa (99.1277ms)
+  ✔ AD03 folga sem trabalho não gera falta; remoção desativa avaliação sem inventar horas (9.5549ms)
+  ✔ AD03 Gerência não configura exceção diária e Gestão pode confirmá-la (19.3778ms)
+  ✔ AD03 captura concorrente aguarda atribuição; preview anterior fica stale sem horas parciais (204.8033ms)
+  ✔ AD03 regressão AD14 após instalação: estados impossíveis e JSON null continuam recusados (56.4046ms)
+  ✔ AD03 regressão AD15 após instalação: custos/contexto de outra empresa continuam 42501 (50.8401ms)
+  ✔ AD03 jornada individual legítima reduzida 4h aceita sem inferência por cargo (13.1683ms)
+  ✔ AD03 autor histórico inativo não impede versão futura por Gestão; ator inativo não escreve (7.3548ms)
+  ✔ AD03 DML/grants privados e rollback após utilização fail-closed (66.9238ms)
+  ✔ HR27 lifecycle local: precheck/backup/install/postcheck/rollback/reinstall, same data (509.1117ms)
+  ✔ HR27 normal processing RPC refuses paid/processed; historical marks untouched (4.0667ms)
+  ✔ HR27 pending HE still blocks monthly payroll (68.6382ms)
+  ✔ HR27 recognized HE informational: hours/expected/author/history preserved; no processing pending (23.6888ms)
+  ✔ HR27 AD15 tenant/global context remains closed (56.5822ms)
+  ✔ HR27 AD14 recognized HE still requires coherent quantity, author and decision fingerprint (20.3564ms)
+  ✔ HR27 monthly payroll validates/closes recognized HE only; reopening is explicit (108.4873ms)
+  ✔ HR27 fact edit invalidates recognized decision, keeps historical decision and frozen reference (68.6708ms)
+  ✔ HR27 rollback after operational use refuses data overwrite and keeps history (65.2392ms)
+  ✔ FALTOU lifecycle: exact precheck/private backup/install/postcheck/rollback/reinstall (403.3547ms)
+  ✔ FALTOU today neutral occurrence, no hours, permanence and author intact (172.4651ms)
+  ✔ FALTOU yesterday accepted; old/future and remuneration choice refused (32.1482ms)
+  ✔ FALTOU administrative classification: all three outcomes, motive and history; no foreman classification (113.6351ms)
+  ✔ FALTOU direct authenticated spoof/new type cannot report or classify (2.7441ms)
+  ✔ FALTOU point conflict preserves registered facts and creates no absence (72.7219ms)
+  ✔ FALTOU tenant/external/non-member/other role denied; no old writer opened (8.6757ms)
+  ✔ FALTOU two independent connections: same request one occurrence/history, idempotent response (36.7391ms)
+  ✔ FALTOU duplicate date with different requests does not duplicate occurrence (51.2487ms)
+  ✔ FALTOU rollback after use refuses history/operational data loss (6.8829ms)
+  ✔ FALTOU preview is bound to its administrative author (5.9166ms)
+  ✔ HOURS external fixture: controlled registration/save/recovery/replay, no internal payroll (32.0863ms)
+  ✔ HOURS readers lifecycle: preserve source rows, rollback/reinstall and private backup (354.142ms)
+  ✔ HOURS factual read: 9h stays 9h, scope totals exact, no HE/cost exposure (61.937ms)
+  ✔ HOURS reader invalid range/tenant/foreign supplier denied (7.4959ms)
+  ✔ HOURS external read excludes internal and legacy, no price fabricated (3.9764ms)
+  ✔ HOURS own/team context provides approved individual suggestions without edit capability (209.9896ms)
+  ✔ HOURS RH context internal only, tenant controlled, not a fictitious approval (9.8693ms)
+  ✔ HOURS authenticated read changes no facts, history or ledger (38.1915ms)
+  ✔ MONTHLY lifecycle: empty protected tables, exact precheck/private backup/postcheck/rollback/reinstall (544.8247ms)
+  ✔ MONTHLY current competence: facts can be conferred once; unknown references and current month cannot validate (99.09ms)
+  ✔ MONTHLY actor/tenant/external/global-work boundaries before any write (26.4464ms)
+  ✔ MONTHLY factual correction by authorized foreman invalidates conference, no daily approval required (124.2681ms)
+  ✔ MONTHLY return request requires reason/current record revision; acknowledgement remains administrative (106.822ms)
+  ✔ MONTHLY table/history DML and fake GUC remain closed (4.2543ms)
+  ✔ MONTHLY same request concurrently: one confirmation/history; different payload rejected (44.4576ms)
+  ✔ MONTHLY historical positive fixture: facts and daily references proven explicitly, never inferred from current schedule (2130.4046ms)
+  ✔ MONTHLY rollback after use refuses to destroy conferences or history (6.4201ms)
+  ✔ MONTHLY preview cannot be confirmed by a different authorized actor (30.1425ms)
+  ✔ DESTINATION lifecycle precheck/backup/install/postcheck/rollback/reinstall, data intact (897.0436ms)
+  ✔ DESTINATION receiving foreman records custom interval, preserves origin team and inaccessible facts (151.9605ms)
+  ✔ DESTINATION hidden other work overlap and wrong tenant/work/person refused (14.3592ms)
+  ✔ DESTINATION normal individual 5h morning uses daily legitimate 8h once, no artificial HE (107.3345ms)
+  ✔ DESTINATION two connections same request exactly one history, payload conflict refused (58.1165ms)
+  ✔ DESTINATION existing point revision and daily change stale without partial write (147.216ms)
+  ✔ DESTINATION neutral absence blocks hours; direct/helper/GUC writes remain closed (24.6155ms)
+  ✔ NORMAL BATCH internal and external atomic, preserves existing facts, one request replay (98.2813ms)
+  ✔ NORMAL BATCH failing person rolls back all; source scope never used to transfer team (22.4536ms)
+  ✔ EXTERNAL MONTH lifecycle and private metadata/column ACL gate (523.5317ms)
+  ✔ EXTERNAL MONTH Diretor confirms actual revision before Excel; admin/foreman cannot approve (41.7343ms)
+  ✔ EXTERNAL MONTH provider/tenant/work scope and direct fake GUC denied (3.5535ms)
+  ✔ EXTERNAL MONTH correction by authorized Diretor requires motive/revision/history, invalidates Excel (23.1156ms)
+  ✔ EXTERNAL MONTH reconfirmation two connections one immutable revision, old approval intact (18.0268ms)
+  ✔ EXTERNAL MONTH rollback after confirmation refuses immutable history loss (8.35ms)
+  ✔ EXTERNAL MONTH read context exposes current revision and immutable history without requiring fresh confirmation (7.2704ms)
+  ✔ REFERENCES lifecycle: private backup/full migration/postcheck/rollback/reinstall with no fact changes (1114.6966ms)
+  ✔ REFERENCES closed work warranty preserves original and factual 10:30–14:30, no Office row/team change (107.9638ms)
+  ✔ REFERENCES mixed work/reference global hours and overlap; Faltou/Dia Normal conflicts, no fake zero cost (111.3151ms)
+  ✔ REFERENCES admin associates closed work explicitly with history, original clock/reference untouched (25.3386ms)
+  ✔ REFERENCES original identity immutable, cross-tenant refused, direct/fake GUC blocked (10.3669ms)
+  ✔ REFERENCES concurrent same request only one revision/history, changes stale across day (38.9528ms)
+  ✔ REFERENCES external free reference prevents Excel until explicit association and new Director revision (49.5873ms)
+  ✔ REFERENCES rollback after factual use refuses history/source loss (13.802ms)
+  ✔ REFERENCES old V2 writer cannot bypass cross-reference overlap; whole transaction rolls back (84.9958ms)
+  ✔ COST/MAP lifecycle has no tariff, no financial posting, exact private backup/rollback/reinstall (1039.0716ms)
+  ✔ COST/MAP without proven tariff is pending/null, never worker valor_hora inferred (23.7871ms)
+  ✔ COST/MAP only RH admin approves with explicit evidence/date; concurrent one version/history (46.6398ms)
+  ✔ COST/MAP HR31 9h across works remain factual, whole worker/day pending despite approved tariff, no HE cost (197.733ms)
+  ✔ COST/MAP approved month is consolidated once; externals hours only; existing material/labour ledger untouched (33.403ms)
+  ✔ COST/MAP version range preserves old approved price, no direct/GUC write (13.9864ms)
+  ✔ COST RH reader supplies latest revision including future version; scope and role remain controlled (7.8838ms)
+  ✔ INTEGRATED PLAN lifecycle and exact helper closure before use (938.5906ms)
+  ✔ INTEGRATED PLAN three destinations/four factual intervals =7h, one atomic operation, one daily expected8h (138.5498ms)
+  ✔ INTEGRATED PLAN moving intervals between works validates final day, no transient overlap failure (94.0281ms)
+  ✔ INTEGRATED PLAN unauthorized target/stale revision fails before any partial save (32.8263ms)
+  ✔ INTEGRATED PLAN two connections same request confirm once; modified payload conflicts (95.9017ms)
+  ✔ INTEGRATED PLAN hidden destination and reference overlap remains blocking; Gerência cannot write (7.9949ms)
+  ✔ OPERATIONAL READERS lifecycle is read-only and scoped (990.9718ms)
+  ✔ OPERATIONAL READERS preserve authorized whole-day facts, source reference read-only, hidden works withheld (15.961ms)
+  ✔ OPERATIONAL READERS works include closed warranty choice by UUID, other tenant rejected (9.874ms)
+  ✔ OPERATIONAL READERS SELECTs run in strict read-only transaction, no modal-write requirement (6.1315ms)
+  ✔ OPERATIONAL POSTCHECK detects legitimate later ledger drift and rollback isolates next read (259.9011ms)
+  ✔ RH correction request accepts a reference id/revision with same tenant/person/month proof (53.2563ms)
+  ✔ TEAM context returns scoped people/references in one read call and no duplicate identities (403.8798ms)
+  ✔ EXTERNAL historical inactive identity stays readable and Diretor corrects only existing slot with motive (33.9872ms)
+  ✔ DESTINATION actor deactivated concurrently is reread after lock, no fact/history write (7.4003ms)
+  ✔ DESTINATION concurrent tenant change rejects old company hint after actor lock (22.8246ms)
+  ✔ TEAM destination facts remain discoverable without changing principal permanence, strict read-only (89.1565ms)
+  ✔ ADMIN metadata proves capabilities and tenant work scope for Admin/Gestao/Gerencia/Director/Adjunto/Preparador (16.7322ms)
+  ✔ FALTOU map uses original UUID, work/actor provenance and classification; monthly history reads actual sources (72.5508ms)
+  ✔ ADMIN scoped metadata for Adjunto/Preparador and no remuneration; foreign work rejected (22.4965ms)
+  ✔ Prepared reference context capability and actual protected history, no write from opening (6.4607ms)
+  ✔ HR29 aggregated operational costs Admin/Gestao/Gerencia/Director/Adjunto/Preparador, confidential tariff remains denied (70.6062ms)
+  ✔ HR29 ACL and strict read-only: no private helpers, DML, anonymous or cross-tenant access (13.1358ms)
+  ✔ HR29 technical roles cannot approve tariff or read another worker confidential ledger (13.1713ms)
+  ✔ HR29 known subtotal is informative; HR31 unresolved day remains NULL in aggregate, no individual attribution (20.2561ms)
+  ✔ RH future versions cannot overlap or be inserted before latest future start; leaf facts unchanged (10.1519ms)
+  ✔ HR29 private helper ACL drift is rejected by postcheck and attack rollback restores privacy (15.6913ms)
+  ✔ revoked POINT_SAVE / encarregado (61.879ms)
+  ✔ revoked TEAM_MOVE / encarregado (63.2158ms)
+  ✔ revoked ABSENCE_REPORT / encarregado (65.994ms)
+  ✔ revoked AGG_READ / diretor_obra (61.3256ms)
+  ✔ revoked AGG_READ / adjunto (63.2597ms)
+  ✔ revoked AGG_READ / preparador (63.2982ms)
+  ✔ revoked TASK_REPORT / encarregado (62.5341ms)
+  ✔ revoked TASK_CONFIRM / diretor_obra (94.2116ms)
+  ✔ revoked TASK_CONFIRM / adjunto (70.8448ms)
+✔ Avaliação diária personalizada — PostgreSQL 17.6 local (35005.235ms)
+ℹ tests 301
+ℹ suites 0
+ℹ pass 301
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35117.4083

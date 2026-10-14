@@ -1,0 +1,25 @@
+✔ normaliza sociedades e sugere fornecedores existentes sem criar duplicados (2.1306ms)
+✔ interpreta valores portugueses e preserva total oficial e condições (4.4672ms)
+✔ melhor preço ignora alternativas, exclusões e linhas marcadas não comparáveis (0.5836ms)
+✔ migração autoriza cadastro controlado e importação atómica com evidência (2.0527ms)
+✔ interface liga à lista de subempreiteiros e usa o arquivo documental da obra (7.2876ms)
+Fluxo de entrada e comparação de subempreitadas validado.
+✔ tests\mapa-comparativo.test.mjs (117.9721ms)
+✔ logout quarantines synchronously before a slow remote logout finishes (41.89ms)
+✔ old REST response cannot populate a new identity, including a delayed body (6.981ms)
+✔ late refresh cannot restore A after login B or clear B on failure (5.5312ms)
+✔ identity replacement is detected, but token renewal of the same user is not a reset (2.7404ms)
+✔ new login resets before credentials are sent and prevents an older concurrent login winning (5.1181ms)
+✔ 401 without refresh credentials clears the protected session; 403 does not log out (5.7627ms)
+✔ a delayed private Storage download cannot be returned to the next session (2.1497ms)
+✔ sessões autenticadas ficam isoladas por separador e sobrevivem ao refresh (41.4107ms)
+Subcontractor specialties tests passed.
+✔ tests\subcontractor-specialties.test.mjs (111.5982ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 223.4111

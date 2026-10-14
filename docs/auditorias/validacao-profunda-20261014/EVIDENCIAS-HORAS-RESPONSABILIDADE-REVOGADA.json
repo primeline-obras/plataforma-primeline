@@ -1,0 +1,150 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "POINT_SAVE",
+      "profile": "encarregado",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: responsabilidade"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "TEAM_MOVE",
+      "profile": "encarregado",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: responsabilidade"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "ABSENCE_REPORT",
+      "profile": "encarregado",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: responsabilidade"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "AGG_READ",
+      "profile": "diretor_obra",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: custo operacional"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "AGG_READ",
+      "profile": "adjunto",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: custo operacional"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "AGG_READ",
+      "profile": "preparador",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: custo operacional"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "TASK_REPORT",
+      "profile": "encarregado",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: responsabilidade"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "TASK_CONFIRM",
+      "profile": "diretor_obra",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: responsabilidade"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    },
+    {
+      "action": "TASK_CONFIRM",
+      "profile": "adjunto",
+      "variant": "responsibility_revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: responsabilidade"
+      },
+      "result": "PASS",
+      "preview_no_write": null,
+      "replay": null,
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local",
+      "limit": "Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada"
+    }
+  ]
+}

@@ -23,3 +23,7 @@ Regressão existente medicina-trabalho.test.mjs:37 contagens Node PASS,0 FAIL,0 
 ALERTAS-PRODUTORES-RASTREABILIDADE.csv inventaria definições com INSERT/UPDATE/DELETE em alertas, incluindo versões históricas e rollback. Tokens de tenant/deduplicação não equivalem a validação de segurança. ALERTAS-AGENDAMENTOS-LEXICAIS.json localiza agendamentos preparados; não prova jobs instalados/ativos.
 
 Canal email: bloco_09_alertas_prioridade_email.sql define apenas enviar_email para pedido_semanal_horas/informacao_reuniao_semanal/informacao_reuniao_producao. Não configura SMTP. O N-ADM-11 anterior permanece; não contar sinalização como entrega. O produtor corrente de Medicina está em medicina_trabalho_controlada.sql; scripts antigos de primeira consulta podem conter seleção da primeira empresa e não devem ser reaplicados por esta auditoria.
+
+## Extensão do mesmo P1 tenant
+
+DEEP-SEC-02 abrange também Administrativo/Financeiro. Corroboração com alerta financeiro geral da empresa1, sem destinatário individual, todos os campos obrigatórios preenchidos e NOT NULL efetivamente impostos na fixture. Quatro atores da empresa2 conseguem resolver/receber a linha completa. Prova EVIDENCIAS-ALERTAS-OUTRA-EMPRESA-SEM-DESTINATARIO.json na pasta validacao-profunda. Não é novo ID/cause adicional; a matriz agora tem6 chaves FAIL (RNC2 + Alertas4). Sem prova de ocorrência em produção.

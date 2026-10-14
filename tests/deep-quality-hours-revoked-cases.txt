@@ -1,0 +1,34 @@
+
+ {
+ const deepFs=await import('node:fs');const deepProofs=[];const deepPath='docs/auditorias/validacao-profunda-20261014/EVIDENCIAS-HORAS-RESPONSABILIDADE-REVOGADA.json';
+ const deepRoles=[[12,'gestao_plataforma'],[11,'gerencia'],[10,'administrativo'],[98990,'financeiro'],[14,'diretor_obra'],[15,'adjunto'],[16,'preparador'],[13,'encarregado']];
+ await q("INSERT INTO utilizadores(id,empresa_id,nome,funcao,ativo,email) VALUES($1,$2,'Financeiro sintÃ©tico','financeiro',true,'deep-fin@example.invalid')",[id(98990),id(1)]);
+ const deepSnapshot=async()=>{const o={};for(const table of ['folha_registos','ausencias','folha_historico','quadro_equipa_permanencias','folha_custos_hora_versoes','folha_conferencias_mensais','folha_tarefas_reportes','alertas'])o[table]=(await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text) v FROM '+table+' x')).rows[0].v;return JSON.stringify(o)};
+ const deepActions=[['POINT_SAVE',[10,12,13]],['TEAM_MOVE',[10,12,13]],['ABSENCE_REPORT',[13]],['ABSENCE_CLASSIFY',[10,12]],['MONTHLY',[10,12]],['RATE_APPROVE',[10,12]],['AGG_READ',[10,11,12,14,15,16]],['TASK_REPORT',[12,13]],['TASK_CONFIRM',[12,14,15]]];
+ await q("UPDATE obras SET situacao='em_curso' WHERE id=$1",[id(101)]);
+ let deepPerson=99000;
+ for(const [action,allowed]of deepActions)for(const [actor,profile]of deepRoles.filter(([actor])=>allowed.includes(actor)&&((['POINT_SAVE','TEAM_MOVE','ABSENCE_REPORT','TASK_REPORT'].includes(action)&&actor===13)||(action==='AGG_READ'&&[14,15,16].includes(actor))||(action==='TASK_CONFIRM'&&[14,15].includes(actor))))){await t.test('revoked '+action+' / '+profile,async()=>{
+  const n=deepPerson++;await faltouWorker(n);let body,invoke,check,expectChange=action!=='AGG_READ';
+  if(action==='POINT_SAVE'){body=await planBody(n,[site(100,0,[custom('08:00','12:00'),custom('13:00','17:00')])]);invoke=(confirm=false,token=null)=>planCall(actor,body,confirm,token);check=async()=>assert.equal(Number((await q('SELECT minutes FROM folha_registos WHERE colaborador_id=$1',[id(n)])).rows[0].minutes),480)}
+  if(action==='TEAM_MOVE'){body={version:2,request_id:id(seq++),work_id:id(101),date:today,people:[member(n,1,100)]};invoke=(confirm=false,token=null)=>call(a,actor,'fn_equipa_operar_v2',['team_transfer',body,confirm,token]);check=async()=>assert.ok((await q('SELECT 1 FROM quadro_equipa_permanencias WHERE colaborador_id=$1 AND obra_id=$2 AND fim IS NULL',[id(n),id(101)])).rowCount)}
+  if(action==='ABSENCE_REPORT'){body=fbody(n);invoke=(confirm=false,token=null)=>fcall(actor,'absence_report',body,confirm,token);check=async()=>assert.equal((await q('SELECT tipo FROM ausencias WHERE colaborador_id=$1',[id(n)])).rows[0].tipo,'falta_reportada_pendente')}
+  if(action==='ABSENCE_CLASSIFY'){const r=await freport(fbody(n));body={version:2,request_id:id(seq++),id:r.absence.id,expected_type:r.absence.tipo,expected_state:r.absence.estado,classification:'falta_justificada_sem_remuneracao',reason:'DocumentaÃ§Ã£o exclusivamente sintÃ©tica'};invoke=(confirm=false,token=null)=>fcall(actor,'absence_classify',body,confirm,token);check=async()=>assert.equal((await q('SELECT tipo FROM ausencias WHERE id=$1',[r.absence.id])).rows[0].tipo,body.classification)}
+  if(action==='MONTHLY'){body=await monthBody(n,today.slice(0,7)+'-01');invoke=(confirm=false,token=null)=>monthCall(actor,'conferir',body,confirm,token);check=async()=>assert.equal((await monthRow(n,body.month)).estado,'conferida')}
+  if(action==='RATE_APPROVE'){body=rateBody(n,0,19);invoke=(confirm=false,token=null)=>rateCall(actor,body,confirm,token);check=async()=>assert.equal((await q('SELECT count(*)::int n FROM folha_custos_hora_versoes WHERE colaborador_id=$1',[id(n)])).rows[0].n,1)}
+  if(action==='AGG_READ'){invoke=()=>as(a,actor,'SELECT fn_folha_custos_operacionais_contexto_v3($1::uuid,$2::date) v',[id(100),today.slice(0,7)+'-01']);check=async()=>{}}
+  if(action==='TASK_REPORT'||action==='TASK_CONFIRM'){
+   await q("INSERT INTO planeamento_itens(id,fase_id,estado) VALUES($1,$2,'em_execucao')",[id(n),id(500)]);
+   const taskBody=()=>({version:2,request_id:id(seq++),expected_revision:action==='TASK_CONFIRM'?1:0,task_id:id(n),work_id:id(100)});
+   if(action==='TASK_CONFIRM'){const report={...taskBody(),expected_revision:0};const p=await call(a,13,'fn_folha_gestao_v2',['task_report',report,false,null]);await call(a,13,'fn_folha_gestao_v2',['task_report',report,true,p.versao]);await q("SELECT set_config('test.actor','',false)");await q("UPDATE planeamento_itens SET estado='concluido' WHERE id=$1",[id(n)]);}
+   body=taskBody();invoke=(confirm=false,token=null)=>call(a,actor,'fn_folha_gestao_v2',[action==='TASK_REPORT'?'task_report':'task_confirm',body,confirm,token]);check=async()=>assert.equal((await q('SELECT estado FROM folha_tarefas_reportes WHERE tarefa_id=$1',[id(n)])).rows[0].estado,action==='TASK_CONFIRM'?'confirmed':'reported');
+  }
+  const savedScope=(await q("SELECT coalesce(jsonb_agg(to_jsonb(r)),'[]') v FROM obra_responsaveis r WHERE utilizador_id=$1",[id(actor)])).rows[0].v;assert.ok(savedScope.length);await q('DELETE FROM obra_responsaveis WHERE utilizador_id=$1',[id(actor)]);
+  const before=await deepSnapshot();let error,result,previewStable=null,replayed=null;try{const p=await invoke();previewStable=(await deepSnapshot())===before;if(expectChange){result=await invoke(true,p.versao);await check();const committed=await deepSnapshot();const repeated=await invoke(true,p.versao);replayed=JSON.stringify(repeated)===JSON.stringify(result)&&(await deepSnapshot())===committed}else{result=p;await check()}}catch(e){error={code:e.code||'ASSERT',message:e.message}}
+  const after=await deepSnapshot(),expectedAllowed=false;let status;
+  if(error&&!['42501'].includes(error.code))status='BLOQUEADO';else status=expectedAllowed?(!error&&previewStable&&(!expectChange||before!==after&&replayed)?'PASS':'FAIL'):(!!error&&before===after?'PASS':'FAIL');
+  deepProofs.push({action,profile,variant:'responsibility_revoked',expected:expectedAllowed?'PERMITIR':'RECUSAR',observed:error||{committed:result?.committed,scope:result?.scope},result:status,preview_no_write:previewStable,replay:replayed,no_write_on_denial:expectedAllowed?null:before===after,environment:'PostgreSQL nativo; migrations reais cumulativas AD15/14/13/03 e HR27â€“31; identidade sintÃ©tica local',limit:'Cadastro/RH semeado; nÃ£o autenticaÃ§Ã£o hospedada'});
+  deepFs.writeFileSync(deepPath,JSON.stringify({synthetic_only:true,production_access:false,proofs:deepProofs},null,2)+'\n');
+  await q('INSERT INTO obra_responsaveis SELECT * FROM jsonb_populate_recordset(NULL::obra_responsaveis,$1::jsonb)',[JSON.stringify(savedScope)]);
+  assert.ok(status==='PASS'||status==='BLOQUEADO',JSON.stringify(deepProofs.at(-1)));
+ })}
+ }

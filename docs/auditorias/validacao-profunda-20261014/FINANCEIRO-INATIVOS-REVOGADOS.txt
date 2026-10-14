@@ -1,0 +1,40 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (39.292ms)
+  ✔ drift de coluna/policy/grant/definer aborta (114.1051ms)
+  ✔ migration sem backup privado recusa (43.782ms)
+  ✔ second inactive CUSTOMER_RECEIVE / gestao_plataforma (12.2269ms)
+  ✔ second inactive CUSTOMER_RECEIVE / gerencia (8.2871ms)
+  ✔ second inactive CUSTOMER_RECEIVE / administrativo (10.0193ms)
+  ✔ second inactive CUSTOMER_RECEIVE / financeiro (6.0477ms)
+  ✔ second inactive CUSTOMER_RECEIVE / diretor_obra (8.8458ms)
+  ✔ second inactive CUSTOMER_RECEIVE / adjunto (7.6923ms)
+  ✔ second inactive CUSTOMER_RECEIVE / preparador (8.7583ms)
+  ✔ second inactive CUSTOMER_RECEIVE / encarregado (6.4403ms)
+  ✔ second inactive PARTIAL_RPC / gestao_plataforma (8.1253ms)
+  ✔ second inactive PARTIAL_RPC / gerencia (7.3915ms)
+  ✔ second inactive PARTIAL_RPC / administrativo (8.7136ms)
+  ✔ second inactive PARTIAL_RPC / financeiro (7.3484ms)
+  ✔ second inactive PARTIAL_RPC / diretor_obra (6.5115ms)
+  ✔ second inactive PARTIAL_RPC / adjunto (5.1246ms)
+  ✔ second inactive PARTIAL_RPC / preparador (6.1902ms)
+  ✔ second inactive PARTIAL_RPC / encarregado (9.457ms)
+  ✔ second inactive CUSTOMER_DECIDE / gestao_plataforma (6.0614ms)
+  ✔ second inactive CUSTOMER_DECIDE / gerencia (9.1682ms)
+  ✔ second inactive CUSTOMER_DECIDE / administrativo (6.3541ms)
+  ✔ second inactive CUSTOMER_DECIDE / financeiro (7.1621ms)
+  ✔ second inactive CUSTOMER_DECIDE / diretor_obra (5.7946ms)
+  ✔ second inactive CUSTOMER_DECIDE / adjunto (4.7191ms)
+  ✔ second inactive CUSTOMER_DECIDE / preparador (5.7905ms)
+  ✔ second inactive CUSTOMER_DECIDE / encarregado (5.6207ms)
+  ✔ second revoked CUSTOMER_DECIDE / diretor_obra (7.8785ms)
+  ✔ second revoked CUSTOMER_DECIDE / adjunto (9.0204ms)
+  ✔ second revoked CUSTOMER_DECIDE / preparador (8.8277ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11760.4388ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11930.6546

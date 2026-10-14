@@ -1,0 +1,87 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (40.4596ms)
+  ✔ drift de coluna/policy/grant/definer aborta (121.1157ms)
+  ✔ migration sem backup privado recusa (43.8029ms)
+  ✖ foreign ALERT_RESOLVE / gestao_plataforma (168.9738ms)
+  ✖ foreign ALERT_RESOLVE / gerencia (119.2707ms)
+  ✖ foreign ALERT_RESOLVE / administrativo (82.3232ms)
+  ✖ foreign ALERT_RESOLVE / financeiro (91.0738ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11729.0661ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 3
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11897.9577
+
+✖ failing tests:
+
+test at tests\deep-quality-alert-tenant-corroboration.test.mjs:110:232
+✖ foreign ALERT_RESOLVE / gestao_plataforma (168.9738ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"gestao_plataforma","variant":"foreign","expected":"RECUSAR","observed":{"v":{"id":"00000000-0000-4000-8000-000000009880","tipo":"pedido_semanal_horas","estado":"resolvido","titulo":"Alerta financeiro sintético","obra_id":"00000000-0000-4000-8000-000000000120","criado_em":"2026-10-15T00:10:28.076108+01:00","descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000001","entidade_id":null,"recorrencia":null,"data_gatilho":"2026-10-15","enviar_email":false,"resolvido_em":"2026-10-15T00:10:28.076108+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000330012","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"financeiro","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null}},"result":"FAIL","no_write_on_denial":false,"environment":"PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada","limit":"Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:124:494)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:110:224)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'FAIL',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-alert-tenant-corroboration.test.mjs:110:232
+✖ foreign ALERT_RESOLVE / gerencia (119.2707ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"gerencia","variant":"foreign","expected":"RECUSAR","observed":{"v":{"id":"00000000-0000-4000-8000-000000009880","tipo":"pedido_semanal_horas","estado":"resolvido","titulo":"Alerta financeiro sintético","obra_id":"00000000-0000-4000-8000-000000000120","criado_em":"2026-10-15T00:10:28.245062+01:00","descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000001","entidade_id":null,"recorrencia":null,"data_gatilho":"2026-10-15","enviar_email":false,"resolvido_em":"2026-10-15T00:10:28.245062+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000330013","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"financeiro","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null}},"result":"FAIL","no_write_on_denial":false,"environment":"PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada","limit":"Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:124:494)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:110:224)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'FAIL',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-alert-tenant-corroboration.test.mjs:110:232
+✖ foreign ALERT_RESOLVE / administrativo (82.3232ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"administrativo","variant":"foreign","expected":"RECUSAR","observed":{"v":{"id":"00000000-0000-4000-8000-000000009880","tipo":"pedido_semanal_horas","estado":"resolvido","titulo":"Alerta financeiro sintético","obra_id":"00000000-0000-4000-8000-000000000120","criado_em":"2026-10-15T00:10:28.364498+01:00","descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000001","entidade_id":null,"recorrencia":null,"data_gatilho":"2026-10-15","enviar_email":false,"resolvido_em":"2026-10-15T00:10:28.364498+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000330011","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"financeiro","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null}},"result":"FAIL","no_write_on_denial":false,"environment":"PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada","limit":"Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:124:494)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:110:224)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'FAIL',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-alert-tenant-corroboration.test.mjs:110:232
+✖ foreign ALERT_RESOLVE / financeiro (91.0738ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"financeiro","variant":"foreign","expected":"RECUSAR","observed":{"v":{"id":"00000000-0000-4000-8000-000000009880","tipo":"pedido_semanal_horas","estado":"resolvido","titulo":"Alerta financeiro sintético","obra_id":"00000000-0000-4000-8000-000000000120","criado_em":"2026-10-15T00:10:28.447419+01:00","descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000001","entidade_id":null,"recorrencia":null,"data_gatilho":"2026-10-15","enviar_email":false,"resolvido_em":"2026-10-15T00:10:28.447419+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000330017","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"financeiro","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null}},"result":"FAIL","no_write_on_denial":false,"environment":"PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada","limit":"Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:124:494)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-tenant-corroboration.test.mjs:110:224)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'FAIL',
+    expected: 'FAIL',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }

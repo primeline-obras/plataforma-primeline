@@ -1,0 +1,93 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (39.291ms)
+  ✔ drift de coluna/policy/grant/definer aborta (113.6229ms)
+  ✔ migration sem backup privado recusa (39.9669ms)
+  ✔ second inactive CUSTOMER_RECEIVE / gestao_plataforma (15.3684ms)
+  ✔ second inactive CUSTOMER_RECEIVE / gerencia (10.251ms)
+  ✔ second inactive CUSTOMER_RECEIVE / administrativo (5.7896ms)
+  ✔ second inactive CUSTOMER_RECEIVE / financeiro (9.4697ms)
+  ✔ second inactive CUSTOMER_RECEIVE / diretor_obra (6.5553ms)
+  ✔ second inactive CUSTOMER_RECEIVE / adjunto (7.7777ms)
+  ✔ second inactive CUSTOMER_RECEIVE / preparador (5.4753ms)
+  ✔ second inactive CUSTOMER_RECEIVE / encarregado (8.8233ms)
+  ✔ second inactive PARTIAL_RPC / gestao_plataforma (5.9516ms)
+  ✔ second inactive PARTIAL_RPC / gerencia (7.6226ms)
+  ✔ second inactive PARTIAL_RPC / administrativo (7.8618ms)
+  ✔ second inactive PARTIAL_RPC / financeiro (9.9851ms)
+  ✔ second inactive PARTIAL_RPC / diretor_obra (6.6343ms)
+  ✔ second inactive PARTIAL_RPC / adjunto (7.4263ms)
+  ✔ second inactive PARTIAL_RPC / preparador (6.4458ms)
+  ✔ second inactive PARTIAL_RPC / encarregado (6.7302ms)
+  ✔ second inactive CUSTOMER_DECIDE / gestao_plataforma (8.1623ms)
+  ✔ second inactive CUSTOMER_DECIDE / gerencia (6.8442ms)
+  ✔ second inactive CUSTOMER_DECIDE / administrativo (6.8131ms)
+  ✔ second inactive CUSTOMER_DECIDE / financeiro (5.8018ms)
+  ✔ second inactive CUSTOMER_DECIDE / diretor_obra (5.4034ms)
+  ✔ second inactive CUSTOMER_DECIDE / adjunto (7.1367ms)
+  ✔ second inactive CUSTOMER_DECIDE / preparador (5.6881ms)
+  ✔ second inactive CUSTOMER_DECIDE / encarregado (5.6094ms)
+  ✖ second revoked CUSTOMER_DECIDE / diretor_obra (8.634ms)
+  ✖ second revoked CUSTOMER_DECIDE / adjunto (8.5975ms)
+  ✖ second revoked CUSTOMER_DECIDE / preparador (9.0862ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11262.8965ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 27
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11431.8598
+
+✖ failing tests:
+
+test at tests\deep-quality-finance-inactive.test.mjs:113:200
+✖ second revoked CUSTOMER_DECIDE / diretor_obra (8.634ms)
+  AssertionError [ERR_ASSERTION]: {"action":"CUSTOMER_DECIDE","profile":"diretor_obra","variant":"revoked","expected":"RECUSAR","observed":{"code":"P0001","message":"Sem permissão para decidir esta fatura."},"unchanged":true,"result":"FAIL","environment":"PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o","limit":"Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-finance-inactive.test.mjs:122:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-finance-inactive.test.mjs:113:192)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-finance-inactive.test.mjs:113:200
+✖ second revoked CUSTOMER_DECIDE / adjunto (8.5975ms)
+  AssertionError [ERR_ASSERTION]: {"action":"CUSTOMER_DECIDE","profile":"adjunto","variant":"revoked","expected":"RECUSAR","observed":{"code":"P0001","message":"Sem permissão para decidir esta fatura."},"unchanged":true,"result":"FAIL","environment":"PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o","limit":"Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-finance-inactive.test.mjs:122:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-finance-inactive.test.mjs:113:192)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-finance-inactive.test.mjs:113:200
+✖ second revoked CUSTOMER_DECIDE / preparador (9.0862ms)
+  AssertionError [ERR_ASSERTION]: {"action":"CUSTOMER_DECIDE","profile":"preparador","variant":"revoked","expected":"RECUSAR","observed":{"code":"P0001","message":"Sem permissão para decidir esta fatura."},"unchanged":true,"result":"FAIL","environment":"PostgreSQL nativo; funÃ§Ãµes/RLS/ACL capturados + migration real; sem stubs de autorizaÃ§Ã£o","limit":"Snapshot estrutural histÃ³rico; constraints/FKs operacionais nÃ£o reconstruÃ­dos integralmente; chamada revertida apÃ³s verificar persistÃªncia intratransaÃ§Ã£o"}
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-finance-inactive.test.mjs:122:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-finance-inactive.test.mjs:113:192)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

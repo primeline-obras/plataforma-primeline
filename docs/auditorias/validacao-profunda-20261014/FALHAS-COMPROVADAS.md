@@ -2,7 +2,7 @@
 
 ## Isolamento
 
-DEEP-SEC-01: fn_criar_rnc aceita alvo de outra empresa para Gestão/Gerência na montagem local. DEEP-SEC-02: fn_resolver_alerta resolve alerta de outra empresa para os mesmos perfis. Quatro pares FAIL, duas causas/contratos a corrigir. Provas: EVIDENCIAS-ESCOPO-RESTANTES.json e RESULTADO-ESCOPO-RESTANTES.txt. O teste de recusa falha efetivamente; a reprodução não é contabilizada como segurança aprovada.
+DEEP-SEC-01: fn_criar_rnc aceita alvo de outra empresa para Gestão/Gerência na montagem local. DEEP-SEC-02: fn_resolver_alerta resolve alerta de outra empresa para Gestão/Gerência e, na expansão, Administrativo/Financeiro. Seis pares FAIL, duas causas/contratos a corrigir. Provas: EVIDENCIAS-ESCOPO-RESTANTES.json, EVIDENCIAS-RESTANTES-OUTRA-EMPRESA.json e EVIDENCIAS-ALERTAS-OUTRA-EMPRESA-SEM-DESTINATARIO.json. Esta última usa alerta com todos os campos obrigatórios NOT NULL e sem destinatário individual, validando os quatro perfis. O teste de recusa falha efetivamente; a reprodução não é contabilizada como segurança aprovada.
 
 A fixture usa funções reais capturadas, hotfix consolidado e guarda documental posterior de Viaturas. Não reconstrói todos os triggers/constraints do sistema nem confirma o catálogo hospedado. Os achados são locais e devem orientar correção/revisão, sem alegar exploração em produção. Viaturas recusou ambos os atores estrangeiros com o wrapper atual.
 
