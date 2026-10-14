@@ -1,3 +1,4 @@
+import{installCurrentVehicle}from'./deep-current-documental.mjs';
 import {authorizationCases} from './financeiro-regression-cases.mjs';
 import {financialCases} from './financeiro-cross-tenant-cases.mjs';
 import {economicWriterCases} from './writers-economicos-cases.mjs';
@@ -101,7 +102,7 @@ test('PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o',{time
   const asRole=async(n,sql,params=[])=>{await q('BEGIN');try{await q("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(n)]);await q('SET LOCAL ROLE authenticated');return await q(sql,params);}finally{await q('ROLLBACK');}};
 
 
-  await q(scripts.migration);await q(scripts.postcheck);const fs=await import('node:fs'),proofs=[];
+  await q(scripts.migration);await q(scripts.postcheck);await installCurrentVehicle(q);const fs=await import('node:fs'),proofs=[];
   const roles=[[12,'gestao_plataforma'],[13,'gerencia'],[11,'administrativo'],[17,'financeiro'],[14,'diretor_obra'],[15,'adjunto'],[16,'preparador'],[10,'encarregado']];
   const actions=[['CUSTOMER_CREATE',[12,13,14,15,16]],['MEDICINE',[12,13,11,10]],['VEHICLE',[12,13,11]],['CONSULT_CREATE',[12,13,14,15,16]],['COMPARATIVE_DELETE',[12,13,14,15,16]],['ALERT_RESOLVE',[12,13,11,17,14,15,16]],['RNC_CREATE',[12,13,14,15,16,10]]];
   const state=async()=>{const result={};for(const table of fixture.catalog.tables.filter(x=>x.kind==='r'))result[table.name]=(await q('SELECT jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text) v FROM public.'+qi(table.name)+' t')).rows[0].v;return JSON.stringify(result)};
@@ -117,7 +118,7 @@ test('PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o',{time
     const before=await state();await q('SAVEPOINT operation');await q("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(actor)]);await q('SET LOCAL ROLE authenticated');let r,error;
     try{r=await q(sql,params);await q('RESET ROLE');await check(r)}catch(e){error={code:e.code||'ASSERT',message:e.message};await q('ROLLBACK TO SAVEPOINT operation')}
     const after=await state(),unchanged=before===after,expect=allowed.includes(actor),authError=error&&(error.code==='42501'||error.code==='P0001'&&/permiss|FORBIDDEN/i.test(error.message));const result=error&&!authError?'BLOQUEADO':expect?(!error&&(action==='MEDICINE'?unchanged:!unchanged)?'PASS':'FAIL'):(authError&&unchanged?'PASS':'FAIL');
-    proofs.push({action,profile,expected:expect?'PERMITIR':'RECUSAR',observed:error||r.rows[0],result,no_write_on_denial:expect?null:unchanged,environment:'PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada',limit:action==='CUSTOMER_CREATE'?'INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada':'Gatilhos/defaults só os necessários à operação; não catálogo de produção atual'});assert.notEqual(result,'FAIL',JSON.stringify(proofs.at(-1)));
+    proofs.push({action,profile,expected:expect?'PERMITIR':'RECUSAR',observed:error||r.rows[0],result,no_write_on_denial:expect?null:unchanged,environment:'PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada',limit:action==='CUSTOMER_CREATE'?'INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada':'Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual'});assert.notEqual(result,'FAIL',JSON.stringify(proofs.at(-1)));
    }finally{await q('ROLLBACK')}
   })}finally{fs.writeFileSync('docs/auditorias/validacao-profunda-20261014/EVIDENCIAS-RESTANTES-PERFIS.json',JSON.stringify({synthetic_only:true,production_access:false,proofs},null,2)+'\n')}
  }finally{if(db)await db.end();if(started)run('pg_ctl',['-D',data,'-m','immediate','-w','stop']);}

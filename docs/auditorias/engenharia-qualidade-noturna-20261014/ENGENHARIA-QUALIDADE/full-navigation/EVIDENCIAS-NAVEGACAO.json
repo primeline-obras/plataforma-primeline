@@ -1,0 +1,2574 @@
+{
+  "production_access": false,
+  "proofs": [
+    {
+      "view": "consolidated",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "consolidated",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "consolidated",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "overview",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "overview",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "overview",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rsp",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rsp",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rsp",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "management-map",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "management-map",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "management-map",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "projects",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "projects",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "projects",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "works",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "works",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "works",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "invoices",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "invoices",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "invoices",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "tab-0",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "tab-1",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "tab-2",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "tab-3",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "finance",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "subcontractors",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "subcontractors",
+      "stage": "tab-0",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "subcontractors",
+      "stage": "tab-1",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "subcontractors",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "subcontractors",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM AUSÊNCIASNão existem ausências registadas nesta semana."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "planning",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "planning",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "planning",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "calendar",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "REGISTAR →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "calendar",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "REGISTAR →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "calendar",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "documents",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "documents",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "documents",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rnc",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rnc",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rnc",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "vehicles",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "vehicles",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "vehicles",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rooms",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rooms",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "rooms",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "properties",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "GUARDAR IMÓVEL →",
+            "height": 20
+          },
+          {
+            "text": "AGENDAR REUNIÃO →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "properties",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "GUARDAR IMÓVEL →",
+            "height": 20
+          },
+          {
+            "text": "AGENDAR REUNIÃO →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "properties",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "budget-requests",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "CRIAR PEDIDO →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "budget-requests",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "CRIAR PEDIDO →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "budget-requests",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "workforce",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "workforce",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "workforce",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-0",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-1",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-2",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-3",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-4",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          },
+          {
+            "text": "REGISTAR AUSÊNCIA →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-5",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-6",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          },
+          {
+            "text": "REGISTAR HORAS →",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "tab-7",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "team",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          },
+          {
+            "text": "+ NOVO COLABORADOR",
+            "height": 20
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "company-documents",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "company-documents",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "company-documents",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "settings",
+      "stage": "desktop",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "settings",
+      "stage": "tab-0",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "settings",
+      "stage": "tab-1",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "settings",
+      "stage": "tab-2",
+      "measure": {
+        "overflow": false,
+        "width": 1425,
+        "viewport": 1440,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "settings",
+      "stage": "width-768",
+      "measure": {
+        "overflow": false,
+        "width": 753,
+        "viewport": 768,
+        "small_actions": [
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    },
+    {
+      "view": "settings",
+      "stage": "width-390",
+      "measure": {
+        "overflow": false,
+        "width": 375,
+        "viewport": 390,
+        "small_actions": [
+          {
+            "text": "",
+            "height": 29
+          },
+          {
+            "text": "MODO TV",
+            "height": 30
+          },
+          {
+            "text": "☾ ESCURO",
+            "height": 30
+          }
+        ],
+        "title": "VISÃO GERAL",
+        "unsupported": [],
+        "empty_texts": [
+          "TUDO VALIDADONão há faturas pendentes neste filtro.",
+          "SEM RESULTADOSAjuste a pesquisa ou os filtros.",
+          "SELECIONE UMA OBRAConsulte os principais dados e indicadores.",
+          "SEM PROJETOSAs obras continuam disponíveis normalmente.",
+          "SELECIONE UM PROJETO",
+          "SEM FASESEsta obra ainda não possui fases configuradas."
+        ]
+      },
+      "scope": "Aplicação inteira, API exclusivamente sintética; navegação sem gravação"
+    }
+  ],
+  "errors": []
+}

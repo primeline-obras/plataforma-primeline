@@ -1,0 +1,7 @@
+PASS RNC encarregado
+PASS RNC administrativo
+PASS RNC gerencia
+PASS RNC diretor_obra
+PASS RNC adjunto
+PASS RNC preparador
+PASS RPC ausente: erro explícito, sem fallback direto

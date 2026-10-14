@@ -1,0 +1,37 @@
+▶ PostgreSQL 17.6: alertas determinísticos do Quadro
+  ✔ A: preview zero; ADM+Diretor recebem chaves estáveis diferentes; replay zero (107.7179ms)
+  ✔ A: um destinatário recebe uma ocorrência; movimentos sucessivos recebem novas chaves (55.6097ms)
+  ✔ A: zero destinatários e mesmo destino/no-op sem alertas extras (43.2082ms)
+  ✔ A: dois Administrativos recebem, sem colisão (24.6922ms)
+  ✔ A: vários Diretores e Encarregado origem; destinatários únicos; autor excluído (33.3079ms)
+  ✔ A: split notifica todos os pares sem colisão (35.3568ms)
+  ✔ A: merge notifica todos os pares sem colisão (45.5882ms)
+  ✔ A: remover não cria alerta; preserva avisos anteriores (40.1368ms)
+  ✔ A: perfil 10 não notifica; escritório e renomear sem regressão (67.6378ms)
+  ✔ A: perfil 12 não notifica; escritório e renomear sem regressão (65.6172ms)
+  ✔ A: erro depois dos alertas/revisão reverte tudo; retry mantém as chaves (52.1909ms)
+  ✔ A: rollback final não persiste nenhum alerta/operação (22.4771ms)
+  ✔ A: duas ligações de Encarregado, mesmo pedido confirma uma vez e replay idempotente (160.0508ms)
+  ✔ A: RPC legada de Encarregado notifica vários destinatários em eventos sucessivos (35.3197ms)
+  ✔ B: preview zero; ADM+Diretor recebem chaves estáveis diferentes; replay zero (47.6439ms)
+  ✔ B: um destinatário recebe uma ocorrência; movimentos sucessivos recebem novas chaves (48.1292ms)
+  ✔ B: zero destinatários e mesmo destino/no-op sem alertas extras (40.8294ms)
+  ✔ B: dois Administrativos recebem, sem colisão (25.4035ms)
+  ✔ B: vários Diretores e Encarregado origem; destinatários únicos; autor excluído (35.6862ms)
+  ✔ B: split notifica todos os pares sem colisão (34.0221ms)
+  ✔ B: merge notifica todos os pares sem colisão (43.5233ms)
+  ✔ B: remover não cria alerta; preserva avisos anteriores (39.1997ms)
+  ✔ B: perfil 10 não notifica; escritório e renomear sem regressão (66.145ms)
+  ✔ B: perfil 12 não notifica; escritório e renomear sem regressão (59.7054ms)
+  ✔ B: erro depois dos alertas/revisão reverte tudo; retry mantém as chaves (43.9323ms)
+  ✔ B: rollback final não persiste nenhum alerta/operação (22.7633ms)
+  ✔ B: duas ligações de Encarregado, mesmo pedido confirma uma vez e replay idempotente (143.619ms)
+✔ PostgreSQL 17.6: alertas determinísticos do Quadro (11395.926ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11506.2684

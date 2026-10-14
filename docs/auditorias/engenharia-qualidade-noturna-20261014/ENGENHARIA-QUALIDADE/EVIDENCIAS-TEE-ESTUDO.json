@@ -1,0 +1,12 @@
+{
+  "synthetic_only": true,
+  "product_implementation": false,
+  "production_access": false,
+  "classification": "ESTUDO CONCEPTUAL VALIDADO",
+  "active_minutes": 870,
+  "known_cost": 120,
+  "total_real_cost": null,
+  "contract_price": null,
+  "billable_value": null,
+  "source_revisions_preserved": true
+}

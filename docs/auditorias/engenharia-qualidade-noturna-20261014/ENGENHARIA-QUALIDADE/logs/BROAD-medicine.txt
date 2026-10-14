@@ -1,0 +1,15 @@
+Unexpected write: rpc/fn_folha_ferias_mapa_v2
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-open-medicine="p1"]')[22m
+
+    at C:\Users\conta\.codex\worktrees\validacao-profunda-203-20261014\primeline-go-urgente\tests\deep-quality-broad-medicine.mjs:118:163 {
+  log: [ `  - waiting for locator('[data-open-medicine="p1"]')` ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

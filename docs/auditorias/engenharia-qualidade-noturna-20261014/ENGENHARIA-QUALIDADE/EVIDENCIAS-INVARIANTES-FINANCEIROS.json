@@ -1,0 +1,60 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "CASH-PARTITION",
+      "result": "PASS",
+      "total": 100,
+      "limit": "Arrays já filtrados por obra pelo consumidor; não é ledger nem recebimento REST"
+    },
+    {
+      "id": "CASH-PERIODS",
+      "result": "PASS",
+      "months": 2,
+      "missing_date_omitted": true,
+      "limit": "Linha sem data não entra na caixa; não afirma que foi conciliada"
+    },
+    {
+      "id": "MATERIAL-ZERO-CORRECTION",
+      "result": "PASS",
+      "zero": 0,
+      "signed_net": 80,
+      "limit": "Aritmética; crédito/anulação/IVA ainda exigem contrato e estados do writer, não inferidos deste teste"
+    },
+    {
+      "id": "CLOSED-REAL-ZERO",
+      "result": "PASS",
+      "observed": {
+        "currentMonth": "2026-10",
+        "monthIncoming": 200,
+        "monthOutgoing": 100,
+        "yearIncoming": 200,
+        "yearOutgoing": 100,
+        "realMonths": 1
+      },
+      "limit": "Mês aberto sem movimentos usa previsão por contrato atual; não equivale a facturação"
+    },
+    {
+      "id": "DEBIT-RECURRENCE",
+      "result": "PASS",
+      "monthly": 12,
+      "quarterly": 4,
+      "annual": 1,
+      "february_clamped": true,
+      "limit": "Função pura; ramo bloqueado e branch tenant separada não foram ativados"
+    },
+    {
+      "id": "INVESTMENT-ZERO-REVISION",
+      "classification": "DECISÃO EXISTENTE PRESERVADA",
+      "correspondence": "N-FIN-03",
+      "observed": {
+        "initialBudget": 100,
+        "revisedBudget": 100,
+        "actualCost": 80,
+        "deviation": -20
+      },
+      "limit": "Não corrigir sem reconciliar zero explícito versus revisão ausente"
+    }
+  ]
+}

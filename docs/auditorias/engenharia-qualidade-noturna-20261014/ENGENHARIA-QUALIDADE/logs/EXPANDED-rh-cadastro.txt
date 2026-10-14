@@ -1,0 +1,1 @@
+Browser OK: preenchimento, guardar único, 1366px/390px sem overflow, Excel real, preview, confirmação e reimportação sem alterações (API simulada).

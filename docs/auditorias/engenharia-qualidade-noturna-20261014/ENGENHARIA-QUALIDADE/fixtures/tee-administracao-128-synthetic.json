@@ -1,0 +1,106 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "work_reference": "128-SYNTHETIC",
+  "tee": "TEE-ADMIN-SYNTHETIC",
+  "estimate": {
+    "quantity": 10,
+    "unit": "m2",
+    "cost": 700,
+    "sale_estimate": 1000
+  },
+  "approval": {
+    "kind": "autorizacao_execucao_por_administracao",
+    "contract_pricing_rule": null,
+    "final_price": null
+  },
+  "events": [
+    {
+      "id": "event-1",
+      "action": "identified"
+    },
+    {
+      "id": "event-2",
+      "action": "estimated"
+    },
+    {
+      "id": "event-3",
+      "action": "client_execution_authorized"
+    },
+    {
+      "id": "event-4",
+      "action": "execution_started"
+    },
+    {
+      "id": "event-5",
+      "action": "interrupted",
+      "date": "2026-10-14",
+      "hours_created": false
+    },
+    {
+      "id": "event-6",
+      "action": "technical_review_pending"
+    }
+  ],
+  "facts": [
+    {
+      "id": "point-A-day1",
+      "person": "synthetic-A",
+      "date": "2026-10-12",
+      "revision": 1,
+      "minutes": 240
+    },
+    {
+      "id": "point-B-day1",
+      "person": "synthetic-B",
+      "date": "2026-10-12",
+      "revision": 1,
+      "minutes": 240
+    },
+    {
+      "id": "point-A-day2",
+      "person": "synthetic-A",
+      "date": "2026-10-13",
+      "revision": 1,
+      "minutes": 180
+    },
+    {
+      "id": "point-A-day2",
+      "person": "synthetic-A",
+      "date": "2026-10-13",
+      "revision": 2,
+      "minutes": 150,
+      "previous_revision": 1,
+      "reason": "Correção sintética conferida; não altera o registo histórico"
+    },
+    {
+      "id": "point-B-day2",
+      "person": "synthetic-B",
+      "date": "2026-10-13",
+      "revision": 1,
+      "minutes": 240
+    }
+  ],
+  "materials": [
+    {
+      "quantity": 8,
+      "unit_cost": 10,
+      "proven_cost": 80
+    }
+  ],
+  "equipment": [
+    {
+      "quantity": 2,
+      "unit": "h",
+      "unit_cost": 20,
+      "proven_cost": 40
+    }
+  ],
+  "realized_quantity": 8,
+  "labor_cost": null,
+  "known_cost": 120,
+  "total_real_cost": null,
+  "contract_price": null,
+  "billable_value": null,
+  "financial_posting": false
+}

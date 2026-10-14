@@ -1,24 +1,30 @@
 # Controlo da execução noturna
 
-Base preservada: `63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3`. Branch: `codex/validacao-profunda-203-20261014`. Produto e produção não alterados.
+Estado geral: **EM EXECUÇÃO — COM BLOQUEIOS PARCIAIS**.
 
-- 01. Reconciliação exata dos 203 pares: CONCLUÍDA — 203 chaves únicas preservadas.
-- 02. Contratos financeiros reais: NÃO INICIADA
-- 03. Contratos RH e horas reais: NÃO INICIADA
-- 04. Restantes contratos por perfil: NÃO INICIADA
-- 05. Segunda passagem de casos adversos: NÃO INICIADA
-- 06. Consumidores e integrações: NÃO INICIADA
-- 07. Interfaces e estados: NÃO INICIADA
-- 08. Importadores: NÃO INICIADA
-- 09. Documentos e arquivos: NÃO INICIADA
-- 10. Alertas, agenda e tarefas: NÃO INICIADA
-- 11. Invariantes financeiros: NÃO INICIADA
-- 12. Fornecedores e preços: NÃO INICIADA
-- 13. Estudo TEE Obra 128 sintética: NÃO INICIADA
-- 14. RH, identidade e vigências: NÃO INICIADA
-- 15. Responsividade e acessibilidade: NÃO INICIADA
-- 16. Concorrência assíncrona: NÃO INICIADA
-- 17. Comparação das branches locais: NÃO INICIADA
-- 18. Autorrevisão de evidências e contagens: NÃO INICIADA
+Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint localc4799aa; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
 
-Não encerrar a missão por um bloqueio individual. Atualizar este controlo e continuar frentes independentes. PASS de reprodução de falha não equivale a aprovação de segurança.
+## Pares
+
+203 reconciliados;179 executados;174 aprovados,4 FAIL,1 contrato pendente;24 dependem de Auth/Storage local. Os4 FAIL representam2 achados P1 locais, sem afirmar ocorrência em produção.
+
+## Fila
+
+- Reconciliação203: **CONCLUÍDA** — Chaves exatas, sem duplicações.
+- Primeira execução backend: **PARCIAL** — 179 executados;24 BLOQUEADO por serviços locais.
+- Segunda passagem: **PARCIAL** — REST21 cenários; económica76; escopo12 incluindo4 FAIL.
+- Consumidores: **PARCIAL** — Importação/ledger/RH e documentos; ligações restantes explicitadas.
+- Interfaces: **PARCIAL** — 21 vistas/80 capturas, módulos detalhados e6 viewports; ampliar estados.
+- Importadores: **PARCIAL** — CSV1000, XLSX reais, MQT/sub/TEE500linhas; regressões RH.
+- Documentos: **PARCIAL** — Dois P2 cliente; ficheiros; Storage real local ausente.
+- Alertas: **PARCIAL** — Produtor28contagens; filtros3; dois perfis falham tenant no resolver.
+- Financeiro: **PARCIAL** — Invariantes, recibos reais e importação; cenários comerciais pendentes.
+- Fornecedores: **PARCIAL** — Identidade/completude/comparabilidade; contratos comerciais por aprofundar.
+- TEE128: **EM EXECUÇÃO** — Estudo estrutural; completar mapa de13etapas/fontes.
+- RH: **PARCIAL** — AD15/14/13/03 e72casos novos; matriz de integridade pendente.
+- Visual: **PARCIAL** — Capturas inspecionadas; sem overflow com CSS completo em módulos próprios.
+- Assincronia: **PARCIAL** — Novos P2 documentais e P2 anterior Compras; restantes contextos pendentes.
+- Branches: **CONCLUÍDA** — Seis refs locais; sem merge/fetch.
+- Autorrevisão: **EM EXECUÇÃO** — Links, contagens, segredos e arquivos por validar no fecho.
+
+Subtarefas de qualidade inventariadas: 234; estados progressivos em ENGENHARIA-QUALIDADE/FILA-SUBTAREFAS.csv. Não foram marcadas completas apenas por existir relatório. Próxima execução segura: interfaces com obra sintética e matriz RH por precondição; depois contratos e autorrevisão.

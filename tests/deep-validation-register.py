@@ -10,12 +10,19 @@ for name in ['FINANCEIRO','HORAS','ECONOMICOS','RESTANTES']:
  for i,x in enumerate(json.loads(p.read_text(encoding='utf-8'))['proofs']):
   k=(x['action'],x['profile']);assert k not in proofs;proofs[k]=(x,p.name,i)
 keys={(r['acao'],r['perfil'])for r in rows};assert len(keys)==203
+negative_path=R/'EVIDENCIAS-ESCOPO-RESTANTES.json'
+negative=json.loads(negative_path.read_text(encoding='utf-8'))['proofs'] if negative_path.exists() else []
 for k,(x,p,i)in proofs.items():
  if k not in keys:extra.append(dict(x,evidence=p+'#proofs/'+str(i)))
 for r in rows:
  k=(r['acao'],r['perfil']);r.update(natureza='',cobertura='',resultado_observado='',prova_nova='',ambiente_teste='',pre_condicoes='Ator sintético ativo; empresa e obra da fixture; recurso válido',risco_residual='',proximo_passo='')
  if k in proofs:
   x,p,i=proofs[k];r.update(natureza='APLICÁVEL — AUTORIZADA'if x['expected']=='PERMITIR'else'APLICÁVEL — PROIBIDA',cobertura='EXECUTADO'if x['result']!='BLOQUEADO'else'BLOQUEADO',resultado_observado=x['result']+' — '+json.dumps(x['observed'],ensure_ascii=False),prova_nova=p+'#proofs/'+str(i),ambiente_teste=x['environment'],risco_residual=x.get('limit',''),proximo_passo='Ligar consumidores finais e variantes adversas; não é certificação da produção')
+  failures=[n for n in negative if (n['action'],n['profile'])==k and n['result']=='FAIL']
+  if failures:
+   r['resultado_observado']='FAIL — '+json.dumps({'baseline':x['result'],'second_pass':failures},ensure_ascii=False);r['prova_nova']+='; EVIDENCIAS-ESCOPO-RESTANTES.json';r['risco_residual']+='; P1 LOCAL: outra empresa aceite na segunda passagem';r['proximo_passo']='Rever guarda de tenant do contrato; sem alterar produto nesta missão'
+  if k==('ABSENCE_REPORT','gestao_plataforma'):
+   r['natureza']='CONTRATO EM CONFLITO';r['resultado_observado']='PENDENTE CONTRATO — RPC recusa Gestão por exigir Encarregado; regra global de superutilizador funcional deve ser confrontada com o requisito específico';r['risco_residual']+='; teste de recusa não aprova a regra funcional';r['proximo_passo']='Reconciliar requisito específico de reporte FALTOU com regra global já aprovada, sem alterar permissões'
  else:
   assert r['acao']in ['LOGIN','DOCUMENT','DOWNLOAD'],r['acao'];dep='Serviço local GoTrue para login real'if r['acao']=='LOGIN'else'Serviço local Storage e Auth para o percurso completo de bytes/metadados'
   r.update(natureza='APLICÁVEL — AMBIENTE INCOMPLETO',cobertura='BLOQUEADO',resultado_observado='NÃO EXECUTADO no backend; sem substituição por mock',prova_nova='BLOQUEIOS-PARA-DECISAO.md#serviços-locais',ambiente_teste='PostgreSQL disponível; Docker/Podman/Supabase CLI não encontrados no PATH',risco_residual=dep,proximo_passo='DEPENDÊNCIA TÉCNICA — disponibilizar '+dep)

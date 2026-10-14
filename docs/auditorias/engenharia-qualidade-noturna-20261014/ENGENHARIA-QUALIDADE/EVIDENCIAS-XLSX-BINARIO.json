@@ -1,0 +1,134 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "XLSX-1000",
+      "result": "PASS",
+      "rows": 1000,
+      "scope": "Export artifact-tool e descodificação SheetJS real; não writer Planeamento"
+    },
+    {
+      "id": "XLSX-financial-duplicate.xlsx",
+      "input_rows": 3,
+      "output_rows": 2,
+      "result": "DIAGNÓSTICO",
+      "observed": [
+        {
+          "row": 2,
+          "label": "120 · Obra sintética",
+          "errors": [],
+          "warnings": [],
+          "duplicate": false,
+          "selected": true,
+          "payload": {
+            "tipo": "obra",
+            "obra_id": "synthetic-work",
+            "meses": [
+              100,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "row": 3,
+          "label": "120 · Obra sintética",
+          "errors": [],
+          "warnings": [],
+          "duplicate": false,
+          "selected": true,
+          "payload": {
+            "tipo": "obra",
+            "obra_id": "synthetic-work",
+            "meses": [
+              200,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        }
+      ],
+      "scope": "Ficheiro XLSX real -> SheetJS -> parser real"
+    },
+    {
+      "id": "XLSX-financial-invalid.xlsx",
+      "input_rows": 2,
+      "output_rows": 2,
+      "result": "DIAGNÓSTICO",
+      "observed": [
+        {
+          "row": 2,
+          "label": "120 · Obra sintética",
+          "errors": [],
+          "warnings": [],
+          "duplicate": false,
+          "selected": true,
+          "payload": {
+            "tipo": "obra",
+            "obra_id": "synthetic-work",
+            "meses": [
+              123,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "row": 3,
+          "label": "120 · Obra sintética",
+          "errors": [],
+          "warnings": [],
+          "duplicate": false,
+          "selected": true,
+          "payload": {
+            "tipo": "obra",
+            "obra_id": "synthetic-work",
+            "meses": [
+              123,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        }
+      ],
+      "scope": "Ficheiro XLSX real -> SheetJS -> parser real"
+    }
+  ]
+}

@@ -14,7 +14,9 @@
   },
   "resultados_backend": {
     "NÃO EXECUTADO no backend; sem substituição por mock": 24,
-    "PASS": 179
+    "PASS": 174,
+    "PENDENTE CONTRATO": 1,
+    "FAIL": 4
   },
   "provas_suplementares": 5,
   "limitacao": "Execução de variantes backend especificadas; não todos os fluxos frontend nem catálogo de produção atual"

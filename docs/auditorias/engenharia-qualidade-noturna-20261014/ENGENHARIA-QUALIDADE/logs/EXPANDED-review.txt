@@ -1,0 +1,1 @@
+PASS desktop RH/externos/mapa: pendências, classificação, HE informativa, cancel/stale, confirmação Diretor, XLSX real, HR31 null; 0 erros JS. Capturas C:\Users\conta\.codex\worktrees\validacao-profunda-203-20261014\primeline-go-urgente\docs\auditorias\engenharia-qualidade-noturna-20261014\ENGENHARIA-QUALIDADE\expanded-review

@@ -200,7 +200,7 @@
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
             "revisao": 1,
-            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "criado_em": "2026-10-14T23:01:50.859407+01:00",
             "resultado": "apto",
             "anulado_em": null,
             "request_id": null,
@@ -216,7 +216,7 @@
             {
               "id": "00000000-0000-4000-8000-000000000600",
               "revisao": 1,
-              "criado_em": "2026-10-14T22:37:35.806278+01:00",
+              "criado_em": "2026-10-14T23:01:50.859407+01:00",
               "resultado": "apto",
               "anulado_em": null,
               "request_id": null,
@@ -233,7 +233,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -244,7 +244,7 @@
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
             "revisao": 1,
-            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "criado_em": "2026-10-14T23:01:50.859407+01:00",
             "resultado": "apto",
             "anulado_em": null,
             "request_id": null,
@@ -260,7 +260,7 @@
             {
               "id": "00000000-0000-4000-8000-000000000600",
               "revisao": 1,
-              "criado_em": "2026-10-14T22:37:35.806278+01:00",
+              "criado_em": "2026-10-14T23:01:50.859407+01:00",
               "resultado": "apto",
               "anulado_em": null,
               "request_id": null,
@@ -277,7 +277,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -288,7 +288,7 @@
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
             "revisao": 1,
-            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "criado_em": "2026-10-14T23:01:50.859407+01:00",
             "resultado": "apto",
             "anulado_em": null,
             "request_id": null,
@@ -304,7 +304,7 @@
             {
               "id": "00000000-0000-4000-8000-000000000600",
               "revisao": 1,
-              "criado_em": "2026-10-14T22:37:35.806278+01:00",
+              "criado_em": "2026-10-14T23:01:50.859407+01:00",
               "resultado": "apto",
               "anulado_em": null,
               "request_id": null,
@@ -321,7 +321,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -334,7 +334,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -347,7 +347,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -360,7 +360,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -373,7 +373,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "MEDICINE",
@@ -383,7 +383,7 @@
         "v": {
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
-            "criado_em": "2026-10-14T22:37:35.806278+01:00",
+            "criado_em": "2026-10-14T23:01:50.859407+01:00",
             "resultado": "apto",
             "colaborador_id": "00000000-0000-4000-8000-000000000030",
             "data_ultima_consulta": "2026-10-14",
@@ -396,7 +396,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -408,7 +408,7 @@
           "committed": true,
           "idempotent": false,
           "viatura_id": "00000000-0000-4000-8000-000000009880",
-          "historico_id": "bb2263a3-16fc-42d4-b786-404fbec08b14",
+          "historico_id": "5686f8c4-d167-41b4-8c5d-dd26542f261d",
           "atribuicao_revisao": 1,
           "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
           "colaborador_anterior_id": null
@@ -417,7 +417,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -429,7 +429,7 @@
           "committed": true,
           "idempotent": false,
           "viatura_id": "00000000-0000-4000-8000-000000009880",
-          "historico_id": "eb02cf0e-27c3-4453-8c0f-b5f3aaacb672",
+          "historico_id": "3fc1acc9-0f69-42ce-a878-db518bf055b1",
           "atribuicao_revisao": 1,
           "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
           "colaborador_anterior_id": null
@@ -438,7 +438,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -450,7 +450,7 @@
           "committed": true,
           "idempotent": false,
           "viatura_id": "00000000-0000-4000-8000-000000009880",
-          "historico_id": "d019817e-5541-4ce7-bde7-53c1b9365cca",
+          "historico_id": "815f4adf-1bb9-45ec-b7f6-adc95cad70f6",
           "atribuicao_revisao": 1,
           "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
           "colaborador_anterior_id": null
@@ -459,7 +459,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -467,12 +467,12 @@
       "expected": "RECUSAR",
       "observed": {
         "code": "42501",
-        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
       },
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -480,12 +480,12 @@
       "expected": "RECUSAR",
       "observed": {
         "code": "42501",
-        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
       },
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -493,12 +493,12 @@
       "expected": "RECUSAR",
       "observed": {
         "code": "42501",
-        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
       },
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -506,12 +506,12 @@
       "expected": "RECUSAR",
       "observed": {
         "code": "42501",
-        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
       },
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "VEHICLE",
@@ -519,12 +519,12 @@
       "expected": "RECUSAR",
       "observed": {
         "code": "42501",
-        "message": "FORBIDDEN: operação reservada a Administrativo/Gerência."
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
       },
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -532,7 +532,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "9b2f1ac6-097f-454f-9ef4-af468ca5f8d9",
+          "id": "c32e4823-93ce-450c-acdd-0636a12acb52",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -551,7 +551,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -559,7 +559,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "21cd430f-8c56-4d39-966c-688bf9938341",
+          "id": "f8d87c00-ccf8-4035-8bf5-a1e61a5b4c82",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -578,7 +578,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -591,7 +591,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -604,7 +604,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -612,7 +612,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "88986f7f-fbdc-4c6e-8272-c06582b58354",
+          "id": "e1a8e708-7339-4a1e-aca0-134bc0fedf26",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -631,7 +631,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -639,7 +639,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "c2a4bb6c-6dbe-4f87-bd92-c88c02893403",
+          "id": "b0157f71-9b8e-4a44-89ea-f3fc860d491d",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -658,7 +658,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -666,7 +666,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "68af897b-28b9-4845-b21a-1e7a4f871bcc",
+          "id": "84e761d0-9da9-4502-a38c-f60d9f776b9c",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -685,7 +685,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "CONSULT_CREATE",
@@ -698,7 +698,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -721,7 +721,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -744,7 +744,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -757,7 +757,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -770,7 +770,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -793,7 +793,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -816,7 +816,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -839,7 +839,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "COMPARATIVE_DELETE",
@@ -852,7 +852,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -873,7 +873,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.310778+01:00",
+          "resolvido_em": "2026-10-14T23:01:54.498966+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000012",
           "ocorrencia_chave": null,
@@ -887,7 +887,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -908,7 +908,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.390806+01:00",
+          "resolvido_em": "2026-10-14T23:01:54.579801+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000013",
           "ocorrencia_chave": null,
@@ -922,7 +922,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -943,7 +943,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.472563+01:00",
+          "resolvido_em": "2026-10-14T23:01:54.65955+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000011",
           "ocorrencia_chave": null,
@@ -957,7 +957,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -978,7 +978,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.551942+01:00",
+          "resolvido_em": "2026-10-14T23:01:54.737977+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000017",
           "ocorrencia_chave": null,
@@ -992,7 +992,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -1013,7 +1013,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.645306+01:00",
+          "resolvido_em": "2026-10-14T23:01:54.833924+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000014",
           "ocorrencia_chave": null,
@@ -1027,7 +1027,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -1048,7 +1048,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.733104+01:00",
+          "resolvido_em": "2026-10-14T23:01:54.92007+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000015",
           "ocorrencia_chave": null,
@@ -1062,7 +1062,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -1083,7 +1083,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T22:37:39.816739+01:00",
+          "resolvido_em": "2026-10-14T23:01:55.001604+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000016",
           "ocorrencia_chave": null,
@@ -1097,7 +1097,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "ALERT_RESOLVE",
@@ -1110,7 +1110,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1118,7 +1118,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "cdc0e452-d195-4274-9019-a5530c64d65f",
+          "id": "4696f987-53c9-47c2-bdf4-a8b2aed260fa",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1142,7 +1142,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1150,7 +1150,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "d624f1e7-b0f5-405c-ac07-9c669111e8d3",
+          "id": "e6b9a1b1-2187-4da3-86e8-03ecb303148f",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1174,7 +1174,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1187,7 +1187,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1200,7 +1200,7 @@
       "result": "PASS",
       "no_write_on_denial": true,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1208,7 +1208,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "99f33699-a84f-4176-a765-27032f99066f",
+          "id": "015e9383-d9df-4ffa-b99c-26e08323b515",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1232,7 +1232,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1240,7 +1240,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "531f48f4-d48b-4529-b09a-bab5f366ec68",
+          "id": "ee58cd60-8890-4ae6-94f1-cee4ab6647c8",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1264,7 +1264,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1272,7 +1272,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "d68daf78-43e3-4122-aa43-ee2396648cca",
+          "id": "2e04d2ac-6a4f-4a42-8a9b-4c936f3bc515",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1296,7 +1296,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     },
     {
       "action": "RNC_CREATE",
@@ -1304,7 +1304,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "b2a4fc23-0df3-4338-ba83-3aed9877770e",
+          "id": "6d937ff0-6af6-49f5-b455-06df8fcfe260",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1328,7 +1328,7 @@
       "result": "PASS",
       "no_write_on_denial": null,
       "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
-      "limit": "Gatilhos/defaults só os necessários à operação; não catálogo de produção atual"
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
     }
   ]
 }

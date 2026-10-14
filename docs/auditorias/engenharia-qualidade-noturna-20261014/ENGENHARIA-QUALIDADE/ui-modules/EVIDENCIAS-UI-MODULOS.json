@@ -1,0 +1,591 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "documents-empty",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-many-long",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-foreman",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-error",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-loading",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-no-work",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-empty",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-many-long",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "finance-long",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "metrics": {
+        "page_width": 1425,
+        "viewport": 1440,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-empty",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-many-long",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-foreman",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-error",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-loading",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-no-work",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-empty",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-many-long",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "finance-long",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "metrics": {
+        "page_width": 1265,
+        "viewport": 1280,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-empty",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-many-long",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-foreman",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-loading",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-no-work",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-empty",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-many-long",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "finance-long",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "metrics": {
+        "page_width": 753,
+        "viewport": 768,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-empty",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-many-long",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-foreman",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-error",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-loading",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-no-work",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-empty",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-many-long",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "finance-long",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "metrics": {
+        "page_width": 1009,
+        "viewport": 1024,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-empty",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-many-long",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-foreman",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-loading",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "documents-no-work",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-empty",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "works-many-long",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    },
+    {
+      "id": "finance-long",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "metrics": {
+        "page_width": 375,
+        "viewport": 390,
+        "small_actions": []
+      },
+      "scope": "Renderizador frontend real; dados e transporte sintéticos"
+    }
+  ]
+}

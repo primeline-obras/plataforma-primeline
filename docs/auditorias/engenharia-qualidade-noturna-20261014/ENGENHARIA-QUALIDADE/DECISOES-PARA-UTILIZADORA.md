@@ -1,0 +1,9 @@
+# Decisões e dependências consolidadas
+
+- Corrigir/rever guardas tenant de RNC/Alertas em tarefa autorizada; nesta missão o produto permanece inalterado.
+- Reconciliar reporte FALTOU de Gestão com a regra global já aprovada de superutilizador funcional. A recusa foi observada, sem certificar a regra funcional nem conceder permissões.
+- Preservar decisões HR38 e conceitos financeiros do backlog anterior; não escolher limiares de anonimização, tarifas ou fórmulas salariais.
+- Confirmar contrato de ficheiros vazios/MIME no serviço de bytes local; nenhum acesso a Storage real.
+- Pré-visualização de importação deve explicar células inválidas, linhas desconhecidas e duplicações; proposta de correção, sem implementação.
+- Depende de ambiente: GoTrue/Storage locais para24 pares. PostgREST foi desbloqueado com DLLs existentes; não corresponde a login hospedado.
+- A revisão automática rejeitou o encerramento do PID indicado; a ação não foi repetida. Retoma não deve tentar contornar essa rejeição. Limpeza desse processo requer identificação e autorização adequadas, sem bloquear outras frentes.

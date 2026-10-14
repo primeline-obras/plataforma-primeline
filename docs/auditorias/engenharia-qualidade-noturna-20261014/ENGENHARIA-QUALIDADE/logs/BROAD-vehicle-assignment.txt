@@ -1,0 +1,1 @@
+PASS: assignment offline — names, eligibility, payload, idempotency, errors, stale, double submit, history, permissions, desktop/mobile

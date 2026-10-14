@@ -1,0 +1,305 @@
+{
+  "production_access": false,
+  "merge_executed": false,
+  "comparisons": [
+    {
+      "branch": "main",
+      "sha": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+      "merge_base": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+      "same_files": [],
+      "sql_function_overlap": [],
+      "frontend_rpc_tokens_without_sql_reference": [],
+      "limit": "Comparação lexical de contratos, não catálogo instalado; inclui definições históricas, não resolve ordem automaticamente"
+    },
+    {
+      "branch": "feat/gestao-horas-integrada-20261013",
+      "sha": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+      "merge_base": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+      "same_files": [],
+      "sql_function_overlap": [],
+      "frontend_rpc_tokens_without_sql_reference": [],
+      "limit": "Comparação lexical de contratos, não catálogo instalado; inclui definições históricas, não resolve ordem automaticamente"
+    },
+    {
+      "branch": "urgent/planeamento-operacional-20260928",
+      "sha": "f0894e48933ef4b4a1f45a5745e064a942960348",
+      "merge_base": "e1124dd8fa3eb33927a867a9822052d05d3718d8",
+      "same_files": [
+        "index.html",
+        "src/app.js",
+        "src/planning-batch.js",
+        "src/planning-operational.js",
+        "src/planning.js",
+        "src/production-dashboard.js",
+        "src/styles.css",
+        "src/vehicle-validity.js",
+        "src/vehicles.js",
+        "tests/foreman-action-plan.test.mjs",
+        "tests/foreman-global-workforce-vacations.test.mjs",
+        "tests/planning-batch.test.mjs",
+        "tests/planning-browser.mjs",
+        "tests/planning-import.test.mjs",
+        "tests/planning-operational.test.mjs",
+        "tests/planning-selection-browser.mjs",
+        "tests/vehicle-validity-browser.mjs",
+        "tests/vehicle-validity.test.mjs",
+        "tests/workforce-admin-only.test.mjs",
+        "tests/workforce-allocation-scroll.test.mjs",
+        "tests/workforce-foremen-multiple-works.test.mjs",
+        "tests/workforce-operational-report.test.mjs"
+      ],
+      "sql_function_overlap": [
+        {
+          "name": "auth.uid",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "tests/fixtures/documentos-rh-correlatos-base.sql",
+              "hash": "4ad68c37c668693e6a480754c70f973ba0128d6a79b333caf197bc3fdbce962a"
+            },
+            {
+              "file": "tests/fixtures/quadro-base.sql",
+              "hash": "7587ae924b5e8615ecbf3f2a38fa79eb278ff4991e3bd69346cef3ceacf2791f"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "tests/fixtures/quadro-v3-base.sql",
+              "hash": "360d6f7e41d83fb18543954112126d6fbe4ec7a3d7c3ba676cb65beb252560d6"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_e_admin",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "tests/fixtures/documentos-rh-tenant-base.sql",
+              "hash": "f9d5f27991da979b223cda31ba1ea36cf77fdac939943d5c9020d5327e11d723"
+            },
+            {
+              "file": "tests/fixtures/medicina-base.sql",
+              "hash": "c5d8839c0e012e0f6a7e1a13e3476fb388bcdfb03ce1f048cf7afd46232a656d"
+            },
+            {
+              "file": "tests/fixtures/quadro-base.sql",
+              "hash": "c4dde08fc1d6aeb536fa43049368b61e98577760c7cabed8341cebdb896bb37e"
+            },
+            {
+              "file": "tests/fixtures/viaturas-atribuicao-base.sql",
+              "hash": "374834bc69c6d7a782695d4aee06af24611e5d8a960f58e8f7ac9980eca416b0"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "tests/fixtures/orcamento-versoes-etapa1-base.sql",
+              "hash": "9127e51de098ad1f01ad1e4f856bdcfca86ef16270049004203ab489d013e8f2"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_pode_ver_obra",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "tests/fixtures/documentos-rh-tenant-base.sql",
+              "hash": "1ac34f5c86fdd6f11362f77cb95976087b2c6bb4e79fabcd062a90457062f1de"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "tests/fixtures/orcamento-versoes-etapa1-base.sql",
+              "hash": "5c3b0dedd92d22d8e12120b43ee99c3407eaf42ae398154266f8d56fdc02aec3"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_quadro_notificar_movimentacao_encarregado",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "supabase/quadro_controlado_fase_a.sql",
+              "hash": "b7ba63abb3a327e379ec509258ed3ccbf541902bfedbb91c518972f72f802ee1"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+              "hash": "b7ba63abb3a327e379ec509258ed3ccbf541902bfedbb91c518972f72f802ee1"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "supabase/quadro_pessoal_20260925/04_encarregado_folha_ponto_notificacoes.sql",
+              "hash": "ca248d155af676a53f792734de816ff4746618cbe09da1e3ddfb0c7aeb0926b5"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_quadro_operar",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "supabase/encarregado_escopo_migration.sql",
+              "hash": "4775bce07cdc6d1d6bd57844a1448ebaa8bbff183010f4bc97936c70db54d0f4"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_a.sql",
+              "hash": "97745e525b6ee980802e6b771fd363f072a64a9eb89626c45a1d248537fff4f1"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+              "hash": "97745e525b6ee980802e6b771fd363f072a64a9eb89626c45a1d248537fff4f1"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_b.sql",
+              "hash": "b48c9f16f9a6f21ab7b790b9e0d8fd22615f3afbe576275ea93bfa2bcf640a4b"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_b_forward_fix.sql",
+              "hash": "b48c9f16f9a6f21ab7b790b9e0d8fd22615f3afbe576275ea93bfa2bcf640a4b"
+            },
+            {
+              "file": "supabase/quadro_fase_b_pos_hotfix_migration.sql",
+              "hash": "b48c9f16f9a6f21ab7b790b9e0d8fd22615f3afbe576275ea93bfa2bcf640a4b"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "supabase/quadro_pessoal_20260925/00_regras_movimentacoes.sql",
+              "hash": "8ffe11222a093397099cfaafac4f6c1324ecb5f894407db0f5202b3651a6d37f"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_quadro_proteger_escrita",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "supabase/quadro_controlado_fase_a.sql",
+              "hash": "a089beed9134433c6fd481391fbe60211aab06c5aa1a556c09a9d85e00ce7f1d"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+              "hash": "a089beed9134433c6fd481391fbe60211aab06c5aa1a556c09a9d85e00ce7f1d"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_b.sql",
+              "hash": "71cc2dfa1d09d42077be9d2beab7814fbb0ba71e1e6c9fc6e967296d8966f8cd"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_b_forward_fix.sql",
+              "hash": "71cc2dfa1d09d42077be9d2beab7814fbb0ba71e1e6c9fc6e967296d8966f8cd"
+            },
+            {
+              "file": "supabase/quadro_fase_b_pos_hotfix_migration.sql",
+              "hash": "71cc2dfa1d09d42077be9d2beab7814fbb0ba71e1e6c9fc6e967296d8966f8cd"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "supabase/quadro_pessoal_20260925/00_regras_movimentacoes.sql",
+              "hash": "9282a3f67b6aad4fd49d63541daf78df82a4a6bef3f488ce685c1291d27f5540"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_registar_movimento_quadro",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "supabase/quadro_controlado_fase_a.sql",
+              "hash": "7233540afb14888977f51387dd6d2a4a6b980339ad4d6002920371e35796ef61"
+            },
+            {
+              "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+              "hash": "7233540afb14888977f51387dd6d2a4a6b980339ad4d6002920371e35796ef61"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "supabase/quadro_pessoal_20260925/00_regras_movimentacoes.sql",
+              "hash": "215ab10ea0e2fedc66874f7c654c4247a1ae3b5034e1b58e40a988a088406974"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        },
+        {
+          "name": "public.fn_utilizador_atual_id",
+          "same_body_present": false,
+          "ours": [
+            {
+              "file": "tests/fixtures/documentos-rh-tenant-base.sql",
+              "hash": "68678e84c3b0b07b2c7b2c81d01891430bce760c3cb226f90676279d74a96b18"
+            },
+            {
+              "file": "tests/fixtures/medicina-base.sql",
+              "hash": "68678e84c3b0b07b2c7b2c81d01891430bce760c3cb226f90676279d74a96b18"
+            },
+            {
+              "file": "tests/fixtures/quadro-base.sql",
+              "hash": "fc2eb9e7d1f9bc193de0d826f1a7b34b162ff42cf464b5f7a585aa0a1772415c"
+            },
+            {
+              "file": "tests/fixtures/viaturas-atribuicao-base.sql",
+              "hash": "fd7d06e584ef1508c6b2c0ef30e06851c02d5b1560e7419f136af3cd8c281720"
+            }
+          ],
+          "theirs": [
+            {
+              "file": "tests/fixtures/orcamento-versoes-etapa1-base.sql",
+              "hash": "5adf73cb9c174de21f722c8e715f8d15d2ca99082cbaff4574ce1fc9cdab8b7d"
+            },
+            {
+              "file": "tests/fixtures/quadro-v3-base.sql",
+              "hash": "02f963fbab5978b06965f2537b219537ae9d2743544c627f9e1b475ec26ba23d"
+            }
+          ],
+          "classification": "COINCIDÊNCIA HISTÓRICA; NÃO ESCOLHER ÚLTIMA DEFINIÇÃO POR ORDEM DE FICHEIRO"
+        }
+      ],
+      "frontend_rpc_tokens_without_sql_reference": [
+        "fn_definir_estado_mensal_v1",
+        "fn_guardar_planeamento_lote",
+        "fn_guardar_validade_viatura",
+        "fn_importar_tees_revisoes",
+        "fn_origens_financeiras_mensais_v1",
+        "fn_recalcular_previsao_mensal_v1",
+        "fn_registar_recebimento_parcial",
+        "fn_resumo_financeiro_mensal_v1"
+      ],
+      "limit": "Comparação lexical de contratos, não catálogo instalado; inclui definições históricas, não resolve ordem automaticamente"
+    },
+    {
+      "branch": "chore/fase-b-readiness-20261011",
+      "sha": "b7bf4c158e93cf455cc307097eef83d90e9c6a77",
+      "merge_base": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+      "same_files": [],
+      "sql_function_overlap": [],
+      "frontend_rpc_tokens_without_sql_reference": [],
+      "limit": "Comparação lexical de contratos, não catálogo instalado; inclui definições históricas, não resolve ordem automaticamente"
+    },
+    {
+      "branch": "fix/despesas-gerais-tenant-20261011",
+      "sha": "abc160d33328e305dfdd4d4748a2973765c18c0d",
+      "merge_base": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+      "same_files": [],
+      "sql_function_overlap": [],
+      "frontend_rpc_tokens_without_sql_reference": [],
+      "limit": "Comparação lexical de contratos, não catálogo instalado; inclui definições históricas, não resolve ordem automaticamente"
+    },
+    {
+      "branch": "codex/auditoria-global-noturna-20261014",
+      "sha": "63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3",
+      "merge_base": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+      "same_files": [],
+      "sql_function_overlap": [],
+      "frontend_rpc_tokens_without_sql_reference": [],
+      "limit": "Comparação lexical de contratos, não catálogo instalado; inclui definições históricas, não resolve ordem automaticamente"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "production_access": false,
+  "runs": [
+    {
+      "id": "medicine",
+      "exit": 1,
+      "source": "tests/medicine-browser.mjs",
+      "scope": "Browser local, API sintética; não autorização backend",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\broad-medicine"
+    },
+    {
+      "id": "workforce-controlled",
+      "exit": 0,
+      "source": "tests/workforce-controlled-browser.mjs",
+      "scope": "Browser local, API sintética; não autorização backend",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\broad-workforce-controlled"
+    },
+    {
+      "id": "encarregado-rnc",
+      "exit": 0,
+      "source": "tests/encarregado-rnc-browser.mjs",
+      "scope": "Browser local, API sintética; não autorização backend",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\broad-encarregado-rnc"
+    },
+    {
+      "id": "planning",
+      "exit": 1,
+      "source": "tests/planning-browser.mjs",
+      "scope": "Browser local, API sintética; não autorização backend",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\broad-planning"
+    },
+    {
+      "id": "vehicle-assignment",
+      "exit": 0,
+      "source": "tests/vehicle-assignment-browser.mjs",
+      "scope": "Browser local, API sintética; não autorização backend",
+      "screenshots": "C:\\Users\\conta\\.codex\\worktrees\\validacao-profunda-203-20261014\\primeline-go-urgente\\docs\\auditorias\\engenharia-qualidade-noturna-20261014\\ENGENHARIA-QUALIDADE\\broad-vehicle-assignment"
+    }
+  ]
+}

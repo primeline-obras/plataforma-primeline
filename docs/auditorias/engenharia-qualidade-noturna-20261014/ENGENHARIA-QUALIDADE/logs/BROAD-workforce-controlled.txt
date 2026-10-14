@@ -1,0 +1,3 @@
+PASS explicit day: no magnet/arrow inherited into tomorrow
+PASS failure/uncommitted: existing UI allocation preserved
+PASS scoped buttons, remove, no direct DML, three viewports and clean console

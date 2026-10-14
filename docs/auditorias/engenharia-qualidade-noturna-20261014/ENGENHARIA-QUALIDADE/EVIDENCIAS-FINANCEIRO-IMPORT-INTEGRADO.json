@@ -33,6 +33,18 @@
       "limit": "Confirmação SQL sintética explícita; sem XLSX binário nem dados reais. Não é falha de tenant."
     },
     {
+      "id": "FIN-BINARY-DUPLICATE-UNKNOWN",
+      "classification": "FALHA LOCAL COMPROVADA",
+      "severity": "P2",
+      "binary_input_rows": 3,
+      "preview_rows": 2,
+      "duplicate_flag": false,
+      "reported_imported": 2,
+      "persisted_months": 1,
+      "final_value": 200,
+      "limit": "Obra999 é sintética não resolvida; não prova escrita cross-tenant. A confirmação local foi explícita."
+    },
+    {
       "id": "FIN-IMPORT-REPEAT",
       "classification": "PASS",
       "rows": 1,

@@ -1,0 +1,918 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "diretor_obra",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "adjunto",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "preparador",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "preparador",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "preparador",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Importação reservada à Gestão da Plataforma ou Diretor de Obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "BUDGET_IMPORT",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "diretor_obra",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para editar esta consulta."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "adjunto",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para editar esta consulta."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "preparador",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "preparador",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para editar esta consulta."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PRICE_SAVE",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "diretor_obra",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para adjudicar nesta obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "adjunto",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para adjudicar nesta obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "preparador",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "preparador",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "preparador",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para adjudicar nesta obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "AWARD",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "gestao_plataforma",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "gerencia",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "administrativo",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "financeiro",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "diretor_obra",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "diretor_obra",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sem permissão para editar esta obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "adjunto",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "adjunto",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sem permissão para editar esta obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "preparador",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "preparador",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "preparador",
+      "variant": "responsibility_revoked",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sem permissão para editar esta obra."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    },
+    {
+      "action": "PLAN_BATCH",
+      "profile": "encarregado",
+      "variant": "foreign",
+      "result": "PASS",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "unchanged": true,
+      "scope": "Funções/ACL reais em PostgreSQL descartável"
+    }
+  ]
+}

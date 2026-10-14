@@ -1,0 +1,48 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "RH-NO-ADMISSION",
+      "result": "PASS",
+      "no_inferred_date": true,
+      "no_facts": true
+    },
+    {
+      "id": "RH-NO-LINK",
+      "result": "PASS",
+      "self_rows": 0,
+      "limit": "Mensagem visual de esclarecimento não validada nesta chamada"
+    },
+    {
+      "id": "RH-AMBIGUOUS-LINK",
+      "result": "PASS",
+      "self_rows": 0,
+      "automatic_selection": false
+    },
+    {
+      "id": "RH-FORMAL-OPERATIONAL",
+      "result": "PASS",
+      "formal_role": "Preparador",
+      "login_role": "encarregado",
+      "self_rows": 1,
+      "fictitious_membership": false,
+      "limit": "Ligação configurada apenas como fixture; não teste de processo administrativo de criação de vínculo"
+    },
+    {
+      "id": "RH-NO-AUTH-EXIT",
+      "result": "PASS",
+      "minutes_preserved": 240,
+      "no_auth_required_for_worker": true,
+      "exit_new_write_denied": true,
+      "limit": "Saída foi precondição semeada; não certifica o writer RH de ciclo de vida"
+    },
+    {
+      "id": "RH-REACTIVATION-PRECONDITION",
+      "result": "PASS",
+      "preview_no_write": true,
+      "history_preserved": true,
+      "limit": "Não implementa nem aprova clearing de saída no RH real; testar processo RH separadamente"
+    }
+  ]
+}

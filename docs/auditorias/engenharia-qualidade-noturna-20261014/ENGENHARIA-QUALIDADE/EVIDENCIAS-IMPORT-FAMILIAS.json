@@ -1,0 +1,483 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "MQT-REORDER",
+      "result": "PASS",
+      "expected": "accept",
+      "observed": [
+        {
+          "row": 2,
+          "label": "F01 · Sintético",
+          "errors": [],
+          "warnings": [],
+          "selected": true,
+          "payload": {
+            "fase_id": "phase",
+            "descricao": "Sintético",
+            "venda_prevista": 150,
+            "custo_total_estimado": 100,
+            "margem_prevista": 0,
+            "deslocacoes": 0,
+            "mao_obra": 0,
+            "maquinas": 0,
+            "materiais": 0,
+            "mao_obra_sub": 0,
+            "subempreitada": 0
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "MQT-MISSING-COLUMN",
+      "result": "PASS",
+      "expected": "throw",
+      "observed": "Não foi possível identificar o cabeçalho por fase na folha “0_Orçamento”.",
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "MQT-UNKNOWN-PHASE",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "F99 · Orçamento",
+          "errors": [
+            "A fase “F99” não existe nesta obra."
+          ],
+          "warnings": [],
+          "selected": false,
+          "payload": {
+            "fase_id": null,
+            "descricao": null,
+            "venda_prevista": 0,
+            "custo_total_estimado": 100,
+            "margem_prevista": 0,
+            "deslocacoes": 0,
+            "mao_obra": 0,
+            "maquinas": 0,
+            "materiais": 0,
+            "mao_obra_sub": 0,
+            "subempreitada": 0
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "MQT-NEGATIVE",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "F01 · Estaleiro",
+          "errors": [
+            "Custo total estimado inválido."
+          ],
+          "warnings": [],
+          "selected": false,
+          "payload": {
+            "fase_id": "phase",
+            "descricao": "Estaleiro",
+            "venda_prevista": 0,
+            "custo_total_estimado": -100,
+            "margem_prevista": 0,
+            "deslocacoes": 0,
+            "mao_obra": 0,
+            "maquinas": 0,
+            "materiais": 0,
+            "mao_obra_sub": 0,
+            "subempreitada": 0
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "MQT-DUPLICATE-NUMERIC",
+      "classification": "FALHA DE PREVIEW",
+      "correspondence": "DEEP-IMP-01/02",
+      "observed": [
+        {
+          "row": 2,
+          "label": "F01 · Estaleiro",
+          "errors": [],
+          "warnings": [],
+          "selected": true,
+          "payload": {
+            "fase_id": "phase",
+            "descricao": "Estaleiro",
+            "venda_prevista": 0,
+            "custo_total_estimado": 123,
+            "margem_prevista": 0,
+            "deslocacoes": 0,
+            "mao_obra": 0,
+            "maquinas": 0,
+            "materiais": 0,
+            "mao_obra_sub": 0,
+            "subempreitada": 0
+          }
+        },
+        {
+          "row": 3,
+          "label": "F01 · Estaleiro",
+          "errors": [],
+          "warnings": [],
+          "selected": true,
+          "payload": {
+            "fase_id": "phase",
+            "descricao": "Estaleiro",
+            "venda_prevista": 0,
+            "custo_total_estimado": 200,
+            "margem_prevista": 0,
+            "deslocacoes": 0,
+            "mao_obra": 0,
+            "maquinas": 0,
+            "materiais": 0,
+            "mao_obra_sub": 0,
+            "subempreitada": 0
+          }
+        }
+      ],
+      "limit": "Não é um novo ID de causa; writer orçamento distinto ainda não confirmado para esta variante"
+    },
+    {
+      "id": "SUB-VALID",
+      "result": "PASS",
+      "expected": "accept",
+      "observed": [
+        {
+          "row": 2,
+          "label": "Trabalho sintético",
+          "errors": [],
+          "warnings": [],
+          "duplicate": false,
+          "selected": true,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "trabalho": "Trabalho sintético",
+            "fornecedor_id": "supplier",
+            "custo_direto": 100,
+            "preco_venda": 130,
+            "margem_prevista": 30,
+            "data_pedido": null,
+            "data_proposta": null,
+            "data_contrato": null,
+            "valor_adjudicado": 100,
+            "tipo_pagamento": "por_fase",
+            "condicao_pagamento": "30_dias",
+            "data_inicio_prevista": "2026-10-01",
+            "data_fim_prevista": "2026-10-15",
+            "estado": "adjudicado"
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "SUB-INVALID-SUPPLIER",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "Trabalho sintético",
+          "errors": [
+            "Fornecedor “Desconhecido” não existe; não será criado automaticamente.",
+            "Uma subempreitada adjudicada exige fornecedor existente."
+          ],
+          "warnings": [],
+          "duplicate": false,
+          "selected": false,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "trabalho": "Trabalho sintético",
+            "fornecedor_id": null,
+            "custo_direto": 100,
+            "preco_venda": 130,
+            "margem_prevista": 30,
+            "data_pedido": null,
+            "data_proposta": null,
+            "data_contrato": null,
+            "valor_adjudicado": 100,
+            "tipo_pagamento": "por_fase",
+            "condicao_pagamento": "30_dias",
+            "data_inicio_prevista": "2026-10-01",
+            "data_fim_prevista": "2026-10-15",
+            "estado": "adjudicado"
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "SUB-INVALID-WORK",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "Trabalho sintético",
+          "errors": [
+            "A obra tem de ser 120."
+          ],
+          "warnings": [],
+          "duplicate": false,
+          "selected": false,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "trabalho": "Trabalho sintético",
+            "fornecedor_id": "supplier",
+            "custo_direto": 100,
+            "preco_venda": 130,
+            "margem_prevista": 30,
+            "data_pedido": null,
+            "data_proposta": null,
+            "data_contrato": null,
+            "valor_adjudicado": 100,
+            "tipo_pagamento": "por_fase",
+            "condicao_pagamento": "30_dias",
+            "data_inicio_prevista": "2026-10-01",
+            "data_fim_prevista": "2026-10-15",
+            "estado": "adjudicado"
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "SUB-INVALID-STATE",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "Trabalho sintético",
+          "errors": [
+            "Estado inválido: inexistente."
+          ],
+          "warnings": [],
+          "duplicate": false,
+          "selected": false,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "trabalho": "Trabalho sintético",
+            "fornecedor_id": "supplier",
+            "custo_direto": 100,
+            "preco_venda": 130,
+            "margem_prevista": 30,
+            "data_pedido": null,
+            "data_proposta": null,
+            "data_contrato": null,
+            "valor_adjudicado": 100,
+            "tipo_pagamento": "por_fase",
+            "condicao_pagamento": "30_dias",
+            "data_inicio_prevista": "2026-10-01",
+            "data_fim_prevista": "2026-10-15",
+            "estado": "inexistente"
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "SUB-INVALID-DATE",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "Trabalho sintético",
+          "errors": [
+            "A data de fim é anterior à data de início."
+          ],
+          "warnings": [],
+          "duplicate": false,
+          "selected": false,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "trabalho": "Trabalho sintético",
+            "fornecedor_id": "supplier",
+            "custo_direto": 100,
+            "preco_venda": 130,
+            "margem_prevista": 30,
+            "data_pedido": null,
+            "data_proposta": null,
+            "data_contrato": null,
+            "valor_adjudicado": 100,
+            "tipo_pagamento": "por_fase",
+            "condicao_pagamento": "30_dias",
+            "data_inicio_prevista": "2026-10-01",
+            "data_fim_prevista": "2026-09-01",
+            "estado": "adjudicado"
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "SUB-500-MIXED",
+      "result": "PASS",
+      "rows": 500,
+      "mixed_row_errors_visible": true,
+      "limit": "Seleção explícita no preview; não confirmação SQL deste lote grande"
+    },
+    {
+      "id": "TEE-VALID",
+      "result": "PASS",
+      "expected": "accept",
+      "observed": [
+        {
+          "row": 2,
+          "label": "TEE-SYN",
+          "errors": [],
+          "warnings": [],
+          "duplicate": false,
+          "selected": true,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "numero": "TEE-SYN",
+            "descricao": "Trabalho sintético",
+            "especialidade": "Geral",
+            "valor": 100,
+            "preco_custo": 70,
+            "dias_prorrogacao": 0,
+            "data_envio": null,
+            "data_resposta": null,
+            "estado_aprovacao_cliente": "pendente",
+            "revisao": "REV00",
+            "data_inicio_execucao": null,
+            "data_fim_execucao": null,
+            "itens": [
+              {
+                "linha": 2,
+                "numero_artigo": "1",
+                "descricao": "Artigo sintético",
+                "unidade": "m2",
+                "quantidade": 2,
+                "preco_unitario": 50,
+                "valor_total": 100
+              }
+            ]
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "TEE-FOREIGN",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "TEE-SYN",
+          "errors": [
+            "A obra tem de ser 120."
+          ],
+          "warnings": [],
+          "duplicate": false,
+          "selected": false,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "numero": "TEE-SYN",
+            "descricao": "Trabalho sintético",
+            "especialidade": "Geral",
+            "valor": 100,
+            "preco_custo": 70,
+            "dias_prorrogacao": 0,
+            "data_envio": null,
+            "data_resposta": null,
+            "estado_aprovacao_cliente": "pendente",
+            "revisao": "REV00",
+            "data_inicio_execucao": null,
+            "data_fim_execucao": null,
+            "itens": [
+              {
+                "linha": 2,
+                "numero_artigo": "1",
+                "descricao": "Artigo sintético",
+                "unidade": "m2",
+                "quantidade": 2,
+                "preco_unitario": 50,
+                "valor_total": 100
+              }
+            ]
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "TEE-INCOMPLETE-ITEM",
+      "result": "PASS",
+      "expected": "reject",
+      "observed": [
+        {
+          "row": 2,
+          "label": "TEE-SYN",
+          "errors": [
+            "Item da linha 2 sem Nº Artigo ou Descrição."
+          ],
+          "warnings": [],
+          "duplicate": false,
+          "selected": false,
+          "payload": {
+            "obra_id": "work",
+            "fase_id": "phase",
+            "numero": "TEE-SYN",
+            "descricao": "Trabalho sintético",
+            "especialidade": "Geral",
+            "valor": 100,
+            "preco_custo": 70,
+            "dias_prorrogacao": 0,
+            "data_envio": null,
+            "data_resposta": null,
+            "estado_aprovacao_cliente": "pendente",
+            "revisao": "REV00",
+            "data_inicio_execucao": null,
+            "data_fim_execucao": null,
+            "itens": [
+              {
+                "linha": 2,
+                "numero_artigo": "",
+                "descricao": "Artigo sintético",
+                "unidade": "m2",
+                "quantidade": 2,
+                "preco_unitario": 50,
+                "valor_total": 100
+              }
+            ]
+          }
+        }
+      ],
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "TEE-MISSING-SHEET",
+      "result": "PASS",
+      "expected": "throw",
+      "observed": "A folha “TEE_Itens” não existe ou está vazia.",
+      "scope": "Parsers reais/SheetJS; sem writer neste caso"
+    },
+    {
+      "id": "TEE-ORPHAN-IMPORT-ROW",
+      "classification": "LINHA DESCARTADA SEM AVISO",
+      "correspondence": "DEEP-IMP-02: mesma classe de completude",
+      "input_items": 2,
+      "preview_items": 1,
+      "limit": "Nenhuma linha órfã persistida na BD; o problema é perda silenciosa no preview"
+    }
+  ]
+}

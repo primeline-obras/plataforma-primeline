@@ -1,0 +1,5 @@
+import{createRequire}from'node:module';import{execFileSync}from'node:child_process';import path from'node:path';import os from'node:os';import fs from'node:fs';
+const require=createRequire(import.meta.url),common=execFileSync('git',['rev-parse','--path-format=absolute','--git-common-dir'],{encoding:'utf8',windowsHide:true}).trim();
+export const primaryRoot=path.dirname(common);
+export function loadXlsx(){if(process.env.QUADRO_XLSX)return require(process.env.QUADRO_XLSX);const trees=execFileSync('git',['worktree','list','--porcelain'],{encoding:'utf8',windowsHide:true}).split(/\r?\n/).filter(x=>x.startsWith('worktree ')).map(x=>x.slice(9));for(const root of [process.cwd(),primaryRoot,...trees]){const candidate=path.join(root,'tests/runtime/node_modules/xlsx');if(fs.existsSync(candidate))return require(candidate)}throw Error('Definir QUADRO_XLSX com uma instalação local já disponível; não instalar automaticamente.')}
+export const bundledModules=process.env.CODEX_TEST_NODE_MODULES||path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules');

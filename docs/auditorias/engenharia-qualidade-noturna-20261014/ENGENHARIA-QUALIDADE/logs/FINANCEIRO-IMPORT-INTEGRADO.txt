@@ -1,0 +1,18 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (39.8296ms)
+  ✔ drift de coluna/policy/grant/definer aborta (116.2276ms)
+  ✔ migration sem backup privado recusa (41.4695ms)
+  ✔ parser -> real import persists texto (9.3105ms)
+  ✔ parser -> real import persists texto123 (4.7996ms)
+  ✔ parser -> real import persists =123 (4.2804ms)
+  ✔ binary duplicate and unknown rows: preview omits unknown and writer overwrites same month (155.665ms)
+  ✔ valid PT amount and identical repeated import do not duplicate monthly adjustment (7.1058ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11850.143ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12008.4763

@@ -1,0 +1,170 @@
+[
+  {
+    "name": "nome-longo",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "folha",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "editor",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "confirmacao",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "multiobra",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "externos",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "externo-editor",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "retirada",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "equipa-vazia",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "plano",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "planeamento-resolvido",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "planeamento-excecao",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": []
+    }
+  },
+  {
+    "name": "agenda",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": [
+        {
+          "text": "REGISTAR →",
+          "width": 265.671875,
+          "height": 20,
+          "disabled": false
+        }
+      ]
+    }
+  },
+  {
+    "name": "agenda-colegas",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "measure": {
+      "horizontal_overflow": false,
+      "buttons": [
+        {
+          "text": "REGISTAR →",
+          "width": 265.671875,
+          "height": 20,
+          "disabled": false
+        }
+      ]
+    }
+  }
+]

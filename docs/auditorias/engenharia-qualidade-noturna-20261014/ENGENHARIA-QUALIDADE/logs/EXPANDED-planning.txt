@@ -1,0 +1,1 @@
+PASS: falhas de dependências e recuperação, exclusão de arquivo, edições locais, fases recolhidas, arquivo, pesos, preview e falha RPC preservam o lote.

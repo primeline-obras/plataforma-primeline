@@ -1,0 +1,29 @@
+{
+  "production_access": false,
+  "runs": [
+    {
+      "id": "medicine",
+      "exit": 0,
+      "file": "deep-quality-broad-medicine.mjs",
+      "scope": "Frontend real/API sintética; adapters de fixture atualizados; não autoriza backend"
+    },
+    {
+      "id": "planning",
+      "exit": 0,
+      "file": "deep-quality-broad-planning.mjs",
+      "scope": "Frontend real/API sintética; adapters de fixture atualizados; não autoriza backend"
+    },
+    {
+      "id": "rh-cadastro",
+      "exit": 0,
+      "file": "deep-quality-rh-cadastro-browser.mjs",
+      "scope": "Frontend real/API sintética; adapters de fixture atualizados; não autoriza backend"
+    },
+    {
+      "id": "review",
+      "exit": 0,
+      "file": "attendance-hours-review-browser.mjs",
+      "scope": "Frontend real/API sintética; adapters de fixture atualizados; não autoriza backend"
+    }
+  ]
+}
