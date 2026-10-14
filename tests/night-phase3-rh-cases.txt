@@ -1,0 +1,65 @@
+ {
+ const p3e=[];const p3out='docs/auditorias/auditoria-global-noturna-20261014/FASE-3/EVIDENCIAS-RH-TAREFAS.json';
+ const p3save=()=>import('node:fs').then(fs=>fs.writeFileSync(p3out,JSON.stringify({synthetic_only:true,production_access:false,boundaries:'Cadastro/contrato semeados na fixture; RPCs reais de equipa/Folha/FALTOU/conferência/tarefas; conclusão oficial de Planeamento via fixture explícita',cases:p3e},null,2)+'\n'));
+ const p3month=today.slice(0,7)+'-01';
+ const p3task=(actor,action,body,confirm=false,token=null,conn=a)=>call(conn,actor,'fn_folha_gestao_v2',[action,body,confirm,token]);
+ const p3body=(task,rev=0)=>({version:2,request_id:id(seq++),expected_revision:rev,task_id:id(task),work_id:id(100)});
+ await t.test('PHASE3 RH chain: cadastro/contrato fixture -> team -> cancelled preview -> factual report -> monthly -> correction',async()=>{
+  await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao) VALUES($1,$2,'PHASE3 synthetic worker','Pedreiro','2026-01-01')",[id(98100),id(1)]);
+  await q("INSERT INTO colaboradores_contratos(id,colaborador_id,tipo_contrato,data_inicio,estado) VALUES($1,$2,'sem_termo','2026-01-01','ativo')",[id(98101),id(98100)]);
+  await operate('team_add',[member(98100)],100,today);
+  const body=await planBody(98100,[site(100,0,[custom('08:00','12:00'),custom('13:00','17:00')])]);
+  const pre=await planCall(10,body);assert.equal((await q('SELECT count(*)::int n FROM folha_registos WHERE colaborador_id=$1',[id(98100)])).rows[0].n,0);
+  const saved=await planCall(10,body,true,pre.versao);assert.equal(saved.daily_summary.minutes,480);
+  const factual=await hreport(13,'primeline');assert.equal(factual.records.filter(r=>r.colaborador_id===id(98100)||r.person_id===id(98100)).reduce((s,r)=>s+r.minutes,0),480);
+  const mc=await monthContext(10,98100,p3month);assert.equal(mc.snapshot.actual_minutes,480);
+  const point=(await q('SELECT revision FROM folha_registos WHERE colaborador_id=$1',[id(98100)])).rows[0];
+  const correction=await planBody(98100,[site(100,point.revision,[custom('08:00','12:00')])]),cp=await planCall(10,correction);await planCall(10,correction,true,cp.versao);
+  const after=await monthContext(10,98100,p3month);assert.equal(after.snapshot.actual_minutes,240);assert.ok(after.history.length>mc.history.length);
+  assert.equal((await q('SELECT count(*)::int n FROM folha_vencimentos WHERE colaborador_id=$1',[id(98100)])).rows[0].n,0);
+  p3e.push({id:'RH-CHAIN',classification:'COMPORTAMENTO CORRETO LOCAL',minutes_before:480,minutes_after:240,payroll_created:0,preview_writes:0});await p3save();
+ });
+ await t.test('PHASE3 RH FALTOU -> absence map -> classification -> monthly history, zero invented hours',async()=>{
+  await faltouWorker(98102);const report=await freport(fbody(98102));const map=await as(a,10,'SELECT fn_folha_ausencias_contexto_v3($1::date,$2::date) v',[today,today]);assert.ok(map.absences.some(r=>r.id===report.absence.id));
+  const body={version:2,request_id:id(seq++),id:report.absence.id,expected_type:'falta_reportada_pendente',expected_state:'ausente_pendente',classification:'falta_justificada_sem_remuneracao',reason:'Prova PHASE3 exclusivamente sintética'};
+  const pre=await fcall(10,'absence_classify',body);await fcall(10,'absence_classify',body,true,pre.versao);
+  const month=await monthContext(10,98102,p3month);assert.ok(month.history.some(h=>h.action==='absence_report'));assert.ok(month.history.some(h=>h.action==='absence_classify'));
+  assert.equal((await q('SELECT count(*)::int n FROM folha_registos WHERE colaborador_id=$1',[id(98102)])).rows[0].n,0);
+  p3e.push({id:'RH-FALTOU',classification:'COMPORTAMENTO CORRETO LOCAL',original_absence_preserved:true,point_count:0,monthly_audit:true});await p3save();
+ });
+ await t.test('PHASE3 preview then actor revocation rejects confirm without facts',async()=>{
+  await faltouWorker(98103);const body=await planBody(98103,[site(100,0,[custom('08:00','12:00')])]),pre=await planCall(10,body);
+  await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(10)]);try{await assert.rejects(planCall(10,body,true,pre.versao),e=>e.code==='42501');}finally{await q('UPDATE utilizadores SET ativo=true WHERE id=$1',[id(10)]);}
+  assert.equal((await q('SELECT count(*)::int n FROM folha_registos WHERE colaborador_id=$1',[id(98103)])).rows[0].n,0);
+  p3e.push({id:'RH-REVOKE',classification:'COMPORTAMENTO CORRETO LOCAL',facts:0});await p3save();
+ });
+ await t.test('PHASE3 work/company mismatch fails entire plan and leaves month untouched',async()=>{
+  const before=await monthContext(10,98100,p3month),rev=(await q('SELECT revision FROM folha_registos WHERE colaborador_id=$1',[id(98100)])).rows[0].revision;
+  const body=await planBody(98100,[site(100,rev,[custom('08:00','10:00')]),site(103,0,[custom('13:00','17:00')])]);await assert.rejects(planCall(10,body),e=>e.code==='42501');
+  assert.equal((await monthContext(10,98100,p3month)).snapshot.actual_minutes,before.snapshot.actual_minutes);
+  p3e.push({id:'RH-TENANT',classification:'COMPORTAMENTO CORRETO LOCAL',no_partial_fact:true});await p3save();
+ });
+ await t.test('PHASE3 task: foreman report -> alerts -> planning conclusion -> director confirmation resolves alerts',async()=>{
+  await q("INSERT INTO planeamento_itens(id,fase_id,estado) VALUES($1,$2,'em_execucao')",[id(98200),id(500)]);
+  const body=p3body(98200),pre=await p3task(13,'task_report',body);assert.equal((await q('SELECT count(*)::int n FROM folha_tarefas_reportes WHERE tarefa_id=$1',[id(98200)])).rows[0].n,0);
+  const done=await p3task(13,'task_report',body,true,pre.versao);assert.equal(done.committed,true);assert.deepEqual(await p3task(13,'task_report',body,true,pre.versao),done);
+  const alerts=(await q("SELECT destinatario_utilizador_id,estado FROM alertas WHERE entidade_id=$1 AND tipo='folha_conclusao_reportada'",[id(98200)])).rows;assert.ok(alerts.length>=2);assert.equal(new Set(alerts.map(x=>x.destinatario_utilizador_id)).size,alerts.length);
+  assert.equal((await q('SELECT estado FROM planeamento_itens WHERE id=$1',[id(98200)])).rows[0].estado,'em_execucao');
+  await assert.rejects(p3task(14,'task_confirm',p3body(98200,1)),/PLANNING_CONFIRMATION_REQUIRED/);
+  await q("UPDATE planeamento_itens SET estado='concluido' WHERE id=$1",[id(98200)]);
+  const conf=p3body(98200,1),cp=await p3task(14,'task_confirm',conf);await p3task(14,'task_confirm',conf,true,cp.versao);
+  assert.equal((await q('SELECT estado FROM folha_tarefas_reportes WHERE tarefa_id=$1',[id(98200)])).rows[0].estado,'confirmed');
+  assert.equal((await q("SELECT count(*)::int n FROM alertas WHERE entidade_id=$1 AND tipo='folha_conclusao_reportada' AND estado='pendente'",[id(98200)])).rows[0].n,0);
+  p3e.push({id:'TASK-CHAIN',classification:'COMPORTAMENTO CORRETO LOCAL',report_does_not_complete_task:true,unique_alert_recipients:alerts.length,confirmation_resolves:true,planning_completion_boundary:'fixture UPDATE; actual batch frontend not linked in this native test'});await p3save();
+ });
+ await t.test('PHASE3 task: Adjunto confirms, Preparador cannot confirm; stale/revoked report replay rejected',async()=>{
+  await q("INSERT INTO planeamento_itens(id,fase_id,estado) VALUES($1,$2,'em_execucao')",[id(98201),id(500)]);
+  const body=p3body(98201),pre=await p3task(13,'task_report',body);await p3task(13,'task_report',body,true,pre.versao);
+  await q("UPDATE planeamento_itens SET estado='concluido' WHERE id=$1",[id(98201)]);
+  await assert.rejects(p3task(16,'task_confirm',p3body(98201,1)),e=>e.code==='42501');await assert.rejects(p3task(15,'task_confirm',p3body(98201,99)),e=>e.code==='40001');
+  const c=p3body(98201,1),cp=await p3task(15,'task_confirm',c);await p3task(15,'task_confirm',c,true,cp.versao);
+  await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(13)]);try{await assert.rejects(p3task(13,'task_report',body,true,pre.versao),e=>e.code==='42501');}finally{await q('UPDATE utilizadores SET ativo=true WHERE id=$1',[id(13)]);}
+  p3e.push({id:'TASK-ROLES',classification:'COMPORTAMENTO CORRETO LOCAL',adjunto_confirms:true,preparador_denied:true,stale_denied:true,replay_after_revocation_denied:true});await p3save();
+ });
+ await p3save();
+ }

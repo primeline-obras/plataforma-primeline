@@ -6,3 +6,8 @@ Produto preservado; apenas testes, evidências e documentação. Sem produção,
 Plano: circuitos Financeiro; RH/FALTOU/conferência; Compras; tarefas/reportes. Testar resiliência e ordens SQL erradas só em PostgreSQL sintético. Fase4: matriz das 38 áreas com lacunas rastreáveis, não certificação exaustiva.
 Relatórios anteriores preservados; não executar geradores antigos que os sobrescrevam.
 Próximo bloco: extensão do harness RH nativo e consumidores financeiros.
+
+## Extensão recebida — Fases 5–7
+
+Fases3/4 NÃO declaradas concluídas. RH/tarefas: 298 PASS/0FAIL/0SKIP no harness nativo, incluindo6 cenários novos. Persistidos RESULTADO-RH-LOCAL.txt e EVIDENCIAS-RH-TAREFAS.json. Cadastro/contrato são seeds sintéticos e conclusão oficial de Planeamento é fronteira explícita da fixture.
+Terminar circuitos Financeiro/Compras/resiliência e entregas3/4 antes das matrizes profundas5–7. Não afirmar todas ações executadas. Fases5–7 deverão reconciliar ações, dependências e lacunas; nenhuma correção autorizada.

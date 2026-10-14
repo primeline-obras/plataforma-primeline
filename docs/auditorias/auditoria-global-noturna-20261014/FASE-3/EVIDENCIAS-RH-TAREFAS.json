@@ -1,0 +1,48 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "boundaries": "Cadastro/contrato semeados na fixture; RPCs reais de equipa/Folha/FALTOU/conferência/tarefas; conclusão oficial de Planeamento via fixture explícita",
+  "cases": [
+    {
+      "id": "RH-CHAIN",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "minutes_before": 480,
+      "minutes_after": 240,
+      "payroll_created": 0,
+      "preview_writes": 0
+    },
+    {
+      "id": "RH-FALTOU",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "original_absence_preserved": true,
+      "point_count": 0,
+      "monthly_audit": true
+    },
+    {
+      "id": "RH-REVOKE",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "facts": 0
+    },
+    {
+      "id": "RH-TENANT",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "no_partial_fact": true
+    },
+    {
+      "id": "TASK-CHAIN",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "report_does_not_complete_task": true,
+      "unique_alert_recipients": 3,
+      "confirmation_resolves": true,
+      "planning_completion_boundary": "fixture UPDATE; actual batch frontend not linked in this native test"
+    },
+    {
+      "id": "TASK-ROLES",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "adjunto_confirms": true,
+      "preparador_denied": true,
+      "stale_denied": true,
+      "replay_after_revocation_denied": true
+    }
+  ]
+}
