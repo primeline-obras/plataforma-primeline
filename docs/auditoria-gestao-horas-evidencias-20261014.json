@@ -1,0 +1,240 @@
+{
+  "candidate": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+  "synthetic_only": true,
+  "production_access": false,
+  "findings": [
+    {
+      "case": "singleton",
+      "profile": "diretor_obra",
+      "allowed_dto": {
+        "daily": [
+          {
+            "date": "2026-10-12",
+            "known_estimate": 159,
+            "pending_groups": 0,
+            "external_minutes": 0,
+            "internal_minutes": 480,
+            "hr31_pending_groups": 0,
+            "provisional_estimate": 159
+          }
+        ],
+        "month": "2026-10-01",
+        "scope": "work_aggregate",
+        "version": 3,
+        "work_id": "00000000-0000-4000-8000-000000099001",
+        "external_minutes": 0,
+        "financial_effect": false,
+        "he_cost_calculated": false,
+        "provisional_minutes": 480,
+        "consolidated_minutes": 0,
+        "provisional_estimate": 159,
+        "legacy_costs_included": false,
+        "pending_valuation_groups": 0,
+        "individual_costs_included": false,
+        "known_provisional_estimate": 159
+      },
+      "formula": "known_estimate / (internal_minutes / 60)",
+      "inferred_hourly_cost": 19.875,
+      "confidential_rpc": "42501",
+      "security_gate": "FAIL"
+    },
+    {
+      "case": "singleton",
+      "profile": "adjunto",
+      "allowed_dto": {
+        "daily": [
+          {
+            "date": "2026-10-12",
+            "known_estimate": 159,
+            "pending_groups": 0,
+            "external_minutes": 0,
+            "internal_minutes": 480,
+            "hr31_pending_groups": 0,
+            "provisional_estimate": 159
+          }
+        ],
+        "month": "2026-10-01",
+        "scope": "work_aggregate",
+        "version": 3,
+        "work_id": "00000000-0000-4000-8000-000000099001",
+        "external_minutes": 0,
+        "financial_effect": false,
+        "he_cost_calculated": false,
+        "provisional_minutes": 480,
+        "consolidated_minutes": 0,
+        "provisional_estimate": 159,
+        "legacy_costs_included": false,
+        "pending_valuation_groups": 0,
+        "individual_costs_included": false,
+        "known_provisional_estimate": 159
+      },
+      "formula": "known_estimate / (internal_minutes / 60)",
+      "inferred_hourly_cost": 19.875,
+      "confidential_rpc": "42501",
+      "security_gate": "FAIL"
+    },
+    {
+      "case": "singleton",
+      "profile": "preparador",
+      "allowed_dto": {
+        "daily": [
+          {
+            "date": "2026-10-12",
+            "known_estimate": 159,
+            "pending_groups": 0,
+            "external_minutes": 0,
+            "internal_minutes": 480,
+            "hr31_pending_groups": 0,
+            "provisional_estimate": 159
+          }
+        ],
+        "month": "2026-10-01",
+        "scope": "work_aggregate",
+        "version": 3,
+        "work_id": "00000000-0000-4000-8000-000000099001",
+        "external_minutes": 0,
+        "financial_effect": false,
+        "he_cost_calculated": false,
+        "provisional_minutes": 480,
+        "consolidated_minutes": 0,
+        "provisional_estimate": 159,
+        "legacy_costs_included": false,
+        "pending_valuation_groups": 0,
+        "individual_costs_included": false,
+        "known_provisional_estimate": 159
+      },
+      "formula": "known_estimate / (internal_minutes / 60)",
+      "inferred_hourly_cost": 19.875,
+      "confidential_rpc": "42501",
+      "security_gate": "FAIL"
+    },
+    {
+      "case": "day_difference",
+      "first": {
+        "date": "2026-10-12",
+        "known_estimate": 400,
+        "pending_groups": 0,
+        "external_minutes": 0,
+        "internal_minutes": 960,
+        "hr31_pending_groups": 0,
+        "provisional_estimate": 400
+      },
+      "second": {
+        "date": "2026-10-13",
+        "known_estimate": 160,
+        "pending_groups": 0,
+        "external_minutes": 0,
+        "internal_minutes": 480,
+        "hr31_pending_groups": 0,
+        "provisional_estimate": 160
+      },
+      "identified_hours_available": true,
+      "formula": "(C_day1 - C_day2) / 8",
+      "inferred_hourly_cost": 30,
+      "security_gate": "FAIL"
+    },
+    {
+      "case": "crew_change",
+      "first": {
+        "date": "2026-10-12",
+        "known_estimate": 464,
+        "pending_groups": 0,
+        "external_minutes": 0,
+        "internal_minutes": 960,
+        "hr31_pending_groups": 0,
+        "provisional_estimate": 464
+      },
+      "second": {
+        "date": "2026-10-13",
+        "known_estimate": 192,
+        "pending_groups": 0,
+        "external_minutes": 0,
+        "internal_minutes": 480,
+        "hr31_pending_groups": 0,
+        "provisional_estimate": 192
+      },
+      "membership_end": "2026-10-13",
+      "formula": "(C_before - C_after) / 8",
+      "inferred_hourly_cost": 34,
+      "security_gate": "FAIL"
+    },
+    {
+      "case": "partial_known_subtotal",
+      "allowed_dto": {
+        "daily": [
+          {
+            "date": "2026-10-12",
+            "known_estimate": 176,
+            "pending_groups": 1,
+            "external_minutes": 0,
+            "internal_minutes": 960,
+            "hr31_pending_groups": 0,
+            "provisional_estimate": null
+          }
+        ],
+        "month": "2026-10-01",
+        "scope": "work_aggregate",
+        "version": 3,
+        "work_id": "00000000-0000-4000-8000-000000099003",
+        "external_minutes": 0,
+        "financial_effect": false,
+        "he_cost_calculated": false,
+        "provisional_minutes": 960,
+        "consolidated_minutes": 0,
+        "provisional_estimate": null,
+        "legacy_costs_included": false,
+        "pending_valuation_groups": 1,
+        "individual_costs_included": false,
+        "known_provisional_estimate": 176
+      },
+      "knowledge": "8h known-valued worker + 8h unvalued worker",
+      "formula": "known_estimate / 8",
+      "inferred_hourly_cost": 22,
+      "security_gate": "FAIL"
+    },
+    {
+      "case": "authorized_query_composition",
+      "cost_AB": 132,
+      "cost_AC": 172,
+      "cost_BC": 212,
+      "hours_each_worker_each_work": 4,
+      "formula_A": "(C_AB+C_AC-C_BC)/8",
+      "inferred_rates": [
+        11.5,
+        21.5,
+        31.5
+      ],
+      "security_gate": "FAIL",
+      "implication": "A threshold of 2 workers alone does not protect this composition"
+    },
+    {
+      "case": "scope_and_revocation",
+      "cross_tenant": "42501",
+      "tariff_approval": "42501",
+      "revoked_work": "42501",
+      "security_gate": "PASS"
+    },
+    {
+      "case": "pending_status_signal",
+      "day": {
+        "date": "2026-10-12",
+        "known_estimate": null,
+        "pending_groups": 1,
+        "external_minutes": 0,
+        "internal_minutes": 540,
+        "hr31_pending_groups": 1,
+        "provisional_estimate": null
+      },
+      "security_gate": "FUNCTIONAL_DECISION",
+      "observation": "Single worker HR31 group reveals an individual excess-day classification; no paid HE was created"
+    },
+    {
+      "case": "local_authenticated_transport",
+      "postgrest": "16.4",
+      "signed_synthetic_jwt": true,
+      "distinct_auth_subject": true,
+      "least_privilege_authenticator": true,
+      "hosted_supabase_auth_tested": false
+    }
+  ]
+}

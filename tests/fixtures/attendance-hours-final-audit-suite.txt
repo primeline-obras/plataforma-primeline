@@ -1,0 +1,86 @@
+
+ {
+ const auditEvidence=[];const auditMonth=today.slice(0,7)+'-01';
+ const d1=(await q('SELECT ($1::date-2)::text d',[today])).rows[0].d,d2=(await q('SELECT ($1::date-1)::text d',[today])).rows[0].d;
+ const agg=(actor,work)=>as(a,actor,'SELECT fn_folha_custos_operacionais_contexto_v3($1::uuid,$2::date) v',[id(work),auditMonth]);
+ const factsReport=(actor,work,date)=>as(a,actor,"SELECT fn_folha_relatorio_horas_v3($1::uuid,$2::date,$2::date,'primeline',NULL) v",[id(work),date]);
+ const roles=[14,892,893];
+ async function auditPerson(n,cost){
+  await q("INSERT INTO colaboradores(id,empresa_id,nome,funcao,data_admissao) VALUES($1,$2,$3,'Pedreiro','2026-01-01')",[id(n),id(1),'Pessoa exclusivamente sintética '+n]);
+  if(cost!==null){const body=rateBody(n,0,cost,d1),p=await rateCall(10,body);await rateCall(10,body,true,p.versao);}
+ }
+ async function auditFact(person,work,date,intervals){
+  const f=(await q('SELECT revision FROM folha_registos WHERE colaborador_id=$1 AND obra_id=$2 AND data=$3',[id(person),id(work),date])).rows[0],ev=(await q('SELECT revision FROM folha_avaliacoes_diarias WHERE colaborador_id=$1 AND data=$2',[id(person),date])).rows[0];
+  const body={version:3,request_id:id(seq++),kind:'primeline',person_id:id(person),work_id:id(work),date,expected_revision:f?.revision||0,expected_daily_revision:ev?.revision||0,intervals,reason:'Fixture de auditoria local; sem dados/factos reais'};
+  await dstSave(10,body);
+ }
+ async function auditReference(person,date){
+  const ev=(await q('SELECT revision FROM folha_avaliacoes_diarias WHERE colaborador_id=$1 AND data=$2',[id(person),date])).rows[0];
+  await adminOp('daily_reference_correct',{person_id:id(person),date,expected_revision:ev.revision,schedule:{intervals:[{start:'08:00',end:'12:00'},{start:'13:00',end:'17:00'}],expected_minutes:480},evidence:{source:'Referência administrativa sintética, sem inferência histórica'},reason:'Documentação exclusivamente sintética para auditar o contrato'});
+ }
+ const full=[custom('08:00','12:00'),custom('13:00','17:00')],morning=[custom('08:00','12:00')],afternoon=[custom('13:00','17:00')];
+ await t.test('AUDIT setup: seven isolated synthetic works, no real identities and approved references/rates',async()=>{
+  for(const n of [99001,99002,99003,99004,99005,99006,99007]){
+   await q("INSERT INTO obras(id,empresa_id,numero,nome,tipo) VALUES($1,$2,$3,$4,'reabilitacao')",[id(n),id(1),n,'Obra sintética auditoria '+n]);
+   for(const actor of roles){const role=actor===14?'diretor_obra':actor===892?'adjunto':'preparador';await q('INSERT INTO obra_responsaveis(obra_id,utilizador_id,papel) VALUES($1,$2,$3)',[id(n),id(actor),role]);}
+  }
+  for(const [p,rate]of[[99010,19.875],[99011,20],[99012,30],[99013,22],[99014,null],[99015,24],[99016,34],[99017,11.5],[99018,21.5],[99019,31.5]])await auditPerson(p,rate);
+  await auditFact(99010,99001,d1,full);await auditReference(99010,d1);
+  for(const p of [99011,99012]){await auditFact(p,99002,d1,full);await auditReference(p,d1);}
+  await auditFact(99011,99002,d2,full);await auditReference(99011,d2);
+  for(const p of [99013,99014]){await auditFact(p,99003,d1,full);await auditReference(p,d1);}
+  await operate('team_add',[member(99016)],99004,d1);for(const p of[99015,99016]){await auditFact(p,99004,d1,full);await auditReference(p,d1);}
+  await operate('team_remove',[member(99016,1)],99004,d2);await auditFact(99015,99004,d2,full);await auditReference(99015,d2);
+  for(const [p,w,xs]of[[99017,99005,morning],[99017,99006,afternoon],[99018,99005,morning],[99018,99007,afternoon],[99019,99006,morning],[99019,99007,afternoon]])await auditFact(p,w,d1,xs);
+  for(const p of [99017,99018,99019])await auditReference(p,d1);
+ });
+ await t.test('AUDIT FINDING P1: single known worker exposes exact RH hourly cost to all three technical profiles',async()=>{
+  for(const actor of roles){
+   const data=await agg(actor,99001),day=data.daily.find(x=>x.date===d1),inferred=Number(day.known_estimate)/(day.internal_minutes/60);
+   assert.equal(inferred,19.875);assert.doesNotMatch(JSON.stringify(data),/person_id|custo_hora|rate_id/);
+   await assert.rejects(as(a,actor,'SELECT fn_folha_custo_hora_contexto_v3($1) v',[id(99010)]),e=>e.code==='42501');
+   auditEvidence.push({case:'singleton',profile:actor===14?'diretor_obra':actor===892?'adjunto':'preparador',allowed_dto:data,formula:'known_estimate / (internal_minutes / 60)',inferred_hourly_cost:inferred,confidential_rpc:'42501',security_gate:'FAIL'});
+  }
+ });
+ await t.test('AUDIT FINDING P1: differences between authorized days and exact identified hour reports recover another rate',async()=>{
+  const data=await agg(14,99002),first=data.daily.find(x=>x.date===d1),second=data.daily.find(x=>x.date===d2);
+  const r1=await factsReport(14,99002,d1),r2=await factsReport(14,99002,d2);assert.equal(r1.records.length,2);assert.equal(r2.records.length,1);
+  const inferred=(Number(first.known_estimate)-Number(second.known_estimate))/8;assert.equal(inferred,30);
+  auditEvidence.push({case:'day_difference',first,second,identified_hours_available:true,formula:'(C_day1 - C_day2) / 8',inferred_hourly_cost:inferred,security_gate:'FAIL'});
+ });
+ await t.test('AUDIT FINDING P1: legitimate crew withdrawal preserves facts yet cost difference reveals departing worker',async()=>{
+  const data=await agg(892,99004),first=data.daily.find(x=>x.date===d1),second=data.daily.find(x=>x.date===d2);
+  assert.equal((Number(first.known_estimate)-Number(second.known_estimate))/8,34);
+  const row=(await q('SELECT fim FROM quadro_equipa_permanencias WHERE colaborador_id=$1',[id(99016)])).rows[0];assert.equal(row.fim,d2);
+  assert.equal((await q('SELECT minutes FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(99016),d1])).rows[0].minutes,480);
+  auditEvidence.push({case:'crew_change',first,second,membership_end:d2,formula:'(C_before - C_after) / 8',inferred_hourly_cost:34,security_gate:'FAIL'});
+ });
+ await t.test('AUDIT FINDING P1: pending total does not protect single-member known subtotal',async()=>{
+  const data=await agg(893,99003),day=data.daily.find(x=>x.date===d1);
+  assert.equal(data.provisional_estimate,null);assert.equal(day.pending_groups,1);assert.equal(day.known_estimate,176);assert.equal(day.internal_minutes,960);assert.equal(Number(day.known_estimate)/8,22);
+  auditEvidence.push({case:'partial_known_subtotal',allowed_dto:data,knowledge:'8h known-valued worker + 8h unvalued worker',formula:'known_estimate / 8',inferred_hourly_cost:22,security_gate:'FAIL'});
+ });
+ await t.test('AUDIT FINDING P1: three authorized works with two workers each solve individual costs without singleton',async()=>{
+  const aCost=Number((await agg(14,99005)).known_provisional_estimate),bCost=Number((await agg(14,99006)).known_provisional_estimate),cCost=Number((await agg(14,99007)).known_provisional_estimate);
+  const aRate=(aCost+bCost-cCost)/8,bRate=(aCost+cCost-bCost)/8,cRate=(bCost+cCost-aCost)/8;assert.deepEqual([aRate,bRate,cRate],[11.5,21.5,31.5]);
+  auditEvidence.push({case:'authorized_query_composition',cost_AB:aCost,cost_AC:bCost,cost_BC:cCost,hours_each_worker_each_work:4,formula_A:'(C_AB+C_AC-C_BC)/8',inferred_rates:[aRate,bRate,cRate],security_gate:'FAIL',implication:'A threshold of 2 workers alone does not protect this composition'});
+ });
+ await t.test('AUDIT permissions/tenant/revocation: aggregate authorized, private tariff denied, revoked work immediately denied',async()=>{
+  for(const actor of roles){
+   await assert.rejects(as(a,actor,'SELECT fn_folha_custos_operacionais_contexto_v3($1,$2) v',[id(103),auditMonth]),e=>e.code==='42501');
+   await assert.rejects(rateCall(actor,rateBody(99010,1,25,d2)),e=>e.code==='42501');
+   await q('DELETE FROM obra_responsaveis WHERE obra_id=$1 AND utilizador_id=$2',[id(99001),id(actor)]);
+   try{await assert.rejects(agg(actor,99001),e=>e.code==='42501');}finally{await q('INSERT INTO obra_responsaveis(obra_id,utilizador_id,papel) VALUES($1,$2,$3)',[id(99001),id(actor),actor===14?'diretor_obra':actor===892?'adjunto':'preparador']);}
+  }
+  auditEvidence.push({case:'scope_and_revocation',cross_tenant:'42501',tariff_approval:'42501',revoked_work:'42501',security_gate:'PASS'});
+ });
+ await t.test('AUDIT HR31 informational status: one worker excess suppresses amount but signals the day classification',async()=>{
+  const body={version:3,request_id:id(seq++),kind:'primeline',person_id:id(99010),work_id:id(99001),date:d1,expected_revision:(await q('SELECT revision FROM folha_registos WHERE colaborador_id=$1 AND data=$2',[id(99010),d1])).rows[0].revision,expected_daily_revision:(await q('SELECT revision FROM folha_avaliacoes_diarias WHERE colaborador_id=$1 AND data=$2',[id(99010),d1])).rows[0].revision,intervals:[custom('08:00','12:00'),custom('13:00','18:00')],reason:'Excedente exclusivamente sintético para observar HR31'};
+  await dstSave(10,body);const data=await agg(14,99001),day=data.daily.find(x=>x.date===d1);assert.equal(day.provisional_estimate,null);assert.equal(day.hr31_pending_groups,1);assert.equal(day.internal_minutes,540);
+  auditEvidence.push({case:'pending_status_signal',day,security_gate:'FUNCTIONAL_DECISION',observation:'Single worker HR31 group reveals an individual excess-day classification; no paid HE was created'});
+ });
+ const {runHoursRestAudit}=await import((await import('node:url')).pathToFileURL(process.cwd()+'/tests/attendance-hours-rest-audit.mjs').href);
+ await runHoursRestAudit({t,q,port,id,today,auditMonth,d1,roles,auditEvidence});
+ const fsAudit=await import('node:fs');
+ fsAudit.writeFileSync('docs/auditoria-gestao-horas-evidencias-20261014.json',JSON.stringify({candidate:'2ae1f8a194f23d77bf0692d0a6d586566227298c',synthetic_only:true,production_access:false,findings:auditEvidence},null,2)+'\n');
+ }
