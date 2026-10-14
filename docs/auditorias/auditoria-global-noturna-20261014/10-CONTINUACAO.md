@@ -31,3 +31,10 @@ A execução não garante temporizador. Não iniciar análise longa após 05h30 
 - Reexecução nativa Medicina/Viaturas: 46 PASS /0 FAIL /0 SKIP. Não instalaram dependências.
 - Achados novos: fatura/links não atómicos; parcial fecha recebimento; TEE revogado mantém tarefa; Gestão sem criar RNC. Sem correções.
 - Provas aritméticas adicionais (zeros/faturado/dupla fonte) são contratos a reconciliar, não prova de dados reais errados.
+
+## Checkpoint 2 — fornecedores e proposta obra128
+
+- Diretório/histórico de preços existente inventariado; duplicados/cadastros reais NÃO VERIFICADOS.
+- Proposta de leitor dedicado para Encarregado separa consulta de compra/adjudicação; nenhuma permissão alterada.
+- Obra128: cadeia conceptual TEE→execução→conferência→valorização→auto; sem margens/preços/contrato inferidos e sem migrations.
+- Browser isolado sem rede reproduziu N-SEC-01 no diálogo real de recebimento: elemento HTML + marcador executado; nenhuma exploração ou conta real.

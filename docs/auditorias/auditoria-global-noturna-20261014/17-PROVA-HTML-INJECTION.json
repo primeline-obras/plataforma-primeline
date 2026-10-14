@@ -1,0 +1,10 @@
+{
+  "id": "N-SEC-01",
+  "classification": "CONFIRMADO sink e execução browser sintético; persistência/catálogo reais NÃO VERIFICADOS",
+  "synthetic_only": true,
+  "production_access": false,
+  "injected_element": true,
+  "inline_handler_executed": true,
+  "network_used": false,
+  "origin": "null"
+}
