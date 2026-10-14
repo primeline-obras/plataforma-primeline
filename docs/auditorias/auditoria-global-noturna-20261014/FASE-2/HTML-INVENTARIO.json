@@ -1,0 +1,288 @@
+{
+  "method": "lexical scan, not AST/taint proof; nearest named function heuristic; nested interpolations may be omitted; no safety conclusion from counts",
+  "source_files": 56,
+  "sinks": 183,
+  "interpolations_review_queue": 1206,
+  "files": [
+    {
+      "file": "src/access-control.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/action-plan.js",
+      "sink_count": 3,
+      "interpolation_candidates": 37
+    },
+    {
+      "file": "src/app.js",
+      "sink_count": 69,
+      "interpolation_candidates": 1038
+    },
+    {
+      "file": "src/attendance-client.js",
+      "sink_count": 0,
+      "interpolation_candidates": 7
+    },
+    {
+      "file": "src/attendance-domain.js",
+      "sink_count": 0,
+      "interpolation_candidates": 14
+    },
+    {
+      "file": "src/attendance-hours-absence.js",
+      "sink_count": 0,
+      "interpolation_candidates": 4
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "sink_count": 2,
+      "interpolation_candidates": 19
+    },
+    {
+      "file": "src/attendance-hours-client.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/attendance-hours-domain.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "sink_count": 4,
+      "interpolation_candidates": 47
+    },
+    {
+      "file": "src/attendance-hours-excel.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/attendance-hours-map.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "sink_count": 4,
+      "interpolation_candidates": 104
+    },
+    {
+      "file": "src/attendance-hours-team.js",
+      "sink_count": 2,
+      "interpolation_candidates": 3
+    },
+    {
+      "file": "src/attendance-management.js",
+      "sink_count": 4,
+      "interpolation_candidates": 92
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "sink_count": 13,
+      "interpolation_candidates": 143
+    },
+    {
+      "file": "src/attendance.js",
+      "sink_count": 1,
+      "interpolation_candidates": 46
+    },
+    {
+      "file": "src/budget-requests.js",
+      "sink_count": 1,
+      "interpolation_candidates": 57
+    },
+    {
+      "file": "src/calendar.js",
+      "sink_count": 1,
+      "interpolation_candidates": 64
+    },
+    {
+      "file": "src/company-documents.js",
+      "sink_count": 1,
+      "interpolation_candidates": 32
+    },
+    {
+      "file": "src/comparative-map.js",
+      "sink_count": 2,
+      "interpolation_candidates": 182
+    },
+    {
+      "file": "src/consolidated-view.js",
+      "sink_count": 4,
+      "interpolation_candidates": 57
+    },
+    {
+      "file": "src/demoData-browser.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/direct-debits.js",
+      "sink_count": 0,
+      "interpolation_candidates": 4
+    },
+    {
+      "file": "src/document-index-pdf.js",
+      "sink_count": 0,
+      "interpolation_candidates": 12
+    },
+    {
+      "file": "src/documents.js",
+      "sink_count": 3,
+      "interpolation_candidates": 62
+    },
+    {
+      "file": "src/financial-map.js",
+      "sink_count": 1,
+      "interpolation_candidates": 70
+    },
+    {
+      "file": "src/foreman-scope.js",
+      "sink_count": 0,
+      "interpolation_candidates": 1
+    },
+    {
+      "file": "src/login-password.js",
+      "sink_count": 1,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/management-map.js",
+      "sink_count": 2,
+      "interpolation_candidates": 77
+    },
+    {
+      "file": "src/medicine.js",
+      "sink_count": 4,
+      "interpolation_candidates": 35
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "sink_count": 3,
+      "interpolation_candidates": 58
+    },
+    {
+      "file": "src/planning-batch.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/planning-import.js",
+      "sink_count": 0,
+      "interpolation_candidates": 3
+    },
+    {
+      "file": "src/planning-operational.js",
+      "sink_count": 0,
+      "interpolation_candidates": 1
+    },
+    {
+      "file": "src/planning.js",
+      "sink_count": 7,
+      "interpolation_candidates": 271
+    },
+    {
+      "file": "src/platform-dialogs.js",
+      "sink_count": 1,
+      "interpolation_candidates": 9
+    },
+    {
+      "file": "src/procurement.js",
+      "sink_count": 4,
+      "interpolation_candidates": 75
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "sink_count": 10,
+      "interpolation_candidates": 416
+    },
+    {
+      "file": "src/projects.js",
+      "sink_count": 4,
+      "interpolation_candidates": 29
+    },
+    {
+      "file": "src/properties.js",
+      "sink_count": 1,
+      "interpolation_candidates": 44
+    },
+    {
+      "file": "src/proposal-pdf-import.js",
+      "sink_count": 0,
+      "interpolation_candidates": 7
+    },
+    {
+      "file": "src/reset-password.js",
+      "sink_count": 1,
+      "interpolation_candidates": 3
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "sink_count": 4,
+      "interpolation_candidates": 58
+    },
+    {
+      "file": "src/rnc-pdf.js",
+      "sink_count": 0,
+      "interpolation_candidates": 11
+    },
+    {
+      "file": "src/rnc.js",
+      "sink_count": 2,
+      "interpolation_candidates": 64
+    },
+    {
+      "file": "src/session-boundary.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/settings.js",
+      "sink_count": 15,
+      "interpolation_candidates": 88
+    },
+    {
+      "file": "src/subcontractors.js",
+      "sink_count": 3,
+      "interpolation_candidates": 162
+    },
+    {
+      "file": "src/supabase-browser.js",
+      "sink_count": 0,
+      "interpolation_candidates": 63
+    },
+    {
+      "file": "src/vehicle-assignment.js",
+      "sink_count": 2,
+      "interpolation_candidates": 12
+    },
+    {
+      "file": "src/vehicle-validity.js",
+      "sink_count": 0,
+      "interpolation_candidates": 0
+    },
+    {
+      "file": "src/vehicles.js",
+      "sink_count": 2,
+      "interpolation_candidates": 124
+    },
+    {
+      "file": "src/visual-identity-final.js",
+      "sink_count": 0,
+      "interpolation_candidates": 5
+    },
+    {
+      "file": "src/workforce-allocation.js",
+      "sink_count": 0,
+      "interpolation_candidates": 1
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "sink_count": 2,
+      "interpolation_candidates": 46
+    }
+  ]
+}

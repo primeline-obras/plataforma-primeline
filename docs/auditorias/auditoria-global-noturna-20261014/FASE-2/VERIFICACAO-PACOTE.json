@@ -1,0 +1,70 @@
+{
+  "phase1_checkpoint": "439b1e3b900a8d5b919062cf8efd1f05868e494a",
+  "production_access": false,
+  "product_changed": false,
+  "diagnostic_tests": {
+    "pass": 37,
+    "fail": 0,
+    "skip": 0,
+    "warning": "Passing reproductions demonstrate open product failures"
+  },
+  "checks": [
+    {
+      "name": "all phase 1 artifacts remain identical to checkpoint",
+      "pass": true,
+      "details": {
+        "files": 20
+      }
+    },
+    {
+      "name": "only tests and phase 2 audit documentation differ",
+      "pass": true,
+      "details": {
+        "tracked_changes": 1,
+        "untracked_files": 17,
+        "product_diff": 0
+      }
+    },
+    {
+      "name": "CSV imported by artifact-tool preserves all 34 original rows and complete criteria",
+      "pass": true,
+      "details": {
+        "original_ids": 34,
+        "rows": 34,
+        "columns": 19,
+        "original_columns_preserved": true,
+        "unique_order": true,
+        "parser": "artifact-tool Workbook.fromCSV"
+      }
+    },
+    {
+      "name": "all 20 decisions are classified once",
+      "pass": true,
+      "details": {
+        "questions": 20
+      }
+    },
+    {
+      "name": "eight deliverables and synthetic evidence are complete",
+      "pass": true,
+      "details": {
+        "deliverables": 8,
+        "financial_scenarios": 20,
+        "browser_scenarios": 16,
+        "lexical_files": 56,
+        "lexical_sinks": 183
+      }
+    }
+  ],
+  "validation_tests": {
+    "pass": 5,
+    "fail": 0,
+    "skip": 0
+  },
+  "source_sha256": {
+    "src/app.js": "d82cac5127c3f03b3c07246a0e7f44531a48515aad3018504f83386a66fc8f88",
+    "src/production-dashboard.js": "931f7145c6f2ad96f58924daeffcda4cf5ed212273b24e13decce152db418c77",
+    "src/supabase-browser.js": "1937254c3bf5c65daf49725be67f88cb7e9d703b6371aef28928ff16a3d16418",
+    "supabase/encarregado_escopo_migration.sql": "6345c217962d1f966415083b4f33ac3feca3a43705bbe7643b9e2bdd007f2548"
+  }
+}

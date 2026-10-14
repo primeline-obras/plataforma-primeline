@@ -1,0 +1,182 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "authorization": "helpers allowed synthetically; monetary semantics only, not ACL proof",
+  "evidence": [
+    {
+      "name": "billing:insert",
+      "classification": "CONTROLO POSITIVO/NEGATIVO",
+      "counts": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "ui_has_invoice": 0,
+      "error": "synthetic insert failure"
+    },
+    {
+      "name": "billing:links",
+      "classification": "FALHA DE ATOMICIDADE REPRODUZIDA",
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "ui_has_invoice": 0,
+      "error": "A fatura foi criada, mas não foi possível associar os autos."
+    },
+    {
+      "name": "billing:upload",
+      "classification": "FALHA DE ATOMICIDADE REPRODUZIDA",
+      "counts": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "ui_has_invoice": 0,
+      "error": "synthetic upload failure"
+    },
+    {
+      "name": "billing:metadata",
+      "classification": "FALHA DE ATOMICIDADE REPRODUZIDA",
+      "counts": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "ui_has_invoice": 0,
+      "error": "A fatura foi criada, mas não foi possível associar o PDF."
+    },
+    {
+      "name": "billing:none",
+      "classification": "CONTROLO POSITIVO/NEGATIVO",
+      "counts": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "ui_has_invoice": 1,
+      "error": ""
+    },
+    {
+      "name": "billing:insert-response-lost",
+      "classification": "FALHA DE ATOMICIDADE REPRODUZIDA",
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "ui_has_invoice": 0,
+      "error": "synthetic response lost after commit"
+    },
+    {
+      "name": "billing:link-response-lost",
+      "classification": "FALHA DE ATOMICIDADE REPRODUZIDA",
+      "counts": [
+        1,
+        1,
+        0,
+        0
+      ],
+      "ui_has_invoice": 0,
+      "error": "synthetic link response lost"
+    },
+    {
+      "name": "billing:concurrency",
+      "classification": "FALHA DE PRODUTO REPRODUZIDA",
+      "drafts": 2,
+      "links": 1,
+      "unlinked_drafts": 1,
+      "limit": "HTTP fixture enforces repository UNIQUE(auto_medicao_id); hosted catalog not verified"
+    },
+    {
+      "name": "billing:ambiguous-retry",
+      "classification": "FALHA DE PRODUTO REPRODUZIDA",
+      "drafts": 2,
+      "links": 1
+    },
+    {
+      "name": "supplier:item-failure",
+      "classification": "FALHA DE PRODUTO REPRODUZIDA",
+      "invoice_committed": 1,
+      "items_committed": 0,
+      "form_cleared": true
+    },
+    {
+      "name": "old:invalid:0",
+      "classification": "CONTROLO NEGATIVO",
+      "unchanged": true
+    },
+    {
+      "name": "old:invalid:-1",
+      "classification": "CONTROLO NEGATIVO",
+      "unchanged": true
+    },
+    {
+      "name": "old:invalid:null",
+      "classification": "CONTROLO NEGATIVO",
+      "unchanged": true
+    },
+    {
+      "name": "old:amount:100",
+      "classification": "INCOERÊNCIA MONETÁRIA REPRODUZIDA",
+      "invoice": 1000,
+      "received": 100,
+      "status": "pago",
+      "ledger": 0
+    },
+    {
+      "name": "old:amount:1000",
+      "classification": "CONTROLO INTEGRAL",
+      "invoice": 1000,
+      "received": 1000,
+      "status": "pago",
+      "ledger": 0
+    },
+    {
+      "name": "old:amount:1100",
+      "classification": "INCOERÊNCIA MONETÁRIA REPRODUZIDA",
+      "invoice": 1000,
+      "received": 1100,
+      "status": "pago",
+      "ledger": 0
+    },
+    {
+      "name": "partial:contract",
+      "classification": "CONTROLO POSITIVO DO MECANISMO EXISTENTE",
+      "partial_status": "por_pagar",
+      "full_status": "pago",
+      "replay_count": 1,
+      "excess_rejected": true
+    },
+    {
+      "name": "partial:concurrency",
+      "classification": "CONTROLO POSITIVO DE CONCORRÊNCIA",
+      "accepted": 1,
+      "stale": 1,
+      "received": 100
+    },
+    {
+      "name": "mixed:apis",
+      "classification": "FALHA DE PRODUTO REPRODUZIDA",
+      "document_received": 900,
+      "ledger_received": 100,
+      "actual_receipts_requested": 1000,
+      "status": "pago"
+    },
+    {
+      "name": "monthly:cumulative",
+      "classification": "FALHA DE PRODUTO REPRODUZIDA",
+      "expected_october": 100,
+      "expected_november": 900,
+      "actual_october": 0,
+      "actual_november": 1000
+    }
+  ]
+}

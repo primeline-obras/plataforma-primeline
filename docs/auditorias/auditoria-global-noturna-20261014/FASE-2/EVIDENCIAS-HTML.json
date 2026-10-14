@@ -1,0 +1,161 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "renderer": "paid",
+      "field": "supplier",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "paid",
+      "field": "number",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "pending",
+      "field": "supplier",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "pending",
+      "field": "number",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "toast",
+      "field": "message",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "history",
+      "field": "comment",
+      "classification": "CONTROLO PROTEGIDO; NÃO PROVA TODO O MÓDULO",
+      "network_requests": 0,
+      "element": false,
+      "executed": false,
+      "text_preserved": true,
+      "origin": "null"
+    },
+    {
+      "renderer": "documents",
+      "field": "filename",
+      "classification": "CONTROLO PROTEGIDO; NÃO PROVA TODO O MÓDULO",
+      "network_requests": 0,
+      "element": false,
+      "executed": false,
+      "text_preserved": true,
+      "origin": "null"
+    },
+    {
+      "renderer": "alerts",
+      "field": "description",
+      "classification": "CONTROLO PROTEGIDO; NÃO PROVA TODO O MÓDULO",
+      "network_requests": 0,
+      "element": false,
+      "executed": false,
+      "text_preserved": true,
+      "origin": "null"
+    },
+    {
+      "renderer": "measurements",
+      "field": "number",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "measurements",
+      "field": "auto-number",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "measurements",
+      "field": "error",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "detail",
+      "field": "work-name",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "detail",
+      "field": "client",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "detail",
+      "field": "address",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "detail",
+      "field": "error",
+      "classification": "FALHA DE SEGURANÇA REPRODUZIDA",
+      "network_requests": 0,
+      "element": true,
+      "executed": true,
+      "text_preserved": false,
+      "origin": "null"
+    },
+    {
+      "renderer": "safeText",
+      "classification": "APRESENTAÇÃO LEGÍTIMA PRESERVADA",
+      "roundtrip": true
+    }
+  ]
+}
