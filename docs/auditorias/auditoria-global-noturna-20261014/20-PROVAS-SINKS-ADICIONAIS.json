@@ -1,0 +1,26 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "evidence": [
+    {
+      "id": "N-SEC-01",
+      "function": "renderWorks",
+      "field": "work.nome",
+      "classification": "CONFIRMADO renderer sintético; produção NÃO VERIFICADA",
+      "element": true,
+      "executed": true,
+      "origin": "null",
+      "network_used": false
+    },
+    {
+      "id": "N-SEC-01",
+      "function": "financeCard",
+      "field": "supplier.nome",
+      "classification": "CONFIRMADO renderer sintético; produção NÃO VERIFICADA",
+      "element": true,
+      "executed": true,
+      "origin": "null",
+      "network_used": false
+    }
+  ]
+}

@@ -1,9 +1,19 @@
 {
   "src_js_files": 56,
   "supabase_sql_files": 265,
-  "test_mjs_files": 242,
+  "test_mjs_files": 247,
   "endpoint_references": 218,
   "sql_definitions": 588,
   "imports_count": 79,
-  "production_inspected": false
+  "production_inspected": false,
+  "seed_files_excluded": [
+    "atualizar_obra_120_planeamento_xlsx_20260910.sql",
+    "classificacao_especialidades_lote_inicial.sql",
+    "importar_dados_reais_equipa.sql",
+    "import_obra_120_planeamento_itens.sql",
+    "nomes_reais_utilizadores_reunioes.sql",
+    "obra_118_subempreitadas_articulado.sql",
+    "preencher_fornecedores_fontes_excel.sql"
+  ],
+  "supabase_sql_indexed": 258
 }

@@ -1,0 +1,29 @@
+{
+  "base_main_local": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+  "candidate": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+  "functions": [
+    {
+      "function": "async function submitBilling(event)",
+      "present_main": true,
+      "same_main_candidate": true
+    },
+    {
+      "function": "function openPaymentDialog(billingId)",
+      "present_main": true,
+      "same_main_candidate": true
+    },
+    {
+      "function": "function renderWorks()",
+      "present_main": true,
+      "same_main_candidate": true
+    },
+    {
+      "function": "function financeCard(invoice)",
+      "present_main": true,
+      "same_main_candidate": true
+    }
+  ],
+  "rnc_same_main_candidate": true,
+  "missing_relative_imports": [],
+  "production_assets_checked": false
+}

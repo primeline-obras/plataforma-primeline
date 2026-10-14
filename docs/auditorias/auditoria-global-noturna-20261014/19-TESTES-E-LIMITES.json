@@ -1,0 +1,138 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "final_unique_executions": [
+    {
+      "group": "financeiro_planeamento_compras",
+      "files": [
+        "tests/cash-flow-sources.test.mjs",
+        "tests/automatic-work-costs.test.mjs",
+        "tests/financial-map.test.mjs",
+        "tests/investment-mode.test.mjs",
+        "tests/estimated-costs-final-model.test.mjs",
+        "tests/estimated-costs-consolidated.test.mjs",
+        "tests/tees-forecast-foreman.test.mjs",
+        "tests/measurement-billing-approval.test.mjs",
+        "tests/duplicate-invoice-warning.test.mjs",
+        "tests/material-discounts.test.mjs",
+        "tests/invoice-workflow-readiness.test.mjs",
+        "tests/invoice-finance-actions.test.mjs",
+        "tests/invoice-delete-administrative.test.mjs",
+        "tests/invoice-director-return-administrative.test.mjs",
+        "tests/invoice-pending-edit-payment-condition.test.mjs",
+        "tests/rsp-consolidated.test.mjs",
+        "tests/rsp-tees.test.mjs",
+        "tests/tee-form.test.mjs",
+        "tests/finance-operational-access.test.mjs",
+        "tests/planning-import.test.mjs",
+        "tests/planning-batch.test.mjs",
+        "tests/planning-operational.test.mjs",
+        "tests/procurement-planning-pending-consultations.test.mjs",
+        "tests/mapa-comparativo.test.mjs",
+        "tests/comparative-map-dynamic.test.mjs",
+        "tests/comparative-proposal-pdf-import.test.mjs",
+        "tests/subcontract-contract-control.test.mjs",
+        "tests/subcontractor-specialties.test.mjs",
+        "tests/supplier-operational-zones.test.mjs",
+        "tests/supplier-excel-fill.test.mjs",
+        "tests/classificacao-especialidades-lote-inicial.test.mjs",
+        "tests/management-map-import-safety.test.mjs",
+        "tests/management-map-five-sheets.test.mjs",
+        "tests/consolidated-view.test.mjs"
+      ],
+      "pass": 108,
+      "fail": 0,
+      "skip": 0,
+      "kind": "predominantly static contracts plus pure calculations"
+    },
+    {
+      "group": "administrativo_regressions",
+      "files": [
+        "tests/medicine-client.test.mjs",
+        "tests/vehicle-assignment-client.test.mjs",
+        "tests/vehicle-validity.test.mjs",
+        "tests/vehicles-module.test.mjs",
+        "tests/vehicle-deadlines.test.mjs",
+        "tests/collaborator-lifecycle.test.mjs",
+        "tests/collaborator-complete-fields.test.mjs",
+        "tests/employment-contract-alerts.test.mjs",
+        "tests/absences-workflow.test.mjs",
+        "tests/foreman-global-workforce-vacations.test.mjs",
+        "tests/company-documents.test.mjs",
+        "tests/documents-center.test.mjs",
+        "tests/document-version-subcontract-alert.test.mjs",
+        "tests/document-operational-indexes.test.mjs",
+        "tests/alerts-expiry-resolution.test.mjs",
+        "tests/alert-priority-email.test.mjs",
+        "tests/meeting-participant-directory.test.mjs",
+        "tests/meeting-rooms.test.mjs",
+        "tests/meeting-reservations-edit-delete.test.mjs",
+        "tests/calendar-commitments.test.mjs",
+        "tests/properties-budget-requests.test.mjs",
+        "tests/projects-grouping.test.mjs",
+        "tests/operational-parameters.test.mjs",
+        "tests/audit-log.test.mjs",
+        "tests/audit-view.test.mjs",
+        "tests/access-control.test.mjs",
+        "tests/adjunto-access-parity.test.mjs",
+        "tests/restricted-deletion-paths.test.mjs"
+      ],
+      "pass": 70,
+      "fail": 0,
+      "skip": 0,
+      "kind": "static contracts and mocked clients"
+    },
+    {
+      "group": "native_admin",
+      "files": [
+        "tests/medicina-trabalho.test.mjs",
+        "tests/vehicle-assignment-concurrency.test.mjs"
+      ],
+      "pass": 46,
+      "fail": 0,
+      "skip": 0,
+      "kind": "native PostgreSQL two connections"
+    },
+    {
+      "group": "new_defensive_cases",
+      "files": [
+        "tests/night-global-findings.test.mjs"
+      ],
+      "pass": 9,
+      "fail": 0,
+      "skip": 0,
+      "kind": "actual extracted frontend functions, pure calculations and isolated native PG"
+    },
+    {
+      "group": "isolated_browser_html",
+      "files": [
+        "tests/night-global-browser-security.test.mjs"
+      ],
+      "pass": 3,
+      "fail": 0,
+      "skip": 0,
+      "kind": "real renderer, network blocked, synthetic active HTML marker"
+    }
+  ],
+  "total": {
+    "pass": 236,
+    "fail": 0,
+    "skip": 0
+  },
+  "initial_env_skips_resolved": 2,
+  "initial_harness_error": "Composite volatile RPC expansion invoked writer per projected field; changed harness to single to_jsonb call. Product/assertion unchanged.",
+  "not_repeated": [
+    "308 existing hours/JWT audit",
+    "HR38 inference proofs"
+  ],
+  "not_verified": [
+    "production data/catalog/assets",
+    "hosted Auth login refresh",
+    "live Storage ownership/policies/bytes",
+    "SMTP jobs",
+    "actual contract Obra128",
+    "real supplier duplicate quality",
+    "global exhaustive security"
+  ],
+  "secrets_in_outputs": false
+}
