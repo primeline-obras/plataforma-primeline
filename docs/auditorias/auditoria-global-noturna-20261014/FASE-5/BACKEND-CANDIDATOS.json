@@ -1,0 +1,4304 @@
+{
+  "public_function_names": 256,
+  "without_frontend_literal": 132,
+  "backend": [
+    {
+      "function": "public.fn_pode_gerir_ausencias",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/aba_ausencias_interface_bloqueios.sql",
+          "line": 6,
+          "hash": "9455d1f4bc7c641293828c6e0d5e83f2ed80316398df84cd6d69bd7c9e1c96df"
+        },
+        {
+          "file": "supabase/equipa_restringir_ausencias_horas_extra.sql",
+          "line": 6,
+          "hash": "f37cb16e4361d48742c619003b6abe576d55ddbda418a83cdf14415d9d8545fa"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_bloquear_registo_em_ausencia",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/aba_ausencias_interface_bloqueios.sql",
+          "line": 93,
+          "hash": "a585e430bab6f7abb1e5c25af9170f1a0a8f847d0ddf02dda0bdca434fc3b886"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_ver_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/adjunto_acesso_equipa_tecnica.sql",
+          "line": 5,
+          "hash": "965ec3e64418752d685300c0555ea890e56e241f929717ab1761ea342bcfd318"
+        },
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 63,
+          "hash": "e40c8f05645d5192864075cf50c4990a940829780739467fb1576fb0037a3d23"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_editar_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/adjunto_acesso_equipa_tecnica.sql",
+          "line": 25,
+          "hash": "5e2122e7f60fda2eb6716d3d363df11092919f850b4e152ca66ccc340c1cf643"
+        },
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 82,
+          "hash": "5ddb1b81cd3fdb5771638dd5af059fa49efcf460332b997886ef859790379f04"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_resolver_alerta",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/alertas_vencimentos_resolucao.sql",
+          "line": 20,
+          "hash": "4c9626d284e6761a30eacca49d39cf0be98c9bc0086d388acefa498f7e78a40b"
+        },
+        {
+          "file": "supabase/alertas_vencimentos_resolucao_corrigido.sql",
+          "line": 25,
+          "hash": "837763297dcc9b67b513609ec5d9e27928ae9050e13220b8e13b99b8844cc24c"
+        },
+        {
+          "file": "supabase/corrigir_alertas_resolvido_por.sql",
+          "line": 29,
+          "hash": "a38076b0486b9529d38655cb55d5ad9f3e10a489b44fcf90a02a57cf3aa0db26"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1309,
+          "hash": "5815d78d68d2bb20bd2c29d38810db6cd410299cfb5319191f032277e666925e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_alertas_vencimento",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/alertas_vencimentos_resolucao.sql",
+          "line": 61,
+          "hash": "404bfa34395ed0a442316f6173811c69d480c8299ed307d226cf0fb3b68ad76d"
+        },
+        {
+          "file": "supabase/alertas_vencimentos_resolucao_corrigido.sql",
+          "line": 131,
+          "hash": "60e14f6a3ca9753b2d06e8af0c4125d44b01ecb2fea492fe0b568f3ef1ceaa99"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 461,
+          "hash": "3e3a124f567408d406fb637b5d6f9e156656fdd6c6741e9671dd7b6dfb3f90c2"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada_rollback.sql",
+          "line": 68,
+          "hash": "80dec96c510cfafdda57bd865c212bc4b93aef7475aeb4dccc1b27bed58c56f4"
+        },
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 214,
+          "hash": "ed4099aedf84ad11a8dcb76b4ed840c753c8812ee1ffa7b7a6d966212f5f4343"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_primeiras_consultas_medicina",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/alertas_vencimentos_resolucao.sql",
+          "line": 218,
+          "hash": "8340fea8b9f187377ff11ba101c345a840282b96df658a74bd7c05f612d81e5a"
+        },
+        {
+          "file": "supabase/alertas_vencimentos_resolucao_corrigido.sql",
+          "line": 85,
+          "hash": "465bd687f1c5e130e744f9286af5f0cc0efbb64f7992ec49c72aa81983256383"
+        },
+        {
+          "file": "supabase/alerta_primeira_consulta_medicina.sql",
+          "line": 7,
+          "hash": "df9451441dac64a569b32200b62729217a9d2a2cf1a7373bf15b0b7a5e7d2541"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 450,
+          "hash": "de7edd73a5a6d46c096c482d1721c26d2c9683ebf9262a2188787ca0959aa29d"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada_rollback.sql",
+          "line": 25,
+          "hash": "d8f105f5b0ce0e7a2be596b2832edcd32649d02cb85ec6379e2fde8412cc871a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_executar_rotinas_diarias",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/alertas_vencimentos_resolucao.sql",
+          "line": 266,
+          "hash": "aeb054953e8ff153871e0d8117f171d71b17e0d2da6874b1c96298351ecced23"
+        },
+        {
+          "file": "supabase/alertas_vencimentos_resolucao_corrigido.sql",
+          "line": 289,
+          "hash": "106026ead2ff934cfb8a9a8f2f1aaa9b377d1669ac9b6a9200c051ee382a0a25"
+        },
+        {
+          "file": "supabase/bloco_06_viaturas.sql",
+          "line": 183,
+          "hash": "4b11b597e01df1b25cf43ca617c3432c003c5f9ae4cace56da90219efc68b595"
+        },
+        {
+          "file": "supabase/bloco_07_contratos_trabalho.sql",
+          "line": 78,
+          "hash": "409e4e769e28277f4c0bc7ec08baae90dd83431c8610a6c8bd7968dac751dbd9"
+        },
+        {
+          "file": "supabase/bloco_09_alertas_prioridade_email.sql",
+          "line": 198,
+          "hash": "4f6732badea9aa98b884f62a0986aad9374e0f211ddf383623f905ecb00b5847"
+        },
+        {
+          "file": "supabase/bloco_13_imoveis_orcamentos.sql",
+          "line": 190,
+          "hash": "3464796a2c7d8796716600a2ee14bdee5e386238f6427428f5eeace6be898963"
+        },
+        {
+          "file": "supabase/visao_geral_final_por_papel.sql",
+          "line": 108,
+          "hash": "c332979175a471f3870820b475dfd6c8483253ce3d888738a9223c0e703ad77d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_log_auditoria",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/ativar_log_auditoria.sql",
+          "line": 8,
+          "hash": "a7117972eb946423cc6c390915c81498cab475df49396d03ad0a489f8c980bdc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_normalizar_estado_ausencia",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/ausencias_fluxo_permissoes_corrigido.sql",
+          "line": 27,
+          "hash": "8dbda8738462bde66025e493ac2fb4cd8bb06a72f6b7bdd932a7d2eabc56fb3d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_bloquear_alocacao_em_ausencia",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/ausencias_fluxo_permissoes_corrigido.sql",
+          "line": 60,
+          "hash": "3bc0abd535f9f700f8a28b6b1fcd7b734b96abc16a2fc1201ba897870e733540"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_bloquear_mao_obra_em_ausencia",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/ausencias_fluxo_permissoes_corrigido.sql",
+          "line": 79,
+          "hash": "c1f92dad510d49789daf3fcf694e80e102c505947f418b568b7b156d56f3c0ca"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_ver_ausencia",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/ausencias_fluxo_permissoes_corrigido.sql",
+          "line": 115,
+          "hash": "c941dcd71bd42abbe88231b282e62baf1ead7f3f8fb4ca2013110bf428f22efd"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_decidir_faturacao_auto",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/autos_faturacao_aprovacao_pendente.sql",
+          "line": 38,
+          "hash": "d7bac20b5ac2147b94e3248a4db20a4e60c6bb01179278417b89455e21ebf357"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1446,
+          "hash": "707ff030a3d8063cff1245be0f38070c4f24e48f610eeda25e563a7ec0a009e8"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_marcar_faturacao_auto_paga",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/autos_faturacao_aprovacao_pendente.sql",
+          "line": 75,
+          "hash": "e27bc29f5259fcf70cc6b0c6a96ddd2efeb2c80061321af06e922f9f6011b29e"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1068,
+          "hash": "85ef736657f62661681cb79858391a6deb90fb882da5bd9e9b27411db76f6b65"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_alertas_seguro_viaturas",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_06_viaturas.sql",
+          "line": 134,
+          "hash": "8ba56c094222acc34d798904dc6265a319d655d360147485e3aa407acf1e0181"
+        },
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 311,
+          "hash": "56eb340f0980fd143a8d9acf2c48716a6b3cbbfff24e43a2a55526e7068936e2"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_alertas_fim_contrato",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_07_contratos_trabalho.sql",
+          "line": 10,
+          "hash": "fee28b9ea52102ecfc26f0780e2fee2098cb9d0fa8a12c3f815fc1c4a6472819"
+        },
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 173,
+          "hash": "c34a285f8960e07ab2567d492784c993a89687eab2fdef2d5fab060c8bc9ca74"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_bloquear_fatura_duplicada",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/bloco_08_faturas_duplicadas.sql",
+          "line": 4,
+          "hash": "86b031af47db0e4ffe29e4c07c8887d263e856556e93e89bc712eeaad3b2f8ae"
+        },
+        {
+          "file": "supabase/faturas_semelhanca_global_empresa.sql",
+          "line": 82,
+          "hash": "d3692fefb3055c39e0956493d32d2a685197feefd7280bc94b1bcc07b52d8a79"
+        },
+        {
+          "file": "supabase/mesclar_fornecedores_seguro.sql",
+          "line": 151,
+          "hash": "fa052d2afb4adca5f9dc202b62b3667100786f2e62f92b27da4ac85056d4527d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_definir_canal_alerta",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/bloco_09_alertas_prioridade_email.sql",
+          "line": 10,
+          "hash": "b58af747ef4fcc6f88276d75992d78ec0fa105d39e35fff48aacfc10a0c58c04"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_pedidos_horas_semanais",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_09_alertas_prioridade_email.sql",
+          "line": 41,
+          "hash": "bcc38810e6ecee3f8e04f36a5dbcd24a10b7d6cb8bcda08fdedbcd80eeb8510f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_alerta_reuniao_semanal",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_09_alertas_prioridade_email.sql",
+          "line": 108,
+          "hash": "90586a60d78daf0a147bf6b6981e647b3559a5a49f5ed2f1ad2d0365f2c2449b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_percurso_fatura",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/bloco_10_cruzamento_rh_obra_financeiro.sql",
+          "line": 26,
+          "hash": "5166c491ba2305bb60541c20486bd6c021cccc1ed90064318f54c3809c99ea14"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_listar_rastreio_faturas",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_10_cruzamento_rh_obra_financeiro.sql",
+          "line": 75,
+          "hash": "17f0f154d3ec40808073db9bcdd8ddeef6c74303c593cc581fb5b56337d59c4c"
+        },
+        {
+          "file": "supabase/faturas_acoes_financeiro_pos_pagamento.sql",
+          "line": 155,
+          "hash": "450af48759036abdb141b5e75fc1400b2ee6d7a6d9357b24b7b2050a5222069a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_colaborador_na_obra_atual_encarregado",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_10_cruzamento_rh_obra_financeiro.sql",
+          "line": 144,
+          "hash": "aaf53e0b777049cf1ec20c27aaac7b6777cb8c12daeb9f770e0eba449ea14ded"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_bloquear_reserva_sobreposta",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/bloco_12_salas_reuniao.sql",
+          "line": 35,
+          "hash": "4a2140c9692e459fcf6d60dbc9fb9e1a0c8e84416bf18648ebc288d489ab9f58"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_alertas_imoveis_orcamentos",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/bloco_13_imoveis_orcamentos.sql",
+          "line": 100,
+          "hash": "2144913d88464f9acf038f473c9a85c1355a8ef8bd48ade140a9dc82139dacf0"
+        },
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 339,
+          "hash": "91ea921b1f6d7c89c72f4f2e422299bffd8208ef755d766dbabc2c5c232ccfa4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_cadastro_fornecedor",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/cadastro_fornecedor_unificado.sql",
+          "line": 5,
+          "hash": "dfb9cd03bac9b2ff09d91ff45ccf6f355ded84acd54842362375f7e9b8e71c7b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_listar_colegas_agenda",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/calendario_compromissos.sql",
+          "line": 43,
+          "hash": "7b0c421b3b1b8c808bc18eea785543e61604291ed4c0b0737eb8e2c7789ac150"
+        },
+        {
+          "file": "supabase/encarregado_fecho_final.sql",
+          "line": 629,
+          "hash": "0f9264fde87121e8bd241d6566a61cbe164d72fe4075deed41d3ffb1d4b51d86"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_ver_compromisso",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/calendario_compromissos.sql",
+          "line": 58,
+          "hash": "f3a8b5eb608984cab5dad1d099c63812c8ddfb2a960ac5d5dc266607c96f9adb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_compromisso",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/calendario_compromissos.sql",
+          "line": 75,
+          "hash": "bdcd24a7e304448b04cc6f105eabefe1282b9b07d1b057604de8ea557c2aae60"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_compromisso",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/calendario_compromissos.sql",
+          "line": 113,
+          "hash": "0a75cf0994de8d7f90755b5e6fe431145ee5af6fc25cffb9348656cb25ec7fea"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_colaborador_com_alocacao",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/colaboradores_campos_completos.sql",
+          "line": 4,
+          "hash": "b471ae420e049794cc546f8134a32de51db65f7fc5b09ca5eed4f0c603e5019b"
+        },
+        {
+          "file": "supabase/colaboradores_crud_alocacao_inicial.sql",
+          "line": 25,
+          "hash": "3d6e4915025a4f31844761cd60d6f89e8db686bbf94bbd8a1ad8c5cb9d00ce67"
+        },
+        {
+          "file": "supabase/novo_colaborador_rh_conformidade.sql",
+          "line": 10,
+          "hash": "ce67b9a8deec45483deaca66f64255bd7e33e016d3f608398bbfcd9e16b9031b"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 591,
+          "hash": "0ff5c88759750a75ee18d0afc8faa0c6064e2c1ff68198051a6aebad1b80232a"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 600,
+          "hash": "f02d95ce868de65761212d94088e2779de8b459086f7ad6f7ddbfa85670820a5"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 547,
+          "hash": "0ff5c88759750a75ee18d0afc8faa0c6064e2c1ff68198051a6aebad1b80232a"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 556,
+          "hash": "f02d95ce868de65761212d94088e2779de8b459086f7ad6f7ddbfa85670820a5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_atualizar_colaborador_ciclo_vida",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/colaboradores_campos_completos.sql",
+          "line": 91,
+          "hash": "19c97a4b1bcde5441ee8b2f2af7d7133337a735a5304b371912f24d986e26a2d"
+        },
+        {
+          "file": "supabase/colaboradores_crud_alocacao_inicial.sql",
+          "line": 110,
+          "hash": "506be4530a72ee74b88ba0d6de1e101b5a1264138ecdc567706d17ec6e5eb57f"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 681,
+          "hash": "6efd1e689026708f50e565c20bdadc189a61fcb541d15e699241272af73f1c78"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 755,
+          "hash": "d873634a85c568d01556d44ec5806fe65d7f0f0e89b3396486081c57172e76dd"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada_rollback.sql",
+          "line": 317,
+          "hash": "08e528bf7aab0dde1fce0816fce72c6476078ac0726b9bc00ca0eaeb199d03e7"
+        },
+        {
+          "file": "supabase/medicina_trabalho_controlada_rollback.sql",
+          "line": 398,
+          "hash": "3afbf0e3b9e2c581500ba8715e9a28bb57fdb608ad297e0afbd16977dfe2d875"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_alertar_subempreitada_execucao_sem_aprovacao",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/controlo_versoes_documentos_alerta_subempreitadas.sql",
+          "line": 19,
+          "hash": "810d48c3939bef4d6d09251e936cb9f5f707cd286ee8e30ee884011414856248"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_componente_subempreitada",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 11,
+          "hash": "ca7b925d6ac65e514368ef80db4cd14cec6f16c52cec9c9cba0ada9f7d2a8e22"
+        },
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 69,
+          "hash": "c9cb83fed3f491cb0ba6dec73ad3e8d9ffb5fe42b968a0641d15f851090ba6f0"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_componente_custo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 36,
+          "hash": "2000afaef80d28ccd7d47a04bc80d54e86839c9768eb50e66d1f9bae46986c32"
+        },
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 118,
+          "hash": "a672446088005c16438755653b02ac502d3967e52300b1b9267043008d351303"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2209,
+          "hash": "69f1c67a05dfc40f7fdb72358b8ff6034de056cceb77a20415d1bd2d1f12b832"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_concluir_custos_pl_tarefa",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 72,
+          "hash": "d8f9b0661c55936a7f12e60ed6254a61f0c6516d30b87cc91451e93914f34b8c"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2119,
+          "hash": "00330c5e26b3b7f501a451985d10fd344015a50b998ed70adebd3206cbb2fb3a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_confirmar_remocao_custo_estimado_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 89,
+          "hash": "043c0eb7a7861a07638733b84e687b5a5f5c94ff23743875f92d21af93430128"
+        },
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 156,
+          "hash": "ed944abb573ab16a648dcfd81df9b3ba2de1aafa72981b1bdc0e2648682bc311"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2178,
+          "hash": "8837b24dc4e297081eb8d204565fa5fd2872b719d607b61b4a2a71eec2bed6c4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_bloquear_venda_contrato_direta",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 105,
+          "hash": "44d4f50a0bbd42fb7d83cb57aa0cc8538225f672a76c855c82903cd792a95873"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_atualizar_venda_contrato_via_tee",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 119,
+          "hash": "c405ab62d6c670589159bcea86f6dd6b4186a85678fae1a0cf2895b61c9026a1"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 4933,
+          "hash": "9e07b6f2ac5033b1aba0c657df0bf6d855b2b8567d7467cdcdc195261ef43dde"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_recalcular_venda_contrato_tee_trigger",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 136,
+          "hash": "14aa31eb90feba4dbfc4512f4384d328dccff4007079b42bc3f4b673d2350f36"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_resumo_custos_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 153,
+          "hash": "e396cc572b4e823e8ef278b16ee624192cfaae8dc6b91be815170fefc61e4322"
+        },
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 236,
+          "hash": "c4ed074769061e8a0c913182f434602bcd60d4e6293b15fcaeb730a58145e86e"
+        },
+        {
+          "file": "supabase/custos_obra_automaticos.sql",
+          "line": 95,
+          "hash": "ad2febff6fc670f3db416ad01718b98e324ef4b9a7bd74518f9ca2f7892a0f44"
+        },
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 203,
+          "hash": "0f6534fe49d155a856d7e48e2fa86da875b588de2bb2c437c0d52b1175a334d3"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_avancar_estado_fluxo_fatura",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 224,
+          "hash": "719154548b8cff1d58e9d23749ba387dc9bb816cb1b7dd062bc72969dd35c6ea"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 952,
+          "hash": "d108a2946871161437b1c5d3a187a18e03cf27f21624940d79b3d3e50a6797f0"
+        },
+        {
+          "file": "supabase/faturas_fluxo_validacao_consistente.sql",
+          "line": 10,
+          "hash": "7d98a9b89fe60daedba6b4a013f2186b1566bd18aa0ebd4a6b21d0c46a8dfeda"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_guia_fatura",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 252,
+          "hash": "20f3f355633cdd6d98b43160ffd98546eb95f9897b5f7fb97d806dcd201c7203"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1788,
+          "hash": "61e5d613e4815581b1b3c21780161bb38d5967b5d6852f4fb114ac811cd6e1f1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_anexo_fatura",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 263,
+          "hash": "b31de820ed43c7b445e4d15f4beb40f34ef1a627ce4955df88db923536cf4e14"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1812,
+          "hash": "dc4e2ef8d7dc8cc7538bed57e8b3947e8be2f9eab37c49a2c864b3ea1bd335b4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_editar_rnc_base",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 285,
+          "hash": "0aa01eff05693d1f04892ce3a760f9b66e8b62f92850149af971a689f3280fcf"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_cancelar_rnc",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 296,
+          "hash": "04326a8049c4d88bd00a71877b449199fbc25559a356d191b8177c021b1b9b11"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_anexo_rnc",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 305,
+          "hash": "4f17c9314e1b450e7fa9d706f1431434f2e73fc49397620704fd183ed28176ca"
+        },
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 854,
+          "hash": "cb6c4964325832d6074f9ff5ac08efc5cb602a5c3607505846973a40c62802cc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_gerir_registo_frota",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 322,
+          "hash": "83b5cb7505d97dce68171b9e665ee8b1a59c70c47e83673ec30c9203ffc1e24a"
+        },
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 343,
+          "hash": "7558d9bce828ca4dbeaecb8187ef45ae8c336448b283718aa282a676599a02e6"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_anexo_imovel",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 372,
+          "hash": "8e6a3d7ccff4ed9d6cb269ed3e5af899762aadae2c21e7dfcd51672d8b65f774"
+        },
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 208,
+          "hash": "76624c702454cbfc924b79f276ac366bbe782ba1d1bf02e1ea275bde9a1841ed"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_anexo_pedido_orcamento",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_auditoria_custos_faturas.sql",
+          "line": 398,
+          "hash": "47e3b7bc4736f6511151dca32b14614670d20f605aa63de9ec853b32b379e0e5"
+        },
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 219,
+          "hash": "fa50fe22894bdbd6ad32082c631d384458700e9242693b20fc38c59fdf2ceddc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_listar_participantes_reuniao",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/correcoes_pos_validacao_encarregado_utilizadores.sql",
+          "line": 12,
+          "hash": "3f97ce78a8c2010e9083e6e886d916f7c0be6870e5e22c0c3965b0737e2b07e4"
+        },
+        {
+          "file": "supabase/salas_reuniao_listar_participantes.sql",
+          "line": 4,
+          "hash": "3f97ce78a8c2010e9083e6e886d916f7c0be6870e5e22c0c3965b0737e2b07e4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_confirmar_custo_real_pl",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_consolidado.sql",
+          "line": 40,
+          "hash": "06167b8764ba34eba4468d11253662b8900a6f10bf3a8b99f0d27a150247fcf0"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2143,
+          "hash": "3118b4a98c684726b7ad95165455c4bc66b887436e26600b38b8a106c8a62f8b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_resumo_componentes_custo_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_consolidado.sql",
+          "line": 72,
+          "hash": "5fdfafd931bf56352f160584b564362bc6b9720361cbef247a82e6adb87d2cf9"
+        },
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 295,
+          "hash": "abd0b900d05da589e4cb4088d530cee9a43266dcd6e12fe6c1a2302db0f8839e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_confirmar_compromisso_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_especificacao_final.sql",
+          "line": 26,
+          "hash": "67bc0f5c6971929bf984b3ab50574451f7279f1e2eb54ab567bad475861fcdef"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2671,
+          "hash": "a37d5e9c9821ddd6bf9cd7d14c6ded07cebe7c0573304a0598cb94d1a8064244"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_proteger_preco_venda_subempreitada",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_especificacao_final.sql",
+          "line": 58,
+          "hash": "6c64f316f528f9c7c62b2b59f6b3ffadbe0bf992667efd5d939a0a39f48ef9ee"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_resumo_custos_estimados_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_especificacao_final.sql",
+          "line": 75,
+          "hash": "676d9db1ea5f46226cc52ce170ca9bd000e7dcf601dc938f3429b1f593c22e7f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_avancar_fluxo_fatura",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_especificacao_final.sql",
+          "line": 148,
+          "hash": "d1540a59324567274df700a50d76a5e5c7dd65912c4ff94bfffcb047bfabad9a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_e_diretor_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 55,
+          "hash": "be2830d125cfc0dd6a0523376d4558e140fecdb27f4e6cc556cde0545d0b5e56"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_concluir_custo_pl",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 178,
+          "hash": "53c3a6469c0546ae693ad3647d4b022612673d0098f4adf555f1e98da6d13f70"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2068,
+          "hash": "fb5a3a98b3558a9bf0534fb851ee352d56cca36cd1fb3790f27e5ce2e1593194"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_estado_fluxo_fatura",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/custos_estimados_modelo_final.sql",
+          "line": 222,
+          "hash": "725a2caef5205419d72e91aba756259c17c07e99d8fe42ef0aed1b202a6a42e4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_valor_lancamento_custo",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_obra_automaticos.sql",
+          "line": 56,
+          "hash": "8f84bc8800c34ea2e76e62db1b834319e5503c2e2dbebe69958b6f573b07be8a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_custo_real_ligado",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/custos_obra_automaticos.sql",
+          "line": 75,
+          "hash": "f0578f6a654a12aa9a62370f96b11fc13f2a46186ce768ee32588b115e4638e9"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 685,
+          "hash": "bb4b3c800c83bc634b6c61944664ff0af6c566e6b710cd27c7bbed47cd97b0f5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_e_admin",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/definicoes_administracao.sql",
+          "line": 8,
+          "hash": "23c95c0886885a2164dd21852678fef447581ee5dd20a30d1a0e104087c0b524"
+        },
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 26,
+          "hash": "4e7e7ff61ec6f3929542d94cadd1694c8207ebfb221879b675a8e097195e3274"
+        },
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 8,
+          "hash": "62a09f700a6fbed729008cf8ce18d8afa712c80ac89e0ccd2f0c2c7ccf83558d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_editar_fornecedor_diretorio_v2",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/diretorio_tipos_avaliacao_especialidades.sql",
+          "line": 61,
+          "hash": "356861a491c25c1f23487396498184642a68ba98097b4abad48f5b93440be6a9"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_especialidade_fornecedor",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/diretorio_tipos_avaliacao_especialidades.sql",
+          "line": 112,
+          "hash": "68f1d28abb9463ced45c302ea680ce4a73c9516fc1dfb956c06c32f2080756f5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_eliminar_fornecedor_duplicado",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/diretorio_tipos_avaliacao_especialidades.sql",
+          "line": 188,
+          "hash": "c321edba99e5282e42ec3735a85b507df409b067ad6d735e78ec6d69cf90bcc0"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_editar_documentos_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_obra_workflow.sql",
+          "line": 28,
+          "hash": "698cb2c486f037a7ce2f5163c424d6dc3af68f713752ac59dfc1bf0b10f5bd23"
+        },
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 645,
+          "hash": "23d1a46c96489f8069921e7a5ce1b861da8386ec003923c55c2206a909a4b012"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_documento_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_obra_workflow.sql",
+          "line": 42,
+          "hash": "f5767c8c377e5224f37cee308303551a3b02ec33ad8d026ccbfc41ceb2652c59"
+        },
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 901,
+          "hash": "f56d082e76bebc53501385a828f4fceba63d38e591c301a55db71d28c386ace4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_alerta_validade_documento",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_ativos.sql",
+          "line": 48,
+          "hash": "1953631e6210ccd83515006bc505b8c71425aa04769fa30a4b163c5004e5926a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_documento_entidade",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 149,
+          "hash": "52beea9972ae27bfd01f5a871607c0c3c1b67fd1323561fe4ec15cb156b71bbe"
+        },
+        {
+          "file": "supabase/eliminacoes_restritas_documentos_imoveis_orcamentos.sql",
+          "line": 31,
+          "hash": "1618b273bdd01a7930cf88c1ac81c2c66db69bcd57d4cb527d7577d69286b52d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_imovel_empresa",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 230,
+          "hash": "8bfd1856be56b5d7414cdbbb8373d5a186155755d03751f3d7746b6f9e289e99"
+        },
+        {
+          "file": "supabase/eliminacoes_restritas_documentos_imoveis_orcamentos.sql",
+          "line": 65,
+          "hash": "f30696fdcae7760f09676d7c5a39e4a2ccf764e4d2af157e5aeba2d5d11112f1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_reuniao_condominio",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 259,
+          "hash": "c15ad49b2e1b905ab7732ab7a9b8d8df2661dd1b8deea3a8ebadb09083e67e1b"
+        },
+        {
+          "file": "supabase/eliminacoes_restritas_documentos_imoveis_orcamentos.sql",
+          "line": 48,
+          "hash": "c20db618764e352522a2d3bf4e890b64b09165907768a2ffc9fa2f3d9ebc3d99"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_versao_pedido_orcamento",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 285,
+          "hash": "3937bc589bbf09c1b664752c77006e2ba137ade81e0801341b95b5fc0a15e7e7"
+        },
+        {
+          "file": "supabase/eliminacoes_restritas_documentos_imoveis_orcamentos.sql",
+          "line": 105,
+          "hash": "d6d49149403a5b2a225fe07b7bfa6796af723b94030951bdd8dba9726a037ed4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_cancelar_pedido_orcamento",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 311,
+          "hash": "478272fec13484fd4346a333e0f72fea0af7c75849c71bc3fe065e0ea77d55a2"
+        },
+        {
+          "file": "supabase/eliminacoes_restritas_documentos_imoveis_orcamentos.sql",
+          "line": 84,
+          "hash": "2a998129d55fbdd9d66c5757a08f31cc463fb703e574a85d32375b87554a9931"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_alterar_responsavel_viatura",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 372,
+          "hash": "9dac4422ed23d5a116c44c20c7dc6ebb3d360dd164878044c4da780e6363992f"
+        },
+        {
+          "file": "supabase/viaturas_atribuicao_controlada.sql",
+          "line": 113,
+          "hash": "de47241dd1afa1bb3fea3ffed33de195c74eae7f971183f529cf624dd140a43c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_validade_viatura",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 469,
+          "hash": "00aa61820a7de975747c68a5f108c75d2e98f689756451c7aeef16ca6aa54bc9"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_documento_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/documentos_rh_tenant.sql",
+          "line": 871,
+          "hash": "eae19b3d2ac3fb7a575b0f064abd351e47d2f4018dfb2baec5fb17d193bc586e"
+        },
+        {
+          "file": "supabase/eliminacoes_restritas_documentos_imoveis_orcamentos.sql",
+          "line": 7,
+          "hash": "e170efef91711a86406ee5f909021f781bf74419b563f78dfea666843b2832dc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_eliminar_mapa_comparativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/eliminar_mapa_comparativo.sql",
+          "line": 6,
+          "hash": "fb12f5b4526571e942e9a6d035b3987295c2493d87d45160cf67b9e0ffac8f46"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1836,
+          "hash": "4cc6e6727e1ee2331c61e788cdb5745c20a4fe39ee9f088d504577a7bf4163bf"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_encarregado_acesso_direto_bloqueado",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 52,
+          "hash": "9d021c778feb4ea0deaabfb3bee9402d4f744b5b2040179e0b4d2824f55b8cf0"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_contexto_v1",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 68,
+          "hash": "e37644ba70d0377e5a8575eed15f4ac6910041911d2c0642e39cc47984076f76"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 572,
+          "hash": "a970810fdad96f3e79920689919d267d045114ced455b47312e2383dbbfcd8e1"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 879,
+          "hash": "b18c50ef715d01ea015acab40f3f30ab967e8e19d1bb5b4036ed59335f7f444f"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 835,
+          "hash": "7450e6abc1c2788a5252dbeb6c29a8079bbb3deaa67a404a335a1fee214012eb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_subempreitadas_operacionais_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 105,
+          "hash": "e048253c4269ff3f4ed399abb44a22f27b0a8070e2d75cedde137d2afb20b868"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_operar",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 154,
+          "hash": "fa2423169704c50280d34c35eb26d146c7a3687465c8c4d0b6aa94897bc5bae6"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 1304,
+          "hash": "3a3e8d802a72c21d98127c2c2cbe1727bb8dcae6228c7ef8e03c436e1cb4151b"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 1260,
+          "hash": "3a3e8d802a72c21d98127c2c2cbe1727bb8dcae6228c7ef8e03c436e1cb4151b"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_b.sql",
+          "line": 81,
+          "hash": "be680a062dd5d953cc596a95781dee7f81b505d39a57dc61003324fa03d71192"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_b_forward_fix.sql",
+          "line": 82,
+          "hash": "be680a062dd5d953cc596a95781dee7f81b505d39a57dc61003324fa03d71192"
+        },
+        {
+          "file": "supabase/quadro_fase_b_pos_hotfix_migration.sql",
+          "line": 84,
+          "hash": "be680a062dd5d953cc596a95781dee7f81b505d39a57dc61003324fa03d71192"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_fatura_semelhante",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 580,
+          "hash": "5219b2d3e9348287413e06431846504d7643ea9e3fcdf5f034b28c66d2637255"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 650,
+          "hash": "c2c0d829b0bd25ed483d90c802b07bc25d3ef7a474fac486badef6465f7b673a"
+        },
+        {
+          "file": "supabase/faturas_semelhanca_global_empresa.sql",
+          "line": 4,
+          "hash": "71baf0a4e4e66fa219b7fc8aed5bd790531838f6b8d1e5e7f31a00619165bded"
+        },
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 367,
+          "hash": "3343681588a64be28a808cc700bd1731d7241954d567e17c64cc0ad02f44680f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_ausencias_equipa_encarregado",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 733,
+          "hash": "200242f73706430f5b652a7cd53a46041cd6c66ab1c9a81cad04bf6be81d9e10"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_autorizacao_sessao_ativa",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 757,
+          "hash": "160d07ef6149eebcced79d408a89e9779bf6a0ae5e90606abd08df066e35d510"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_economico_ator_atual",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 767,
+          "hash": "4578d593f38ec798c371201f3ded60d8968a5db2f665cfb30b8bd51c9b9aa1d1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_financeiro_autorizar_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 781,
+          "hash": "8940d1703c5f69b9973e2314290ec1d7825f3bcb03e1de4ad4e71a07dc74c92f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_marcar_fatura_paga",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 804,
+          "hash": "5c17563fdc1dd88db9fa7d789d45150a8006c82692eafeb17253b5c86afbe0da"
+        },
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 540,
+          "hash": "15045b31a5677e120ddab26fb128764c92027378f4d571657044bd398b14c4a1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_desmarcar_fatura_paga",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 847,
+          "hash": "9455d2a05a472d223870a0a38e67c91b29c5e00a7f985c3027df4278f8e19cea"
+        },
+        {
+          "file": "supabase/faturas_acoes_financeiro_pos_pagamento.sql",
+          "line": 69,
+          "hash": "bf958366aa8b96972fe37219a25a253c0ca115efaebe225fdd249dd02b8e8a7f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_devolver_fatura_financeiro",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 895,
+          "hash": "b132b9a13e52ea03648393691939da2e64acf2bd925fd0e30d00f34b1e4347d1"
+        },
+        {
+          "file": "supabase/faturas_acoes_financeiro_pos_pagamento.sql",
+          "line": 91,
+          "hash": "70f14107445ee14cf599b4e061d9ca300b241bb4e1142d97ab5862a410673a8e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_recebimento_parcial",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1118,
+          "hash": "69e328df5226584f928ec5313fb3c6086d7769c72b88196a8c1c70d7e9623ad5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_decidir_fatura",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1371,
+          "hash": "95a5730cd28ab2b387400c64e6c466147a84b3359b210f3fb0f6848489e744b6"
+        },
+        {
+          "file": "supabase/faturas_guias_aviso_temporario.sql",
+          "line": 19,
+          "hash": "bf4242de4248f9097115f79229639142206d1b7f9f365972184081593c2e59ae"
+        },
+        {
+          "file": "supabase/faturas_observacao_aprovacao.sql",
+          "line": 69,
+          "hash": "2fba50efaba3f3f26e4a160938f11da7ca3eaeb6bc3dbe7bc08b64d36d073597"
+        },
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 500,
+          "hash": "ed9164668885da0c579f88f19a6cd47b6447785f744f73cb71a96f124e4355fd"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_devolver_fatura_administrativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1495,
+          "hash": "61bfe069e6586215add0e609e7567d8e48f04b06341eb4c4e127ffd7bc7f1dd7"
+        },
+        {
+          "file": "supabase/faturas_devolucao_diretor_administrativo.sql",
+          "line": 77,
+          "hash": "be096ddbcd8c343736149f8fd609c48c91b95137f22d7960bfebc39a02bff6e3"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_vincular_fatura_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1555,
+          "hash": "00cd56b86cd0dda95e54208d3458ca1ebdb55d243ed3abfd60ac8017783d13dc"
+        },
+        {
+          "file": "supabase/faturas_vinculo_diretor_subempreitada.sql",
+          "line": 136,
+          "hash": "85bd8caac01471c5bf27495cfb2a01793ddecc30fced106cb91f6b87b5df6933"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_financeiro_obra_da_empresa",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1610,
+          "hash": "cf786ebfdd4bd2d63155838ff10d855b82d00a0d92a8fb65e880535483291ace"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_editar_fatura_pendente",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1628,
+          "hash": "726cac0635702b7b9cd7e99f5f449fa037bab81f44979c1c30b0a8911bfa1546"
+        },
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1750,
+          "hash": "0e90cb6831aaaf4e28d4c750169f9cccbabdc2aed196d0a9ad8ad6473acc672b"
+        },
+        {
+          "file": "supabase/faturas_devolucao_diretor_administrativo.sql",
+          "line": 163,
+          "hash": "7dfe8ed53a80fe55ac9e1dae6a8040c261c272d726475f03a7676c9928205e50"
+        },
+        {
+          "file": "supabase/faturas_edicao_pendente_condicao_pagamento.sql",
+          "line": 50,
+          "hash": "d7891e9d874ed6a2dc623f202682dd4f8039bf2d5c76ff67646ff0fb41f4860e"
+        },
+        {
+          "file": "supabase/faturas_observacao_aprovacao.sql",
+          "line": 11,
+          "hash": "d24c8dba155c02cccc6f579679827416317d510e6605123561b269a7119d7b4c"
+        },
+        {
+          "file": "supabase/faturas_vinculo_diretor_subempreitada.sql",
+          "line": 6,
+          "hash": "adf5c0e5f1a14a44353a4d779cdaa37e53f993dbccbc78b5b933d0d9d19c571f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_eliminar_item_comparativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 1955,
+          "hash": "c566dec302823ba443a59cc8f65499177116b8489f065f5e1e9073a8c2f323f4"
+        },
+        {
+          "file": "supabase/mapa_comparativo_editar_eliminar.sql",
+          "line": 8,
+          "hash": "310b0adb6df2ea363000cdde876e99f4b2a82deb936aacf3c6c903aa4a884755"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_concluir_custo_pl_fase",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2099,
+          "hash": "9ae8bea06fd787ace25f979e15e776b2b2ca24534db488b510fd1b365ade48bf"
+        },
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 187,
+          "hash": "f60a18ebf3debbd8b5a31bf860e4802f10aaead860e8e815c94c490363701262"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_eliminar_proposta_comparativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2257,
+          "hash": "29c92c1fb73460bf0e6a710cf6577db3e36e0a4fb92dc8b22f26323f0af2d66b"
+        },
+        {
+          "file": "supabase/mapa_comparativo_editar_eliminar.sql",
+          "line": 53,
+          "hash": "ff694d40fcdaa7c6c5da533ee73a82b54f4e7b92a0eed2d58f57b85244c9cb45"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_fornecedor_comparativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2333,
+          "hash": "ce417cb0fab27b70309d2fa59137d98bb14485158bcbb9d59d3f6e5669026199"
+        },
+        {
+          "file": "supabase/mapa_comparativo_importacao_pdf.sql",
+          "line": 96,
+          "hash": "1416dcea58d4d2cd4bfd580930f3744a416ea0bbef7faec6777ad7bac753b769"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_proposta_comparativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2374,
+          "hash": "5b6b4fdc277c81d04ae33536277de3309a3f2d56c1261b613c20675964c2ed62"
+        },
+        {
+          "file": "supabase/mapa_comparativo_importacao_pdf.sql",
+          "line": 128,
+          "hash": "7d92490dad561048162f9b740339e09a9c7cad7109ab4e657e0eef8e67341533"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_subempreitada_do_comparativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2457,
+          "hash": "da6704cc480004def5abfe830d90c7951d036a431abcb7924cf26809c5b19f2c"
+        },
+        {
+          "file": "supabase/mapa_comparativo_dinamico.sql",
+          "line": 197,
+          "hash": "70a71cf68b02722167d03ebc01e6554291912dbe0db6b1fde9287b384db0fc5d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_lancamento_gestao_obras",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2554,
+          "hash": "330e5c69ac730ff03d41aab36508e2bc9fda544894a810b0b013cf0dcae7c6c5"
+        },
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 103,
+          "hash": "aacc9889c573f6a97dc523a42100c00e1055cc8c5f2d2c6ae68e66dd4f304513"
+        },
+        {
+          "file": "supabase/mapa_gestao_obras_colunas_excel.sql",
+          "line": 25,
+          "hash": "7abca4f07d767a3cab2588c3d404d5ed55cdb9bdedf4bec6520fa0b17fca9dbe"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_lancamento_gestao_obras",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2650,
+          "hash": "e5fb25e696010aeedf8112aea03cb337e3670aae46998d2f8cd395c02cb60aea"
+        },
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 127,
+          "hash": "e7fd9faf890eeea2170b9d44271b48f8d9cb0c731dedcc329e866ddfb32e3db8"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_orcamento_fases",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2755,
+          "hash": "55fc118b71f984087dcbe4b0679997c1d9b36510840253b64c2924fd5ef89640"
+        },
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 171,
+          "hash": "ce46f0504dca1283887c86c31d29075133365d5023b26aa08bdad336c8cb0a52"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_precos_candidato_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2795,
+          "hash": "95080b6b509cddcf08041d4599760953358df79e992658499617766a6bc6763e"
+        },
+        {
+          "file": "supabase/mapa_comparativo_entrada.sql",
+          "line": 110,
+          "hash": "0d3e40e2597a54f7fbef7b5d1b3690bfd6bc8c8eb0f6e64a9ae3a56bd169a187"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_consulta_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 2909,
+          "hash": "05ee7e0fd4ec9fea214520a1cbe2e4f238332e41d931e75d95bc659a60f29ae4"
+        },
+        {
+          "file": "supabase/mapa_comparativo_entrada.sql",
+          "line": 24,
+          "hash": "bb4fd7da7a73b0b1492609592648ae97c4e93ac623c3b1a7891ec2136064c62a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_adjudicar_candidato_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 3001,
+          "hash": "c1339dfa6a913806725c63054497a3e4f6727ca2b4c5b64afda268db0b52c55a"
+        },
+        {
+          "file": "supabase/subempreitadas_mapa_comparativo_workflow.sql",
+          "line": 89,
+          "hash": "8da52729b6b578a345b2665138a04a727def7e2249ee5c78b2662030bf45c5ea"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_aditamento_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 3145,
+          "hash": "81411a172fd27869ffb86be3c67762f1c4d3924bd0c51590226360ef5d84d989"
+        },
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 43,
+          "hash": "0428addb1d1d0048369f77457747c06a387348180d2dd3ce582ec1d02248d10b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_decidir_aditamento_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 3180,
+          "hash": "163b0f293bca6f776fb82247666abfb054eec3d4775641f274b7bd8236edb7ef"
+        },
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 75,
+          "hash": "18b8c197c3c6410be7856e68c159f1a3c689771deb06e7ba4579771baac8a47c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_concluir_subempreitada_com_avaliacao",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 3217,
+          "hash": "5a3474bb921f629acf954c178485a8aa171bbab65a50f49a708128554aa8c84f"
+        },
+        {
+          "file": "supabase/subempreitadas_mapa_comparativo_workflow.sql",
+          "line": 226,
+          "hash": "b12c5e6bae07678ba861f8a1c79ac3cd04b6ba2d5ae9d2a02dc95ffa6b882e88"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_tees_xlsx",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 3295,
+          "hash": "754177f16eeb8cb25f83cefdab10a619de3f346ae744d7ec25a31c4cf40f5e90"
+        },
+        {
+          "file": "supabase/importacao_xlsx_operacional.sql",
+          "line": 176,
+          "hash": "562e7e0e516a6ec96bfba8fd4ed1aaf8e09f902b98ecfaf9200f3eaa1c4eb540"
+        },
+        {
+          "file": "supabase/tees_aprovacao_cliente_unica.sql",
+          "line": 4,
+          "hash": "63bba2f73a15364a17c1f3880089954e21602993269bdf85563f8d5b031dc281"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_tees_revisoes",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 3454,
+          "hash": "b091b9fd927168ff6881932b61cfc0edbe622fc2346b3491e382d33138887bdb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_subempreitadas_xlsx",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 4692,
+          "hash": "8da8c44d62c5f38f1b3950c30c9306b4a3787ad97dc4a14371fdd7a8b2bd2dd0"
+        },
+        {
+          "file": "supabase/importacao_xlsx_operacional.sql",
+          "line": 73,
+          "hash": "73badb4ad2f483202ff3be4bd6e48546f89f2cd9a2d42b734e470a220b5b5b66"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_definir_estado_mensal_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 4956,
+          "hash": "39c6a69b223c1692e1bfdda2f76b005853255abdf81f2f6cc4e38b0cb01cf0db"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_planeamento_lote",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 5200,
+          "hash": "6886871ef1d6c0e94864f6e44ea49403c6e11a1278e1491b03c035af826d8011"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_obra_de_modelo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 5890,
+          "hash": "3f752c5d1b74fa47300c6034a9080f7a34ef9ac5d255b0ee42604a8f0470d4cc"
+        },
+        {
+          "file": "supabase/modelo_nova_obra.sql",
+          "line": 7,
+          "hash": "c4a46eef051a0b05b779dcc9ef9dd1ca318b162e07ca9d1495113d7f41f4914b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_mapa_financeiro_xlsx",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_escopo_migration.sql",
+          "line": 6002,
+          "hash": "1b82cb80909b26f36f6f1d06e3398c54d8b7a6217fff1dca4e2ab3c21c8c89ae"
+        },
+        {
+          "file": "supabase/importacao_xlsx_operacional.sql",
+          "line": 253,
+          "hash": "d2439418b1d9632067d60f2ddadd73fdad73e36f4cf7e144fe50f0aaf589814b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_equipa_operar_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_fecho_final.sql",
+          "line": 238,
+          "hash": "c594873261d9bd423d23348d601e388c6223273482b9c01411423f4e9d42bf69"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 98,
+          "hash": "0f1840c0a0ede7433203de7f45865d343e005fe7fcf08e09497cd9b7769e4e1e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_pessoas_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_fecho_final.sql",
+          "line": 320,
+          "hash": "6a042d03e0b4e0234da2027a71b282c6fabb873e87b79678e0ece2731ccb02d9"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 307,
+          "hash": "364d8efcbe34ffbd43287c0fc02cbf56cf53f8a49bd75694003f56af889fb028"
+        },
+        {
+          "file": "supabase/folha_ponto_v2.sql",
+          "line": 433,
+          "hash": "dfb7c5dd52bfb1862a95c4448ab805aff2613585172221507cbb6032de22b699"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_contexto_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_fecho_final.sql",
+          "line": 342,
+          "hash": "50af91c7491b03c0d3e7d0bfac6a2cd33246b25702939fef84b5019f507fbd8d"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 245,
+          "hash": "627ce9a36e7fd0c620d9c37d2003569451c93725e14070d15620e6d71a161d2b"
+        },
+        {
+          "file": "supabase/folha_ponto_v2.sql",
+          "line": 374,
+          "hash": "15d846c459964a590859dcb37b32c62328a25585d195eb25bf0739d895fb4980"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_operar_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_fecho_final.sql",
+          "line": 623,
+          "hash": "c64555c237c1777adeb1668cb488c0c0281f48d916e0aacb50f1bc3493690c60"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 383,
+          "hash": "ae58d24086dbc5809426886ea72f8c5b376f7aedc2fe303010e285c15c19a670"
+        },
+        {
+          "file": "supabase/folha_ponto_v2.sql",
+          "line": 607,
+          "hash": "5e06fdc50c1e3d79cc7869105467023fb5039efd6337775a353a8eebcd8d2d89"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_ferias_encarregado_global",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/encarregado_quadro_ferias_global.sql",
+          "line": 6,
+          "hash": "22c5cc8baefb8464ffdf0d28a3465a71d9d77bab9541f7b9393f59059ffaca9b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_evento_financeiro_fatura",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/faturas_acoes_financeiro_pos_pagamento.sql",
+          "line": 24,
+          "hash": "986a17042c23c0f8885985c2653e5ccdcf15c308ad623c3047205b8638e64c1f"
+        },
+        {
+          "file": "supabase/faturas_devolucao_diretor_administrativo.sql",
+          "line": 31,
+          "hash": "95fbba17f3cb6615886e586016c16c33abf95939ac32db24028f17db32e9f8d3"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_fatura_administrativo",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/faturas_apagar_administrativo.sql",
+          "line": 32,
+          "hash": "fb7f6c29d363abf45b0d7059348570553ae126c2865e4a894b144856a1c8215f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_proteger_fatura_devolvida_administrativo",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/faturas_devolucao_diretor_administrativo.sql",
+          "line": 137,
+          "hash": "b09c09c1db7bab9d37cab8a0c3aa9beac13135cb7ebad414b1ed38eb36525cab"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_vinculo_fatura_subempreitada",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/faturas_vinculo_diretor_subempreitada.sql",
+          "line": 191,
+          "hash": "1e7bb7a774dd52fec4f12905cb7e5a411bfa6edc32a624572a1cdeb9a4280dd5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_marcar_atualizacao_feriado",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/feriados_empresa.sql",
+          "line": 18,
+          "hash": "26a10338aac09687f2f2e7cb407677764fc3856aa47f289c230d4ee2f4f7a578"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_diaria_gestao_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_avaliacao_diaria.sql",
+          "line": 221,
+          "hash": "3a5edd9363ba654d23563b97464e5c8179e59da1e56dc91d24a34071c15faf80"
+        },
+        {
+          "file": "supabase/folha_he_tenant_ad15.sql",
+          "line": 24,
+          "hash": "af8d165dac085c6218875a62b1a4608e7df8f2101b0b2319a7bc66d757c783b2"
+        },
+        {
+          "file": "supabase/folha_horarios_ad13.sql",
+          "line": 101,
+          "hash": "be773bb789401b7442a70760796505964f6e52b69631d73ce6149593b29d8ba1"
+        },
+        {
+          "file": "supabase/folha_hr27.sql",
+          "line": 153,
+          "hash": "72057d03e5664cdf6213ad5b154c335a3deed4d948a30c4d38296551f70e2739"
+        },
+        {
+          "file": "supabase/folha_jornada_ad03.sql",
+          "line": 356,
+          "hash": "904d2a29278993112e883812444b5eab1db86d4895767cfaf8388d9cc8a61d19"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_gestao_contexto_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_avaliacao_diaria.sql",
+          "line": 886,
+          "hash": "3a84985e0ad845c3b201c2f35ca6d939ace5c427af9e6f8855b7e2b5aabca3f0"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 859,
+          "hash": "48032d0c9a669e0c3b65c2e0a94da7ec96cfe5a2d9d7a69cc95df3868c9433d4"
+        },
+        {
+          "file": "supabase/folha_ponto_v2_gestao.sql",
+          "line": 436,
+          "hash": "c81e6fd0d2ea554abea47e848cfcc2730bd525907c2a93a0ff4ba0310bbcf541"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_gestao_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_avaliacao_diaria.sql",
+          "line": 894,
+          "hash": "2f81c590aad68809f840f2b3636ad6152359db4d78c93dec5dacb7c4c1e7310d"
+        },
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 586,
+          "hash": "6f9f6d98e65818c01deba7e2ab8e0ea6fd64128469f43deb526bf4bc3c4a1a7b"
+        },
+        {
+          "file": "supabase/folha_hr27.sql",
+          "line": 551,
+          "hash": "6c95ecea31db26f3f2a55f309a73db88e45470fca2ec79a5bdedd0dfe36e4b42"
+        },
+        {
+          "file": "supabase/folha_ponto_v2_gestao.sql",
+          "line": 159,
+          "hash": "cc2b663444a94b2ff7e390c0aebbe644a2234b28c7f27d2b2f82d3ea972cd274"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_conferencia_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_conferencia_mensal.sql",
+          "line": 122,
+          "hash": "f09dd1403fbd3278efd824b64f0d88671693c56a4de76d577df2849fc51d386c"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 354,
+          "hash": "bd86ec07e7c9dc145439e2c7f466df63e244919623f9f33dc11a9029abbae092"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas_rollback.sql",
+          "line": 182,
+          "hash": "c770d67388d823e3cfd95d9a4fcd4ce07ca568daa17a6e416283a09f646b1d34"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_conferencia_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_conferencia_mensal.sql",
+          "line": 163,
+          "hash": "3287358b3731815e220e968f41d8be0785d5b3db99c1ae776f5d0e2e38b3e39c"
+        },
+        {
+          "file": "supabase/folha_horas_leituras.sql",
+          "line": 34,
+          "hash": "a339d51121514bef67a23981b3ecd4d890f472736a0ac7be6ccb2839585811de"
+        },
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 114,
+          "hash": "fcf7a09e0f679cb83c5ac792088de60d2f141105ad3d020e574e329efef81922"
+        },
+        {
+          "file": "supabase/folha_operacional_contextos_rollback.sql",
+          "line": 42,
+          "hash": "3287358b3731815e220e968f41d8be0785d5b3db99c1ae776f5d0e2e38b3e39c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_destino_operar_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_destino_operacional.sql",
+          "line": 156,
+          "hash": "9545d4737251a19bf76b2d16433ace1fdff795071b0107bc9e26a8ada2038161"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 444,
+          "hash": "5254faad706e9672499de60be54d9370d2853d3c39ea41eb921529f6b6618fe1"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas_rollback.sql",
+          "line": 329,
+          "hash": "428943f428b2248c1f5db2830b505b669e52ea0256a16b25abced01b045c8d9f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_dia_normal_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_destino_operacional.sql",
+          "line": 203,
+          "hash": "8f48500b58a64fe0114852de87f850cca0c48f0217c3b4214051cd1c952d458f"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 395,
+          "hash": "063d008daf893d41a51152c4ea13ab3a355181b73d141f8e644138f71b86e17c"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas_rollback.sql",
+          "line": 223,
+          "hash": "c19ca62daa6a2eb739a2ccacaa23ff7307c848fc203dcaccb35f9aeefc8af8b7"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_horas_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_destino_operacional.sql",
+          "line": 230,
+          "hash": "ace34ba6947b14103dad226c3dc161cea2779a98adb8f016eb0db6c99a52ab70"
+        },
+        {
+          "file": "supabase/folha_destino_operacional_rollback.sql",
+          "line": 89,
+          "hash": "c0488c6e5ac0535b6d13ca2d40fb13cc0c6d6bd9344e6545cd9843827c89a5c4"
+        },
+        {
+          "file": "supabase/folha_horas_leituras.sql",
+          "line": 45,
+          "hash": "88f6a612fe3da0a7ad16fe6a616342caccffad0e94b359d55e8e425a0b8426bc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_resolver_data",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 68,
+          "hash": "18317b08e37701456245b4473488c702ea2e796ba0ea61a0a7895ef119698e66"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 97,
+          "hash": "96e264922d4eb18f8eeaa3bd96f83be84d9391950050585805514cb19e62f7b7"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 53,
+          "hash": "9571de8b731ac66d4352fa2835ccdc0c2ef3e1e2174e77fd7e75926cf2ec35e4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_ferias_mapa_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 180,
+          "hash": "66e9484bf7380dc87759795392539a591061482cf88df62084e50e761fd231f6"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_operar_v1",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_equipa_operacional.sql",
+          "line": 527,
+          "hash": "9429dc787597ed4a49d555e78a4913a6ce07e40f667a5e96c9ad740660b1c44f"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 398,
+          "hash": "434f1bf25cee22e6ea9544a127cf7cc5947aafc05aada49db6249b5bdc5f6d83"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 354,
+          "hash": "434f1bf25cee22e6ea9544a127cf7cc5947aafc05aada49db6249b5bdc5f6d83"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_externos_confirmar_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_externos_conferencia.sql",
+          "line": 34,
+          "hash": "d2d6eebdf0c07f462945d9ea84031c14b00f948deaa8c7e904a281bdb43e67f4"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 422,
+          "hash": "3295559d9bcd382f98091da374da7737fbca7e90d960c7d2be9907e464b0641c"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas_rollback.sql",
+          "line": 307,
+          "hash": "0b627e69d17f5ecbe368a7874921125e21da93595509f4ceead41cf5cea24f5f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_externos_excel_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_externos_conferencia.sql",
+          "line": 56,
+          "hash": "a3b03fce6a09c0904e5824ddc3f41a863b6530721cd52fcfb9303a9eb689a401"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_externos_conferencia_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_externos_conferencia.sql",
+          "line": 67,
+          "hash": "0daadc2338863f53a1cb4ea854467a0edb23cdc77d1acd3519719d1fec8be1c5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_faltou_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_faltou_neutro.sql",
+          "line": 37,
+          "hash": "b8b120a622b1c37cbdf30ec6a8a14271bb8b4c8ee3f944fbd475c058a3bda805"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 420,
+          "hash": "90cc8cb890cd84bef40c1765486f5d73b2d326a19557227986344b4a282f5b87"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas_rollback.sql",
+          "line": 248,
+          "hash": "f5428168157d6e9ad1e9d076a3f8f810da85ee3bac06bcb2a2274f14712d3591"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_relatorio_horas_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_horas_leituras.sql",
+          "line": 18,
+          "hash": "aa56b5778ff3543155704832329cd1a4192933f7b3a93a65767fef493e92fd3a"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 336,
+          "hash": "66a3c1fa7bbd36759ee870f958f10461f242d6f269ea403473935dfb0b41992a"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas_rollback.sql",
+          "line": 166,
+          "hash": "7bd6460077244805b997bc57494c312fdfc336a1fb07a08dfde44a1d58875820"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_custo_hora_aprovar_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_horas_mapas_custos.sql",
+          "line": 28,
+          "hash": "f8772a74b3bf65c33740c93513b0868b395de28695ce214e3d7c0a5b948dfd40"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_mapa_horas_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_horas_mapas_custos.sql",
+          "line": 43,
+          "hash": "3fcaf3b093197b4d989c0814a360da910ddcf0050e993c1bb9dd021cf6ac5696"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_custo_hora_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_horas_mapas_custos.sql",
+          "line": 69,
+          "hash": "af830964a024eb0a3bb601c767c4e9a287fe97e940122b0ae78ce1be26de34d9"
+        },
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 130,
+          "hash": "efe3b3f92cffcf2f6de2edcbcdda52cad02f99e24265a4d8277a5c52126910fb"
+        },
+        {
+          "file": "supabase/folha_operacional_contextos_rollback.sql",
+          "line": 31,
+          "hash": "3a2e57359ec5f226bc72ff83b882de90c67db4d5189e4ffae37261ea9c3533b8"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_jornadas_v2",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_jornada_ad03.sql",
+          "line": 161,
+          "hash": "f53230f13e5239c82d381ed0c2bab25dedf5e4b2a846fdd667349a4ae5efddf5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_dia_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 14,
+          "hash": "8be0d4e75d10a495a23b01a6da6e552c2e6cdd745c5f8460497ff8d090787fe0"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_destinos_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 33,
+          "hash": "2725ecbb95c469e5ae2d0f165f2f007294a50d3aa37eab6d2c1fd21ed1597898"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_equipa_horas_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 36,
+          "hash": "86508d7cd7b2b935f29929665ce15f887fee9bd9c9ac512e5327a4b281a7f799"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_horas_admin_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 44,
+          "hash": "1f58210b7a9712be7cc0d597a2bc9a1d7049a486f715c4fb22df065da3b367e2"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_ausencias_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 54,
+          "hash": "38cdd57cb14039e78be874d3877152ad5ee823561bd68b4085da73f4fc4e4bf5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_custos_operacionais_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 65,
+          "hash": "63c5e77d922847d0ad250f5306d3f26d967b44a7bc65db1c00b14ae45ca19522"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_referencias_contexto_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_operacional_contextos.sql",
+          "line": 128,
+          "hash": "5afa0840c6282d4fa515267ecdc1a85db274a5c667b086f4cd373094a9e24106"
+        },
+        {
+          "file": "supabase/folha_operacional_contextos_rollback.sql",
+          "line": 40,
+          "hash": "1633e2832a0dacdc8b03867976d5eb935b98d3ee236c872f53256e1b381001af"
+        },
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 87,
+          "hash": "b8f8e3b3c2be63833a10b09c211daabbaba6ceffcc0813123fdb137cf963a6eb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_plano_integrado_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_plano_integrado.sql",
+          "line": 110,
+          "hash": "47bce2245cf61680301880530c033cb8e1f484d56d5a0aa944aa69e622167454"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_historico_v2",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_ponto_v2.sql",
+          "line": 453,
+          "hash": "5f5e56317c02e7c442b40787b266efe9eeff98dd8463c21c8fab5c3e5ec345f5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_aplicar_interno",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_ponto_v2.sql",
+          "line": 713,
+          "hash": "5c92d74078adc0ecde37fe91403e7847a8b666da702d3823c0809e9ccaeb0fd9"
+        },
+        {
+          "file": "supabase/folha_ponto_v2_rollback.sql",
+          "line": 19,
+          "hash": "a0ffee59cc6624455180712b2f65743d70d71efd685a99809dd928c7a37550e5"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 111,
+          "hash": "59e328c6063b33bb1f6c43aaa558ebfc6a73321e7af2e49dcdd19037c5240abc"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 67,
+          "hash": "a0ffee59cc6624455180712b2f65743d70d71efd685a99809dd928c7a37550e5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_folha_referencia_operar_v3",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/folha_referencias_controladas.sql",
+          "line": 46,
+          "hash": "cb9085272c29fd3025bd664eeb43fe4ed2977042287f2585a57aeb57012299a8"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_definir_zonas_fornecedor",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/fornecedores_zonas_operacionais.sql",
+          "line": 50,
+          "hash": "f3d3cbfca9f4adf7f96734dfda5637e4c84d2ef23dcb8ea22bec425a52cae41f"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_editar_fornecedor_diretorio",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/fornecedores_zonas_operacionais.sql",
+          "line": 113,
+          "hash": "b2cb040804b16a78ef7441e8036d54fc4c23d1ee31f723d17b0a8027daca8796"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_e_gestao_plataforma",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 20,
+          "hash": "0bdb9b3a756e0d0a87f429ca364569c033ed014ce82256610773ea7c4cc79981"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_ver_mapa_gestao_obras",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 46,
+          "hash": "249cc7a2d5044b4534a3fc77b5ba5dc6daa515e539d2ec6a0f7dbd750184a935"
+        },
+        {
+          "file": "supabase/mgo_grelha_excel_leitura_tecnica.sql",
+          "line": 5,
+          "hash": "5090b51bdf4505455d1473f442a5cbc1a10671414415f0d9268cd98f573b994e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_editar_mapa_gestao_obras",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/gestao_plataforma_mapa_orcamento_fases.sql",
+          "line": 52,
+          "hash": "70c0bfd38535df86ec1c3cc7857adc896d5c196c49b269571c1e49a823ac438d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_gerir_horas_extra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/horas_extraordinarias_permissoes_corrigido.sql",
+          "line": 13,
+          "hash": "2dbbc3648dd0b9d7fae0c2bce9f95c58e4667ff6843f4a3c36917fe260772095"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_autorizacao_horas_extra",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/horas_extraordinarias_permissoes_corrigido.sql",
+          "line": 25,
+          "hash": "57c65064694b4822f10452332e624fdf00205a80a2a41f1dfac4a6c0ee81af69"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_log_importacao_xlsx",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/importacao_xlsx_operacional.sql",
+          "line": 39,
+          "hash": "1ab7b24988fba744d5de5e48b443ad786471cd6d129bf5bbec420e71133931ba"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_indices_documento_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/indices_pdes_desenhos_pames_pdf.sql",
+          "line": 73,
+          "hash": "e4d8cdf2ef6b50da8fb3269fa3bc645cf4273e498ed7f469c4b30a27ae4b186b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_atualizar_melhor_preco_comparativo",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mapa_comparativo_dinamico.sql",
+          "line": 92,
+          "hash": "04dd5cccb00ae251ba4962368235e8f51dd35ef5bfcae8e8f4e9f71c9c61e06d"
+        },
+        {
+          "file": "supabase/mapa_comparativo_importacao_pdf.sql",
+          "line": 51,
+          "hash": "69dc5ccbb464a1ca898a46fa02be4afdae2ad697a56bd755ed8bda736c283496"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_calcular_preco_item_comparativo",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/mapa_comparativo_dinamico.sql",
+          "line": 110,
+          "hash": "46916090ca622a8214c68d7e6dde4d38dad38b92da22a01d9d7f79d1da1d790c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_recalcular_mapa_apos_preco",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/mapa_comparativo_dinamico.sql",
+          "line": 125,
+          "hash": "28b83a6052b9656922b3efbc6c7f89ca8e13c5049c528817c48cf19bc976658e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_recalcular_precos_quantidade",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/mapa_comparativo_dinamico.sql",
+          "line": 136,
+          "hash": "af34bdb9ac1a04a910d001e90218b05a9f6c516f5ba315810d11544c40f80afc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_resumo_mapa_comparativo",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mapa_comparativo_dinamico.sql",
+          "line": 156,
+          "hash": "dcc847b281e7db06e2d41ee50e37993f113f84b460d215b1538c6d40982b85e3"
+        },
+        {
+          "file": "supabase/mapa_comparativo_importacao_pdf.sql",
+          "line": 69,
+          "hash": "4e7cee942f122f38d28f9924a3167246069e7c7764d6adac923a0e30efbf6192"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_mapa_gestao_obras",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mapa_gestao_obras.sql",
+          "line": 20,
+          "hash": "e8d752df5f7d19aa2c7312f2e8e58e57f998f97acfe2b055666cf9a4c708e7bd"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_mgo_inserir_json_compativel",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mapa_gestao_obras.sql",
+          "line": 178,
+          "hash": "dd637f8428a3e1c8ff26e5c74fbe7a56530c0aec37953401331107dc16ab33c5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_importar_mapa_gestao",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mapa_gestao_obras.sql",
+          "line": 196,
+          "hash": "7cf5478ed61bd3c2e66dcd6914a2c8038ee221944cccf00b46830a66ba5f0d82"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_pode_gerir",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 129,
+          "hash": "4614b60092a765a6df8d53a052921633a3794b5a6357f72b874b59df232c13fb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_atual",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 135,
+          "hash": "851e74e4585ffc068c9aa79d8fb4e41c37004e76e1b98bc8d607b4504ae688e4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_reconciliar_alertas",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 158,
+          "hash": "2976d51928e223891e38d5ed851615d557171784cacbd941d0b1540b933c01b5"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_proteger",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 236,
+          "hash": "03f891e42d24574b660900f3ef84c47a617db3c7121c8e5ebfee2676ff25af2e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_proteger_historico",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 281,
+          "hash": "d50aed54de407eaae5ff8fed2bec5ff51ae1df0fc1d89725479729f2c9e3271e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_guardar_interno",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 296,
+          "hash": "ac87922f338ba2c028a9716471c5ea8a0b300cf42f862d69dc1e0f5ea9fa5f41"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_registar_consulta",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 371,
+          "hash": "1e6c3038b7a869f705cd3b18a28bfe7bf739524f4cb8d71d1f469f4d464758cd"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_corrigir_consulta",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 377,
+          "hash": "44f885594ee82b5a051209c4435f0c006f7d489cb17d415328eeb65b22416f8c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_anular_consulta",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 383,
+          "hash": "743d753f126aff4341557eb9ff619d3f7749fecc8936a7744334a64fa8772f2c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_consultar_colaborador",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 389,
+          "hash": "a19b3812339422ff709bbbd03bb5bde770b446670fa7f3a7df75267828f69295"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_medicina_admissao_historico",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/medicina_trabalho_controlada.sql",
+          "line": 417,
+          "hash": "799974e3eedd3a40695fdb695ac8ebc3362e09839466ce1650c5539b971b985e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_previsualizar_mesclagem_fornecedor",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mesclar_fornecedores_seguro.sql",
+          "line": 43,
+          "hash": "774f56e3b7b222e89566cf6f79680246bf7845bf0bde1335004c99e1224cebe6"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_mesclar_fornecedor",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mesclar_fornecedores_seguro.sql",
+          "line": 176,
+          "hash": "1d64ba08340915099bf5b0ba6f7726a29eee6cb8bf034f3d015aa05d56cdf5d2"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_mapa_gestao_obras_excel",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/mgo_grelha_excel_leitura_tecnica.sql",
+          "line": 27,
+          "hash": "732e747c4e4fbae6d808dd75548bf26eaef71c3fc7e3dfd0f91c044b42fff30b"
+        },
+        {
+          "file": "supabase/mgo_integridade_datas_filtros.sql",
+          "line": 5,
+          "hash": "732e747c4e4fbae6d808dd75548bf26eaef71c3fc7e3dfd0f91c044b42fff30b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_parametro_operacional_texto",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 39,
+          "hash": "9687f292176e45178a25cc266f1de00ad5dc15e2c2bf1cfd072c3ee9f1951cb2"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_parametro_operacional_numero",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 55,
+          "hash": "ceaba257a1cf46f777c9bba73056f5e28da0407ace9740cc9fd3cb07a0a1d5b0"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_parametro_operacional_dias",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 77,
+          "hash": "77bb38f5c02bd6a42ae42ecf14ab88c7c33b3e30c79a5d3df96e12eebab3ccbc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_atualizacao_parametro_operacional",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 108,
+          "hash": "71a2ba242d60e92ec8695b1c6c4c8be2697817f7896faad2639e5dead8af3749"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_limite_contrato_subempreitada",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/parametros_operacionais.sql",
+          "line": 158,
+          "hash": "d1c61e4f7964556d8afd0bd874cfc099b6aca14595a8d6f07a1f6be4d6746875"
+        },
+        {
+          "file": "supabase/subempreitadas_mapa_comparativo_workflow.sql",
+          "line": 74,
+          "hash": "6bd7a0e98ca6f8dada5648e2c173097be58271d82cf512d4e7793fcd75ef3aaf"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_tee_pedido_prorrogacao",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/pedidos_prorrogacao_indice_pdf.sql",
+          "line": 30,
+          "hash": "4d26a1ed553f2ea4063cb1456fe7f5387ff1c193697807de85065a7d9682bfda"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_consulta_planeamento",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_consultas_pendentes_especialidades.sql",
+          "line": 55,
+          "hash": "0d53137000f2e7709e01f0f540d2cd32756b306c0a9caba95d84dd59a4302cba"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_subempreitada_planeamento",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_consultas_pendentes_especialidades.sql",
+          "line": 120,
+          "hash": "ac47a6d0b0541f229eb9a9ed393b1d226adaf799707444f666215cc930b060c5"
+        },
+        {
+          "file": "supabase/planeamento_detalhado.sql",
+          "line": 287,
+          "hash": "7f8f43631c5b17d1e43fe18a85100bbe1b1df228c29d889ae74941a1e3c6ec8b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_dependencia_planeamento",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_detalhado.sql",
+          "line": 64,
+          "hash": "1c5a832e3adf96fc4411b3b87ee606e23536da27ecdf62dbafb26b38e7aff8c2"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_auditar_ciclos_planeamento",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_detalhado.sql",
+          "line": 118,
+          "hash": "a6fae311861c1121be9d29a7e7848999e37f4698891f3669c6b6377d399f4502"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_recalcular_planeamento_cascata",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_detalhado.sql",
+          "line": 152,
+          "hash": "213c03a7543d40360d22fad8bcb008bb50c9dff78b751457e44eaa2b41e2458e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_disparar_recalculo_planeamento",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_detalhado.sql",
+          "line": 254,
+          "hash": "7bd33f91481ecd4fab415719571019a2c9d37ad85263850bf4f08ac3016eba8c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_planeamento_lote_preview_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/planeamento_lote_preview_safeupdate.sql",
+          "line": 1,
+          "hash": "75f0b3c33d37929aef495e2421dac1563c5d5c7c5bf79a97fd5826d943b45e79"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_atualizar_tarefa_encarregado",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/plano_acao_encarregado.sql",
+          "line": 21,
+          "hash": "1975405144124b104fa30b01332ed6d24c28af77f5bf52a88718c8e519cdba4b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_alertar_tarefa_impedida",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/plano_acao_encarregado.sql",
+          "line": 92,
+          "hash": "fe09d34028202c24777e0d19f4863168340c4f5d127bfd7420b00aaaec311e28"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_ponto_horas",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/ponto_pessoal_obra.sql",
+          "line": 35,
+          "hash": "c898ae3a8ed220d232dd562781bc3c96ceb916818ecbb73ce48740de35a8b9e1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_listar_ponto_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/ponto_pessoal_obra.sql",
+          "line": 51,
+          "hash": "a4d93986347f8edb7c41b8dcabaa09acb6a3d69c6830eb7054976b317e7f7347"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_guardar_ponto_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/ponto_pessoal_obra.sql",
+          "line": 134,
+          "hash": "f93ebca2de42e214e766c33f0b15b4ae226b295ae5b3c169e406f48a4c68e8b4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_justificacao_ponto",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/ponto_pessoal_obra.sql",
+          "line": 261,
+          "hash": "501ebc914e4b4bdc5749102d0c76831e33ad6c73a56df216ba391684d7486c9d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_pode_gerir_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 64,
+          "hash": "6ec265e78baee862939a965402a43cb5b4efbeb73372488644c3d2acd7aafa97"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 19,
+          "hash": "6ec265e78baee862939a965402a43cb5b4efbeb73372488644c3d2acd7aafa97"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_leitura_global_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 70,
+          "hash": "941ee5870073f1afcdc5b5d464eaf37372290ae45298fddba0a1fbcfc7ec1408"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 25,
+          "hash": "a167b9ed865da5f91fb825d3772723017686efa49572b514b0c3c9e494c92167"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_lock_escrita_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 73,
+          "hash": "d0eac66d1854c879381f15394acb656cfc6f145d64ef68ea948609d7bec6f7af"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 28,
+          "hash": "10b4dde82f0d37c39b79ea5aff910803ad9c092e14a9813eca0455d66c47b47a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_ler_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 76,
+          "hash": "b50d41e828dd08dadb7d84271fc9fa395437ad4c23a9ca11eff432f39b696b01"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 32,
+          "hash": "5a8b06acb75cdb8cd984672d4f9f166fbcd4981ec9b6d25ce7a0bafbc14c585a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_minha_obra_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 84,
+          "hash": "7c6d4a4087834d1d8b69e3260e38cb386f04c08700930ccdfa4104045ac1d2c9"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 40,
+          "hash": "7c6d4a4087834d1d8b69e3260e38cb386f04c08700930ccdfa4104045ac1d2c9"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_pode_consultar_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 91,
+          "hash": "52b40561830aadd1079f15fdeffc33abfedaf218a4d46740e7b2f8646b511210"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 47,
+          "hash": "52b40561830aadd1079f15fdeffc33abfedaf218a4d46740e7b2f8646b511210"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_dia_explicito",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 104,
+          "hash": "b46e4096e758fd3240441da01ecea902a5e48dd062932628d88e8c8fe80ade04"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 60,
+          "hash": "a357cbd38d935b3b44a960ebf632f7f718674134dbc8b280ff0275c51fb328fc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_proteger_escrita",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 194,
+          "hash": "63c4c2c11e6ce7a386d69b3829751c116681bc768c1e198bc38a1389d776798d"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 150,
+          "hash": "63c4c2c11e6ce7a386d69b3829751c116681bc768c1e198bc38a1389d776798d"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_b.sql",
+          "line": 68,
+          "hash": "a7c3ed3b8be03c2fc0c0dcca0815a10ad2f8df0f9123b3a775cea1745e11f222"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_b_forward_fix.sql",
+          "line": 69,
+          "hash": "a7c3ed3b8be03c2fc0c0dcca0815a10ad2f8df0f9123b3a775cea1745e11f222"
+        },
+        {
+          "file": "supabase/quadro_fase_b_pos_hotfix_migration.sql",
+          "line": 72,
+          "hash": "a7c3ed3b8be03c2fc0c0dcca0815a10ad2f8df0f9123b3a775cea1745e11f222"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_renomear_interno",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 346,
+          "hash": "de69c32a4987a8f0b454c2105f7ce2003b4afcc62c057f94f1ebc66d9da71933"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 302,
+          "hash": "e9ff959319437c5a74378c4232eb1081fea6652a458953e04e7dde98d4d0e900"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_criar_colaborador_interno",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 479,
+          "hash": "1c1d05582a9a72f9e723a4e057e2abd228dc11cab92db861a02c1f5c53f6824b"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 435,
+          "hash": "1c1d05582a9a72f9e723a4e057e2abd228dc11cab92db861a02c1f5c53f6824b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_rh_guardar_interno",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 609,
+          "hash": "e37a2a7c07c6a93bd7f58217970cee739b399e601e0c62f9ff3883a466047ba0"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 565,
+          "hash": "e37a2a7c07c6a93bd7f58217970cee739b399e601e0c62f9ff3883a466047ba0"
+        },
+        {
+          "file": "supabase/rh_cadastro_importacao.sql",
+          "line": 50,
+          "hash": "54de37e1e6b7ed103f8176e1a026053551d528da2b5b0a5322aeebf8140e551a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_registar_movimento_quadro",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 747,
+          "hash": "f7204bcafc3c89dfde9390af4b27cc29bd4a3613059a16b99f643a97bb7f8410"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 703,
+          "hash": "f7204bcafc3c89dfde9390af4b27cc29bd4a3613059a16b99f643a97bb7f8410"
+        },
+        {
+          "file": "supabase/quadro_pessoal_operacional_relatorio.sql",
+          "line": 111,
+          "hash": "ca1322e4197a5d3ef2029c61703a21d9927a6cc402cd2146637ff9b63bb03736"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_notificar_controlado_v1",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 906,
+          "hash": "0dc69431cf3446d8ea9def91acc41028627f05b117608f0a55d25794be824a8c"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 862,
+          "hash": "4146fe85bfb1e4909053c4307b01847f32a50526d5ce4997a117c04c93db425c"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_quadro_notificar_movimentacao_encarregado",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/quadro_controlado_fase_a.sql",
+          "line": 1080,
+          "hash": "33c329c22bfd9ae011663ef54bcf505947ec84921408088e6685b98fd4527fe7"
+        },
+        {
+          "file": "supabase/quadro_controlado_fase_a_forward_fix.sql",
+          "line": 1036,
+          "hash": "33c329c22bfd9ae011663ef54bcf505947ec84921408088e6685b98fd4527fe7"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_gerir_quadro",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_pessoal_apenas_administrativo_gerencia.sql",
+          "line": 6,
+          "hash": "d340c8bac77c6a8f049cc81a47e7f2e8505acdd8b40d87fa2be4e24d29f56bd9"
+        },
+        {
+          "file": "supabase/quadro_pessoal_operacional_relatorio.sql",
+          "line": 23,
+          "hash": "39e261180076e33a3818627fa2408b4cc82b74f9408f7d94f78869f8546ccc1f"
+        },
+        {
+          "file": "supabase/quadro_pessoal_permissoes_corrigido.sql",
+          "line": 2,
+          "hash": "151254b054fcc0442585b2b2eeff934378df39cb6723ae728eecd34d1abf49ea"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_validar_conflito_quadro_pessoal",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/quadro_pessoal_encarregados_multiplas_obras.sql",
+          "line": 21,
+          "hash": "c8898f35cbb499b606d016d8b7cb718a91855ebb4e6eb9efa95acf0175252014"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_consultar_quadro",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_pessoal_operacional_relatorio.sql",
+          "line": 7,
+          "hash": "6f4ff893892c6132f00238c4c5c2a80b4e0231ed0fb609de9d21824d7b2c9194"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_relatorio_mensal_ponto",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/quadro_pessoal_operacional_relatorio.sql",
+          "line": 184,
+          "hash": "01484ef6f487289ea3847612abf6a92ab9684f86e7c559528e11835354ffab31"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_rh_empresa",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rh_cadastro_importacao.sql",
+          "line": 23,
+          "hash": "f91cc8db0fb65374f0c8138385a845f84d1cba38e05f07d7741cd251d168c3bc"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_rh_consultar",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rh_cadastro_importacao.sql",
+          "line": 35,
+          "hash": "34d779ae76a33477ce23c3847ef2c175035ca6b275e34789825aca3f7a6552b8"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_rh_guardar",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rh_cadastro_importacao.sql",
+          "line": 186,
+          "hash": "3f9df9d4905c6380cf272928e535eeeaa8db3ef1d10eba0affb2f26c4130a91a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_rh_importar",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rh_cadastro_importacao.sql",
+          "line": 191,
+          "hash": "54f827f66f33439ccfe0697f6dc9b5cb201b7afa99887ac8b230f85e2c6a8deb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_e_administrativo",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 31,
+          "hash": "aac8ab136730a28d8bd06418483eb09eb8c6b306fe1665f895f7a96ed11664b8"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_e_financeiro",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rls_permissoes_finais.sql",
+          "line": 47,
+          "hash": "c82d02774080438efdaa5cf863abdb56dd2b49693e8fd74794bc25e0556ab8b4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_proximo_numero_rnc",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rnc_workflow.sql",
+          "line": 14,
+          "hash": "3e5297936e4f9799f561351d9e992f672ca10fc8952066ce916e613b6ca8b7d2"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_rnc",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rnc_workflow.sql",
+          "line": 37,
+          "hash": "0639453fabd9a3ec2f065cc34dacfd7a0f7c5feb68d5eea79bc5df8db41439ed"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_definir_acao_rnc",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rnc_workflow.sql",
+          "line": 113,
+          "hash": "b66028f7e71336d39b3a5e0e697d570e68c6dabf6376cca376d68bf332451053"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_rnc",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rnc_workflow.sql",
+          "line": 153,
+          "hash": "c69c86144c16cdedb998ad7d8b5dfada1e65896201ef39151664a39408aa44e1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_fechar_rnc",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/rnc_workflow.sql",
+          "line": 183,
+          "hash": "7e8696f2415ae99b7046954da807134988b2f59b7cc3d4c9a371bd8ec2fa5f7a"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_editar_reserva_sala",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/salas_reuniao_editar_apagar_notificar.sql",
+          "line": 13,
+          "hash": "23600c129633952bf3e6e4616bb11a4231a1b7fae8191af1cfc57143c76dc977"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_apagar_reserva_sala",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/salas_reuniao_editar_apagar_notificar.sql",
+          "line": 62,
+          "hash": "bfab9a70f795059ee2074968b3cf9edb166e1eba47a71a680563b0e58ee9917b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_reserva_sala",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/salas_reuniao_participantes_alertas.sql",
+          "line": 50,
+          "hash": "d3b3d7c7e8673ca455f19a4cc2cdf1648ac3399ad6a821c5a27ba56afdc19a2b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_alerta_limite_subempreitada",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/subempreitadas_alertas_limite_backfill.sql",
+          "line": 6,
+          "hash": "d9e01ccb3070230ca136edfa03d3f646a7d9b30e0ee3ad44e253be607f8b02a6"
+        },
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 193,
+          "hash": "2f06ba4746e4cd61400f655e2049a922f83d3baf7b8e56f072bd0bf614ca2691"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_resumo_controle_subempreitadas_obra",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 99,
+          "hash": "0b0f6db9aedbb7943a218f6364d2858989f3a5b1ca3eb658c3c28d764c822efe"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_verificar_limite_fatura_subempreitada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 164,
+          "hash": "c50451b9b9a03d0883ab77a4dc44149709e03ef5b00e7194614d4604ef9b8c4d"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_trigger_alerta_limite_subempreitada",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/subempreitadas_controle_contratual.sql",
+          "line": 256,
+          "hash": "12cd8a2b752a499237aac841d3bb964f0f993cd665e2999ff608c56f6ae5addb"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_tee_planeamento",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/tees_previsao_encarregados.sql",
+          "line": 56,
+          "hash": "b70611fdfbd45594cf103b96231c766ad1de2a01049b6db0cd88bb31a72c70f1"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_ajustar_saida_prevista_mensal",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/tees_previsao_encarregados.sql",
+          "line": 123,
+          "hash": "a16ef94648124fe866251dca881592cf6b822255974134f63dae20358e6013c4"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_subempreitada_previsao",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/tees_previsao_encarregados.sql",
+          "line": 197,
+          "hash": "74594d4f1081aa166245de44f1c244ea95bc1403f38c6e90341aadad57e47db7"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_sincronizar_tee_previsao",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/tees_previsao_encarregados.sql",
+          "line": 247,
+          "hash": "bee1300ef41905c28b7844419653b3cf73d0df9047579b59afd2e2192fe32976"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_e_encarregado_da_obra",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/tees_previsao_encarregados.sql",
+          "line": 294,
+          "hash": "b4b9fb765756424e4e1171be2d4a1e27c3a5badc6c881523a664fc468c0db774"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_proteger_atribuicao_viatura",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/viaturas_atribuicao_controlada.sql",
+          "line": 47,
+          "hash": "73b8565f7f66f766056345597bfb811c18afc8d1212fbb035b37486314382b10"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_proteger_historico_atribuicao_viatura",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/viaturas_atribuicao_controlada.sql",
+          "line": 68,
+          "hash": "ed8caf5ee9766280ebecc6cb88ef20a9ea4df7db085a5c9245dfa84ced692898"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_impedir_saida_colaborador_com_viaturas",
+      "frontend_literal_reference": false,
+      "returns_trigger": true,
+      "definitions": [
+        {
+          "file": "supabase/viaturas_atribuicao_controlada.sql",
+          "line": 89,
+          "hash": "59aa085484a8af0eec1b26d9414f618f1c4d5a098e869259727eb9cfb046863b"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_pode_ver_visao_consolidada",
+      "frontend_literal_reference": true,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/visao_consolidada.sql",
+          "line": 6,
+          "hash": "aaf686a7e32094c30f3cd435b734cc38178b6465ee7b773aa2af3a516f514d5e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    },
+    {
+      "function": "public.fn_criar_lembretes_equipa_tecnica",
+      "frontend_literal_reference": false,
+      "returns_trigger": false,
+      "definitions": [
+        {
+          "file": "supabase/visao_geral_final_por_papel.sql",
+          "line": 34,
+          "hash": "e24999a31a9df89bc32758bf08a9ff3e8979fe2863cc22cff6e8236a8a9d275e"
+        }
+      ],
+      "classification": "STATIC CORRELATION; absence of literal does not prove orphan, dynamic/trigger paths exist"
+    }
+  ]
+}

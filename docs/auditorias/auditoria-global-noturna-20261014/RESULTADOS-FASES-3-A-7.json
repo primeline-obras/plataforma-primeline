@@ -1,0 +1,51 @@
+{
+  "observed_final_runs": [
+    {
+      "phase": 3,
+      "suite": "night-phase3-rh-run.mjs",
+      "pass": 299,
+      "fail": 0,
+      "skip": 0,
+      "nature": "292 contagens preservadas +7 novas; PG nativo"
+    },
+    {
+      "phase": 3,
+      "suite": "night-phase3-finance.test.mjs",
+      "pass": 9,
+      "fail": 0,
+      "skip": 0,
+      "nature": "8 cenários +grupo; auth monetária stubs"
+    },
+    {
+      "phase": 3,
+      "suite": "night-phase3-procurement +session-boundary +procurement-planning-pending +planning-operational",
+      "pass": 29,
+      "fail": 0,
+      "skip": 0,
+      "nature": "4 novas +25 regressões seguras"
+    },
+    {
+      "phase": 5,
+      "suite": "night-phase5-profiles.test.mjs",
+      "pass": 8,
+      "fail": 0,
+      "skip": 0,
+      "nature": "capabilities frontend, não grants"
+    },
+    {
+      "phase": 7,
+      "suite": "night-phase7-rh-batch.test.mjs",
+      "pass": 5,
+      "fail": 0,
+      "skip": 0,
+      "nature": "4 cenários +grupo; RH/import nativo"
+    }
+  ],
+  "total_node_pass": 350,
+  "fail": 0,
+  "skip": 0,
+  "phase1_pass_preserved": 236,
+  "phase2_pass_preserved": 42,
+  "global_unique_total_not_claimed": true,
+  "production_access": false
+}

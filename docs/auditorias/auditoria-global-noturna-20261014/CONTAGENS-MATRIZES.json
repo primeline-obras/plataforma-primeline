@@ -1,0 +1,22 @@
+{
+  "areas": 38,
+  "critical_actions": 32,
+  "profile_action_pairs": 256,
+  "profile_pair_status": {
+    "CAPABILITY FRONTEND TESTADA; BACKEND NÃO CERTIFICADO": 32,
+    "PERMISSÃO DB TESTADA": 16,
+    "PERMISSÃO/TRANSIÇÃO DB TESTADA": 3,
+    "REVISÃO ESTÁTICA; PAR BACKEND NÃO EXECUTADO": 203,
+    "TRANSIÇÃO DB TESTADA": 2
+  },
+  "lexical_entry_candidates": 520,
+  "static_api_references": 218,
+  "dollar_quoted_function_definitions": 575,
+  "qualified_call_edges": 1713,
+  "function_names_with_multiple_definitions": 136,
+  "conflict_csv_rows": 370,
+  "e2e_records": 20,
+  "new_discoveries": 2,
+  "consolidated_records": 39,
+  "complete_functional_coverage_claimed": false
+}

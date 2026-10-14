@@ -1,7 +1,7 @@
 # Compras e equipa técnica
 
 ## Compras: resultados novos
-TEMP-P3-C01 (P2): loadA fica pendente; loadB altera state.work e retorna devido loading; respostaA preenche consultas e loadedWorkId=A, mas renderiza contextoB. Função real src/procurement.js:175–237 executada em VM. Não houve outra identidade/empresa nem prova de bypass RLS; existe risco de ações no alvo errado.
+TEMP-P3-C01 (P2): loadA fica pendente; loadB altera state.work e retorna devido loading; respostaA preenche consultas e loadedWorkId=A, mas renderiza contexto B. Função real src/procurement.js:175–237 executada em VM. Não houve outra identidade/empresa nem prova de bypass RLS; existe risco de ações no alvo errado.
 
 TEMP-P3-C02 (P2, N-FOR-05/02): as três consultas retornam200; header de fatura ausente e item presente. loadPriceRows produz preço sem fornecedor e priceError vazio. Falha de proveniência provada em fixture; ausência real por RLS/paginação não demonstrada. Queries não têm paginação visível; cap real desconhecido.
 

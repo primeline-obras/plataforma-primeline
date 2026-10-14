@@ -1,0 +1,43 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "RH7-CADASTRO",
+      "status": "PASS",
+      "writer": "fn_rh_guardar",
+      "contract_saved": true,
+      "audit": true,
+      "auth_mapping": "synthetic auth.uid; no hostedAuth"
+    },
+    {
+      "id": "RH7-BATCH",
+      "status": "PASS",
+      "second_row_failure": true,
+      "total_rollback": true,
+      "audit_unchanged": true
+    },
+    {
+      "id": "RH7-ROLES",
+      "status": "PASS",
+      "profiles": 8,
+      "rh_reader_allowed": [
+        "administrativo",
+        "gerencia",
+        "gestao_plataforma"
+      ],
+      "excel_allowed": [
+        "gestao_plataforma"
+      ],
+      "foreign_reader_rows": 0,
+      "inactive_denied": true
+    },
+    {
+      "id": "RH7-REPEAT",
+      "status": "PASS",
+      "unchanged_repeat_no_extra_audit": true,
+      "duplicate_batch_refused": true,
+      "limit": "no request_id transport contract; equality/no-change check, not full replay cache"
+    }
+  ]
+}

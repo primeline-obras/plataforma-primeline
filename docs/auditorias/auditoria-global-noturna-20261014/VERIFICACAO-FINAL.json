@@ -1,0 +1,12 @@
+{
+  "validation_pass": 20,
+  "validation_fail": 0,
+  "validation_skip": 0,
+  "expected_checks": 20,
+  "product_unchanged": true,
+  "prior_artifacts_expected": 34,
+  "required_deliverables": 43,
+  "synthetic_test_node_pass": 350,
+  "production_access": false,
+  "full_functional_coverage": false
+}

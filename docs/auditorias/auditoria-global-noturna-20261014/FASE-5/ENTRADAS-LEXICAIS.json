@@ -1,0 +1,3645 @@
+{
+  "method": "atributos data-* distintos por ficheiro; não é contagem de ações funcionais",
+  "entries": [
+    {
+      "file": "src/action-plan.js",
+      "line": 72,
+      "selector": "data-action-report",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/action-plan.js",
+      "line": 84,
+      "selector": "data-action-month",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 176,
+      "selector": "data-view",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 200,
+      "selector": "data-type",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 286,
+      "selector": "data-finance-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 291,
+      "selector": "data-finance-panel",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 347,
+      "selector": "data-team-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 355,
+      "selector": "data-team-panel",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 397,
+      "selector": "data-workforce-existing",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 398,
+      "selector": "data-workforce-free",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 399,
+      "selector": "data-cancel-workforce-line",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 484,
+      "selector": "data-material-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 485,
+      "selector": "data-item-field",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 491,
+      "selector": "data-item-total",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 492,
+      "selector": "data-remove-material-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 946,
+      "selector": "data-delete-invoice-guide",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 946,
+      "selector": "data-delete-invoice-attachment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 947,
+      "selector": "data-guide",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 947,
+      "selector": "data-invoice-attachment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 948,
+      "selector": "data-file-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1095,
+      "selector": "data-invoice-subcontract",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1150,
+      "selector": "data-invoice-card",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1153,
+      "selector": "data-pdf",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1157,
+      "selector": "data-invoice-detail",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1158,
+      "selector": "data-return-administrative",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1159,
+      "selector": "data-advance-invoice",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1159,
+      "selector": "data-next-flow",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1165,
+      "selector": "data-guide-input",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1169,
+      "selector": "data-guide-warning",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1170,
+      "selector": "data-approval-observation",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1173,
+      "selector": "data-invoice-attachment-input",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1176,
+      "selector": "data-edit-invoice",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1211,
+      "selector": "data-open-invoice",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1211,
+      "selector": "data-difference-cents",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1221,
+      "selector": "data-detail-approval-observation",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1228,
+      "selector": "data-close-workflow",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1228,
+      "selector": "data-detail-return-administrative",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1228,
+      "selector": "data-detail-advance",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1257,
+      "selector": "data-payment-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1258,
+      "selector": "data-mark-paid",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1259,
+      "selector": "data-return-invoice",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1260,
+      "selector": "data-finance-attachment-input",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1274,
+      "selector": "data-unmark-paid",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1323,
+      "selector": "data-select-invoice-delete",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1453,
+      "selector": "data-toggle-direct-debit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1456,
+      "selector": "data-direct-debit-entry",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1591,
+      "selector": "data-work-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1741,
+      "selector": "data-workforce-person",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1741,
+      "selector": "data-source-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1741,
+      "selector": "data-source-period",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1741,
+      "selector": "data-source-row-key",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1741,
+      "selector": "data-source-ids",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1956,
+      "selector": "data-vacation-month",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1979,
+      "selector": "data-vehicle-edit-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1979,
+      "selector": "data-vehicle-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1981,
+      "selector": "data-manage-vehicle-assignment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1986,
+      "selector": "data-cancel-vehicle-edit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1995,
+      "selector": "data-entity-documents-panel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 1996,
+      "selector": "data-close-entity-documents",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2004,
+      "selector": "data-entity-document-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2004,
+      "selector": "data-document-name",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2004,
+      "selector": "data-entity-document-delete",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2004,
+      "selector": "data-object-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2007,
+      "selector": "data-entity-document-upload",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2007,
+      "selector": "data-entity-type",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2007,
+      "selector": "data-entity-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2157,
+      "selector": "data-vacation-week",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2172,
+      "selector": "data-workforce-rename",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2172,
+      "selector": "data-row-type",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2172,
+      "selector": "data-old-description",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2188,
+      "selector": "data-absence-detail",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2188,
+      "selector": "data-tooltip",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2189,
+      "selector": "data-workforce-cell",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2189,
+      "selector": "data-allocation-type",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2189,
+      "selector": "data-description",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2189,
+      "selector": "data-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2195,
+      "selector": "data-workforce-period",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2195,
+      "selector": "data-remove-workforce",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2206,
+      "selector": "data-team-vacation-person",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2221,
+      "selector": "data-absence-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2221,
+      "selector": "data-file-name",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2221,
+      "selector": "data-edit-absence",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2222,
+      "selector": "data-update-absence",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2224,
+      "selector": "data-justify-absence",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2263,
+      "selector": "data-open-entity-documents",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2264,
+      "selector": "data-edit-collaborator",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2272,
+      "selector": "data-reactivate-collaborator",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2278,
+      "selector": "data-team-alert-filter",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2278,
+      "selector": "data-team-alert-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2320,
+      "selector": "data-open-medicine",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2338,
+      "selector": "data-edit-vehicle",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2514,
+      "selector": "data-person-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2514,
+      "selector": "data-week",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 2514,
+      "selector": "data-revision",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3129,
+      "selector": "data-decide-subcontract-addendum",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3129,
+      "selector": "data-decision",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3130,
+      "selector": "data-subcontract-addendum",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3135,
+      "selector": "data-comparative-map-root",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3136,
+      "selector": "data-procurement-root",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3220,
+      "selector": "data-new-measurement",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3248,
+      "selector": "data-workflow-pdf",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3250,
+      "selector": "data-measure-action",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3250,
+      "selector": "data-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3252,
+      "selector": "data-new-billing",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3253,
+      "selector": "data-decide-billing",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3253,
+      "selector": "data-billing-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3339,
+      "selector": "data-index-filename-warning",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3371,
+      "selector": "data-export-index-pdf",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3454,
+      "selector": "data-document-number",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3455,
+      "selector": "data-document-revision",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3487,
+      "selector": "data-work-document-preview",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3488,
+      "selector": "data-work-document-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3589,
+      "selector": "data-import-tees",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3589,
+      "selector": "data-new-tee",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3608,
+      "selector": "data-edit-tee",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3635,
+      "selector": "data-tee-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3764,
+      "selector": "data-open-phase-planning",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3806,
+      "selector": "data-open-rnc",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3806,
+      "selector": "data-open-meeting",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3811,
+      "selector": "data-work-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 3821,
+      "selector": "data-work-cost-card",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 4126,
+      "selector": "data-rh-medicine",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 4283,
+      "selector": "data-classify-hours-absence",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 4604,
+      "selector": "data-billing-draft-lines",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 5024,
+      "selector": "data-settings-theme",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/app.js",
+      "line": 5025,
+      "selector": "data-settings-tv",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-absence.js",
+      "line": 4,
+      "selector": "data-classify-hours-absence",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 7,
+      "selector": "data-hours-admin-panel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 8,
+      "selector": "data-hours-admin-month",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 8,
+      "selector": "data-hours-admin-person",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 8,
+      "selector": "data-hours-admin-reference-date",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 8,
+      "selector": "data-hours-admin-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 8,
+      "selector": "data-hours-admin-provider",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-admin.js",
+      "line": 8,
+      "selector": "data-hours-admin-mode",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 19,
+      "selector": "data-hours-mode",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 20,
+      "selector": "data-hours-reason",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 20,
+      "selector": "data-hours-add",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 20,
+      "selector": "data-hours-total",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 21,
+      "selector": "data-hours-cancel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 21,
+      "selector": "data-hours-save",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 21,
+      "selector": "data-hours-faltou",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-hours-period",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-hours-field",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-index",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-hours-remove",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-hours-destination",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-hours-ref",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 24,
+      "selector": "data-hours-original-work",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 39,
+      "selector": "data-hours-card-register",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 39,
+      "selector": "data-hours-card-faltou",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-editor.js",
+      "line": 39,
+      "selector": "data-hours-card-editor",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 14,
+      "selector": "data-review-error",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 14,
+      "selector": "data-review-action",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 16,
+      "selector": "data-review-record",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 16,
+      "selector": "data-revision",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 16,
+      "selector": "data-review-absence",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 16,
+      "selector": "data-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 16,
+      "selector": "data-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 16,
+      "selector": "data-review-reason",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 27,
+      "selector": "data-reference-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 27,
+      "selector": "data-reference-reason",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 30,
+      "selector": "data-rate-from",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 30,
+      "selector": "data-rate-value",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 30,
+      "selector": "data-rate-evidence",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-review.js",
+      "line": 30,
+      "selector": "data-rate-reason",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-team.js",
+      "line": 9,
+      "selector": "data-hours-team-date",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-team.js",
+      "line": 9,
+      "selector": "data-hours-team-refresh",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-team.js",
+      "line": 9,
+      "selector": "data-hours-team-normal",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-hours-team.js",
+      "line": 10,
+      "selector": "data-hours-team-cards",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 21,
+      "selector": "data-management-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 21,
+      "selector": "data-management-person",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 21,
+      "selector": "data-management-body",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 21,
+      "selector": "data-management-error",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 25,
+      "selector": "data-management-action",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 25,
+      "selector": "data-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 26,
+      "selector": "data-management-eligibility",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 26,
+      "selector": "data-management-schedule",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 26,
+      "selector": "data-management-work-schedule",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 28,
+      "selector": "data-management-vacations",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 28,
+      "selector": "data-management-add-date",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 28,
+      "selector": "data-management-unselect",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 28,
+      "selector": "data-management-add-range",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 28,
+      "selector": "data-management-select-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 28,
+      "selector": "data-management-entitlement",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 29,
+      "selector": "data-absence-reason",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 29,
+      "selector": "data-management-absence",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 32,
+      "selector": "data-management-month",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 32,
+      "selector": "data-management-special",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 32,
+      "selector": "data-management-payroll",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 32,
+      "selector": "data-management-payroll-action",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-management.js",
+      "line": 50,
+      "selector": "data-management-planning",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 13,
+      "selector": "data-hours-admin",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 29,
+      "selector": "data-person",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 29,
+      "selector": "data-kind",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 29,
+      "selector": "data-sheet-edit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 29,
+      "selector": "data-external",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 29,
+      "selector": "data-sheet-external-remove",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 29,
+      "selector": "data-sheet-remove",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 33,
+      "selector": "data-sheet-detail",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 34,
+      "selector": "data-sheet-cancel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 34,
+      "selector": "data-sheet-panel-body",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 44,
+      "selector": "data-sheet-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 44,
+      "selector": "data-sheet-date",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 44,
+      "selector": "data-sheet-day",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 44,
+      "selector": "data-sheet-refresh",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 44,
+      "selector": "data-sheet-work-history",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 46,
+      "selector": "data-sheet-summary",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 46,
+      "selector": "data-sheet-add",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 46,
+      "selector": "data-sheet-bulk",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 46,
+      "selector": "data-sheet-work-history-panel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 46,
+      "selector": "data-sheet-team-panel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 46,
+      "selector": "data-sheet-add-external",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 47,
+      "selector": "data-sheet-external-panel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 47,
+      "selector": "data-sheet-management",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 52,
+      "selector": "data-sheet-hours-team",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 90,
+      "selector": "data-sheet-form",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 90,
+      "selector": "data-sheet-total",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 90,
+      "selector": "data-sheet-error",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 93,
+      "selector": "data-sheet-work-history-results",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 93,
+      "selector": "data-sheet-work-record",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 93,
+      "selector": "data-sheet-legacy",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 104,
+      "selector": "data-sheet-disabled",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 107,
+      "selector": "data-sheet-candidate",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 107,
+      "selector": "data-sheet-add-selected",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 113,
+      "selector": "data-sheet-history-range",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 114,
+      "selector": "data-sheet-external-form",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 150,
+      "selector": "data-sheet-search",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 150,
+      "selector": "data-search",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance-sheet.js",
+      "line": 150,
+      "selector": "data-sheet-help",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 41,
+      "selector": "data-attendance-row",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 41,
+      "selector": "data-person-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 48,
+      "selector": "data-attendance-times",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 55,
+      "selector": "data-attendance-total",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 59,
+      "selector": "data-attendance-decision",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 59,
+      "selector": "data-point-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 67,
+      "selector": "data-attendance-date",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 68,
+      "selector": "data-attendance-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 69,
+      "selector": "data-attendance-refresh",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 73,
+      "selector": "data-attendance-report-month",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/attendance.js",
+      "line": 74,
+      "selector": "data-attendance-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 52,
+      "selector": "data-budget-request-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 64,
+      "selector": "data-budget-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 69,
+      "selector": "data-budget-version-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 69,
+      "selector": "data-request-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 77,
+      "selector": "data-budget-file",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 77,
+      "selector": "data-delete-budget-file",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 77,
+      "selector": "data-file-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 80,
+      "selector": "data-budget-main-edit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 81,
+      "selector": "data-budget-attachment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 83,
+      "selector": "data-budget-status-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 83,
+      "selector": "data-cancel-budget-request",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 84,
+      "selector": "data-budget-version-attachment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/budget-requests.js",
+      "line": 84,
+      "selector": "data-delete-budget-version",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/calendar.js",
+      "line": 23,
+      "selector": "data-edit-calendar",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/calendar.js",
+      "line": 23,
+      "selector": "data-delete-calendar",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/calendar.js",
+      "line": 24,
+      "selector": "data-calendar-month",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/calendar.js",
+      "line": 24,
+      "selector": "data-calendar-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/calendar.js",
+      "line": 25,
+      "selector": "data-calendar-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/calendar.js",
+      "line": 25,
+      "selector": "data-cancel-calendar",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/company-documents.js",
+      "line": 74,
+      "selector": "data-company-document-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/company-documents.js",
+      "line": 74,
+      "selector": "data-file-name",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/company-documents.js",
+      "line": 74,
+      "selector": "data-company-document-delete",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/company-documents.js",
+      "line": 74,
+      "selector": "data-object-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 28,
+      "selector": "data-comparative-map-root",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 58,
+      "selector": "data-toggle-new-map",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 59,
+      "selector": "data-new-map",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 69,
+      "selector": "data-open-pdf-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 70,
+      "selector": "data-close-pdf-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 70,
+      "selector": "data-read-proposal-pdf",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 76,
+      "selector": "data-confirm-proposal-pdf",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 94,
+      "selector": "data-add-import-line",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 95,
+      "selector": "data-import-line",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 95,
+      "selector": "data-original-description",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 95,
+      "selector": "data-original-quantity",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 95,
+      "selector": "data-original-total",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 95,
+      "selector": "data-source-page",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 95,
+      "selector": "data-confidence",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 113,
+      "selector": "data-request-delete-",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 114,
+      "selector": "data-cancel-delete",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 114,
+      "selector": "data-confirm-delete-",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 119,
+      "selector": "data-open-proposal-pdf",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 119,
+      "selector": "data-edit-proposal",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 120,
+      "selector": "data-proposal-info",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 120,
+      "selector": "data-cancel-edit-proposal",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-item-field",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-save-price",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-proposal",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-save-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-cancel-edit-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 133,
+      "selector": "data-edit-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 143,
+      "selector": "data-save-costing",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 148,
+      "selector": "data-add-adjustment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 154,
+      "selector": "data-toggle-map",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 157,
+      "selector": "data-add-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 157,
+      "selector": "data-add-proposal",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/comparative-map.js",
+      "line": 160,
+      "selector": "data-adjudicate-map",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 80,
+      "selector": "data-documents-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 88,
+      "selector": "data-document-section",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 101,
+      "selector": "data-document-number",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 102,
+      "selector": "data-document-revision",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 137,
+      "selector": "data-document-preview",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 137,
+      "selector": "data-document-name",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 137,
+      "selector": "data-document-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 137,
+      "selector": "data-document-delete",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/documents.js",
+      "line": 137,
+      "selector": "data-document-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/financial-map.js",
+      "line": 118,
+      "selector": "data-map-adjust",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/financial-map.js",
+      "line": 164,
+      "selector": "data-map-adjust-close",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/financial-map.js",
+      "line": 164,
+      "selector": "data-map-adjustment-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/financial-map.js",
+      "line": 164,
+      "selector": "data-map-adjust-remove",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/financial-map.js",
+      "line": 169,
+      "selector": "data-import-financial-map",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 205,
+      "selector": "data-management-map-filters",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 217,
+      "selector": "data-close-management-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 217,
+      "selector": "data-management-import-file",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 217,
+      "selector": "data-confirm-management-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 221,
+      "selector": "data-open-management-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 221,
+      "selector": "data-refresh-management-map",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/management-map.js",
+      "line": 221,
+      "selector": "data-management-mode",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 71,
+      "selector": "data-med-document",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 76,
+      "selector": "data-med-message",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 81,
+      "selector": "data-med-new",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 81,
+      "selector": "data-med-reload",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 82,
+      "selector": "data-med-editor",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 83,
+      "selector": "data-med-consultation",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 83,
+      "selector": "data-med-correct",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 83,
+      "selector": "data-med-cancel",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/medicine.js",
+      "line": 116,
+      "selector": "data-med-close",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "line": 60,
+      "selector": "data-edit-reservation",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "line": 60,
+      "selector": "data-delete-reservation",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "line": 63,
+      "selector": "data-room-month",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "line": 66,
+      "selector": "data-room-date",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "line": 78,
+      "selector": "data-room-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/meeting-rooms.js",
+      "line": 84,
+      "selector": "data-cancel-reservation-edit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 219,
+      "selector": "data-remove-dependency",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 221,
+      "selector": "data-dependency-choice",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 221,
+      "selector": "data-add-dependency",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 252,
+      "selector": "data-toggle-editor-phase",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 258,
+      "selector": "data-edit-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 267,
+      "selector": "data-weighted",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 268,
+      "selector": "data-derived-state",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 269,
+      "selector": "data-toggle-task",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 269,
+      "selector": "data-remove-task",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 295,
+      "selector": "data-close-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 296,
+      "selector": "data-import-paste",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 296,
+      "selector": "data-import-file",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 300,
+      "selector": "data-confirm-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 310,
+      "selector": "data-open-import",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 310,
+      "selector": "data-new-task",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 320,
+      "selector": "data-planning-phase",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 431,
+      "selector": "data-control-mode",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 444,
+      "selector": "data-save-batch",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 534,
+      "selector": "data-redistribute",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 607,
+      "selector": "data-archive-reason",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 608,
+      "selector": "data-confirm-batch",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/planning.js",
+      "line": 822,
+      "selector": "data-planning-view",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/platform-dialogs.js",
+      "line": 9,
+      "selector": "data-dialog-cancel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 40,
+      "selector": "data-procurement-root",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 87,
+      "selector": "data-toggle-new-consultation",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 88,
+      "selector": "data-new-consultation",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 93,
+      "selector": "data-budget-search",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 94,
+      "selector": "data-budget-items",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 102,
+      "selector": "data-pending-consultation",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 102,
+      "selector": "data-specialty-id",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 119,
+      "selector": "data-add-candidate",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 120,
+      "selector": "data-supplier-search",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 122,
+      "selector": "data-supplier-message",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 142,
+      "selector": "data-candidate-price",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 142,
+      "selector": "data-budget-item",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 142,
+      "selector": "data-quantity",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 143,
+      "selector": "data-row-stat",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 145,
+      "selector": "data-candidate-total",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 146,
+      "selector": "data-save-candidate",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 146,
+      "selector": "data-adjudicate",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 154,
+      "selector": "data-toggle-consultation",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/procurement.js",
+      "line": 162,
+      "selector": "data-import-subcontracts",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 421,
+      "selector": "data-planning-work",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 423,
+      "selector": "data-rnc-work",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 428,
+      "selector": "data-planning-summary",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 445,
+      "selector": "data-action-view",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 451,
+      "selector": "data-meeting-work",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 526,
+      "selector": "data-resolve-alert",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 580,
+      "selector": "data-notification-view",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 580,
+      "selector": "data-notification-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 888,
+      "selector": "data-confirm-pl-cost",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 888,
+      "selector": "data-item-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 888,
+      "selector": "data-confirm-sub-cost",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 891,
+      "selector": "data-delete-cost-adjustment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 892,
+      "selector": "data-cost-adjustment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 909,
+      "selector": "data-forecast-status",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 915,
+      "selector": "data-estimated-final",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 916,
+      "selector": "data-budget-deviation",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 930,
+      "selector": "data-delay-label",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 933,
+      "selector": "data-delay-finish",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 934,
+      "selector": "data-delay-cost",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 935,
+      "selector": "data-delay-final",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 936,
+      "selector": "data-delay-margin",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 938,
+      "selector": "data-delay-warning",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 1223,
+      "selector": "data-work-cost-card",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 1237,
+      "selector": "data-import-phase-budget",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 1237,
+      "selector": "data-complete-pl-phase",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 1237,
+      "selector": "data-phase-value",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/production-dashboard.js",
+      "line": 1308,
+      "selector": "data-rsp-open-meeting",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/projects.js",
+      "line": 71,
+      "selector": "data-new-project",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/projects.js",
+      "line": 76,
+      "selector": "data-project-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/projects.js",
+      "line": 83,
+      "selector": "data-project-work",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/projects.js",
+      "line": 88,
+      "selector": "data-project-dialog",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/projects.js",
+      "line": 89,
+      "selector": "data-close-project",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/projects.js",
+      "line": 89,
+      "selector": "data-project-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 44,
+      "selector": "data-property-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 52,
+      "selector": "data-property-meeting-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 65,
+      "selector": "data-property-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 65,
+      "selector": "data-edit-property",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 65,
+      "selector": "data-delete-property",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 65,
+      "selector": "data-property-name",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 74,
+      "selector": "data-edit-property-meeting",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 74,
+      "selector": "data-delete-property-meeting",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 75,
+      "selector": "data-property-attachment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 75,
+      "selector": "data-property-file",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 75,
+      "selector": "data-delete-property-file",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/properties.js",
+      "line": 75,
+      "selector": "data-file-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 91,
+      "selector": "data-rh-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 92,
+      "selector": "data-close-workflow",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 92,
+      "selector": "data-rh-medicine",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 123,
+      "selector": "data-rh-template",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 123,
+      "selector": "data-rh-file",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 123,
+      "selector": "data-rh-preview",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rh-cadastro.js",
+      "line": 123,
+      "selector": "data-rh-confirm",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 26,
+      "selector": "data-rnc-create",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 39,
+      "selector": "data-rnc-correction",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 40,
+      "selector": "data-rnc-verify",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 41,
+      "selector": "data-rnc-close",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 42,
+      "selector": "data-rnc-evaluate",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 49,
+      "selector": "data-rnc-edit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 49,
+      "selector": "data-rnc-edit-cancel",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 54,
+      "selector": "data-rnc-annex",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 54,
+      "selector": "data-rnc-annex-delete",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 54,
+      "selector": "data-file-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 55,
+      "selector": "data-rnc-pdf",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 55,
+      "selector": "data-rnc-edit-open",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 55,
+      "selector": "data-rnc-cancel",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 61,
+      "selector": "data-rnc-work",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 62,
+      "selector": "data-rnc-toggle",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/rnc.js",
+      "line": 107,
+      "selector": "data-cancel",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 35,
+      "selector": "data-settings-theme",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 35,
+      "selector": "data-settings-tv",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 39,
+      "selector": "data-holiday-year",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 45,
+      "selector": "data-settings-admin-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 49,
+      "selector": "data-settings-admin-panel",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 71,
+      "selector": "data-refresh-audit",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 73,
+      "selector": "data-audit-table",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 74,
+      "selector": "data-audit-user",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 75,
+      "selector": "data-audit-field",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 76,
+      "selector": "data-audit-from",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 77,
+      "selector": "data-audit-to",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 93,
+      "selector": "data-settings-password",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 100,
+      "selector": "data-user-row",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 103,
+      "selector": "data-user-role",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 105,
+      "selector": "data-save-user-role",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 105,
+      "selector": "data-toggle-user",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 119,
+      "selector": "data-remove-responsibility",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 130,
+      "selector": "data-remove-admin",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 152,
+      "selector": "data-parameter-form",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 152,
+      "selector": "data-parameter-key",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/settings.js",
+      "line": 175,
+      "selector": "data-holiday-toggle",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 261,
+      "selector": "data-supplier-detail",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 312,
+      "selector": "data-supplier-editor",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 312,
+      "selector": "data-supplier-mode",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 329,
+      "selector": "data-specialties-editor",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 337,
+      "selector": "data-cancel-new-supplier",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 364,
+      "selector": "data-cancel-supplier-merge",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 365,
+      "selector": "data-merge-target",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 370,
+      "selector": "data-preview-supplier-merge",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 371,
+      "selector": "data-confirm-supplier-merge",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 410,
+      "selector": "data-merge-supplier",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 411,
+      "selector": "data-delete-supplier",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 412,
+      "selector": "data-close-supplier-detail",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 441,
+      "selector": "data-subcontractor-tab",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 491,
+      "selector": "data-price-search",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 492,
+      "selector": "data-price-supplier",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 539,
+      "selector": "data-supplier-search",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 541,
+      "selector": "data-supplier-zone-filter",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 548,
+      "selector": "data-supplier-trust",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 556,
+      "selector": "data-supplier-specialty",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 560,
+      "selector": "data-supplier-entity",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 565,
+      "selector": "data-supplier-profile",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/subcontractors.js",
+      "line": 574,
+      "selector": "data-new-supplier",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicle-assignment.js",
+      "line": 60,
+      "selector": "data-close",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicle-assignment.js",
+      "line": 60,
+      "selector": "data-current",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 101,
+      "selector": "data-fleet-validity",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 101,
+      "selector": "data-operation",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 111,
+      "selector": "data-validity-close",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 114,
+      "selector": "data-validity-custom",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 115,
+      "selector": "data-validity-preview",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 183,
+      "selector": "data-fleet-search",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 188,
+      "selector": "data-fleet-vehicle",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 200,
+      "selector": "data-fleet-event-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 200,
+      "selector": "data-vehicle-id",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 209,
+      "selector": "data-fleet-next-date",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 218,
+      "selector": "data-fleet-claim-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 235,
+      "selector": "data-fleet-edit-event",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 235,
+      "selector": "data-fleet-delete-event",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 241,
+      "selector": "data-fleet-download",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 241,
+      "selector": "data-file-name",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 241,
+      "selector": "data-fleet-delete-file",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 241,
+      "selector": "data-file-kind",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 241,
+      "selector": "data-file-path",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 249,
+      "selector": "data-fleet-claim-status",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 249,
+      "selector": "data-fleet-edit-claim",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 249,
+      "selector": "data-fleet-delete-claim",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 258,
+      "selector": "data-fleet-assignment",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 268,
+      "selector": "data-fleet-fine-form",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 290,
+      "selector": "data-fleet-edit-fine",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/vehicles.js",
+      "line": 290,
+      "selector": "data-fleet-delete-fine",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 226,
+      "selector": "data-xlsx-title",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 226,
+      "selector": "data-xlsx-close",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 226,
+      "selector": "data-xlsx-content",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 230,
+      "selector": "data-xlsx-file",
+      "handler_candidate": false,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 231,
+      "selector": "data-xlsx-select",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 234,
+      "selector": "data-xlsx-confirm",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    },
+    {
+      "file": "src/xlsx-operational-import.js",
+      "line": 235,
+      "selector": "data-xlsx-reset",
+      "handler_candidate": true,
+      "classification": "CANDIDATO DE PONTO DE ENTRADA; atributo pode ser estado ou decoração, não operação confirmada"
+    }
+  ]
+}

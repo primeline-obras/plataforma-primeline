@@ -1,0 +1,34 @@
+[
+  {
+    "branch": "main",
+    "sha": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+    "expected": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+    "matches_expected": true,
+    "commits_absent_from_audit": 0,
+    "remote_not_consulted": true
+  },
+  {
+    "branch": "feat/gestao-horas-integrada-20261013",
+    "sha": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+    "expected": "2ae1f8a194f23d77bf0692d0a6d586566227298c",
+    "matches_expected": true,
+    "commits_absent_from_audit": 0,
+    "remote_not_consulted": true
+  },
+  {
+    "branch": "fix/despesas-gerais-tenant-20261011",
+    "sha": "abc160d33328e305dfdd4d4748a2973765c18c0d",
+    "expected": "abc160d33328e305dfdd4d4748a2973765c18c0d",
+    "matches_expected": true,
+    "commits_absent_from_audit": 2,
+    "remote_not_consulted": true
+  },
+  {
+    "branch": "chore/fase-b-readiness-20261011",
+    "sha": "b7bf4c158e93cf455cc307097eef83d90e9c6a77",
+    "expected": "b7bf4c158e93cf455cc307097eef83d90e9c6a77",
+    "matches_expected": true,
+    "commits_absent_from_audit": 1,
+    "remote_not_consulted": true
+  }
+]
