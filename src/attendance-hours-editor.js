@@ -1,6 +1,6 @@
 import {referenceSuggestions,durationLabel,planSitesFromIntervals}from './attendance-hours-domain.js';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// Production component prepared for approved mounting. It is not imported by app.js.
+// Operational editor approved for local mounting; backend authorization remains authoritative.
 export function createHoursOperationalEditor({host,day,works,client,onSaved=()=>{},onCancel=()=>{},uuid=()=>crypto.randomUUID(),entryMode='hours',showIdentity=true,showFaltouShortcut=false,onBusy=()=>{}}){
  let busy=false,destroyed=false,error='',mode='personalizado',view=entryMode==='faltou'?'faltou':'hours';const sharedRefs=new Map();
  let intervals=[...day.records.flatMap(r=>r.intervals.map(x=>({...clean(x),destination:{type:'obra',work_id:r.obra_id},existing:true}))),...day.references.flatMap(r=>r.intervals.map(x=>({...clean(x),destination:{type:r.tipo,reference_id:r.id,reference:r.referencia_original,original_work_id:r.obra_original_id},existing:true})))];
@@ -34,10 +34,10 @@ export function createHoursOperationalEditor({host,day,works,client,onSaved=()=>
 }
 function minutes(s){const [h,m]=s.split(':').map(Number);return h*60+m;}
 function userError(e){if(/STALE_|40001/.test(e.message+' '+e.code))return 'Os registos foram alterados por outro utilizador. Recarregue antes de repetir.';if(/INTERVAL_CONFLICT/.test(e.message))return 'Há horários sobrepostos neste dia. Reveja os intervalos.';if(/POINT_CONFLICT|ABSENCE_CONFLICT/.test(e.message))return 'Existe um conflito entre horas e falta neste dia. Nenhum registo foi apagado.';if(e.code==='42501')return 'Não tem permissão para esta operação.';return e.message||'Operação recusada.';}
-export function createHoursWorkerCard({host,day,works,client,onSaved=()=>{}}){
+export function createHoursWorkerCard({host,day,works,client,onSaved=()=>{},onBusy=()=>{}}){
  let editor=null,destroyed=false,cardBusy=false;
  host.innerHTML=`<article class="hours-v3-card"><header><div><strong>${esc(day.name)}</strong><span>${day.kind==='external'?'MÃO DE OBRA EXTERNA':'PESSOAL PRIMELINE'}</span></div><div class="hours-v3-card-actions">${day.can_write?`<button type="button" class="sheet-primary" data-hours-card-register>${day.records.length||day.references.length?'EDITAR':'REGISTAR'}</button>`:''}${day.can_report_faltou&&day.kind==='primeline'?'<button type="button" data-hours-card-faltou>FALTOU</button>':''}</div></header><div data-hours-card-editor></div></article>`;
- function open(mode){if(destroyed||cardBusy)return;editor?.destroy();editor=createHoursOperationalEditor({host:host.querySelector('[data-hours-card-editor]'),day,works,client,entryMode:mode,showIdentity:false,onBusy:flag=>{if(destroyed)return;cardBusy=flag;host.querySelectorAll('.hours-v3-card-actions button').forEach(b=>b.disabled=flag);},onSaved:r=>{editor=null;onSaved(r);}});}
+ function open(mode){if(destroyed||cardBusy)return;editor?.destroy();editor=createHoursOperationalEditor({host:host.querySelector('[data-hours-card-editor]'),day,works,client,entryMode:mode,showIdentity:false,onBusy:flag=>{onBusy(flag);if(destroyed)return;cardBusy=flag;host.querySelectorAll('.hours-v3-card-actions button').forEach(b=>b.disabled=flag);},onSaved:r=>{editor=null;onSaved(r);}});}
  function click(e){if(e.target.closest('[data-hours-card-register]'))open('hours');if(e.target.closest('[data-hours-card-faltou]'))open('faltou');}
  host.addEventListener('click',click);return {open,destroy:()=>{destroyed=true;editor?.destroy();host.removeEventListener('click',click);host.innerHTML='';}};
 }

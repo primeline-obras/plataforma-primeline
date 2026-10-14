@@ -1,5 +1,7 @@
 # Gestão integrada de horas — preparação local de 13/10/2026
 
+> Relatório histórico. O estado atual está no relatório de retoma de 14/10/2026; os estados "não implementado" abaixo descrevem o checkpoint de 13/10.
+
 ## Identidade e limites
 
 Branch: `feat/gestao-horas-integrada-20261013`.

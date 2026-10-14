@@ -86,7 +86,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE u public.utilizadores; person uuid:=(p->'key'->>'person_id')::uuid; kind text:=p->'key'->>'kind'; old public.folha_registos;
  row jsonb; f jsonb; state text; expected integer; window_days integer; special boolean; result public.folha_registos;
 BEGIN
- u:=folha_privado.ator(); PERFORM folha_privado.destino_autorizar_v3(person,w,kind,true); PERFORM folha_privado.lock_dia(person,d);
+ u:=folha_privado.ator(); PERFORM folha_privado.destino_autorizar_v3(person,w,kind,true);u:=folha_privado.ator(); PERFORM folha_privado.lock_dia(person,d);
  IF p->'key'->>'work_id' IS DISTINCT FROM w::text OR p->'key'->>'date' IS DISTINCT FROM d::text OR kind IS NULL OR kind NOT IN('primeline','external')
  THEN RAISE EXCEPTION 'VALIDATION_ERROR: chave'; END IF;
  row:=folha_privado.linha(person,w,d,kind); IF kind='primeline' AND EXISTS(SELECT 1 FROM public.ausencias WHERE colaborador_id=person AND data=d) THEN RAISE EXCEPTION 'ABSENCE_CONFLICT';END IF;
@@ -144,7 +144,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $destination$
 DECLARE u public.utilizadores;p uuid:=(p_dados->>'person_id')::uuid;w uuid:=(p_dados->>'work_id')::uuid;d date:=(p_dados->>'date')::date;k text:=p_dados->>'kind';req uuid:=(p_dados->>'request_id')::uuid;xs jsonb;all_xs jsonb;plan jsonb;before jsonb;daily jsonb;preview jsonb;data jsonb;payload jsonb;token text;outcome jsonb;op folha_privado.operacoes;result public.folha_registos;day_count integer;
 BEGIN
  LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;PERFORM pg_advisory_xact_lock(61001,1);
- u:=folha_privado.ator();IF (p_dados ? 'empresa_id' AND (p_dados->>'empresa_id')::uuid IS DISTINCT FROM u.empresa_id) OR (p_dados ? 'company_id' AND (p_dados->>'company_id')::uuid IS DISTINCT FROM u.empresa_id) THEN RAISE EXCEPTION 'TENANT_HINT_MISMATCH' USING ERRCODE='42501';END IF;PERFORM folha_privado.destino_autorizar_v3(p,w,k,true);PERFORM folha_privado.lock_dia(p,d);
+ u:=folha_privado.ator();PERFORM 1 FROM public.utilizadores WHERE id=u.id FOR SHARE;u:=folha_privado.ator();IF (p_dados ? 'empresa_id' AND (p_dados->>'empresa_id')::uuid IS DISTINCT FROM u.empresa_id) OR (p_dados ? 'company_id' AND (p_dados->>'company_id')::uuid IS DISTINCT FROM u.empresa_id) THEN RAISE EXCEPTION 'TENANT_HINT_MISMATCH' USING ERRCODE='42501';END IF;PERFORM folha_privado.destino_autorizar_v3(p,w,k,true);PERFORM folha_privado.lock_dia(p,d);
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001';END IF;
  IF req IS NULL OR p IS NULL OR d IS NULL OR k IS NULL OR k NOT IN('primeline','external') OR (p_dados->>'version')::integer IS DISTINCT FROM 3 OR p_confirmar IS NULL OR jsonb_typeof(p_dados->'intervals') IS DISTINCT FROM 'array' OR jsonb_array_length(p_dados->'intervals') NOT BETWEEN 1 AND 16 THEN RAISE EXCEPTION 'VALIDATION_ERROR';END IF;
  IF EXISTS(SELECT 1 FROM jsonb_object_keys(p_dados) key WHERE key NOT IN('version','request_id','person_id','work_id','date','kind','intervals','expected_revision','expected_daily_revision','reason','note')) THEN RAISE EXCEPTION 'UNKNOWN_FIELD';END IF;
@@ -191,7 +191,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $normalbatch$
 DECLARE u public.utilizadores;req uuid:=(p_dados->>'request_id')::uuid;w uuid:=(p_dados->>'work_id')::uuid;d date:=(p_dados->>'date')::date;person jsonb;child jsonb;preview jsonb;previews jsonb:='[]';outcomes jsonb:='[]';token text;payload jsonb;op folha_privado.operacoes;outcome jsonb;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001';END IF;
- LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;PERFORM pg_advisory_xact_lock(61001,1);u:=folha_privado.ator();IF (p_dados ? 'empresa_id' AND (p_dados->>'empresa_id')::uuid IS DISTINCT FROM u.empresa_id) OR (p_dados ? 'company_id' AND (p_dados->>'company_id')::uuid IS DISTINCT FROM u.empresa_id) THEN RAISE EXCEPTION 'TENANT_HINT_MISMATCH' USING ERRCODE='42501';END IF;
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;PERFORM pg_advisory_xact_lock(61001,1);u:=folha_privado.ator();PERFORM 1 FROM public.utilizadores WHERE id=u.id FOR SHARE;u:=folha_privado.ator();IF (p_dados ? 'empresa_id' AND (p_dados->>'empresa_id')::uuid IS DISTINCT FROM u.empresa_id) OR (p_dados ? 'company_id' AND (p_dados->>'company_id')::uuid IS DISTINCT FROM u.empresa_id) THEN RAISE EXCEPTION 'TENANT_HINT_MISMATCH' USING ERRCODE='42501';END IF;
  IF req IS NULL OR d IS NULL OR w IS NULL OR p_confirmar IS NULL OR (p_dados->>'version')::integer IS DISTINCT FROM 3 OR jsonb_typeof(p_dados->'people') IS DISTINCT FROM 'array' OR jsonb_array_length(p_dados->'people') NOT BETWEEN 1 AND 100 OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_dados->'people') x GROUP BY x->>'kind',x->>'person_id' HAVING count(*)>1) THEN RAISE EXCEPTION 'NORMAL_BATCH_INVALID';END IF;
  FOR person IN SELECT value FROM jsonb_array_elements(p_dados->'people') ORDER BY value->>'kind',value->>'person_id' LOOP
   PERFORM folha_privado.destino_autorizar_v3((person->>'person_id')::uuid,w,person->>'kind',true);PERFORM folha_privado.lock_dia((person->>'person_id')::uuid,d);

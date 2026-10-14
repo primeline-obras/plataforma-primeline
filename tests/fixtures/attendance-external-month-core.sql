@@ -26,7 +26,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $confirm$
 DECLARE u public.utilizadores;req uuid:=(p_dados->>'request_id')::uuid;w uuid:=(p_dados->>'work_id')::uuid;provider uuid:=(p_dados->>'provider_id')::uuid;m date:=(p_dados->>'month')::date;old public.folha_externos_confirmacoes;n public.folha_externos_confirmacoes;r jsonb;payload jsonb;token text;result jsonb;op folha_privado.operacoes;
 BEGIN
  IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'RETRY_READ_COMMITTED' USING ERRCODE='40001';END IF;
- LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;PERFORM pg_advisory_xact_lock(61001,1);u:=folha_privado.ator();IF (p_dados ? 'empresa_id' AND (p_dados->>'empresa_id')::uuid IS DISTINCT FROM u.empresa_id) OR (p_dados ? 'company_id' AND (p_dados->>'company_id')::uuid IS DISTINCT FROM u.empresa_id) THEN RAISE EXCEPTION 'TENANT_HINT_MISMATCH' USING ERRCODE='42501';END IF;PERFORM 1 FROM public.utilizadores WHERE id=u.id FOR SHARE;u:=folha_privado.ator();
+ LOCK TABLE public.quadro_pessoal_alocacao IN ROW EXCLUSIVE MODE;PERFORM pg_advisory_xact_lock(61001,1);u:=folha_privado.ator();PERFORM 1 FROM public.utilizadores WHERE id=u.id FOR SHARE;u:=folha_privado.ator();IF (p_dados ? 'empresa_id' AND (p_dados->>'empresa_id')::uuid IS DISTINCT FROM u.empresa_id) OR (p_dados ? 'company_id' AND (p_dados->>'company_id')::uuid IS DISTINCT FROM u.empresa_id) THEN RAISE EXCEPTION 'TENANT_HINT_MISMATCH' USING ERRCODE='42501';END IF;PERFORM 1 FROM public.utilizadores WHERE id=u.id FOR SHARE;u:=folha_privado.ator();
  IF u.funcao<>'diretor_obra' THEN RAISE EXCEPTION 'PERMISSION_DENIED: confirmação do Diretor' USING ERRCODE='42501';END IF;
  PERFORM 1 FROM public.obras WHERE id=w AND empresa_id=u.empresa_id FOR SHARE;IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501';END IF;
  PERFORM 1 FROM public.obra_responsaveis WHERE obra_id=w AND utilizador_id=u.id AND papel='diretor_obra' FOR SHARE;IF NOT FOUND THEN RAISE EXCEPTION 'PERMISSION_DENIED' USING ERRCODE='42501';END IF;
@@ -54,3 +54,14 @@ BEGIN
 END $export$;
 REVOKE ALL ON FUNCTION folha_privado.externo_mes_v3(uuid,uuid,date),folha_privado.externo_confirmacao_guardar_v3(),public.fn_folha_externos_confirmar_v3(jsonb,boolean,text),public.fn_folha_externos_excel_contexto_v3(uuid,uuid,date) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.fn_folha_externos_confirmar_v3(jsonb,boolean,text),public.fn_folha_externos_excel_contexto_v3(uuid,uuid,date) TO authenticated;
+CREATE FUNCTION public.fn_folha_externos_conferencia_contexto_v3(p_obra_id uuid,p_fornecedor_id uuid,p_competencia date) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $context$
+DECLARE u public.utilizadores;r jsonb;c public.folha_externos_confirmacoes;h jsonb;
+BEGIN
+ u:=folha_privado.ator();r:=folha_privado.externo_mes_v3(p_obra_id,p_fornecedor_id,p_competencia);
+ SELECT * INTO c FROM public.folha_externos_confirmacoes WHERE empresa_id=u.empresa_id AND obra_id=p_obra_id AND fornecedor_id=p_fornecedor_id AND competencia=p_competencia ORDER BY revision DESC LIMIT 1;
+ SELECT coalesce(jsonb_agg(jsonb_build_object('id',x.id,'revision',x.revision,'confirmed_by',x.confirmado_por,'author_name',a.nome,'confirmed_at',x.confirmado_em,'reason',x.reason,'facts_fingerprint',x.facts_fingerprint) ORDER BY x.revision),'[]') INTO h FROM public.folha_externos_confirmacoes x LEFT JOIN public.utilizadores a ON a.id=x.confirmado_por AND a.empresa_id=u.empresa_id WHERE x.empresa_id=u.empresa_id AND x.obra_id=p_obra_id AND x.fornecedor_id=p_fornecedor_id AND x.competencia=p_competencia;
+ RETURN jsonb_build_object('version',3,'work_id',p_obra_id,'provider_id',p_fornecedor_id,'month',p_competencia,'report',r,'expected_revision',coalesce(c.revision,0),'confirmation_current',c.id IS NOT NULL AND c.facts_fingerprint IS NOT DISTINCT FROM r->>'facts_fingerprint','can_confirm',u.funcao='diretor_obra' AND EXISTS(SELECT 1 FROM public.obra_responsaveis WHERE obra_id=p_obra_id AND utilizador_id=u.id AND papel='diretor_obra'),'history',h,'financial_effect',false);
+END $context$;
+REVOKE ALL ON FUNCTION public.fn_folha_externos_conferencia_contexto_v3(uuid,uuid,date) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_folha_externos_conferencia_contexto_v3(uuid,uuid,date) TO authenticated;
