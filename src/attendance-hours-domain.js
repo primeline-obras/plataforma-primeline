@@ -1,6 +1,6 @@
 // Local preparation only: not imported by app.js until the operational interface is approved.
 // Authority, reference freezing, permissions and money remain server-side.
-import {assertDate,intervalFacts,activeOn} from './attendance-domain.js?v=9';
+import {assertDate,intervalFacts,activeOn,localClock} from './attendance-domain.js?v=9';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function durationLabel(minutes){if(!Number.isInteger(minutes)||minutes<0)throw Error('Duração inválida.');if(!minutes)return '0h';if(minutes<60)return minutes+'min';return Math.floor(minutes/60)+'h'+(minutes%60?String(minutes%60).padStart(2,'0'):'');}
 export function referenceSuggestions({date,reference=null,external=false,mode='dia_inteiro',specialDay=false}){
@@ -10,7 +10,7 @@ export function referenceSuggestions({date,reference=null,external=false,mode='d
  let day;
  if(external&&[0,6].includes(new Date(date+'T12:00:00Z').getUTCDay()))return null;
  if(external)day={day_type:'prevista',expected_minutes:480,intervals:[{start:'08:00',end:'12:00',period:'manha'},{start:'13:00',end:'17:00',period:'tarde'}]};
- else if(reference?.confirmed===true&&reference.version_id&&reference.effective_from<=date&&(!reference.effective_to||date<reference.effective_to))day=reference.week?.[new Date(date+'T12:00:00Z').getUTCDay()||7];
+ else if(reference?.confirmed===true&&reference.version_id&&reference.effective_from<=date&&(!reference.effective_to||date<reference.effective_to))day=reference.day||reference.week?.[new Date(date+'T12:00:00Z').getUTCDay()||7];
  if(!day||day.day_type!=='prevista')return null;
  const xs=day.intervals.filter(x=>mode==='dia_inteiro'||x.period===mode).map(x=>({start:x.start,end:x.end,period:x.period,mode:'normal'}));
  if(!xs.length)return null;intervalFacts(xs);return xs;
@@ -65,6 +65,16 @@ export function financialAvailability({external=false,approvedRate=null,date,has
  assertDate(date);
  // Only a contract availability result. No hourly rate is inferred from pay, role or visited work.
  if(!approvedRate||approvedRate.approved!==true||!UUID.test(approvedRate.approved_by||'')||!approvedRate.approved_at||!UUID.test(approvedRate.id||'')||!Number.isInteger(approvedRate.revision)||approvedRate.revision<1||!Number.isFinite(approvedRate.hourly_rate)||approvedRate.hourly_rate<0||!/^\d{4}-\d{2}-\d{2}$/.test(approvedRate.effective_from||'')||approvedRate.effective_from>date||approvedRate.effective_to&&date>=approvedRate.effective_to)return {hoursOnly:true,reason:external?'preco_externo_pendente':'custo_hora_rh_pendente'};
- if(hasExcess)return {hoursOnly:true,reason:'base_valorizacao_excedente_por_definir'};
+ if(hasExcess)return {hoursOnly:true,reason:'pendente_de_valorizacao_hr31',valuationPending:true,cost:null,blocksRhValidation:false};
  return {hoursOnly:false,rateIdentity:{id:approvedRate.id,revision:approvedRate.revision},financialEffect:false};
+}export function planSitesFromIntervals({day,intervals,works,now={date:day.server_date||localClock().date},requestId=()=>crypto.randomUUID()}){
+ const actual=intervals.filter(x=>x.start||x.end);if(!actual.length)throw Error('Indique pelo menos um intervalo.');
+ const allowed=works.filter(w=>w.status==='em_curso'||day.records.some(r=>r.obra_id===w.id));
+ const plan=prepareIntervals({personId:day.person_id,date:day.date,intervals:actual,activeWorks:allowed,now,expectedDailyRevision:day.expected_daily_revision,external:day.kind==='external'});
+ return plan.destinations.map(group=>{const d=group.destination;
+  if(d.type==='obra'||d.type==='outra'&&d.work_id){const r=day.records.find(x=>x.obra_id===d.work_id);return {type:'obra',work_id:d.work_id,expected_revision:r?.revision||0,intervals:group.intervals};}
+  if(!['garantia','outra'].includes(d.type))throw Error('Este formulário conserva o registo de Escritório no fluxo existente.');
+  const id=d.reference_id||requestId(),r=day.references.find(x=>x.id===id);
+  return {type:'reference',id,reference_type:r?.tipo||d.type,origin_work_id:r?.origem_obra_id||day.work_id,original_reference:r?.referencia_original||d.reference,original_work_id:r?.obra_original_id||d.original_work_id||null,expected_revision:r?.revision||0,intervals:group.intervals};
+ });
 }
