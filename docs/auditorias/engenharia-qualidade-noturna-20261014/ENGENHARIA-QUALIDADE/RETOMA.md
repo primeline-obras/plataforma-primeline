@@ -1,6 +1,6 @@
 # Retoma da engenharia de qualidade
 
-Branch codex/validacao-profunda-203-20261014; checkpoint local c4799aa contém primeira bateria. Manter produção e produto intactos. Consultar CONTROLO-EXECUCAO-NOTURNA.md na pasta validacao-profunda-20261014.
+Branch codex/validacao-profunda-203-20261014; checkpoint local 9e28c96 contém primeira bateria. Manter produção e produto intactos. Consultar CONTROLO-EXECUCAO-NOTURNA.md na pasta validacao-profunda-20261014.
 
 Próximos: ampliar estados das interfaces/importadores e invariantes restantes; segunda passagem económica em execução; consolidar achados sem duplicar N-FOR/N-FIN anteriores; validar links/contagens e congelar um novo checkpoint local.
 

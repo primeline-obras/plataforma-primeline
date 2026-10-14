@@ -1,0 +1,43 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (38.2169ms)
+  ✔ drift de coluna/policy/grant/definer aborta (113.5911ms)
+  ✔ migration sem backup privado recusa (41.5085ms)
+  ✔ REST signed synthetic gestao_plataforma (44.8596ms)
+  ✔ REST signed synthetic gerencia (33.5952ms)
+  ✔ REST signed synthetic administrativo (21.9171ms)
+  ✔ REST signed synthetic financeiro (16.2088ms)
+  ✔ REST signed synthetic diretor_obra (14.0414ms)
+  ✔ REST signed synthetic adjunto (14.7329ms)
+  ✔ REST signed synthetic preparador (13.7813ms)
+  ✔ REST signed synthetic encarregado (15.9887ms)
+  ✔ second pass foreign (16.0022ms)
+  ✔ second pass missing (17.6512ms)
+  ✔ second pass inactive (10.9894ms)
+  ✔ second pass revoked (17.2894ms)
+  ✔ second pass expired (13.4657ms)
+  ✔ second pass bad_signature (14.4035ms)
+  ✔ second pass anonymous (17.5666ms)
+  ✔ second pass null (17.0103ms)
+  ✔ second pass zero (13.8624ms)
+  ✔ second pass negative (14.6573ms)
+  ✔ second pass overpaid (16.8345ms)
+  ✔ second pass stale (15.9118ms)
+  ✔ same JWT replay denies after inactive (28.0483ms)
+  ✔ same JWT replay denies after role_changed (48.7447ms)
+  ✔ same JWT replay denies after auth_unlinked (31.3434ms)
+  ✔ distinct Auth JWT legitimate billing decision 12 (16.9079ms)
+  ✔ distinct Auth JWT legitimate billing decision 13 (15.1064ms)
+  ✔ distinct Auth JWT legitimate billing decision 14 (15.9016ms)
+  ✔ distinct Auth JWT legitimate billing decision 15 (10.5547ms)
+  ✔ distinct Auth JWT legitimate billing decision 16 (26.0839ms)
+  ✔ same director JWT work revocation denies decision before any write (28.8429ms)
+  ✔ metamorphic receipt split conserves ledger and balance; replay creates no second movement (45.2607ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (12694.5616ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12854.4625

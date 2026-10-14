@@ -1,4 +1,4 @@
-import{installCurrentVehicle}from'./deep-current-documental.mjs';
+import{installCurrentVehicle,installCurrentRnc}from'./deep-current-documental.mjs';
 import {authorizationCases} from './financeiro-regression-cases.mjs';
 import {financialCases} from './financeiro-cross-tenant-cases.mjs';
 import {economicWriterCases} from './writers-economicos-cases.mjs';
@@ -102,7 +102,7 @@ test('PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o',{time
   const asRole=async(n,sql,params=[])=>{await q('BEGIN');try{await q("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(n)]);await q('SET LOCAL ROLE authenticated');return await q(sql,params);}finally{await q('ROLLBACK');}};
 
 
-  await q(scripts.migration);await q(scripts.postcheck);await installCurrentVehicle(q);const fs=await import('node:fs'),proofs=[];
+  await q(scripts.migration);await q(scripts.postcheck);await installCurrentVehicle(q);await installCurrentRnc(q);const fs=await import('node:fs'),proofs=[];
   const roles=[[12,'gestao_plataforma'],[13,'gerencia'],[11,'administrativo'],[17,'financeiro'],[14,'diretor_obra'],[15,'adjunto'],[16,'preparador'],[10,'encarregado']];
   const actions=[['CUSTOMER_CREATE',[12,13,14,15,16]],['MEDICINE',[12,13,11,10]],['VEHICLE',[12,13,11]],['CONSULT_CREATE',[12,13,14,15,16]],['COMPARATIVE_DELETE',[12,13,14,15,16]],['ALERT_RESOLVE',[12,13,11,17,14,15,16]],['RNC_CREATE',[12,13,14,15,16,10]]];
   const state=async()=>{const result={};for(const table of fixture.catalog.tables.filter(x=>x.kind==='r'))result[table.name]=(await q('SELECT jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text) v FROM public.'+qi(table.name)+' t')).rows[0].v;return JSON.stringify(result)};

@@ -1,0 +1,71 @@
+{
+  "environment": "Função real; dados sintéticos; nenhuma gravação",
+  "proofs": [
+    {
+      "dimension": "unidade",
+      "values": [
+        "m2",
+        "un"
+      ],
+      "observed_winner": "a",
+      "explicit_noncomparable_winner": "b",
+      "classification": "LIMITE CONTRATUAL — NÃO É VALIDAÇÃO AUTOMÁTICA",
+      "limit": "O helper classifica pelo total e flags. A presença destes atributos sintéticos não prova suporte de campos no schema nem defeito de autorização."
+    },
+    {
+      "dimension": "moeda",
+      "values": [
+        "EUR",
+        "USD"
+      ],
+      "observed_winner": "a",
+      "explicit_noncomparable_winner": "b",
+      "classification": "LIMITE CONTRATUAL — NÃO É VALIDAÇÃO AUTOMÁTICA",
+      "limit": "O helper classifica pelo total e flags. A presença destes atributos sintéticos não prova suporte de campos no schema nem defeito de autorização."
+    },
+    {
+      "dimension": "iva_incluido",
+      "values": [
+        true,
+        false
+      ],
+      "observed_winner": "a",
+      "explicit_noncomparable_winner": "b",
+      "classification": "LIMITE CONTRATUAL — NÃO É VALIDAÇÃO AUTOMÁTICA",
+      "limit": "O helper classifica pelo total e flags. A presença destes atributos sintéticos não prova suporte de campos no schema nem defeito de autorização."
+    },
+    {
+      "dimension": "prazo_validade",
+      "values": [
+        "2020-01-01",
+        "2040-01-01"
+      ],
+      "observed_winner": "a",
+      "explicit_noncomparable_winner": "b",
+      "classification": "LIMITE CONTRATUAL — NÃO É VALIDAÇÃO AUTOMÁTICA",
+      "limit": "O helper classifica pelo total e flags. A presença destes atributos sintéticos não prova suporte de campos no schema nem defeito de autorização."
+    },
+    {
+      "dimension": "transporte_incluido",
+      "values": [
+        false,
+        true
+      ],
+      "observed_winner": "a",
+      "explicit_noncomparable_winner": "b",
+      "classification": "LIMITE CONTRATUAL — NÃO É VALIDAÇÃO AUTOMÁTICA",
+      "limit": "O helper classifica pelo total e flags. A presença destes atributos sintéticos não prova suporte de campos no schema nem defeito de autorização."
+    },
+    {
+      "dimension": "quantidade_minima",
+      "values": [
+        100,
+        1
+      ],
+      "observed_winner": "a",
+      "explicit_noncomparable_winner": "b",
+      "classification": "LIMITE CONTRATUAL — NÃO É VALIDAÇÃO AUTOMÁTICA",
+      "limit": "O helper classifica pelo total e flags. A presença destes atributos sintéticos não prova suporte de campos no schema nem defeito de autorização."
+    }
+  ]
+}

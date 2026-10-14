@@ -12,6 +12,7 @@ raw=[
 ('DEEP-OBS-01','Planeamento/importação','P3','LACUNA CLIENTE','Datas civis inválidas recusadas','Parser aceita31/02/2026 e2026-13-40','EVIDENCIAS-IMPORT-COMERCIAL.json','Não foi demonstrada persistência de data inválida; backend pode recusar','Validação de origem','Validar calendário antes de preview; manter recusa backend'),
 ('DEEP-OBS-02','Ficheiros','P3','OBSERVAÇÃO / DECISÃO','Contrato explícito sobre ficheiro vazio e MIME','Cliente envia PDF vazio e extensãoPDF/MIMEoctet-stream','EVIDENCIAS-DOCUMENTOS-CONTEXTO.json#DOC-FILE-CONTENT-VALIDATION','Storage local indisponível; não demonstra aceitação backend ou conteúdo malicioso','N-DOC-01','Documentar e testar contrato do serviço de bytes sem falsear permissões'),
 ('DEEP-OBS-03','Agenda','P3','USABILIDADE OBSERVADA','Ações confortáveis para toque','Botão REGISTAR medido com20px no componente local','compact-screenshots/METRICAS-VISUAIS.json;full-navigation/EVIDENCIAS-NAVEGACAO.json','20px confirmados também na aplicação completa em desktop/tablet; sem alteração CSS','UX tablet','Rever alvo de toque e contraste na tarefa de desenho, sem alterar nesta auditoria')]
+raw.append(('DEEP-OBS-04','Acessibilidade','P3','CONFIRMADO CLIENTE','Controlos com nome acessível','Menu móvel e seletor de obra do Planeamento sem nome acessível programático','full-navigation/EVIDENCIAS-TECLADO-CONTROLOS.json;full-navigation/VEHICLES-ARIA-SNAPSHOT.txt','21 vistas/63 estados; não é certificação WCAG; controlos ocultos excluídos','Novo: semântica acessível','Nome acessível explícito para menu e select; preservar navegação por teclado'))
 rows=[dict(zip(fields,r))for r in raw]
 with(Q/'NOVAS-DESCOBERTAS.csv').open('w',encoding='utf-8-sig',newline='')as f:w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(rows)
 old=list(csv.DictReader(Path('docs/auditorias/auditoria-global-noturna-20261014/CONSOLIDACAO-PARA-BACKLOG.csv').open(encoding='utf-8-sig',newline='')))
@@ -58,4 +59,4 @@ dec='''# Decisões e dependências consolidadas
 - A revisão automática rejeitou o encerramento do PID indicado; a ação não foi repetida. Retoma não deve tentar contornar essa rejeição. Limpeza desse processo requer identificação e autorização adequadas, sem bloquear outras frentes.
 '''
 (R/'DECISOES-PENDENTES.md').write_text(dec,encoding='utf-8');(Q/'DECISOES-PARA-UTILIZADORA.md').write_text(dec,encoding='utf-8')
-print('Backlog anterior',len(old),'novos registos',len(rows),'— 2P1 +4P2 locais; 3 observações P3.')
+print('Backlog anterior',len(old),'novos registos',len(rows),'— 2P1 +4P2 locais; 4 observações P3.')

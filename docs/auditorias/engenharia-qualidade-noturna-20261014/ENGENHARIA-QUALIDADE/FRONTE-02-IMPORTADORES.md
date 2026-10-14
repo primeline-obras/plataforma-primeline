@@ -15,3 +15,7 @@ EVIDENCIAS-IMPORT-COMERCIAL.json;EVIDENCIAS-FINANCEIRO-IMPORT-INTEGRADO.json
 XLSX binários já descodificados; roundtrip de todos os exportadores e commits de todas as famílias ainda por ampliar.
 
 Não houve alteração de produto, produção, permissões ou regras. A aprovação de uma assertion de diagnóstico não significa aprovação do comportamento vulnerável observado.
+
+## Excel externo real
+
+O exportador do produto gerou external-product-export.xlsx com dois períodos, total7h, revisão factual4 e confirmação revisão2. A leitura de células com SheetJS confirmou Horas/Confirmação e ausência de colunas de salário/tarifa/custo. Seis recusas adicionais: intervalo aberto, minutos divergentes, revisão ausente, fingerprint divergente, mês diferente e confirmação ausente. Total7 assertions PASS. Prova: EVIDENCIAS-EXCEL-EXTERNO-CONTEUDO.json. DTO sintético autorizado; não substitui prova da autorização backend.

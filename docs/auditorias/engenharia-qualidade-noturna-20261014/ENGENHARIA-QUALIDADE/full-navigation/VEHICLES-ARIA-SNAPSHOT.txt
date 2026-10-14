@@ -1,0 +1,20 @@
+- main:
+  - button:
+    - img
+  - button "MODO TV"
+  - button "☾ ESCURO"
+  - button "Ver alertas pendentes":
+    - img
+    - text: "0"
+  - paragraph: GESTÃO DE FROTA
+  - heading "VIATURAS" [level=1]
+  - paragraph: Validades, histórico de manutenção, sinistros e multas.
+  - complementary:
+    - textbox "Pesquisar viatura, matrícula ou colaborador…"
+    - text: 0 VIATURAS SEM RESULTADOS
+  - text: NÃO EXISTEM VIATURAS REGISTADAS
+  - paragraph: RESPONSABILIDADE INDIVIDUAL
+  - heading "MULTAS POR COLABORADOR" [level=2]
+  - text: 0 REGISTOS
+  - group: ＋ REGISTAR MULTA
+  - text: SEM MULTAS REGISTADAS

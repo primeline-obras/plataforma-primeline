@@ -1,20 +1,20 @@
 ▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
-  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (39.9883ms)
-  ✔ drift de coluna/policy/grant/definer aborta (113.7661ms)
-  ✔ migration sem backup privado recusa (41.4761ms)
-  ✔ scope RNC_CREATE / 12 / own (12.8875ms)
-  ✖ scope RNC_CREATE / 12 / foreign (9.8339ms)
-  ✔ scope RNC_CREATE / 13 / own (11.7381ms)
-  ✖ scope RNC_CREATE / 13 / foreign (7.7767ms)
-  ✔ scope VEHICLE / 12 / own (13.4932ms)
-  ✔ scope VEHICLE / 12 / foreign (11.2787ms)
-  ✔ scope VEHICLE / 13 / own (12.2576ms)
-  ✔ scope VEHICLE / 13 / foreign (10.5778ms)
-  ✔ scope ALERT_RESOLVE / 12 / own (10.6669ms)
-  ✖ scope ALERT_RESOLVE / 12 / foreign (6.8142ms)
-  ✔ scope ALERT_RESOLVE / 13 / own (8.6286ms)
-  ✖ scope ALERT_RESOLVE / 13 / foreign (7.7473ms)
-✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (10835.2377ms)
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (40.3948ms)
+  ✔ drift de coluna/policy/grant/definer aborta (116.0836ms)
+  ✔ migration sem backup privado recusa (42.1215ms)
+  ✔ scope RNC_CREATE / 12 / own (12.3381ms)
+  ✖ scope RNC_CREATE / 12 / foreign (10.3318ms)
+  ✔ scope RNC_CREATE / 13 / own (11.5074ms)
+  ✖ scope RNC_CREATE / 13 / foreign (11.5706ms)
+  ✔ scope VEHICLE / 12 / own (12.822ms)
+  ✔ scope VEHICLE / 12 / foreign (8.9235ms)
+  ✔ scope VEHICLE / 13 / own (12.7464ms)
+  ✔ scope VEHICLE / 13 / foreign (10.335ms)
+  ✔ scope ALERT_RESOLVE / 12 / own (8.8579ms)
+  ✖ scope ALERT_RESOLVE / 12 / foreign (8.581ms)
+  ✔ scope ALERT_RESOLVE / 13 / own (7.7811ms)
+  ✖ scope ALERT_RESOLVE / 13 / foreign (7.8887ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11499.0764ms)
 ℹ tests 16
 ℹ suites 0
 ℹ pass 11
@@ -22,13 +22,13 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 10996.0217
+ℹ duration_ms 11662.4482
 
 ✖ failing tests:
 
 test at tests\deep-quality-scope.test.mjs:107:136
-✖ scope RNC_CREATE / 12 / foreign (9.8339ms)
-  AssertionError [ERR_ASSERTION]: {"action":"RNC_CREATE","profile":"gestao_plataforma","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"f499409d-b92c-41dd-9a50-e84c2bb7bf1a","estado":"aberto","numero":1,"origem":"execucao_propria","fase_id":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":"Descrição sintética","gravidade":"menor","data_fecho":null,"data_deteccao":"2026-10-14","reportado_por":"00000000-0000-4000-8000-000000000012","acao_corretiva":null,"prazo_correcao":null,"verificado_por":null,"local_ocorrencia":"Local sintético","subempreitada_id":null,"responsavel_correcao":null,"observacao_verificacao":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
+✖ scope RNC_CREATE / 12 / foreign (10.3318ms)
+  AssertionError [ERR_ASSERTION]: {"action":"RNC_CREATE","profile":"gestao_plataforma","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"3b0803ac-85c7-472c-987e-1320b97dfce5","estado":"aberto","numero":1,"origem":"execucao_propria","fase_id":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":"Descrição sintética","gravidade":"menor","data_fecho":null,"data_deteccao":"2026-10-14","reportado_por":"00000000-0000-4000-8000-000000000012","acao_corretiva":null,"prazo_correcao":null,"verificado_por":null,"local_ocorrencia":"Local sintético","subempreitada_id":null,"responsavel_correcao":null,"observacao_verificacao":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
       at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-scope.test.mjs:111:910)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1389:7)
@@ -44,8 +44,8 @@ test at tests\deep-quality-scope.test.mjs:107:136
   }
 
 test at tests\deep-quality-scope.test.mjs:107:136
-✖ scope RNC_CREATE / 13 / foreign (7.7767ms)
-  AssertionError [ERR_ASSERTION]: {"action":"RNC_CREATE","profile":"gerencia","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"cedee2db-3d27-4759-8956-eeef0caa853c","estado":"aberto","numero":1,"origem":"execucao_propria","fase_id":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":"Descrição sintética","gravidade":"menor","data_fecho":null,"data_deteccao":"2026-10-14","reportado_por":"00000000-0000-4000-8000-000000000013","acao_corretiva":null,"prazo_correcao":null,"verificado_por":null,"local_ocorrencia":"Local sintético","subempreitada_id":null,"responsavel_correcao":null,"observacao_verificacao":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
+✖ scope RNC_CREATE / 13 / foreign (11.5706ms)
+  AssertionError [ERR_ASSERTION]: {"action":"RNC_CREATE","profile":"gerencia","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"17f7ae97-3161-45e7-8d42-8a01c8311497","estado":"aberto","numero":1,"origem":"execucao_propria","fase_id":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":"Descrição sintética","gravidade":"menor","data_fecho":null,"data_deteccao":"2026-10-14","reportado_por":"00000000-0000-4000-8000-000000000013","acao_corretiva":null,"prazo_correcao":null,"verificado_por":null,"local_ocorrencia":"Local sintético","subempreitada_id":null,"responsavel_correcao":null,"observacao_verificacao":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
       at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-scope.test.mjs:111:910)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1389:7)
@@ -61,8 +61,8 @@ test at tests\deep-quality-scope.test.mjs:107:136
   }
 
 test at tests\deep-quality-scope.test.mjs:107:136
-✖ scope ALERT_RESOLVE / 12 / foreign (6.8142ms)
-  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"gestao_plataforma","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"00000000-0000-4000-8000-000000009980","tipo":null,"estado":"resolvido","titulo":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000002","entidade_id":null,"recorrencia":null,"data_gatilho":null,"enviar_email":null,"resolvido_em":"2026-10-14T23:02:43.124783+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000000012","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"administrativo","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
+✖ scope ALERT_RESOLVE / 12 / foreign (8.581ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"gestao_plataforma","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"00000000-0000-4000-8000-000000009980","tipo":null,"estado":"resolvido","titulo":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000002","entidade_id":null,"recorrencia":null,"data_gatilho":null,"enviar_email":null,"resolvido_em":"2026-10-14T23:36:19.785105+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000000012","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"administrativo","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
       at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-scope.test.mjs:111:910)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1389:7)
@@ -78,8 +78,8 @@ test at tests\deep-quality-scope.test.mjs:107:136
   }
 
 test at tests\deep-quality-scope.test.mjs:107:136
-✖ scope ALERT_RESOLVE / 13 / foreign (7.7473ms)
-  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"gerencia","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"00000000-0000-4000-8000-000000009980","tipo":null,"estado":"resolvido","titulo":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000002","entidade_id":null,"recorrencia":null,"data_gatilho":null,"enviar_email":null,"resolvido_em":"2026-10-14T23:02:43.140824+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000000013","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"administrativo","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
+✖ scope ALERT_RESOLVE / 13 / foreign (7.8887ms)
+  AssertionError [ERR_ASSERTION]: {"action":"ALERT_RESOLVE","profile":"gerencia","variant":"foreign","expected":"RECUSAR SEM EFEITO","result":"FAIL","observed":{"id":"00000000-0000-4000-8000-000000009980","tipo":null,"estado":"resolvido","titulo":null,"obra_id":"00000000-0000-4000-8000-000000000200","criado_em":null,"descricao":null,"expira_em":null,"empresa_id":"00000000-0000-4000-8000-000000000002","entidade_id":null,"recorrencia":null,"data_gatilho":null,"enviar_email":null,"resolvido_em":"2026-10-14T23:36:19.801852+01:00","entidade_tipo":null,"resolvido_por":"00000000-0000-4000-8000-000000000013","ocorrencia_chave":null,"antecedencia_dias":null,"destinatario_role":"administrativo","data_evento_referencia":null,"destinatario_utilizador_id":null,"destinatario_colaborador_id":null},"changed":true,"environment":"PostgreSQL local; RPCs reais; Viaturas com guarda documental posterior","limit":"Não catálogo atual de produção; triggers operacionais parciais. Nenhum dado real."}
       at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-scope.test.mjs:111:910)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1389:7)

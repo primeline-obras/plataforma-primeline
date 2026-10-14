@@ -1,4 +1,4 @@
-import{installCurrentVehicle}from'./deep-current-documental.mjs';
+import{installCurrentVehicle,installCurrentRnc}from'./deep-current-documental.mjs';
 import {authorizationCases} from './financeiro-regression-cases.mjs';
 import {financialCases} from './financeiro-cross-tenant-cases.mjs';
 import {economicWriterCases} from './writers-economicos-cases.mjs';
@@ -102,7 +102,7 @@ test('PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o',{time
   const asRole=async(n,sql,params=[])=>{await q('BEGIN');try{await q("SELECT set_config('request.jwt.claim.sub',$1,true)",[id(n)]);await q('SET LOCAL ROLE authenticated');return await q(sql,params);}finally{await q('ROLLBACK');}};
 
 
- await q(scripts.migration);await q(scripts.postcheck);await installCurrentVehicle(q);const fs=await import('node:fs'),proofs=[];
+ await q(scripts.migration);await q(scripts.postcheck);await installCurrentVehicle(q);await installCurrentRnc(q);const fs=await import('node:fs'),proofs=[];
  const scopeState=async()=>{const out={};for(const table of ['rnc','viaturas','viaturas_atribuicoes_historico','alertas','log_auditoria'])out[table]=(await q('SELECT jsonb_agg(to_jsonb(x) ORDER BY to_jsonb(x)::text) v FROM '+table+' x')).rows[0].v;return JSON.stringify(out)};
  try{for(const action of ['RNC_CREATE','VEHICLE','ALERT_RESOLVE'])for(const actor of [12,13])for(const foreign of [false,true])await t.test('scope '+action+' / '+actor+' / '+(foreign?'foreign':'own'),async()=>{await q('BEGIN');try{let sql,args,resourceCompany=foreign?2:1,work=foreign?200:120;
   if(action==='RNC_CREATE'){await q('ALTER TABLE rnc ALTER COLUMN id SET DEFAULT gen_random_uuid()');sql="SELECT to_jsonb(fn_criar_rnc($1,current_date,NULL,'Local sintético','Descrição sintética','execucao_propria',NULL,'menor')) v";args=[id(work)]}

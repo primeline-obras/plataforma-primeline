@@ -151,6 +151,64 @@
       "unchanged": true
     },
     {
+      "id": "SAME-JWT-inactive",
+      "status": "PASS",
+      "http": 403,
+      "replay_authorization_rechecked": true,
+      "unchanged": true
+    },
+    {
+      "id": "SAME-JWT-role_changed",
+      "status": "PASS",
+      "http": 403,
+      "replay_authorization_rechecked": true,
+      "unchanged": true
+    },
+    {
+      "id": "SAME-JWT-auth_unlinked",
+      "status": "PASS",
+      "http": 403,
+      "replay_authorization_rechecked": true,
+      "unchanged": true
+    },
+    {
+      "id": "REST-DECISION-12",
+      "status": "PASS",
+      "http": 200,
+      "distinct_auth_subject": true
+    },
+    {
+      "id": "REST-DECISION-13",
+      "status": "PASS",
+      "http": 200,
+      "distinct_auth_subject": true
+    },
+    {
+      "id": "REST-DECISION-14",
+      "status": "PASS",
+      "http": 200,
+      "distinct_auth_subject": true
+    },
+    {
+      "id": "REST-DECISION-15",
+      "status": "PASS",
+      "http": 200,
+      "distinct_auth_subject": true
+    },
+    {
+      "id": "REST-DECISION-16",
+      "status": "PASS",
+      "http": 200,
+      "distinct_auth_subject": true
+    },
+    {
+      "id": "SAME-JWT-WORK-REVOKED",
+      "status": "PASS",
+      "http": 400,
+      "sqlstate": "P0001",
+      "unchanged": true
+    },
+    {
       "id": "METAMORPHIC-SPLIT",
       "status": "PASS",
       "total": 500,

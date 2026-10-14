@@ -1,0 +1,140 @@
+{
+  "environment": "Node + SheetJS local; dados sintéticos; exportador real",
+  "proofs": [
+    {
+      "case": "product_export_cells",
+      "result": "PASS",
+      "hours": [
+        [
+          "Data",
+          "Obra ID",
+          "Fornecedor ID",
+          "Fornecedor",
+          "Trabalhador ID",
+          "Nome",
+          "Entrada",
+          "Saída",
+          "Duração",
+          "Registo ID",
+          "Revisão"
+        ],
+        [
+          "2030-01-14",
+          "00000000-0000-4000-8000-000000000001",
+          "00000000-0000-4000-8000-000000000002",
+          "Fornecedor sintético",
+          "00000000-0000-4000-8000-000000000004",
+          "Pessoa externa sintética",
+          "10:30",
+          "14:30",
+          "4h",
+          "00000000-0000-4000-8000-000000000003",
+          4
+        ],
+        [
+          "2030-01-14",
+          "00000000-0000-4000-8000-000000000001",
+          "00000000-0000-4000-8000-000000000002",
+          "Fornecedor sintético",
+          "00000000-0000-4000-8000-000000000004",
+          "Pessoa externa sintética",
+          "15:00",
+          "18:00",
+          "3h",
+          "00000000-0000-4000-8000-000000000003",
+          4
+        ],
+        [
+          "TOTAL",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "7h",
+          "",
+          ""
+        ]
+      ],
+      "metadata": [
+        [
+          "Contrato",
+          "Externo mensal v3"
+        ],
+        [
+          "Formato",
+          "XLSX"
+        ],
+        [
+          "Obra ID",
+          "00000000-0000-4000-8000-000000000001"
+        ],
+        [
+          "Competência",
+          "2030-01-01"
+        ],
+        [
+          "Confirmação ID",
+          "00000000-0000-4000-8000-000000000009"
+        ],
+        [
+          "Revisão",
+          2
+        ],
+        [
+          "Fingerprint",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        [
+          "Confirmado por",
+          "00000000-0000-4000-8000-000000000008"
+        ],
+        [
+          "Confirmado em",
+          "2030-01-31T12:00:00Z"
+        ],
+        [
+          "Total",
+          "7h"
+        ],
+        [
+          "Efeito financeiro",
+          "Nenhum"
+        ]
+      ],
+      "limit": "Formato com DTO sintético autorizado; não prova login ou autorização do servidor."
+    },
+    {
+      "case": "intervalo aberto",
+      "result": "PASS",
+      "effect": "Sem bytes exportados"
+    },
+    {
+      "case": "total divergente",
+      "result": "PASS",
+      "effect": "Sem bytes exportados"
+    },
+    {
+      "case": "revisão ausente",
+      "result": "PASS",
+      "effect": "Sem bytes exportados"
+    },
+    {
+      "case": "fingerprint divergente",
+      "result": "PASS",
+      "effect": "Sem bytes exportados"
+    },
+    {
+      "case": "mês diferente",
+      "result": "PASS",
+      "effect": "Sem bytes exportados"
+    },
+    {
+      "case": "confirmação ausente",
+      "result": "PASS",
+      "effect": "Sem bytes exportados"
+    }
+  ]
+}

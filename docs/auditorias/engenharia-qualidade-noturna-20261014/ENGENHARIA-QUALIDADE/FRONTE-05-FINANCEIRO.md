@@ -8,7 +8,7 @@ Recebimento real via REST: parcelas100+400 =500, saldo43, replay sem terceiro mo
 
 ## Evidências
 
-../validacao-profunda-20261014/EVIDENCIAS-REST-SEGUNDA-PASSAGEM.json;EVIDENCIAS-FINANCEIRO-IMPORT-INTEGRADO.json
+../../validacao-profunda-20261014/EVIDENCIAS-REST-SEGUNDA-PASSAGEM.json;EVIDENCIAS-FINANCEIRO-IMPORT-INTEGRADO.json
 
 ## Limites e próximo passo
 
