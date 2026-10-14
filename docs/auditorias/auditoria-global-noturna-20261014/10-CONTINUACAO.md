@@ -85,3 +85,12 @@ Todas as alterações desta missão são docs/auditorias/auditoria-global-noturn
 - Provas somente about:blank, sem rede, marcadores sintéticos; não acessar sessão nem executar writers.
 - Resultado final atualizado: 236 PASS/0FAIL/0SKIP (9 novos casos de domínio/PG +3 browser; demais grupos preservados).
 - As quatro funções comparadas e RNC permanecem iguais à main local; mudanças de Horas não são causa demonstrada desses achados.
+
+## Verificação final de entrega — 2026-10-14 20:45:15 Lisboa
+
+- Dez entregáveis obrigatórios presentes; seis CSVs com colunas consistentes; JSON parse/UTF-8 PASS; 34 IDs de backlog únicos.
+- Inventário38 áreas; índices56JS/258SQL sem seeds; análise e provas classificadas sem certificação de produção.
+- Total final236 PASS/0FAIL/0SKIP; HR38 anterior não repetido nem contado.
+- Diff de produto/src/index/supabase/config contra12d8658 vazio; main1c5fa5b, candidato2ae1f8a e auditoria12d8658 preservados.
+- Worktree original de Horas limpa no último check; worktree isolada de auditoria limpa após o commit de fecho.
+- Sem push. Entrega antecipada às20h45 de14/10, não um trabalho garantido até06h00. Sem automação a correr depois da entrega.

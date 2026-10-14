@@ -2,7 +2,7 @@
 
 ## Estado e fontes
 
-Inventário funcional/estático da base `2ae1f8a`; produção NÃO VERIFICADA. Não se leram cadastros, nomes ou documentos pessoais reais. Os ficheiros de seed real foram identificados pelo nome e não abertos. Cadastro local anterior já tinha sido implementado: não duplicar o diagnóstico desatualizado de `docs/rh-cadastro-auditoria.md` de 23/09.
+Inventário funcional/estático da base `2ae1f8a`; produção NÃO VERIFICADA. Não se leram cadastros, nomes ou documentos pessoais reais. Os ficheiros de seed real foram excluídos da análise funcional e dos resultados; a indexação inicial extraiu só declarações, sem exportar valores. Cadastro local anterior já tinha sido implementado: não duplicar o diagnóstico desatualizado de `docs/rh-cadastro-auditoria.md` de 23/09.
 
 ## Cadastro, contrato e identidade
 
