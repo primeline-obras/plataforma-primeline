@@ -1,7 +1,10 @@
 import json,re,csv
 from pathlib import Path
 Q=Path('docs/auditorias/engenharia-qualidade-noturna-20261014/ENGENHARIA-QUALIDADE');R=Path('docs/auditorias/validacao-profunda-20261014')
-def doc(name,text):(Q/name).write_text(text.strip()+'\n',encoding='utf-8')
+# Initializer only: preserve reports extended by independent follow-up reviews.
+def doc(name,text):
+ p=Q/name
+ if not p.exists():p.write_text(text.strip()+'\n',encoding='utf-8')
 fronts=[
 (1,'INTERFACES','PARCIAL','21 vistas/80 estados na aplicação inteira;45 capturas de estados adicionais; Folha170+34 checks; editor/equipa/painéis/RH/Medicina/Quadro/RNC/Viaturas/Planeamento em browser local.','screenshots/resultado.json;REGISTO-REGRESSOES.json','Fluxos completos dos restantes módulos, estados de carregamento/erro e screenshot por formulário ainda por expandir.'),
 (2,'IMPORTADORES','PARCIAL','CSV real com 1000 linhas, BOM, multilinha e aspas; parsers operacionais e Mapa Financeiro ligados ao writer local.','EVIDENCIAS-IMPORT-COMERCIAL.json;EVIDENCIAS-FINANCEIRO-IMPORT-INTEGRADO.json','XLSX binários já descodificados; roundtrip de todos os exportadores e commits de todas as famílias ainda por ampliar.'),

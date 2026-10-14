@@ -1,0 +1,46 @@
+{
+  "environment": "PostgreSQL local; parsers reais/SheetJS; RLS/ACL reconstruídos; triggers/defaults parciais; sem Storage/Auth",
+  "proofs": [
+    {
+      "kind": "SUB",
+      "case": "parser_to_actual_client_rpc",
+      "result": "PASS",
+      "rpc": "fn_importar_subempreitadas_xlsx",
+      "imported": {
+        "importadas": 1
+      },
+      "records": 1
+    },
+    {
+      "kind": "TEE",
+      "case": "parser_to_actual_client_rpc",
+      "result": "PASS",
+      "rpc": "fn_importar_tees_xlsx",
+      "imported": {
+        "importadas": 1,
+        "itens_importados": 1
+      },
+      "records": 1
+    },
+    {
+      "kind": "SUB",
+      "case": "mixed_invalid_atomicity",
+      "result": "PASS",
+      "error": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "no_partial_effect": true
+    },
+    {
+      "kind": "TEE",
+      "case": "mixed_invalid_atomicity",
+      "result": "PASS",
+      "error": {
+        "code": "23514",
+        "message": "A fase do TEE não pertence à obra."
+      },
+      "no_partial_effect": true
+    }
+  ]
+}

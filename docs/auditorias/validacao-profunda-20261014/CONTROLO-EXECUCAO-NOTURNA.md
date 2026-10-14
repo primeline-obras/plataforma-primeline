@@ -2,7 +2,7 @@
 
 Estado geral: **EM EXECUÇÃO — COM BLOQUEIOS PARCIAIS**.
 
-Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint local9e28c96; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
+Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint locala93fd8e; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
 
 ## Pares
 
@@ -12,7 +12,7 @@ Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint loca
 
 - Reconciliação203: **CONCLUÍDA** — Chaves exatas, sem duplicações.
 - Primeira execução backend: **PARCIAL** — 179 executados;24 BLOQUEADO por serviços locais.
-- Segunda passagem: **PARCIAL** — REST30 cenários; económica76; escopo12 incluindo4 FAIL.
+- Segunda passagem: **PARCIAL** — REST30 cenários; económica76; restantes73; escopo12 incluindo4 FAIL.
 - Consumidores: **PARCIAL** — Importação/ledger/RH e documentos; ligações restantes explicitadas.
 - Interfaces: **PARCIAL** — 21 vistas/80 capturas, módulos detalhados e6 viewports; ampliar estados.
 - Importadores: **PARCIAL** — CSV1000, XLSX reais, MQT/sub/TEE500linhas; regressões RH.

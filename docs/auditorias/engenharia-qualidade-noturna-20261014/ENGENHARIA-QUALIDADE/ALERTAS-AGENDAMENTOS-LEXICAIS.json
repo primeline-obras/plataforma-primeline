@@ -1,0 +1,15 @@
+{
+  "scope": "Reposit\u00f3rio local; n\u00e3o cat\u00e1logo real nem jobs ativos",
+  "cron_schedule_occurrences": [
+    {
+      "file": "supabase/alertas_vencimentos_resolucao.sql",
+      "line": 316
+    },
+    {
+      "file": "supabase/alerta_primeira_consulta_medicina.sql",
+      "line": 106
+    }
+  ],
+  "producer_definitions": 50,
+  "unique_function_names": 27
+}

@@ -1,0 +1,669 @@
+{
+  "environment": "UI real com API sintética, nenhum submit",
+  "proofs": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "start": {
+        "focused": "nome",
+        "modal": true
+      },
+      "tab_sequence": [
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "cliente",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "diretor_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "morada",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "tipo",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "modalidade",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "projeto_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "modelo_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "copiar_orcamento",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "cancel-work",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BODY",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "sidebar-collapse",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        }
+      ],
+      "focus_escaped": true,
+      "after_escape": {
+        "open": true
+      },
+      "after_cancel": {
+        "id": "",
+        "visible": true
+      },
+      "classification": "Cancelamento testado; fuga do foco/Escape são observações de acessibilidade, não PASS modal."
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "start": {
+        "focused": "nome",
+        "modal": true
+      },
+      "tab_sequence": [
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "cliente",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "diretor_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "morada",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "tipo",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "modalidade",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "projeto_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "modelo_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "copiar_orcamento",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "cancel-work",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BODY",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "sidebar-collapse",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        }
+      ],
+      "focus_escaped": true,
+      "after_escape": {
+        "open": true
+      },
+      "after_cancel": {
+        "id": "cancel-work",
+        "name": "",
+        "visible": false
+      },
+      "classification": "Cancelamento testado; fuga do foco/Escape são observações de acessibilidade, não PASS modal."
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "start": {
+        "focused": "nome",
+        "modal": true
+      },
+      "tab_sequence": [
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "cliente",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "diretor_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "morada",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "tipo",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "modalidade",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "projeto_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "modelo_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "copiar_orcamento",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "cancel-work",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BODY",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "sidebar-collapse",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        }
+      ],
+      "focus_escaped": true,
+      "after_escape": {
+        "open": true
+      },
+      "after_cancel": {
+        "id": "cancel-work",
+        "name": "",
+        "visible": false
+      },
+      "classification": "Cancelamento testado; fuga do foco/Escape são observações de acessibilidade, não PASS modal."
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "start": {
+        "focused": "nome",
+        "modal": true
+      },
+      "tab_sequence": [
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "cliente",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "diretor_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "morada",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "tipo",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "modalidade",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "projeto_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "SELECT",
+          "name": "modelo_obra_id",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "copiar_orcamento",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_inicio",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "INPUT",
+          "name": "data_fim_prevista",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "cancel-work",
+          "visible": true
+        },
+        {
+          "inside": true,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BODY",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        },
+        {
+          "inside": false,
+          "tag": "BUTTON",
+          "name": "",
+          "visible": true
+        }
+      ],
+      "focus_escaped": true,
+      "after_escape": {
+        "open": true
+      },
+      "after_cancel": {
+        "id": "",
+        "visible": true
+      },
+      "classification": "Cancelamento testado; fuga do foco/Escape são observações de acessibilidade, não PASS modal."
+    }
+  ],
+  "writes": [],
+  "errors": []
+}

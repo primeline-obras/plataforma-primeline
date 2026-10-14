@@ -1,0 +1,77 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (40.8787ms)
+  ✔ drift de coluna/policy/grant/definer aborta (118.5392ms)
+  ✔ migration sem backup privado recusa (61.1535ms)
+  ✔ SUB parser real -> writer chamado pelo cliente -> factos locais (20.2175ms)
+  ✔ TEE parser real -> writer chamado pelo cliente -> factos locais (13.3491ms)
+  ✖ SUB segunda linha inválida reverte primeira e auditoria (14.8738ms)
+  ✖ TEE segunda linha inválida reverte primeira e auditoria (12.9896ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (12366.5397ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 5
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12597.4425
+
+✖ failing tests:
+
+test at tests\deep-quality-commercial-import.test.mjs:116:42
+✖ SUB segunda linha inválida reverte primeira e auditoria (14.8738ms)
+  error: current transaction is aborted, commands ignored until end of transaction block
+      at C:\Users\conta\AppData\Local\Temp\primeline-medicina-test-deps\runtime\node_modules\pg\lib\client.js:545:17
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-commercial-import.test.mjs:116:296)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-commercial-import.test.mjs:116:34)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    length: 144,
+    severity: 'ERROR',
+    code: '25P02',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postgres.c',
+    line: '1144',
+    routine: 'exec_simple_query'
+  }
+
+test at tests\deep-quality-commercial-import.test.mjs:116:42
+✖ TEE segunda linha inválida reverte primeira e auditoria (12.9896ms)
+  error: current transaction is aborted, commands ignored until end of transaction block
+      at C:\Users\conta\AppData\Local\Temp\primeline-medicina-test-deps\runtime\node_modules\pg\lib\client.js:545:17
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-commercial-import.test.mjs:116:296)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-commercial-import.test.mjs:116:34)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    length: 144,
+    severity: 'ERROR',
+    code: '25P02',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postgres.c',
+    line: '1144',
+    routine: 'exec_simple_query'
+  }

@@ -1,0 +1,75 @@
+{
+  "scope": "Cliente real extraído; transporte sintético; não certifica Storage ou autorização backend",
+  "proofs": [
+    {
+      "case": "upload_failure",
+      "result": "PASS",
+      "calls": [
+        "bytes_upload"
+      ]
+    },
+    {
+      "case": "metadata_failure",
+      "classification": "N-DOC-01 — janela de objeto sem associação",
+      "calls": [
+        "bytes_upload",
+        {
+          "rpc": "documentos_obra?select=*",
+          "body": {
+            "obra_id": "work",
+            "tipo": "ata",
+            "nome_arquivo": "test.pdf",
+            "arquivo_url": "work/ata/test.pdf",
+            "enviado_por": "actor",
+            "destinatarios": null,
+            "numero_documento": null,
+            "revisao": null
+          }
+        }
+      ],
+      "limit": "Transporte sintético; não prova persistência do objeto no Storage real."
+    },
+    {
+      "case": "cancel_delete",
+      "result": "PASS"
+    },
+    {
+      "case": "delete_rpc_failure",
+      "result": "PASS",
+      "calls": [
+        {
+          "rpc": "rpc/fn_apagar_documento_obra",
+          "body": {
+            "p_documento_id": "doc"
+          }
+        },
+        {
+          "toast": "SYNTHETIC_METADATA_FAILURE",
+          "type": "error"
+        }
+      ]
+    },
+    {
+      "case": "delete_bytes_failure",
+      "classification": "N-DOC-01 — reverso da separação bytes/metadados",
+      "calls": [
+        {
+          "rpc": "rpc/fn_apagar_documento_obra",
+          "body": {
+            "p_documento_id": "doc"
+          }
+        },
+        "bytes_delete",
+        {
+          "toast": "SYNTHETIC_BYTES_DELETE_FAILURE",
+          "type": "error"
+        }
+      ],
+      "limit": "A RPC simulada aceitou; sem prova da implementação/semântica de apagamento na BD ou do Storage."
+    },
+    {
+      "case": "download_failure",
+      "result": "PASS"
+    }
+  ]
+}

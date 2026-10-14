@@ -200,7 +200,7 @@
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
             "revisao": 1,
-            "criado_em": "2026-10-14T23:01:50.859407+01:00",
+            "criado_em": "2026-10-14T23:45:24.436445+01:00",
             "resultado": "apto",
             "anulado_em": null,
             "request_id": null,
@@ -216,7 +216,7 @@
             {
               "id": "00000000-0000-4000-8000-000000000600",
               "revisao": 1,
-              "criado_em": "2026-10-14T23:01:50.859407+01:00",
+              "criado_em": "2026-10-14T23:45:24.436445+01:00",
               "resultado": "apto",
               "anulado_em": null,
               "request_id": null,
@@ -244,7 +244,7 @@
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
             "revisao": 1,
-            "criado_em": "2026-10-14T23:01:50.859407+01:00",
+            "criado_em": "2026-10-14T23:45:24.436445+01:00",
             "resultado": "apto",
             "anulado_em": null,
             "request_id": null,
@@ -260,7 +260,7 @@
             {
               "id": "00000000-0000-4000-8000-000000000600",
               "revisao": 1,
-              "criado_em": "2026-10-14T23:01:50.859407+01:00",
+              "criado_em": "2026-10-14T23:45:24.436445+01:00",
               "resultado": "apto",
               "anulado_em": null,
               "request_id": null,
@@ -288,7 +288,7 @@
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
             "revisao": 1,
-            "criado_em": "2026-10-14T23:01:50.859407+01:00",
+            "criado_em": "2026-10-14T23:45:24.436445+01:00",
             "resultado": "apto",
             "anulado_em": null,
             "request_id": null,
@@ -304,7 +304,7 @@
             {
               "id": "00000000-0000-4000-8000-000000000600",
               "revisao": 1,
-              "criado_em": "2026-10-14T23:01:50.859407+01:00",
+              "criado_em": "2026-10-14T23:45:24.436445+01:00",
               "resultado": "apto",
               "anulado_em": null,
               "request_id": null,
@@ -383,7 +383,7 @@
         "v": {
           "atual": {
             "id": "00000000-0000-4000-8000-000000000600",
-            "criado_em": "2026-10-14T23:01:50.859407+01:00",
+            "criado_em": "2026-10-14T23:45:24.436445+01:00",
             "resultado": "apto",
             "colaborador_id": "00000000-0000-4000-8000-000000000030",
             "data_ultima_consulta": "2026-10-14",
@@ -408,7 +408,7 @@
           "committed": true,
           "idempotent": false,
           "viatura_id": "00000000-0000-4000-8000-000000009880",
-          "historico_id": "5686f8c4-d167-41b4-8c5d-dd26542f261d",
+          "historico_id": "3c562c7d-4857-42e2-a0a1-f91e75d9b199",
           "atribuicao_revisao": 1,
           "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
           "colaborador_anterior_id": null
@@ -429,7 +429,7 @@
           "committed": true,
           "idempotent": false,
           "viatura_id": "00000000-0000-4000-8000-000000009880",
-          "historico_id": "3fc1acc9-0f69-42ce-a878-db518bf055b1",
+          "historico_id": "74d710e4-4fc7-429b-b8b1-e9b128ebbcb2",
           "atribuicao_revisao": 1,
           "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
           "colaborador_anterior_id": null
@@ -450,7 +450,7 @@
           "committed": true,
           "idempotent": false,
           "viatura_id": "00000000-0000-4000-8000-000000009880",
-          "historico_id": "815f4adf-1bb9-45ec-b7f6-adc95cad70f6",
+          "historico_id": "9dad0e14-802b-492b-be65-00550d359440",
           "atribuicao_revisao": 1,
           "colaborador_novo_id": "00000000-0000-4000-8000-000000000030",
           "colaborador_anterior_id": null
@@ -532,7 +532,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "c32e4823-93ce-450c-acdd-0636a12acb52",
+          "id": "c06078ec-cad4-4cbd-aa18-ba50baf273e4",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -559,7 +559,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "f8d87c00-ccf8-4035-8bf5-a1e61a5b4c82",
+          "id": "e133bd89-d050-4309-877d-9cf110d9bc1c",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -612,7 +612,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "e1a8e708-7339-4a1e-aca0-134bc0fedf26",
+          "id": "86b06399-f5a1-48e9-ac53-c804722489fa",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -639,7 +639,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "b0157f71-9b8e-4a44-89ea-f3fc860d491d",
+          "id": "163d6b81-0247-45f2-80fa-b22a99f146e4",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -666,7 +666,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "84e761d0-9da9-4502-a38c-f60d9f776b9c",
+          "id": "b983ffc0-e992-4b43-9a43-586148723000",
           "estado": "em_consulta",
           "fase_id": "00000000-0000-4000-8000-000000009882",
           "obra_id": "00000000-0000-4000-8000-000000000120",
@@ -873,7 +873,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:54.498966+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.093556+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000012",
           "ocorrencia_chave": null,
@@ -908,7 +908,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:54.579801+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.153698+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000013",
           "ocorrencia_chave": null,
@@ -943,7 +943,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:54.65955+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.220748+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000011",
           "ocorrencia_chave": null,
@@ -978,7 +978,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:54.737977+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.283576+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000017",
           "ocorrencia_chave": null,
@@ -1013,7 +1013,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:54.833924+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.364809+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000014",
           "ocorrencia_chave": null,
@@ -1048,7 +1048,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:54.92007+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.451319+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000015",
           "ocorrencia_chave": null,
@@ -1083,7 +1083,7 @@
           "recorrencia": null,
           "data_gatilho": null,
           "enviar_email": null,
-          "resolvido_em": "2026-10-14T23:01:55.001604+01:00",
+          "resolvido_em": "2026-10-14T23:45:28.519585+01:00",
           "entidade_tipo": null,
           "resolvido_por": "00000000-0000-4000-8000-000000000016",
           "ocorrencia_chave": null,
@@ -1118,7 +1118,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "4696f987-53c9-47c2-bdf4-a8b2aed260fa",
+          "id": "d3a2ba24-4dc1-4cc1-97c2-55a705a7aa27",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1150,7 +1150,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "e6b9a1b1-2187-4da3-86e8-03ecb303148f",
+          "id": "8931b2f8-6dae-40af-8acc-b30d1d899a77",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1208,7 +1208,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "015e9383-d9df-4ffa-b99c-26e08323b515",
+          "id": "89451e6f-1f4a-4b11-9d33-9b05a932e99c",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1240,7 +1240,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "ee58cd60-8890-4ae6-94f1-cee4ab6647c8",
+          "id": "515a980c-b846-4ef0-883a-ed870d443e46",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1272,7 +1272,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "2e04d2ac-6a4f-4a42-8a9b-4c936f3bc515",
+          "id": "5b1df807-2b7a-4263-aa31-a768a4325849",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",
@@ -1304,7 +1304,7 @@
       "expected": "PERMITIR",
       "observed": {
         "v": {
-          "id": "6d937ff0-6af6-49f5-b455-06df8fcfe260",
+          "id": "fa9664db-3acd-428c-aece-ccd6a6502002",
           "estado": "aberto",
           "numero": 1,
           "origem": "execucao_propria",

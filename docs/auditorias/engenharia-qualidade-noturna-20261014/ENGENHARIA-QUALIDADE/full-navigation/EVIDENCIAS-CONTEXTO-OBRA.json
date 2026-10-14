@@ -1,0 +1,845 @@
+{
+  "scope": "UI real; uma obra sintética; respostas preparadas não provam permissão backend",
+  "proofs": [
+    {
+      "view": "works",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "text": "MODO TV\n☾ ESCURO\n0\n\nGESTÃO DE OBRA\n\nOBRAS\n\nAcompanhamento operacional e financeiro.\n\nATIVAS\n01\nOBRA SELECIONADA\n120 · Obra sintética com nome extenso para verificação contextual\n⌄\n＋ NOVA OBRA\n\nOBRA 120\n\nObra sintética com nome extenso para verificação contextual\nCliente sintético\nRNC →\nREUNIÃO SEMANAL →\nEM CURSO\nMorada não indicada\nRESUMO\nSUBEMPREITADAS\nTEEs\nAUTOS DE MEDIÇÃO\nFASES\nÍNDICES\nDOCUMENTOS\nSEGURANÇA\nVENDA CONTRATADA\n—\nAUTOS A FATURAR\n0,00 €\nSUBEMPREITADAS\n0,00 €\n0 adjudicadas\nINÍCIO\n—\nPRAZO DECORRIDO\n—\nFIM PREVISTO\n—\nCONTRATO\nVenda inicial\n—\nVenda efetiva\n—\nAdiantamento\n—\nAssinatura\n—\nFASES\n0\nSem fases disponíveis\nCOMPOSIÇÃO AUDITÁVEL DO CUSTO\nREAL ACUMULADO\nPL confirmado\n0,00 €\nSubempreitadas pagas\n0,00 €\nEstaleiro registado\n0,00 €\nTotal reconhecido 0,00 €\nPOR CONCLUIR / COMPROMETIDO\nPL · valor Orca\n0,00 €\nAdjudicações por confirmar\n0,00 €\nCompromisso confirmado\n0,00 €\nEstimado 0,00 €\nORÇAMENTO DE CUSTO AINDA NÃO CARREGADO\nNão existem componentes com valores para esta obra. Os montantes a zero não devem ser interpretados como orçamento confirmado.\nAJUSTES MANUAIS JUSTIFICADOS\n0,00 €\n\nSEM AJUSTES REGISTADOS\n\nIMPORTAR 0_ORÇAMENTO",
+        "buttons": [
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          },
+          {
+            "text": "OBRA SELECIONADA\n120 · Obra sintética com nome extenso para verificação contextual\n⌄",
+            "attributes": []
+          },
+          {
+            "text": "＋ NOVA OBRA",
+            "attributes": []
+          },
+          {
+            "text": "RNC →",
+            "attributes": [
+              [
+                "data-open-rnc",
+                "00000000-0000-4000-8000-000000000120"
+              ]
+            ]
+          },
+          {
+            "text": "REUNIÃO SEMANAL →",
+            "attributes": [
+              [
+                "data-open-meeting",
+                "00000000-0000-4000-8000-000000000120"
+              ]
+            ]
+          },
+          {
+            "text": "RESUMO",
+            "attributes": [
+              [
+                "data-work-tab",
+                "summary"
+              ]
+            ]
+          },
+          {
+            "text": "SUBEMPREITADAS",
+            "attributes": [
+              [
+                "data-work-tab",
+                "subcontracts"
+              ]
+            ]
+          },
+          {
+            "text": "TEEs",
+            "attributes": [
+              [
+                "data-work-tab",
+                "tees"
+              ]
+            ]
+          },
+          {
+            "text": "AUTOS DE MEDIÇÃO",
+            "attributes": [
+              [
+                "data-work-tab",
+                "measurements"
+              ]
+            ]
+          },
+          {
+            "text": "FASES",
+            "attributes": [
+              [
+                "data-work-tab",
+                "phases"
+              ]
+            ]
+          },
+          {
+            "text": "ÍNDICES",
+            "attributes": [
+              [
+                "data-work-tab",
+                "indexes"
+              ]
+            ]
+          },
+          {
+            "text": "DOCUMENTOS",
+            "attributes": [
+              [
+                "data-work-tab",
+                "documents"
+              ]
+            ]
+          },
+          {
+            "text": "SEGURANÇA",
+            "attributes": [
+              [
+                "data-work-tab",
+                "safety"
+              ]
+            ]
+          },
+          {
+            "text": "IMPORTAR 0_ORÇAMENTO",
+            "attributes": [
+              [
+                "data-import-phase-budget",
+                ""
+              ]
+            ]
+          }
+        ],
+        "controls": [],
+        "overflow": false
+      }
+    },
+    {
+      "view": "works",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": {
+        "text": "MODO TV\n☾ ESCURO\n0\n\nGESTÃO DE OBRA\n\nOBRAS\n\nAcompanhamento operacional e financeiro.\n\nATIVAS\n01\nOBRA SELECIONADA\n120 · Obra sintética com nome extenso para verificação contextual\n⌄\n＋ NOVA OBRA\n\nOBRA 120\n\nObra sintética com nome extenso para verificação contextual\nCliente sintético\nRNC →\nREUNIÃO SEMANAL →\nEM CURSO\nMorada não indicada\nRESUMO\nSUBEMPREITADAS\nTEEs\nAUTOS DE MEDIÇÃO\nFASES\nÍNDICES\nDOCUMENTOS\nSEGURANÇA\nVENDA CONTRATADA\n—\nAUTOS A FATURAR\n0,00 €\nSUBEMPREITADAS\n0,00 €\n0 adjudicadas\nINÍCIO\n—\nPRAZO DECORRIDO\n—\nFIM PREVISTO\n—\nCONTRATO\nVenda inicial\n—\nVenda efetiva\n—\nAdiantamento\n—\nAssinatura\n—\nFASES\n0\nSem fases disponíveis\nCOMPOSIÇÃO AUDITÁVEL DO CUSTO\nREAL ACUMULADO\nPL confirmado\n0,00 €\nSubempreitadas pagas\n0,00 €\nEstaleiro registado\n0,00 €\nTotal reconhecido 0,00 €\nPOR CONCLUIR / COMPROMETIDO\nPL · valor Orca\n0,00 €\nAdjudicações por confirmar\n0,00 €\nCompromisso confirmado\n0,00 €\nEstimado 0,00 €\nORÇAMENTO DE CUSTO AINDA NÃO CARREGADO\nNão existem componentes com valores para esta obra. Os montantes a zero não devem ser interpretados como orçamento confirmado.\nAJUSTES MANUAIS JUSTIFICADOS\n0,00 €\n\nSEM AJUSTES REGISTADOS\n\nIMPORTAR 0_ORÇAMENTO",
+        "buttons": [
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          },
+          {
+            "text": "OBRA SELECIONADA\n120 · Obra sintética com nome extenso para verificação contextual\n⌄",
+            "attributes": []
+          },
+          {
+            "text": "＋ NOVA OBRA",
+            "attributes": []
+          },
+          {
+            "text": "RNC →",
+            "attributes": [
+              [
+                "data-open-rnc",
+                "00000000-0000-4000-8000-000000000120"
+              ]
+            ]
+          },
+          {
+            "text": "REUNIÃO SEMANAL →",
+            "attributes": [
+              [
+                "data-open-meeting",
+                "00000000-0000-4000-8000-000000000120"
+              ]
+            ]
+          },
+          {
+            "text": "RESUMO",
+            "attributes": [
+              [
+                "data-work-tab",
+                "summary"
+              ]
+            ]
+          },
+          {
+            "text": "SUBEMPREITADAS",
+            "attributes": [
+              [
+                "data-work-tab",
+                "subcontracts"
+              ]
+            ]
+          },
+          {
+            "text": "TEEs",
+            "attributes": [
+              [
+                "data-work-tab",
+                "tees"
+              ]
+            ]
+          },
+          {
+            "text": "AUTOS DE MEDIÇÃO",
+            "attributes": [
+              [
+                "data-work-tab",
+                "measurements"
+              ]
+            ]
+          },
+          {
+            "text": "FASES",
+            "attributes": [
+              [
+                "data-work-tab",
+                "phases"
+              ]
+            ]
+          },
+          {
+            "text": "ÍNDICES",
+            "attributes": [
+              [
+                "data-work-tab",
+                "indexes"
+              ]
+            ]
+          },
+          {
+            "text": "DOCUMENTOS",
+            "attributes": [
+              [
+                "data-work-tab",
+                "documents"
+              ]
+            ]
+          },
+          {
+            "text": "SEGURANÇA",
+            "attributes": [
+              [
+                "data-work-tab",
+                "safety"
+              ]
+            ]
+          },
+          {
+            "text": "IMPORTAR 0_ORÇAMENTO",
+            "attributes": [
+              [
+                "data-import-phase-budget",
+                ""
+              ]
+            ]
+          }
+        ],
+        "controls": [],
+        "overflow": false
+      }
+    },
+    {
+      "view": "works",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": {
+        "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nGESTÃO DE OBRA\n\nOBRAS\n\nAcompanhamento operacional e financeiro.\n\nOBRA SELECIONADA\n120 · Obra sintética com nome extenso para verificação contextual\n⌄\n＋ NOVA OBRA\n\nOBRA 120\n\nObra sintética com nome extenso para verificação contextual\nCliente sintético\nRNC →\nREUNIÃO SEMANAL →\nEM CURSO\nMorada não indicada\nRESUMO\nSUBEMPREITADAS\nTEEs\nAUTOS DE MEDIÇÃO\nFASES\nÍNDICES\nDOCUMENTOS\nSEGURANÇA\nVENDA CONTRATADA\n—\nAUTOS A FATURAR\n0,00 €\nSUBEMPREITADAS\n0,00 €\n0 adjudicadas\nINÍCIO\n—\nPRAZO DECORRIDO\n—\nFIM PREVISTO\n—\nCONTRATO\nVenda inicial\n—\nVenda efetiva\n—\nAdiantamento\n—\nAssinatura\n—\nFASES\n0\nSem fases disponíveis\nCOMPOSIÇÃO AUDITÁVEL DO CUSTO\nREAL ACUMULADO\nPL confirmado\n0,00 €\nSubempreitadas pagas\n0,00 €\nEstaleiro registado\n0,00 €\nTotal reconhecido 0,00 €\nPOR CONCLUIR / COMPROMETIDO\nPL · valor Orca\n0,00 €\nAdjudicações por confirmar\n0,00 €\nCompromisso confirmado\n0,00 €\nEstimado 0,00 €\nORÇAMENTO DE CUSTO AINDA NÃO CARREGADO\nNão existem componentes com valores para esta obra. Os montantes a zero não devem ser interpretados como orçamento confirmado.\nAJUSTES MANUAIS JUSTIFICADOS\n0,00 €\n\nSEM AJUSTES REGISTADOS\n\nIMPORTAR 0_ORÇAMENTO",
+        "buttons": [
+          {
+            "text": "",
+            "attributes": []
+          },
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          },
+          {
+            "text": "OBRA SELECIONADA\n120 · Obra sintética com nome extenso para verificação contextual\n⌄",
+            "attributes": []
+          },
+          {
+            "text": "＋ NOVA OBRA",
+            "attributes": []
+          },
+          {
+            "text": "RNC →",
+            "attributes": [
+              [
+                "data-open-rnc",
+                "00000000-0000-4000-8000-000000000120"
+              ]
+            ]
+          },
+          {
+            "text": "REUNIÃO SEMANAL →",
+            "attributes": [
+              [
+                "data-open-meeting",
+                "00000000-0000-4000-8000-000000000120"
+              ]
+            ]
+          },
+          {
+            "text": "RESUMO",
+            "attributes": [
+              [
+                "data-work-tab",
+                "summary"
+              ]
+            ]
+          },
+          {
+            "text": "SUBEMPREITADAS",
+            "attributes": [
+              [
+                "data-work-tab",
+                "subcontracts"
+              ]
+            ]
+          },
+          {
+            "text": "TEEs",
+            "attributes": [
+              [
+                "data-work-tab",
+                "tees"
+              ]
+            ]
+          },
+          {
+            "text": "AUTOS DE MEDIÇÃO",
+            "attributes": [
+              [
+                "data-work-tab",
+                "measurements"
+              ]
+            ]
+          },
+          {
+            "text": "FASES",
+            "attributes": [
+              [
+                "data-work-tab",
+                "phases"
+              ]
+            ]
+          },
+          {
+            "text": "ÍNDICES",
+            "attributes": [
+              [
+                "data-work-tab",
+                "indexes"
+              ]
+            ]
+          },
+          {
+            "text": "DOCUMENTOS",
+            "attributes": [
+              [
+                "data-work-tab",
+                "documents"
+              ]
+            ]
+          },
+          {
+            "text": "SEGURANÇA",
+            "attributes": [
+              [
+                "data-work-tab",
+                "safety"
+              ]
+            ]
+          },
+          {
+            "text": "IMPORTAR 0_ORÇAMENTO",
+            "attributes": [
+              [
+                "data-import-phase-budget",
+                ""
+              ]
+            ]
+          }
+        ],
+        "controls": [],
+        "overflow": false
+      }
+    },
+    {
+      "view": "documents",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "text": "MODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nArticulado\n\nOrçamento original e TEEs aprovados\n＋ CARREGAR FICHEIRO\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo.",
+        "buttons": [
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          },
+          {
+            "text": "ARTICULADO\nOrçamento original e TEEs aprovados\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "articulado"
+              ]
+            ]
+          },
+          {
+            "text": "DESENHOS\nHistórico completo de revisões\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "drawings"
+              ]
+            ]
+          },
+          {
+            "text": "PDES / PAMES\nPedidos e aprovações técnicas\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "technical"
+              ]
+            ]
+          },
+          {
+            "text": "ATAS\nRegistos de reunião\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "minutes"
+              ]
+            ]
+          },
+          {
+            "text": "ARQUIVO GERAL\nRestantes documentos da obra\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "general"
+              ]
+            ]
+          }
+        ],
+        "controls": [
+          {
+            "name": "",
+            "type": "select-one",
+            "id": "",
+            "attributes": [
+              [
+                "data-documents-work",
+                ""
+              ]
+            ],
+            "rect": {
+              "left": 862.984375,
+              "right": 1368.984375,
+              "width": 506
+            },
+            "outside_viewport": false
+          }
+        ],
+        "overflow": false,
+        "selector_tap": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "view": "documents",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": {
+        "text": "MODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nArticulado\n\nOrçamento original e TEEs aprovados\n＋ CARREGAR FICHEIRO\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo.",
+        "buttons": [
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          },
+          {
+            "text": "ARTICULADO\nOrçamento original e TEEs aprovados\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "articulado"
+              ]
+            ]
+          },
+          {
+            "text": "DESENHOS\nHistórico completo de revisões\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "drawings"
+              ]
+            ]
+          },
+          {
+            "text": "PDES / PAMES\nPedidos e aprovações técnicas\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "technical"
+              ]
+            ]
+          },
+          {
+            "text": "ATAS\nRegistos de reunião\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "minutes"
+              ]
+            ]
+          },
+          {
+            "text": "ARQUIVO GERAL\nRestantes documentos da obra\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "general"
+              ]
+            ]
+          }
+        ],
+        "controls": [
+          {
+            "name": "",
+            "type": "select-one",
+            "id": "",
+            "attributes": [
+              [
+                "data-documents-work",
+                ""
+              ]
+            ],
+            "rect": {
+              "left": 513,
+              "right": 873,
+              "width": 360
+            },
+            "outside_viewport": true
+          }
+        ],
+        "overflow": false,
+        "selector_tap": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "view": "documents",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": {
+        "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nArticulado\n\nOrçamento original e TEEs aprovados\n＋ CARREGAR FICHEIRO\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo.",
+        "buttons": [
+          {
+            "text": "",
+            "attributes": []
+          },
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          },
+          {
+            "text": "ARTICULADO\nOrçamento original e TEEs aprovados\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "articulado"
+              ]
+            ]
+          },
+          {
+            "text": "DESENHOS\nHistórico completo de revisões\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "drawings"
+              ]
+            ]
+          },
+          {
+            "text": "PDES / PAMES\nPedidos e aprovações técnicas\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "technical"
+              ]
+            ]
+          },
+          {
+            "text": "ATAS\nRegistos de reunião\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "minutes"
+              ]
+            ]
+          },
+          {
+            "text": "ARQUIVO GERAL\nRestantes documentos da obra\n0",
+            "attributes": [
+              [
+                "data-document-section",
+                "general"
+              ]
+            ]
+          }
+        ],
+        "controls": [
+          {
+            "name": "",
+            "type": "select-one",
+            "id": "",
+            "attributes": [
+              [
+                "data-documents-work",
+                ""
+              ]
+            ],
+            "rect": {
+              "left": 393,
+              "right": 452,
+              "width": 59
+            },
+            "outside_viewport": true
+          }
+        ],
+        "overflow": false,
+        "selector_tap": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "view": "planning",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": {
+        "text": "MODO TV\n☾ ESCURO\n0\n\nPROGRAMAÇÃO DE OBRA\n\nPLANEAMENTO\n\nTarefas, dependências e prazos detalhados por fase.\n\nOBRA\nOBRA 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nDADOS DA OBRA\nSEM FASES\nEsta obra ainda não possui fases configuradas.",
+        "buttons": [
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          }
+        ],
+        "controls": [
+          {
+            "name": "",
+            "type": "select-one",
+            "id": "planning-work",
+            "attributes": [],
+            "rect": {
+              "left": 790.984375,
+              "right": 1368.984375,
+              "width": 578
+            },
+            "outside_viewport": false
+          }
+        ],
+        "overflow": false,
+        "selector_tap": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "view": "planning",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": {
+        "text": "MODO TV\n☾ ESCURO\n0\n\nPROGRAMAÇÃO DE OBRA\n\nPLANEAMENTO\n\nTarefas, dependências e prazos detalhados por fase.\n\nOBRA\nOBRA 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nDADOS DA OBRA\nSEM FASES\nEsta obra ainda não possui fases configuradas.",
+        "buttons": [
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          }
+        ],
+        "controls": [
+          {
+            "name": "",
+            "type": "select-one",
+            "id": "planning-work",
+            "attributes": [],
+            "rect": {
+              "left": 527.96875,
+              "right": 850.515625,
+              "width": 322.546875
+            },
+            "outside_viewport": true
+          }
+        ],
+        "overflow": false,
+        "selector_tap": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "view": "planning",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": {
+        "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nPROGRAMAÇÃO DE OBRA\n\nPLANEAMENTO\n\nTarefas, dependências e prazos detalhados por fase.\n\nOBRA\nOBRA 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nDADOS DA OBRA\nSEM FASES\nEsta obra ainda não possui fases configuradas.",
+        "buttons": [
+          {
+            "text": "",
+            "attributes": []
+          },
+          {
+            "text": "MODO TV",
+            "attributes": []
+          },
+          {
+            "text": "☾ ESCURO",
+            "attributes": []
+          },
+          {
+            "text": "0",
+            "attributes": []
+          }
+        ],
+        "controls": [
+          {
+            "name": "",
+            "type": "select-one",
+            "id": "planning-work",
+            "attributes": [],
+            "rect": {
+              "left": 368.453125,
+              "right": 458.296875,
+              "width": 89.84375
+            },
+            "outside_viewport": true
+          }
+        ],
+        "overflow": false,
+        "selector_tap": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "view": "documents",
+      "section": "articulado",
+      "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nArticulado\n\nOrçamento original e TEEs aprovados\n＋ CARREGAR FICHEIRO\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo."
+    },
+    {
+      "view": "documents",
+      "section": "drawings",
+      "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nDesenhos\n\nHistórico completo de revisões\n＋ CARREGAR FICHEIRO\n\nCONTROLO DE REVISÕES\n\nHISTÓRICO COMPLETO DOS DESENHOS\n0\nSEM DESENHOS INDEXADOS\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo."
+    },
+    {
+      "view": "documents",
+      "section": "technical",
+      "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nPDEs / PAMEs\n\nPedidos e aprovações técnicas\n＋ CARREGAR FICHEIRO\n\nPEDIDOS DE ESCLARECIMENTO\n\nÍNDICE DE PDEs\n0\nSEM PDEs INDEXADOS\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo."
+    },
+    {
+      "view": "documents",
+      "section": "minutes",
+      "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nAtas\n\nRegistos de reunião\n＋ CARREGAR FICHEIRO\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo."
+    },
+    {
+      "view": "documents",
+      "section": "general",
+      "text": "GO\nMODO TV\n☾ ESCURO\n0\n\nARQUIVO TÉCNICO\n\nDOCUMENTOS\n\nDocumentação operacional organizada por obra e categoria.\n\nOBRA\nObra 120 · Obra sintética com nome extenso para verificação contextual\n⌄\nARTICULADO\nOrçamento original e TEEs aprovados\n0\nDESENHOS\nHistórico completo de revisões\n0\nPDES / PAMES\nPedidos e aprovações técnicas\n0\nATAS\nRegistos de reunião\n0\nARQUIVO GERAL\nRestantes documentos da obra\n0\n\nArquivo geral\n\nRestantes documentos da obra\n＋ CARREGAR FICHEIRO\nAINDA SEM FICHEIROS\nUse “Carregar ficheiro” para adicionar o primeiro documento deste grupo."
+    }
+  ],
+  "errors": [],
+  "unsupported": []
+}

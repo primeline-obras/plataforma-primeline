@@ -1,0 +1,1028 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "VEHICLE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "DOCUMENT_TARGET_NOT_AUTHORIZED"
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "FORBIDDEN: sessão ou entidade indisponível."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "gestao_plataforma",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "gerencia",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "administrativo",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "financeiro",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "diretor_obra",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "adjunto",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "preparador",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "encarregado",
+      "variant": "inactive",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "diretor_obra",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "adjunto",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "CUSTOMER_CREATE",
+      "profile": "preparador",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "new row violates row-level security policy for table \"faturacao\""
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "INSERT do cabeçalho real; cadeia frontend Storage/links não exercitada"
+    },
+    {
+      "action": "MEDICINE",
+      "profile": "encarregado",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "PERMISSION_DENIED: sem acesso à Medicina deste colaborador."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "diretor_obra",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar consultas nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "adjunto",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar consultas nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "CONSULT_CREATE",
+      "profile": "preparador",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar consultas nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "diretor_obra",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para eliminar este mapa comparativo."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "adjunto",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para eliminar este mapa comparativo."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "COMPARATIVE_DELETE",
+      "profile": "preparador",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para eliminar este mapa comparativo."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "diretor_obra",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para resolver este alerta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "adjunto",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para resolver este alerta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "ALERT_RESOLVE",
+      "profile": "preparador",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "P0001",
+        "message": "Sem permissão para resolver este alerta."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "diretor_obra",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "adjunto",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "preparador",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    },
+    {
+      "action": "RNC_CREATE",
+      "profile": "encarregado",
+      "variant": "revoked",
+      "expected": "RECUSAR",
+      "observed": {
+        "code": "42501",
+        "message": "Sem permissão para criar RNC nesta obra."
+      },
+      "result": "PASS",
+      "no_write_on_denial": true,
+      "environment": "PostgreSQL local; captura estrutural/RLS/ACL + migration consolidada",
+      "limit": "Gatilhos/defaults só os necessários à operação; Viaturas inclui o corpo/helper documental posterior; não catálogo de produção atual"
+    }
+  ]
+}

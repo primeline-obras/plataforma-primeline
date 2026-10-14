@@ -1,0 +1,54 @@
+{
+  "external_fonts_blocked": true,
+  "scope": "Mesmo isolamento de rede dos ensaios completos; não fonte real de produção",
+  "fonts": [
+    {
+      "selector": "body",
+      "fonts": []
+    },
+    {
+      "selector": "main h1",
+      "fonts": [
+        {
+          "familyName": "Arial Black",
+          "postScriptName": "Arial-Black",
+          "isCustomFont": false,
+          "glyphCount": 10
+        }
+      ]
+    },
+    {
+      "selector": "main .eyebrow",
+      "fonts": [
+        {
+          "familyName": "Times New Roman",
+          "postScriptName": "TimesNewRomanPS-BoldMT",
+          "isCustomFont": false,
+          "glyphCount": 12
+        }
+      ]
+    },
+    {
+      "selector": "main button",
+      "fonts": [
+        {
+          "familyName": "Times New Roman",
+          "postScriptName": "TimesNewRomanPS-BoldMT",
+          "isCustomFont": false,
+          "glyphCount": 7
+        }
+      ]
+    },
+    {
+      "selector": "main label",
+      "fonts": [
+        {
+          "familyName": "Times New Roman",
+          "postScriptName": "TimesNewRomanPS-BoldMT",
+          "isCustomFont": false,
+          "glyphCount": 3
+        }
+      ]
+    }
+  ]
+}

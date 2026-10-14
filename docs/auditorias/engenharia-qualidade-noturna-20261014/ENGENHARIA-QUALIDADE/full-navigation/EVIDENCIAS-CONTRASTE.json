@@ -1,0 +1,6524 @@
+{
+  "scope": "Cálculo local de cores CSS computadas sobre fundos planos; gradientes/opacidade marcados incertos; não certificação WCAG",
+  "proofs": [
+    {
+      "view": "consolidated",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO · DIREÇÃO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "VISÃO CONSOLIDADA",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 32,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Leitura global financeira, operacional e de risco de todas as obras.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 15,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "overview",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PAINEL OPERACIONAL · gerencia",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "VISÃO GERAL",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Resumo diário de produção, aprovações e tesouraria.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PRIORIDADES",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "ALERTAS PENDENTES",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 16,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "rsp",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO DE PRODUÇÃO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "REUNIÃO SEMANAL DE PRODUÇÃO",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "management-map",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CONSOLIDADO DA EMPRESA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "MAPA DE GESTÃO DE OBRAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Cinco categorias de custos e faturação, consultáveis por categoria ou por obra.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "IMPORTAR EXCEL",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ATUALIZAR",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "POR CATEGORIA · TODAS AS OBRAS",
+          "tag": "BUTTON",
+          "classes": "active",
+          "font_size": 9,
+          "font_weight": "800",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            74,
+            85,
+            104
+          ],
+          "ratio": 6.540845008621695,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "POR OBRA · TODAS AS CATEGORIAS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "OBRA\nTodas as obras",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "CATEGORIA\nTodas as categorias\nMateriais\nDespesas-Estaleiro\nSubcontratos\nFuncionários-Obra · Mão de O",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DATA — DE",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DATA — ATÉ",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FORNECEDOR / COLABORADOR",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DESCRIÇÃO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DOCUMENTO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "VALOR EXATO (€)",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "LIMPAR FILTROS",
+          "tag": "BUTTON",
+          "classes": "outline-action management-clear-filters",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "projects",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO INTEGRADA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PROJETOS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Agrupamento de etapas independentes de um mesmo projeto.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "＋ NOVO PROJETO",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "works",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO DE OBRA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "OBRAS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Acompanhamento operacional e financeiro.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA SELECIONADA\nPESQUISAR E SELECIONAR OBRA\n⌄",
+          "tag": "BUTTON",
+          "classes": "work-picker-toggle",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "＋ NOVA OBRA",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "invoices",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO FINANCEIRA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FATURAS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Registo e aprovação de despesas das obras.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA\nSelecionar obra\n⌄",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "TIPO DE DESPESA\nSUBEMPREITADA\nMATERIAL\nESTALEIRO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "SUBEMPREITADA",
+          "tag": "BUTTON",
+          "classes": "selected",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "MATERIAL",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(123, 128, 130)",
+          "background": [
+            255,
+            255,
+            255
+          ],
+          "ratio": 3.99832412280599,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "ESTALEIRO",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(123, 128, 130)",
+          "background": [
+            255,
+            255,
+            255
+          ],
+          "ratio": 3.99832412280599,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FORNECEDOR\nSelecionar fornecedor\n⌄",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "TRABALHO / ORÇAMENTO (OPCIONAL)\nDeixar para confirmação do Diretor\n⌄\nSe souber, pode sugerir. O Dire",
+          "tag": "LABEL",
+          "classes": "conditional",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            240,
+            240,
+            237
+          ],
+          "ratio": 4.877821174164658,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "N.º DOCUMENTO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DATA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "VALOR (EUR)\n€",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CONDIÇÃO DE PAGAMENTO\nSelecionar condição\nImediato\n15 dias\n30 dias\nOutra data\n⌄",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBSERVAÇÃO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ANEXAR PDF",
+          "tag": "BUTTON",
+          "classes": "upload-button",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "REGISTAR FATURA\n→",
+          "tag": "BUTTON",
+          "classes": "primary-button",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "POR VALIDAR",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FATURAS PENDENTES",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "finance",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "TESOURARIA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FINANCEIRO",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Pagamentos, compromissos recorrentes e histórico financeiro.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "FATURAS E PAGAMENTOS",
+          "tag": "BUTTON",
+          "classes": "active",
+          "font_size": 12,
+          "font_weight": "800",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "RASTREIO DE FATURAS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DÉBITOS DIRETOS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "MAPA FINANCEIRO",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "IMEDIATO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "700",
+          "color": "rgb(247, 248, 247)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 14.625648946444233,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "15 DIAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "700",
+          "color": "rgb(247, 248, 247)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 14.625648946444233,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "30 DIAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "700",
+          "color": "rgb(247, 248, 247)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 14.625648946444233,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OUTRA DATA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "700",
+          "color": "rgb(247, 248, 247)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 14.625648946444233,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ARQUIVO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "HISTÓRICO DE FATURAS PAGAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 17,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "subcontractors",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "BASE DE PARCEIROS",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FORNECEDORES E SUBEMPREITEIROS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Cadastro, zonas operacionais, experiência em obra e avaliação histórica.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DIRETÓRIO GERAL",
+          "tag": "BUTTON",
+          "classes": "active",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "COMPARATIVO DE PREÇOS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "⌕",
+          "tag": "LABEL",
+          "classes": "supplier-search",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "ZONA OPERACIONAL\nTodas as zonas (0)\nLisboa / Cascais (0)\nAlgarve (0)\nLisboa / Cascais e Algarve (0)\n",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "ESTADO DE CONFIANÇA\nTodos os estados\n⌄",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "ESPECIALIDADE\nTodas as especialidades\n⌄",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "TIPO DE PARCEIRO\nTodos os tipos\nFORNECEDOR\nSUBEMPREITEIRO\nFORNECEDOR E SUBEMPREITEIRO\nPor classifica",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "COMPLETUDE DO CADASTRO\nTodos os cadastros\nPor completar\nCompletos\n⌄",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "BASE DE FORNECEDORES",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DIRETÓRIO GERAL",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 17,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "+ NOVO PARCEIRO",
+          "tag": "BUTTON",
+          "classes": "primary-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "planning",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PROGRAMAÇÃO DE OBRA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PLANEAMENTO",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Tarefas, dependências e prazos detalhados por fase.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        }
+      ]
+    },
+    {
+      "view": "calendar",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ORGANIZAÇÃO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "AGENDA",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Compromissos pessoais e partilhados com colegas.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "←",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CALENDÁRIO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SETEMBRO DE 2026",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "→",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "1",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "2",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "3",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "4",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "5",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "6",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "7",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "8",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "9",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "10",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "11",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "12",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "13",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "14",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "15",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "16",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "17",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "18",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "19",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "20",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "21",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "22",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "23",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "24",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "25",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "26",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "27",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "28",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "29",
+          "tag": "BUTTON",
+          "classes": "agenda-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "30",
+          "tag": "BUTTON",
+          "classes": "agenda-day selected today",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "COMPROMISSOS",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "QUARTA, 30/09",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Sem compromissos neste dia.",
+          "tag": "P",
+          "classes": "meeting-empty",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "NOVO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "REGISTAR COMPROMISSO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "TÍTULO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DATA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CATEGORIA\nREUNIÃO\nVISITA À OBRA\nPRAZO\nFORNECEDOR\nCLIENTE\nOUTRO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "INÍCIO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "FIM",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DIA INTEIRO",
+          "tag": "LABEL",
+          "classes": "agenda-all-day",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA (OPCIONAL)\nSem obra",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "LOCAL / LIGAÇÃO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PRIORIDADE\nNORMAL\nALTA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "LEMBRETE\nNO PRÓPRIO DIA\n1 DIA ANTES\n7 DIAS ANTES",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "NOTAS",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 9,
+          "font_weight": "850",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Os colegas selecionados verão o compromisso e receberão um alerta.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "REGISTAR →",
+          "tag": "BUTTON",
+          "classes": "primary-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "documents",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ARQUIVO TÉCNICO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DOCUMENTOS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Documentação operacional organizada por obra e categoria.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA\nSem obras disponíveis\n⌄",
+          "tag": "LABEL",
+          "classes": "documents-work-picker",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        }
+      ]
+    },
+    {
+      "view": "rnc",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "QUALIDADE EM OBRA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "RNC",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Relatórios de não conformidade, evidências e ações corretivas.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11.52,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ABERTO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13.76,
+          "font_weight": "700",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "EM CORREÇÃO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13.76,
+          "font_weight": "700",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "VERIFICADO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13.76,
+          "font_weight": "700",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "FECHADO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13.76,
+          "font_weight": "700",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CANCELADO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 13.76,
+          "font_weight": "700",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "vehicles",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO DE FROTA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "VIATURAS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Validades, histórico de manutenção, sinistros e multas.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "RESPONSABILIDADE INDIVIDUAL",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "MULTAS POR COLABORADOR",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "rooms",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ORGANIZAÇÃO INTERNA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SALAS DE REUNIÃO",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Consulte a disponibilidade e reserve diretamente, sem aprovação prévia.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "←",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CALENDÁRIO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SETEMBRO DE 2026",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "→",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "1",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "2",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "3",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "4",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "5",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "6",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "7",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "8",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "9",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "10",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "11",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "12",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "13",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "14",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "15",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "16",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "17",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "18",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "19",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "20",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "21",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "22",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "23",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "24",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "25",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "26",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "27",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "28",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "29",
+          "tag": "BUTTON",
+          "classes": "meeting-day  ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "30",
+          "tag": "BUTTON",
+          "classes": "meeting-day selected today",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            241,
+            239,
+            232
+          ],
+          "ratio": 10.17214779737882,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "HORÁRIOS OCUPADOS",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "QUARTA, 30/09",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Sala livre durante todo o dia.",
+          "tag": "P",
+          "classes": "meeting-empty",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "SELF-SERVICE",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "NOVA RESERVA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Sem aprovação prévia. Confirme os horários ocupados antes de gravar.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "TÍTULO / PARA QUEM",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DATA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "HORA INÍCIO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "HORA FIM",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Selecione os utilizadores que devem receber esta reunião na Visão Geral.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "RESERVAR SALA\n→",
+          "tag": "BUTTON",
+          "classes": "primary-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "AGENDA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PRÓXIMAS RESERVAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Ainda não existem reservas futuras.",
+          "tag": "P",
+          "classes": "meeting-empty",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "properties",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO PATRIMONIAL",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "IMÓVEIS",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Património da empresa e reuniões de condomínio, sem ligação às obras.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PATRIMÓNIO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "IMÓVEIS DA EMPRESA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CONDOMÍNIO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "REUNIÕES AGENDADAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "budget-requests",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ÁREA COMERCIAL",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PEDIDOS DE ORÇAMENTO",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Acompanhe prazos, situação atual e todas as versões enviadas ao cliente.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "SEM PEDIDOS",
+          "tag": "P",
+          "classes": "operations-empty",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        }
+      ]
+    },
+    {
+      "view": "workforce",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PLANEAMENTO SEMANAL",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "QUADRO DE PESSOAL",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Distribuição das equipas operacionais pelas obras.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "VER MOVIMENTAÇÕES DO MÊS",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "EDITAR QUADRO",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "←",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "SEMANA DE",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "→",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "SEMANA ATUAL",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "SEMANA SELECIONADA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DISTRIBUIÇÃO POR OBRA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 18,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "team",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO DE PESSOAS",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "EQUIPA",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Colaboradores, frota, documentos, ausências e contratos.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "VER INATIVOS (1)",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "+ NOVO COLABORADOR",
+          "tag": "BUTTON",
+          "classes": "primary-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "COMPLETAR CADASTROS · EXCEL",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "1\nCOLABORADOR SEM CONTRATO REGISTADO\nVER PESSOAS →",
+          "tag": "BUTTON",
+          "classes": "pending ",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(140, 74, 64)",
+          "background": [
+            242,
+            227,
+            224
+          ],
+          "ratio": 5.314417320056275,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "COLABORADORES",
+          "tag": "BUTTON",
+          "classes": "active",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "MAPA DE FÉRIAS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "FOLHA DE PONTO",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "AUSÊNCIAS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CONTRATOS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "HORAS EXTRA",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "MEDICINA DO TRABALHO",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ESTRUTURA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "COLABORADORES",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 18,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DOCUMENTOS 1",
+          "tag": "BUTTON",
+          "classes": "entity-documents-button ",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "EDITAR",
+          "tag": "BUTTON",
+          "classes": "collaborator-edit-button",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "company-documents",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ARQUIVO INSTITUCIONAL",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DOCUMENTOS DA EMPRESA",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Certidões, registos e seguros da PRIMELINE.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "NOVO REGISTO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "CARREGAR DOCUMENTO",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "TIPO DE DOCUMENTO\nSelecionar tipo\nCertidão permanente / comercial\nRCBE\nCertidão de não dívida — Fina",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DATA DE EMISSÃO",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DATA DE VALIDADE\nOs alertas de 15, 7 e 3 dias usam esta data.",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FICHEIRO",
+          "tag": "LABEL",
+          "classes": "company-document-file",
+          "font_size": 11,
+          "font_weight": "800",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "CARREGAR DOCUMENTO\n→",
+          "tag": "BUTTON",
+          "classes": "primary-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ARQUIVO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DOCUMENTOS REGISTADOS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DESCARREGAR",
+          "tag": "BUTTON",
+          "classes": "outline-action",
+          "font_size": 11,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "APAGAR",
+          "tag": "BUTTON",
+          "classes": "danger-action",
+          "font_size": 10,
+          "font_weight": "850",
+          "color": "rgb(153, 59, 52)",
+          "background": [
+            255,
+            241,
+            239
+          ],
+          "ratio": 6.297962495624494,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    },
+    {
+      "view": "settings",
+      "viewport": 768,
+      "samples": [
+        {
+          "text": "MODO TV",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ESCURO",
+          "tag": "BUTTON",
+          "classes": "display-toggle",
+          "font_size": 10,
+          "font_weight": "700",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "0",
+          "tag": "BUTTON",
+          "classes": "icon-button",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(70, 75, 78)",
+          "background": [
+            254.5,
+            254.29999999999998,
+            253.79999999999998
+          ],
+          "ratio": 8.783217866089908,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CONFIGURAÇÃO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 3.4670387828258358,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DEFINIÇÕES",
+          "tag": "H1",
+          "classes": "",
+          "font_size": 28,
+          "font_weight": "800",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 11.027059924712633,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Perfil, preferências e administração da plataforma.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 13,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            250,
+            248,
+            243
+          ],
+          "ratio": 5.247530189057678,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CONTA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PERFIL",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ENVIAR LINK PARA TROCAR PALAVRA-PASSE",
+          "tag": "BUTTON",
+          "classes": "settings-secondary-button",
+          "font_size": 11,
+          "font_weight": "900",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 9.83147719807656,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "INTERFACE",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PREFERÊNCIAS",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "☾ ATIVAR TEMA ESCURO",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ATIVAR MODO TV",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "As preferências ficam guardadas neste dispositivo.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 12,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "CALENDÁRIO DA EMPRESA",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FERIADOS E DIAS DE FOLGA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ANO\n2026",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "800",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "Marque apenas os feriados que contam efetivamente como dia de folga da Primeline.",
+          "tag": "P",
+          "classes": "",
+          "font_size": 16,
+          "font_weight": "400",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "GESTÃO",
+          "tag": "BUTTON",
+          "classes": "active",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(255, 255, 255)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 15.571134057319037,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "PARÂMETROS OPERACIONAIS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "AUDITORIA",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(107, 104, 95)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 5.481993276229541,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ACESSOS",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "GESTÃO DE UTILIZADORES",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "NOME",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 3.09113335475844,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "EMAIL",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 3.09113335475844,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "FUNÇÃO\nGestão da Plataforma\nGerência\nDiretor de obra\nAdjunto\nPreparador\nEncarregado\nAdministrativo\nF",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 3.09113335475844,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "＋ CRIAR REGISTO",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "FUNÇÃO\nGestão da Plataforma\nGerência\nDiretor de obra\nAdjunto\nPreparador\nEncarregado\nAdministrativo\nF",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "GUARDAR",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "DESATIVAR",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(140, 74, 64)",
+          "background": [
+            242,
+            227,
+            224
+          ],
+          "ratio": 5.314417320056275,
+          "threshold": 4.5,
+          "uncertain": true,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRAS",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "RESPONSÁVEIS POR OBRA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "OBRA\nSelecionar obra",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 3.09113335475844,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "UTILIZADOR\nSelecionar utilizador\nUtilizador de teste · Gestão da Plataforma",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 3.09113335475844,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "PAPEL\nDiretor de obra\nAdjunto\nPreparador\nEncarregado",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            239,
+            235,
+            225
+          ],
+          "ratio": 3.09113335475844,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "＋ ASSOCIAR",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ACESSO TOTAL",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "ADMINISTRADORES",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "UTILIZADOR\nSelecionar utilizador\nUtilizador de teste",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "＋ ADICIONAR ADMINISTRADOR",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "ORGANIZAÇÃO",
+          "tag": "P",
+          "classes": "eyebrow",
+          "font_size": 12,
+          "font_weight": "700",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "DADOS DA EMPRESA",
+          "tag": "H2",
+          "classes": "",
+          "font_size": 20,
+          "font_weight": "700",
+          "color": "rgb(59, 56, 48)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 11.519756187378924,
+          "threshold": 3,
+          "uncertain": false,
+          "below_threshold": false
+        },
+        {
+          "text": "NOME",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "NIF",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "MORADA",
+          "tag": "LABEL",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(138, 133, 120)",
+          "background": [
+            255,
+            253,
+            249
+          ],
+          "ratio": 3.6219483473407754,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": true
+        },
+        {
+          "text": "GUARDAR DADOS",
+          "tag": "BUTTON",
+          "classes": "",
+          "font_size": 10,
+          "font_weight": "900",
+          "color": "rgb(241, 239, 232)",
+          "background": [
+            32,
+            36,
+            43
+          ],
+          "ratio": 13.533535696979664,
+          "threshold": 4.5,
+          "uncertain": false,
+          "below_threshold": false
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

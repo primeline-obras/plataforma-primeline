@@ -1,0 +1,17 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (40.0304ms)
+  ✔ drift de coluna/policy/grant/definer aborta (113.9985ms)
+  ✔ migration sem backup privado recusa (40.0308ms)
+  ✔ SUB parser real -> writer chamado pelo cliente -> factos locais (14.7166ms)
+  ✔ TEE parser real -> writer chamado pelo cliente -> factos locais (13.3095ms)
+  ✔ SUB segunda linha inválida reverte primeira e auditoria (23.9833ms)
+  ✔ TEE segunda linha inválida reverte primeira e auditoria (21.5375ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (12366.5968ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12600.2075

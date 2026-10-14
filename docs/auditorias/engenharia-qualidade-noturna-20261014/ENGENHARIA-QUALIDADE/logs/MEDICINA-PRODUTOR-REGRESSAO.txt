@@ -1,0 +1,47 @@
+✔ isolamento SQL: ramos não médicos intactos e rollback completo (2.0918ms)
+▶ PostgreSQL 17.6: testes locais e duas ligações independentes
+  ✔ migration sem backup é recusada antes de criar estrutura (7.7985ms)
+  ✔ backup desatualizado recusa migration sem alterar dados (10.4589ms)
+  ✔ instalação preserva 35 linhas; autoria/request antigos NULL e revisão zero (9.2583ms)
+  ✔ nova consulta cria linha; replay e conflito de idempotência (43.103ms)
+  ✔ correção exige motivo, before/after, autor, revisão e replay (15.4345ms)
+  ✔ anulação preserva linha e histórico (15.5254ms)
+  ✔ escrita direta, GUC falso e helpers internos bloqueados (12.8956ms)
+  ✔ datas futuras/invertidas recusadas; resultado continua livre (9.2245ms)
+  ✔ consulta corrente determinística; antiga futura não conta (15.8854ms)
+  ✔ alerta pendente substituído; resolvido preservado byte/conteúdo (11.2877ms)
+  ✔ primeira consulta satisfeita apenas após realizada válida (16.9811ms)
+  ✔ Administrativo/Gerência/Gestão escrevem; outra empresa e Financeiro recusados (17.073ms)
+  ✔ Encarregado apenas pessoa da obra e leitura limitada (11.5863ms)
+  ✔ RPC não revela operações da empresa anterior após reatribuição da pessoa (9.5921ms)
+  ✔ admissão antiga funciona, com autoria e auditoria, sem sobrescrita (9.1332ms)
+  ✔ reconciliação diária só alerta consulta corrente e mantém resolvidos (57.6007ms)
+  ✔ anulação gera primeira consulta pendente sem reabrir resolvido antigo (19.1136ms)
+  ✔ triggers rejeitam GUC falso mesmo com GRANT/policy temporários (10.6021ms)
+  ✔ anulação de linha futura antiga permitida, sem escolher consulta futura (8.072ms)
+  ✔ histórico não editável/apagável, inclusive pelo proprietário (9.3283ms)
+  ✔ cadastro RH real mantém INSERT inicial após a nova proteção (65.1581ms)
+  ✔ snapshot privado e escrita service_role/TRUNCATE recusados (10.2749ms)
+  ✔ READ COMMITTED obrigatório, erros não deixam operações parciais (4.9502ms)
+  ✔ falha de auditoria reverte consulta e alertas atomicamente (19.9875ms)
+  ✔ alerta resolvido manualmente não é reaberto nem duplicado pela rotina (33.2367ms)
+  ✔ ciclo de vida: isolamento, duas reativações e histórico resolvido preservado (57.5944ms)
+  ✔ concorrência: empresa muda durante espera, autorização é revalidada (46.1947ms)
+  ✔ concorrência: primeiro request faz rollback, segundo cria uma única consulta (67.8867ms)
+  ✔ concorrência: mesmo request/payload cria uma consulta (34.0034ms)
+  ✔ concorrência: mesmo request com payload diferente recusado (32.3039ms)
+  ✔ concorrência: mesma revisão, segunda correção STALE_REVISION (32.5044ms)
+  ✔ concorrência ciclo de vida: consulta primeiro, sem alerta pendente de inativo (59.9234ms)
+  ✔ concorrência ciclo de vida: inativacao primeiro, sem alerta pendente de inativo (47.6686ms)
+  ✔ rollback recusa perder operações confirmadas (2.7967ms)
+PostgreSQL 17.6 local; sessões independentes 4580/18680; C:\Users\conta\AppData\Local\Temp\primeline-medicina-pg176-LtSTH4
+  ✔ rollback completo sem operações restaura linhas/funções/grants (176.114ms)
+✔ PostgreSQL 17.6: testes locais e duas ligações independentes (11432.3253ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11547.4493

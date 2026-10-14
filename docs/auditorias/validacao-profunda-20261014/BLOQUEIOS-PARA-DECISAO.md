@@ -11,3 +11,7 @@ A primeira tentativa ficou presa no teardown após saída do processo PostgREST.
 ## Decisões anteriores preservadas
 
 AGUARDA DECISÃO: mitigação HR38, conceitos financeiros e TEE pendentes do backlog anterior; nenhuma mudança de contrato realizada. FALTOU recusa Gestão no código atual por exigir literalmente Encarregado; confrontar com regra global de superutilizador funcional antes de alterar. Esta verificação de contrato não se converte automaticamente em autorização para mudar a regra.
+
+## Fidelidade tipográfica local
+
+DEPENDÊNCIA TÉCNICA: fontes Google bloqueadas pelo isolamento. CDP confirmou fallback; geometria local não certifica produção. Ver LIMITE-TIPOGRAFIA.md. Não impede testes de dados, autorização e semântica acessível.
