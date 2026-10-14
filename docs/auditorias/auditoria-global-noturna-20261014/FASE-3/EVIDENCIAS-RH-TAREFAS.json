@@ -43,6 +43,13 @@
       "preparador_denied": true,
       "stale_denied": true,
       "replay_after_revocation_denied": true
+    },
+    {
+      "id": "TASK-AUTO-CONFIRM",
+      "classification": "COMPORTAMENTO CORRETO LOCAL",
+      "no_direct_task_confirm_UI_required": true,
+      "trigger": "folha_privado.tarefa_concluida",
+      "official_update_boundary": "fixture UPDATE with explicit valid actor, not full planning client"
     }
   ]
 }

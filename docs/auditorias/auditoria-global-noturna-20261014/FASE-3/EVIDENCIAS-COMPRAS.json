@@ -1,0 +1,46 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "id": "TEMP-P3-C01",
+      "classification": "FALHA COMPROVADA",
+      "severity": "P2",
+      "work_heading": "work-b",
+      "data_work": "work-a",
+      "second_work_not_requested": true,
+      "source": "src/procurement.js:175-237 load",
+      "limit": "same identity; not proof of cross-company authorization bypass"
+    },
+    {
+      "id": "PUR-INTERRUPTED",
+      "classification": "COMPORTAMENTO OBSERVADO; DECISÃO DE UX",
+      "proposal_price_saved": 100,
+      "adjudication": false,
+      "success_not_reported": true,
+      "source": "src/procurement.js:259/364",
+      "limit": "RPC persistence modeled; actual adjudication SQL not executed"
+    },
+    {
+      "id": "TEMP-P3-C02",
+      "classification": "FALHA DE PROVENIÊNCIA REPRODUZIDA",
+      "severity": "P2",
+      "origin_missing": true,
+      "partial_warning": false,
+      "source": "src/subcontractors.js:611-662 loadPriceRows",
+      "correspondence": "N-FOR-05/02",
+      "limit": "header absence synthesized; actual RLS/page limits not checked"
+    },
+    {
+      "id": "PUR-CONCEPTS",
+      "classification": "COMPORTAMENTO CORRETO",
+      "quoted_lower": 140,
+      "estimated": 160,
+      "awarded": 180,
+      "sale": 240,
+      "margin": 60,
+      "source": "src/comparative-map.js:7-23",
+      "limit": "not full adjudication/documents/fatura transaction"
+    }
+  ]
+}

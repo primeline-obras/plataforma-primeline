@@ -61,5 +61,14 @@
   await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[id(13)]);try{await assert.rejects(p3task(13,'task_report',body,true,pre.versao),e=>e.code==='42501');}finally{await q('UPDATE utilizadores SET ativo=true WHERE id=$1',[id(13)]);}
   p3e.push({id:'TASK-ROLES',classification:'COMPORTAMENTO CORRETO LOCAL',adjunto_confirms:true,preparador_denied:true,stale_denied:true,replay_after_revocation_denied:true});await p3save();
  });
+ await t.test('PHASE3 planning conclusion by authorized director triggers report confirmation without separate UI command',async()=>{
+  await q("INSERT INTO planeamento_itens(id,fase_id,estado) VALUES($1,$2,'em_execucao')",[id(98202),id(500)]);
+  const body=p3body(98202),pre=await p3task(13,'task_report',body);await p3task(13,'task_report',body,true,pre.versao);
+  await q("SELECT set_config('test.actor',$1,false)",[id(14)]);await q("UPDATE planeamento_itens SET estado='concluido' WHERE id=$1",[id(98202)]);
+  assert.equal((await q('SELECT estado FROM folha_tarefas_reportes WHERE tarefa_id=$1',[id(98202)])).rows[0].estado,'confirmed');
+  assert.equal((await q("SELECT count(*)::int n FROM alertas WHERE entidade_id=$1 AND tipo='folha_conclusao_reportada' AND estado='pendente'",[id(98202)])).rows[0].n,0);
+  assert.equal((await q("SELECT count(*)::int n FROM folha_gestao_historico WHERE entidade_id=$1 AND action='planning_concluded_alerts_resolved'",[id(98202)])).rows[0].n,1);
+  p3e.push({id:'TASK-AUTO-CONFIRM',classification:'COMPORTAMENTO CORRETO LOCAL',no_direct_task_confirm_UI_required:true,trigger:'folha_privado.tarefa_concluida',official_update_boundary:'fixture UPDATE with explicit valid actor, not full planning client'});await p3save();
+ });
  await p3save();
  }

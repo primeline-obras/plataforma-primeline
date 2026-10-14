@@ -1,0 +1,73 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "evidence": [
+    {
+      "id": "FIN-CHAIN",
+      "status": "PASS",
+      "budget_sale": 2000,
+      "auto_gross": 1200,
+      "advance_deduction": 200,
+      "invoice": 1000,
+      "invoice_approved": true,
+      "boundaries": [
+        "MQT/TEE share phase, not a proved automatic economic link",
+        "auto approval fixture UPDATE; product UI action not exercised",
+        "financial authorization helpers synthetic allowed"
+      ]
+    },
+    {
+      "id": "FIN-CONSUMERS",
+      "status": "VULNERABILIDADE REPRODUZIDA",
+      "paid_badge": true,
+      "receive_action": false,
+      "overview_balance": 900,
+      "correspondence": "N-FIN-05; downstream effect, no new root cause"
+    },
+    {
+      "id": "FIN-DRAFT",
+      "status": "COMPORTAMENTO OBSERVADO; DECISÃO SEMÂNTICA",
+      "helper_billed": 450,
+      "emitted_invoices": 0,
+      "advance": 200,
+      "correspondence": "N-FIN-02"
+    },
+    {
+      "id": "FIN-MAPS",
+      "status": "COMPORTAMENTO OBSERVADO; SEMÂNTICA PENDENTE",
+      "map_margin_month": -23,
+      "actual_receipt_month": 100,
+      "map_pv_zero_fallback": 2000,
+      "map_pc_zero_fallback": 1000,
+      "correspondence": "N-FIN-03/08; map margin is not ledger cash"
+    },
+    {
+      "id": "FIN-TEE-CONSUMERS",
+      "status": "FALHA COMPROVADA / REGRA DE PREVISÃO OBSERVADA",
+      "forecast_after_rejection": 500,
+      "task_state": "em_execucao",
+      "months": 1,
+      "same_net_gross": true,
+      "correspondence": "N-FIN-06/08/09"
+    },
+    {
+      "id": "FIN-CLOSED",
+      "status": "PASS",
+      "closed_month_preserved": true
+    },
+    {
+      "id": "DOC-MISSING",
+      "status": "HIPÓTESE POR VERIFICAR",
+      "fixture_accepts_orphan": true,
+      "limit": "minimal generic metadata fixture has no actual integrity triggers; NOT product vulnerability proof"
+    },
+    {
+      "id": "MIG-ORDER",
+      "status": "VULNERABILIDADE REPRODUZIDA NA ORDEM SINTÉTICA",
+      "historical_file": "autos_faturacao_workflow.sql",
+      "leaked_rows": 1,
+      "rollback_restored": true,
+      "limit": "simplified secure baseline; not a reconstruction of hosted catalog"
+    }
+  ]
+}
