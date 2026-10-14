@@ -28,3 +28,22 @@ DECLARE u public.utilizadores;b jsonb;person record;people jsonb:='[]';BEGIN
  END LOOP;RETURN jsonb_build_object('version',3,'date',p_data,'work_id',p_obra_id,'people',people,'works',public.fn_folha_destinos_contexto_v3()->'works','base',b);
 END $team$;
 REVOKE ALL ON FUNCTION public.fn_folha_equipa_horas_contexto_v3(date,uuid) FROM PUBLIC,anon,authenticated,service_role;GRANT EXECUTE ON FUNCTION public.fn_folha_equipa_horas_contexto_v3(date,uuid) TO authenticated;
+CREATE FUNCTION public.fn_folha_horas_admin_contexto_v3(p_obra_id uuid DEFAULT NULL) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $admin$
+DECLARE u public.utilizadores;works jsonb;people jsonb;providers jsonb:='[]';
+BEGIN
+ u:=folha_privado.ator();IF NOT folha_privado.admin() AND u.funcao NOT IN('diretor_obra','adjunto','preparador') THEN RAISE EXCEPTION 'PERMISSION_DENIED: revisão administrativa' USING ERRCODE='42501';END IF;
+ IF p_obra_id IS NOT NULL THEN PERFORM folha_privado.obra(p_obra_id);END IF;
+ SELECT coalesce(jsonb_agg(jsonb_build_object('id',o.id,'name',o.nome,'number',o.numero,'status',o.situacao) ORDER BY o.numero),'[]') INTO works FROM public.obras o WHERE o.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.obra_responsaveis r WHERE r.obra_id=o.id AND r.utilizador_id=u.id AND r.papel=u.funcao));
+ SELECT coalesce(jsonb_agg(jsonb_build_object('id',c.id,'name',c.nome,'inactive',c.data_saida IS NOT NULL) ORDER BY c.nome,c.id),'[]') INTO people FROM public.colaboradores c WHERE c.empresa_id=u.empresa_id AND folha_privado.admin();
+ IF p_obra_id IS NOT NULL THEN SELECT coalesce(jsonb_agg(jsonb_build_object('id',f.id,'name',f.nome) ORDER BY f.nome),'[]') INTO providers FROM public.fornecedores f WHERE f.empresa_id=u.empresa_id AND (folha_privado.admin() OR EXISTS(SELECT 1 FROM public.subempreitadas s WHERE s.obra_id=p_obra_id AND s.fornecedor_id=f.id) OR EXISTS(SELECT 1 FROM public.folha_externos e JOIN public.folha_registos r ON r.externo_id=e.id WHERE r.empresa_id=u.empresa_id AND r.obra_id=p_obra_id AND e.fornecedor_id=f.id));END IF;
+ RETURN jsonb_build_object('version',3,'work_id',p_obra_id,'works',works,'people',people,'providers',providers,'can_monthly_read',folha_privado.admin(),'can_monthly_write',folha_privado.adm_operacional(),'can_read_work',p_obra_id IS NOT NULL,'can_view_hr_costs',folha_privado.admin(),'financial_effect',false);
+END $admin$;
+CREATE FUNCTION public.fn_folha_ausencias_contexto_v3(p_inicio date,p_fim date) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $absence$
+DECLARE u public.utilizadores;rows jsonb;
+BEGIN
+ u:=folha_privado.ator();IF NOT folha_privado.admin() THEN RAISE EXCEPTION 'PERMISSION_DENIED: mapa administrativo' USING ERRCODE='42501';END IF;IF p_inicio IS NULL OR p_fim IS NULL OR p_fim<p_inicio OR p_fim-p_inicio>62 THEN RAISE EXCEPTION 'DATE_RANGE_INVALID';END IF;
+ SELECT coalesce(jsonb_agg(to_jsonb(a)||jsonb_build_object('person_name',c.nome,'controlled_report',r.id IS NOT NULL,'origin_work_id',r.obra_id,'origin_work_name',o.nome,'reported_by',r.ator_id,'author_name',actor.nome,'reported_at',r.at) ORDER BY a.data,a.id),'[]') INTO rows FROM public.ausencias a JOIN public.colaboradores c ON c.id=a.colaborador_id AND c.empresa_id=u.empresa_id LEFT JOIN LATERAL(SELECT h.* FROM public.folha_historico h WHERE h.empresa_id=u.empresa_id AND h.person_id=a.colaborador_id AND h.action='absence_report' AND h.depois->>'id'=a.id::text ORDER BY h.at,h.id LIMIT 1) r ON true LEFT JOIN public.obras o ON o.id=r.obra_id AND o.empresa_id=u.empresa_id LEFT JOIN public.utilizadores actor ON actor.id=r.ator_id AND actor.empresa_id=u.empresa_id WHERE a.data BETWEEN p_inicio AND p_fim;
+ RETURN jsonb_build_object('version',3,'from',p_inicio,'to',p_fim,'absences',rows,'can_classify',folha_privado.adm_operacional(),'financial_effect',false);
+END $absence$;
+REVOKE ALL ON FUNCTION public.fn_folha_horas_admin_contexto_v3(uuid),public.fn_folha_ausencias_contexto_v3(date,date) FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.fn_folha_horas_admin_contexto_v3(uuid),public.fn_folha_ausencias_contexto_v3(date,date) TO authenticated;

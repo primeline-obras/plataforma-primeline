@@ -26,7 +26,9 @@ import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceManagementClient } from "./attendance-client.js?v=7";
-import { createAttendanceModule } from "./attendance-sheet.js?v=12";
+import {createHoursPreparationClient} from './attendance-hours-client.js?v=3';
+import {isNeutralAbsence,neutralAbsenceForm,classifyMappedAbsence} from './attendance-hours-absence.js?v=1';
+import { createAttendanceModule } from "./attendance-sheet.js?v=13";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -107,6 +109,8 @@ const localWorkDocumentFiles = new Map();
 let selectedWorkTab = "summary";
 let selectedTeamWeek = mondayIso(new Date());
 let selectedVacationMonth = new Date().toISOString().slice(0, 7);
+const absenceHoursClient=createHoursPreparationClient({supabase,confirm:message=>platformConfirm(message,{title:'Classificação administrativa',confirmLabel:'CONFIRMAR CLASSIFICAÇÃO'})});
+onSessionReset(()=>absenceHoursClient.reset());
 let teamData = { allocations: [], absences: [], vacations: [], holidays: [], boardWorks: [], boardCollaborators: [], absenceAttachments: [], contracts: [], overtime: [], responsibles: [], users: [], vehicles: [], medicine: [], entityDocuments: [], inactiveCollaborators: [], loadedWeek: "", error: "" };
 let selectedTeamTab = "collaborators";
 let selectedAbsenceEditId = "";
@@ -2106,6 +2110,7 @@ function renderTeam() {
   const workById = new Map([...boardWorkList, ...works].map(work => [work.id, work]));
   const personById = new Map([...boardPeople, ...collaborators].map(person => [person.id, person]));
   const boardPersonById = new Map(boardPeople.map(person => [person.id, person]));
+  for(const absence of teamData.absences){if(absence.person_name&&!personById.has(absence.colaborador_id))personById.set(absence.colaborador_id,{id:absence.colaborador_id,nome:absence.person_name});}
   const activeAbsences = teamData.absences.filter(item => personById.has(item.colaborador_id));
   const activeContracts = teamData.contracts.filter(item => personById.has(item.colaborador_id));
   const activeOvertime = teamData.overtime.filter(item => personById.has(item.colaborador_id));
@@ -2191,7 +2196,7 @@ function renderTeam() {
   }
 
   const absenceTypeLabels = {
-    ferias: "Férias", falta_injustificada: "Falta injustificada",
+    falta_reportada_pendente: "FALTOU — aguarda classificação administrativa", ferias: "Férias", falta_injustificada: "Falta injustificada",
     falta_justificada_sem_remuneracao: "Falta justificada sem remuneração",
     falta_justificada_com_remuneracao: "Falta justificada com remuneração",
   };
@@ -2209,13 +2214,14 @@ function renderTeam() {
   const absenceRows = absences.length ? absences.map(item => {
     const person = personById.get(item.colaborador_id);
     const attachments = teamData.absenceAttachments.filter(file => file.ausencia_id === item.id);
-    const editing = selectedAbsenceEditId === item.id;
+    const editing = !isNeutralAbsence(item) && selectedAbsenceEditId === item.id;
     return `<article class="absence-card detailed">
       <time>${formatOptionalDate(item.data)}</time><div><strong>${safeText(person?.nome || "Colaborador")}</strong><span>${absenceTypeLabels[item.tipo] || String(item.tipo || "Ausência").replace(/_/g, " ")}</span>${item.comentario ? `<small>${safeText(item.comentario)}</small>` : ""}</div>
       <em class="absence-state ${item.estado || "confirmada"}">${absenceStateLabels[item.estado] || item.estado || "Confirmada"}</em>
-      ${canManageAbsences() ? `<div class="absence-attachments">${attachments.map(file => `<button type="button" data-absence-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${safeText(file.nome_arquivo)}">ANEXO · ${safeText(file.nome_arquivo)}</button>`).join("")}<button type="button" data-edit-absence="${item.id}">${editing ? "FECHAR EDIÇÃO" : "EDITAR AUSÊNCIA"}</button></div>` : ""}
+      ${canManageAbsences() && !isNeutralAbsence(item) ? `<div class="absence-attachments">${attachments.map(file => `<button type="button" data-absence-download="${encodeURIComponent(file.arquivo_url)}" data-file-name="${safeText(file.nome_arquivo)}">ANEXO · ${safeText(file.nome_arquivo)}</button>`).join("")}<button type="button" data-edit-absence="${item.id}">${editing ? "FECHAR EDIÇÃO" : "EDITAR AUSÊNCIA"}</button></div>` : ""}
       ${editing ? `<form class="absence-edit-form" data-update-absence="${item.id}"><label>COLABORADOR<select name="colaborador_id" required>${collaborators.map(candidate => `<option value="${candidate.id}" ${candidate.id === item.colaborador_id ? "selected" : ""}>${safeText(candidate.nome)}</option>`).join("")}</select></label><label>TIPO<select name="tipo" required><option value="baixa_doenca" ${item.tipo==='baixa_doenca'?'selected':''}>Baixa por doença</option><option value="baixa_maternidade" ${item.tipo==='baixa_maternidade'?'selected':''}>Baixa de maternidade</option><option value="baixa_parental" ${item.tipo==='baixa_parental'?'selected':''}>Baixa parental</option><option value="falta_injustificada" ${item.tipo === "falta_injustificada" ? "selected" : ""}>Falta injustificada</option><option value="falta_justificada_sem_remuneracao" ${item.tipo === "falta_justificada_sem_remuneracao" ? "selected" : ""}>Falta justificada sem remuneração</option><option value="falta_justificada_com_remuneracao" ${item.tipo === "falta_justificada_com_remuneracao" ? "selected" : ""}>Falta justificada com remuneração</option></select></label><label>DATA<input name="data" type="date" value="${item.data}" required></label><label>COMENTÁRIO<input name="comentario" value="${safeText(item.comentario || "")}" maxlength="1000"></label><button type="submit">GUARDAR ALTERAÇÕES</button><p class="form-error"></p></form>` : ""}
-      ${canManageAbsences() && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
+      ${neutralAbsenceForm(item,teamData.absenceClassificationAllowed===true)}
+      ${canManageAbsences() && !isNeutralAbsence(item) && item.estado === "ausente_pendente" ? `<form class="absence-justify-form" data-justify-absence="${item.id}"><label>COMENTÁRIO DA JUSTIFICAÇÃO<textarea name="comentario" required placeholder="Indique a justificação recebida…"></textarea></label><label>COMPROVATIVO OPCIONAL<input name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></label><button type="submit">MARCAR COMO JUSTIFICADA</button><p class="form-error"></p></form>` : ""}
     </article>`;
   }).join("") : `<div class="empty-state"><strong>SEM AUSÊNCIAS</strong><span>Não existem ausências registadas nesta semana.</span></div>`;
   $("#team-vacations").innerHTML = `${vacationMap}${vacationEditor}`;
@@ -2597,6 +2603,8 @@ async function loadTeamData(force = false) {
   }
   const failures = payloads.filter(payload => payload?.failed);
   [teamData.allocations, teamData.absences, teamData.absenceAttachments, teamData.contracts, teamData.overtime, teamData.responsibles, teamData.users, teamData.vehicles, teamData.medicine, teamData.entityDocuments, teamData.inactiveCollaborators] = payloads.slice(0, 11).map(payload => Array.isArray(payload) ? payload : []);
+  teamData.absenceClassificationAllowed=false;
+  if(isSupabaseConfigured&&canManageTeam()){try{const pendingTeam=teamData,week=selectedTeamWeek;const c=await absenceHoursClient.absenceMap(week,addDaysIso(week,6));if(teamData!==pendingTeam||selectedTeamWeek!==week)return;teamData.absences=c.absences;teamData.absenceClassificationAllowed=c.can_classify;}catch(error){teamData.absenceContextError=error.message;}}
   const globalPayload = payloads[11];
   teamData.holidays = Array.isArray(payloads[12]) ? payloads[12] : [];
   if (Array.isArray(globalPayload)) teamData.vacations = globalPayload;
@@ -2720,6 +2728,7 @@ async function createAbsence(formElement) {
 async function justifyAbsence(formElement) {
   const absenceId = formElement.dataset.justifyAbsence;
   const absence = teamData.absences.find(item => item.id === absenceId);
+  if(isNeutralAbsence(absence))return toast('Utilize a classificação controlada de FALTOU.','error');
   if (!absence) return;
   const button = formElement.querySelector('button[type="submit"]');
   const errorNode = formElement.querySelector(".form-error");
@@ -3147,6 +3156,7 @@ function billingForMeasurement(measurementId) {
 
 async function updateAbsence(formElement) {
   const absence = teamData.absences.find(item => item.id === formElement.dataset.updateAbsence);
+  if(isNeutralAbsence(absence))return toast('Utilize a classificação controlada de FALTOU.','error');
   if (!absence) return;
   const button = formElement.querySelector('button[type="submit"]');
   const errorNode = formElement.querySelector(".form-error");
@@ -4270,6 +4280,8 @@ $("#team-view").addEventListener("submit", async event => {
     finally { button.disabled = false; }
     return;
   }
+  const controlledAbsenceForm=event.target.closest('[data-classify-hours-absence]');
+  if(controlledAbsenceForm){event.preventDefault();const form=controlledAbsenceForm,button=form.querySelector('button'),error=form.querySelector('.form-error');button.disabled=true;error.textContent='';try{const a=teamData.absences.find(x=>x.id===form.dataset.classifyHoursAbsence);const r=await classifyMappedAbsence(absenceHoursClient,a,teamData.absenceClassificationAllowed===true,form.elements.classification.value,form.elements.reason.value.trim());if(r){await loadTeamData(true);toast('Classificação administrativa guardada na falta original.');}}catch(e){error.textContent=e.message;}finally{button.disabled=false;}return;}
   const absenceForm = event.target.closest("#absence-entry-form");
   if (absenceForm) {
     event.preventDefault();
