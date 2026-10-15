@@ -1,0 +1,9 @@
+{
+  "baseline": "tests/fixtures/encarregado-catalogo-real-20261004.json",
+  "candidates": 59,
+  "table_select_grant": 59,
+  "tenant_or_link_column": 41,
+  "restrictive_present": 10,
+  "confirmed_by_this_inventory": 0,
+  "production_access": false
+}

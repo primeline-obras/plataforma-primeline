@@ -27,3 +27,24 @@ Canal email: bloco_09_alertas_prioridade_email.sql define apenas enviar_email pa
 ## Extensão do mesmo P1 tenant
 
 DEEP-SEC-02 abrange também Administrativo/Financeiro. Corroboração com alerta financeiro geral da empresa1, sem destinatário individual, todos os campos obrigatórios preenchidos e NOT NULL efetivamente impostos na fixture. Quatro atores da empresa2 conseguem resolver/receber a linha completa. Prova EVIDENCIAS-ALERTAS-OUTRA-EMPRESA-SEM-DESTINATARIO.json na pasta validacao-profunda. Não é novo ID/cause adicional; a matriz agora tem6 chaves FAIL (RNC2 + Alertas4). Sem prova de ocorrência em produção.
+
+## Canal SQL, sem entrega
+
+Dois cenários/6 contagens Node PASS: o trigger real força enviar_email apenas em pedido_semanal_horas/informacao_reuniao_semanal/informacao_reuniao_producao e recalcula ao mudar tipo. Flags fornecidas pelo chamador são substituídas.6 verificações de dados no JSON, não6 cenários independentes. Prova EVIDENCIAS-ALERTAS-CANAL-SQL.json e logs/ALERTAS-CANAL-SQL.txt.
+
+Operação owner na fixture; não é autorização do produtor, agendamento cron, SMTP ou entrega a um destinatário. N-ADM-11 permanece. Não foi enviado qualquer email.
+
+## Produtor de contratos — execução SQL específica
+
+Fonte instalada na fixture: supabase/parametros_operacionais.sql, funções texto/dias e fn_verificar_alertas_fim_contrato(). Índice real de ocorrência de alertas_vencimentos_resolucao_corrigido.sql. PostgreSQL17.6 descartável, seed sintético, operação owner.
+
+- 60/45/30 dias: três ocorrências distintas, empresa correta e destinatário administrativo.
+- Duas execuções do mesmo evento: uma ocorrência.
+- Dois contratos no mesmo dia: duas ocorrências.
+- 61dias, contrato inativo e colaborador com saída: nenhuma ocorrência.
+- Lista administrativa10dias: respeitada sem usar60dias.
+- Prazo mudado de60 para61dias: esta rotina preserva a ocorrência anterior. É observação do produtor, não prova de que inexiste reconciliação noutra rotina nem um novo defeito aprovado.
+
+Seis cenários PASS;10 contagens Node incluindo parent e três verificações de setup. Não somar10 aos203pares. Cron, entrega SMTP, autorização do chamador e catálogo hospedado continuam não demonstrados por estes casos. A primeira falha42P10 era índice ausente na fixture e está arquivada separadamente.
+
+Evidências: EVIDENCIAS-ALERTAS-CONTRATOS-SQL.json, logs/ALERTAS-CONTRATOS-SQL.txt. Nenhum produto alterado.

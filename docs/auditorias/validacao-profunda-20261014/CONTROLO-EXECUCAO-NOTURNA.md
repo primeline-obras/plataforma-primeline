@@ -2,7 +2,7 @@
 
 Estado geral: **EM EXECUÇÃO — COM BLOQUEIOS PARCIAIS**.
 
-Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint localbce6b3f; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
+Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint local71beaeec; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
 
 ## Pares
 
@@ -17,7 +17,7 @@ Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint loca
 - Interfaces: **PARCIAL** — 21 vistas/80 capturas, módulos detalhados e6 viewports; ampliar estados.
 - Importadores: **PARCIAL** — CSV1000, XLSX reais, MQT/sub/TEE500linhas; regressões RH.
 - Documentos: **PARCIAL** — Dois P2 cliente; ficheiros; Storage real local ausente.
-- Alertas: **PARCIAL** — Produtor28contagens; filtros3; dois perfis falham tenant no resolver.
+- Alertas: **PARCIAL** — Produtor28contagens; filtros3; quatro perfis falham tenant no resolver; canal SQL6 provas e contratos com execução específica.
 - Financeiro: **PARCIAL** — Invariantes, recibos reais e importação; cenários comerciais pendentes.
 - Fornecedores: **PARCIAL** — Identidade/completude/comparabilidade; contratos comerciais por aprofundar.
 - TEE128: **CONCLUÍDA COMO ESTUDO** — Mapa de13etapas e cenário sintético; implementação não autorizada.

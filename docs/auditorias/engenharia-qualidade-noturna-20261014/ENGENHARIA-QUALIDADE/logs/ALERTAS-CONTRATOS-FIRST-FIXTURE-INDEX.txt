@@ -1,0 +1,52 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (39.5924ms)
+  ✔ drift de coluna/policy/grant/definer aborta (119.9003ms)
+  ✔ migration sem backup privado recusa (42.2562ms)
+  ✔ limiares60/45/30 geram três ocorrências distintas (13.1907ms)
+  ✔ mesmo evento processado duas vezes não duplica (5.2403ms)
+  ✔ dois contratos distintos no mesmo dia não são fundidos (4.5251ms)
+  ✔ 61dias, contrato inativo e colaborador com saída não geram (6.1127ms)
+  ✖ antecedência configurada substitui lista fallback (2.6525ms)
+  ✔ produtor diário não corrige nem apaga ocorrência histórica ao mudar prazo (5.1115ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (10872.7346ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 8
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11105.3318
+
+✖ failing tests:
+
+test at tests\deep-quality-alert-contracts.test.mjs:117:43
+✖ antecedência configurada substitui lista fallback (2.6525ms)
+  error: there is no unique or exclusion constraint matching the ON CONFLICT specification
+      at C:\Users\conta\AppData\Local\Temp\primeline-medicina-test-deps\runtime\node_modules\pg\lib\client.js:545:17
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-contracts.test.mjs:122:79
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-contracts.test.mjs:117:193)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async scenario (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-contracts.test.mjs:117:35)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-alert-contracts.test.mjs:122:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    length: 148,
+    severity: 'ERROR',
+    code: '42P10',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'plancat.c',
+    line: '945',
+    routine: 'infer_arbiter_indexes'
+  }

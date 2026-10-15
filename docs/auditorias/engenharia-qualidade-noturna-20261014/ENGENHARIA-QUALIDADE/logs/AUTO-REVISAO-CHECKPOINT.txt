@@ -1,0 +1,18 @@
+✔ CSV203: exact key reconciliation and truthful 172PASS/6FAIL/1pending/24blocked (208.9027ms)
+✔ mandatory reports exist and previous evidence/product remain unchanged (66.1564ms)
+✔ scope failure is preserved, never converted to pass by diagnostic reproduction (1.1327ms)
+✔ all saved screenshots have actual PNG bytes and every binary workbook is a ZIP container (69.6594ms)
+✔ local runtime proofs and CSV findings remain readable by artifact-tool (82.5158ms)
+✔ negative-pass reconciliation keeps original203 keys and preserves tenant failures (1.7921ms)
+✔ corroborating alert fixture preserves required fields, no individual recipient, and four genuine failures (1.1766ms)
+✔ partial metadata failure keeps complete flow blocked and actual RLS context is enforced (0.8897ms)
+✔ latest RH proof requires original semantic error, not aborted-transaction masking (0.7779ms)
+✔ ambiguous PDF diagnostic remains conditional failure, never functional approval (0.8933ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1398.5218

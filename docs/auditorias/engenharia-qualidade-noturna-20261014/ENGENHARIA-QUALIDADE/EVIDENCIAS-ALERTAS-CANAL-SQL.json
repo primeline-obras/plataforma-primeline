@@ -1,0 +1,51 @@
+{
+  "environment": "Trigger real; PostgreSQL local; operação owner de fixture; não prova Auth, cron ou SMTP",
+  "proofs": [
+    {
+      "case": "channel_insert",
+      "type": "pedido_semanal_horas",
+      "result": "PASS",
+      "provided": false,
+      "stored": true,
+      "limit": "Sinalização, não envio SMTP nem autorização do produtor."
+    },
+    {
+      "case": "channel_insert",
+      "type": "informacao_reuniao_semanal",
+      "result": "PASS",
+      "provided": false,
+      "stored": true,
+      "limit": "Sinalização, não envio SMTP nem autorização do produtor."
+    },
+    {
+      "case": "channel_insert",
+      "type": "informacao_reuniao_producao",
+      "result": "PASS",
+      "provided": false,
+      "stored": true,
+      "limit": "Sinalização, não envio SMTP nem autorização do produtor."
+    },
+    {
+      "case": "channel_insert",
+      "type": "consulta_medicina",
+      "result": "PASS",
+      "provided": true,
+      "stored": false,
+      "limit": "Sinalização, não envio SMTP nem autorização do produtor."
+    },
+    {
+      "case": "channel_insert",
+      "type": "tarefa_atrasada",
+      "result": "PASS",
+      "provided": true,
+      "stored": false,
+      "limit": "Sinalização, não envio SMTP nem autorização do produtor."
+    },
+    {
+      "case": "channel_update",
+      "result": "PASS",
+      "stored": false,
+      "delivery_tested": false
+    }
+  ]
+}

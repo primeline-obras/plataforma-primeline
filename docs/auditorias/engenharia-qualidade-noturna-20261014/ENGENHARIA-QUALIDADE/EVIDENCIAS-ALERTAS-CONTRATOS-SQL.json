@@ -1,0 +1,47 @@
+{
+  "source": "supabase/parametros_operacionais.sql",
+  "environment": "PostgreSQL17.6 descartável; função real e índice real; owner fixture; não prova Auth/cron/SMTP ou catálogo hosted; sem constraints/defaults operacionais integrais.",
+  "proofs": [
+    {
+      "case": "limiares60/45/30 geram três ocorrências distintas",
+      "result": "PASS",
+      "count": 3,
+      "thresholds": [
+        30,
+        45,
+        60
+      ]
+    },
+    {
+      "case": "mesmo evento processado duas vezes não duplica",
+      "result": "PASS",
+      "runs": 2,
+      "count": 1,
+      "unique_index": "alertas_ocorrencia_unica_idx"
+    },
+    {
+      "case": "dois contratos distintos no mesmo dia não são fundidos",
+      "result": "PASS",
+      "count": 2
+    },
+    {
+      "case": "61dias, contrato inativo e colaborador com saída não geram",
+      "result": "PASS",
+      "count": 0
+    },
+    {
+      "case": "antecedência configurada substitui lista fallback",
+      "result": "PASS",
+      "configured": [
+        10
+      ],
+      "count": 1
+    },
+    {
+      "case": "produtor diário não corrige nem apaga ocorrência histórica ao mudar prazo",
+      "result": "PASS",
+      "count": 1,
+      "interpretation": "Observação do produtor; reconciliação por outra rotina e regra funcional ainda não certificadas."
+    }
+  ]
+}

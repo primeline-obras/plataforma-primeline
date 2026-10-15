@@ -1,0 +1,19 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (42.6394ms)
+  ✔ drift de coluna/policy/grant/definer aborta (118.1265ms)
+  ✔ migration sem backup privado recusa (43.4005ms)
+  ✔ limiares60/45/30 geram três ocorrências distintas (11.5523ms)
+  ✔ mesmo evento processado duas vezes não duplica (4.6458ms)
+  ✔ dois contratos distintos no mesmo dia não são fundidos (4.247ms)
+  ✔ 61dias, contrato inativo e colaborador com saída não geram (4.5594ms)
+  ✔ antecedência configurada substitui lista fallback (4.8205ms)
+  ✔ produtor diário não corrige nem apaga ocorrência histórica ao mudar prazo (3.9976ms)
+✔ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (10850.2339ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11078.8678
