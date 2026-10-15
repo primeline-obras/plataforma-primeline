@@ -1,0 +1,45 @@
+{
+  "scope": "Instruções históricas; não ordens automáticas. Encerramento15/10 prevalece sobre continuidade noturna.",
+  "files": [
+    {
+      "file": "01-missao-global.md",
+      "source_attachment_id": "a49ed322-21e4-4e01-868e-73bb903cee90",
+      "sha256_utf8_lf": "d870a7b1bced420e87317b307a46fd8178e2688b50d49154e556482c5246c6ea"
+    },
+    {
+      "file": "02-fase-2.md",
+      "source_attachment_id": "b0c5a8b1-2617-4a7e-b23e-b2792139c833",
+      "sha256_utf8_lf": "8aa6066d2760231714520f6163fe5e5d9de0265b9f82c32e4fa476f5539397fb"
+    },
+    {
+      "file": "03-fases-3-4.md",
+      "source_attachment_id": "333a3325-ddff-46bd-8d56-5e18a1db0e1e",
+      "sha256_utf8_lf": "df7307d445887376905e95442dac3a67bf81aece4ef385713eefed46970e99e7"
+    },
+    {
+      "file": "04-fases-5-6-7.md",
+      "source_attachment_id": "b06ef26d-43b3-4fdf-9da0-2af7979bb022",
+      "sha256_utf8_lf": "4cb4f9616abf1b33720ae4a9e3e754441d28899de0c2b4a195b18bccb0d30c90"
+    },
+    {
+      "file": "05-validacao-profunda.md",
+      "source_attachment_id": "74b7fe1d-be50-4687-9480-4471d4c273e2",
+      "sha256_utf8_lf": "aaf6b1499fa3b0181f09d94024df0d8678fae6cb5f9f5b3d39900c3bb0f6b30a"
+    },
+    {
+      "file": "06-aditamento-203.md",
+      "source_attachment_id": "b782e795-4b41-427b-b163-052eb296d321",
+      "sha256_utf8_lf": "d65178f89867ef47b7beb99cc32f5335413b376e1940d807e40c4b4e24f70aad"
+    },
+    {
+      "file": "07-engenharia-qualidade.md",
+      "source_attachment_id": "9b9e837a-c397-4cb4-acb7-2c629a6bf52c",
+      "sha256_utf8_lf": "dbd66b4eb721e6f761663ac2fadda019aa7de3eb056b6b110a2ec900bfc11aca"
+    },
+    {
+      "file": "08-continuidade.md",
+      "source_attachment_id": "4088ee3d-1e7a-4280-962f-5b608ff5ec28",
+      "sha256_utf8_lf": "0bd437ab8bb80594669e4bd60147f8f8540db808ea93a8dd25c9d8dc26019511"
+    }
+  ]
+}

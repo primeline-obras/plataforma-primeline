@@ -1,0 +1,104 @@
+{
+  "date": "2026-10-15",
+  "snapshot": "16worktrees limpas verificadas antes de criar passagem; snapshot abaixo já pode incluir os próprios ficheiros documentais.",
+  "worktrees": [
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go",
+      "sha": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+      "branch": "refs/heads/main",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/.codex/worktrees/auditoria-global-noturna-20261014/primeline-go-urgente",
+      "sha": "63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3",
+      "branch": "refs/heads/codex/auditoria-global-noturna-20261014",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/.codex/worktrees/financeiro-despesas-validation/primeline-go-urgente",
+      "sha": "abc160d33328e305dfdd4d4748a2973765c18c0d",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/.codex/worktrees/pacote2-documental-verificacao/primeline-go-urgente",
+      "sha": "11aac61a165369007d9d18276d8cab79329d4121",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente",
+      "sha": "737b53b4c1c714ae608c93a8db0a8c4aa1994556",
+      "branch": "refs/heads/codex/validacao-profunda-203-20261014",
+      "changes_at_document_creation": [
+        "?? docs/auditorias/fontes-missao-noturna-20261014/"
+      ]
+    },
+    {
+      "path_at_home": "C:/Users/conta/AppData/Local/Temp/primeline-encarregado-final-08affd1-verificacao",
+      "sha": "08affd17a88fd7aefcec15a165d0135983624bc6",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/AppData/Local/Temp/primeline-tablet-verificacao-cb6c91f",
+      "sha": "cb6c91fea07d1e86dabdd6e34c2c2b4d222085f8",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-ponto",
+      "sha": "9fc99425a940bc32d59343ee9cd7bde590878d36",
+      "branch": "refs/heads/integration/encarregado-folha-ponto-casa-20260928",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente",
+      "sha": "12d86584c16ed640c3c0b5782f4c9cf839593149",
+      "branch": "refs/heads/codex/audit-gestao-horas-integrada-20261014",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/encarregado-baseline-reconciliada-20261011",
+      "sha": "1c5fa5b7874a7ac8c3da9a11999b6f068c0e2bf0",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/fase-b-readiness-verificacao-20261011",
+      "sha": "b7bf4c158e93cf455cc307097eef83d90e9c6a77",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/folha-equipa-verificacao-20261010",
+      "sha": "37b95fab2de0682df7acfb4684241982dc2e1e67",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/gate-cutover-verificacao-20261010",
+      "sha": "53f4823ed16af14265c20baea37724c851434aa4",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/pacote2-fecho-certified-20261007",
+      "sha": "3b44c165a04169f76b6c4f8dc16db0b46bd12f10",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/pacote2-fecho-final-20261007",
+      "sha": "a9c058663ba0f2c90fcc68feccc854b388bbe8b8",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    },
+    {
+      "path_at_home": "C:/Users/conta/Documents/Codex/primeline-go-urgente/work/pacote2-fecho-verificacao-20261007",
+      "sha": "979fe78ae9faf1e345f023a7e21785c5696e4734",
+      "branch": "DETACHED",
+      "changes_at_document_creation": []
+    }
+  ]
+}
