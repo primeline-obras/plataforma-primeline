@@ -1,0 +1,48 @@
+{
+  "synthetic_only": true,
+  "source": "src/app.js submitMeasurement; production-dashboard totalClientBilling",
+  "production_access": false,
+  "proofs": [
+    {
+      "case": "contractualDeductions",
+      "result": "PASS",
+      "gross": 1000,
+      "retention": 50,
+      "advance": 100,
+      "net": 850,
+      "limit": "Cálculo e estado cliente; sem writer ou constraints reais nesta prova."
+    },
+    {
+      "case": "additionalAdvanceRejected",
+      "result": "PASS",
+      "transport_calls": 0,
+      "limit": "Guarda de formulário; não prova autorização/backend."
+    },
+    {
+      "case": "additionalRetention",
+      "result": "PASS",
+      "net": 950
+    },
+    {
+      "case": "backendRepresentation",
+      "result": "PASS",
+      "net": 850,
+      "limit": "Transporte sintético; não equivale a PostgREST autenticado."
+    },
+    {
+      "case": "advancePartialBilling",
+      "result": "PASS",
+      "billed": 950,
+      "limit": "Indicador cliente; não certifica emissão/aprovação/pagamento nem regra de reconciliação fiscal."
+    },
+    {
+      "case": "draftCountedAsBilling",
+      "functional_result": "FAIL_EXISTING",
+      "related": "N-FIN-02",
+      "draft_net": 850,
+      "billed_indicator": 950,
+      "invoices_created": 0,
+      "limit": "Prova cliente do indicador; regra de nomenclatura/fonte pendente, sem emissão real."
+    }
+  ]
+}

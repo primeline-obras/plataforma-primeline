@@ -1,0 +1,13 @@
+✔ cinco folhas binárias: cinco categorias e números/datas preservados (22.5591ms)
+✔ faturação opcional e folhas obrigatórias diferenciadas (9.9265ms)
+✔ cabeçalho desconhecido e obra reservada comunicados no preview (9.1444ms)
+✔ duplicado exato entre linhas binárias é contado antes de confirmar (6.6034ms)
+✔ 1000linhas de materiais conservam quantidade e ordem por documento (90.3929ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 505.9811

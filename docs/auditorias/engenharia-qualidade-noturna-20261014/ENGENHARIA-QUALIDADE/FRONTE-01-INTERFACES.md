@@ -25,3 +25,7 @@ Formulário Nova Obra em4 viewports: preencher sem submeter e cancelar,0 escrita
 ## Matriz rastreável
 
 MATRIZ-INTERFACES-ESTADOS.csv liga139 estados aos índices JSON;134 possuem screenshot verificada existente,5 são estados textuais de separadores. Cada linha marca observação local, não aprovação funcional ou de autorização. Fontes de substituição continuam explícitas.
+
+## Carregamento /503/recuperação financeira
+
+Nove estados novos em financial-error-screenshots/EVIDENCIAS-MAPA-ERRO-RECUPERACAO.json e PNGs correspondentes, três larguras. Capturas tablet/mobile inspecionadas. Total da matriz de estados:148 observados/143 com PNG, não148funcionalidades aprovadas. API sintética e fontes de substituição; não UAT autenticada.

@@ -1,0 +1,24 @@
+{
+  "synthetic_only": true,
+  "production_access": false,
+  "proofs": [
+    {
+      "case": "reportReplayConfirm",
+      "result": "PASS",
+      "preview_no_alerts": true,
+      "recipient_count": 3,
+      "replay_same_result": true,
+      "confirmed": true,
+      "alerts_resolved": true,
+      "limit": "Auth sintética via helper da suite cumulativa; sem cron/SMTP/produção."
+    },
+    {
+      "case": "inactiveRevokedRecipients",
+      "result": "PASS",
+      "inactive_excluded": true,
+      "revoked_excluded": true,
+      "remaining_recipients": 1,
+      "limit": "Novos alertas; não altera nem certifica política de alertas históricos."
+    }
+  ]
+}

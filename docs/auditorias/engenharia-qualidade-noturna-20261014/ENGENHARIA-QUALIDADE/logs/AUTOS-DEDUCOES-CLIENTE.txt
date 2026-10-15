@@ -1,0 +1,14 @@
+✔ auto contratual retém50 e deduz100 sobre1000 resultando850 (1.7596ms)
+✔ auto adicional recusa deduzir adiantamento antes de chamar transporte (0.8177ms)
+✔ auto adicional com retenção e sem dedução preserva950 (0.7738ms)
+✔ fluxo configurado envia componentes e usa valor devolvido pelo backend (0.911ms)
+✔ faturação acumulada conserva adiantamento e dois autos parciais sem confundir com recebimento (0.2107ms)
+✔ diagnóstico N-FIN-02: rascunho de auto já aumenta indicador faturado sem emissão de fatura (0.7389ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 119.2323

@@ -1,12 +1,13 @@
 import csv,json
 from pathlib import Path
 Q=Path('docs/auditorias/engenharia-qualidade-noturna-20261014/ENGENHARIA-QUALIDADE');rows=[]
-for file,kind in [('full-navigation/EVIDENCIAS-NAVEGACAO.json','NAVEGAÇÃO COMPLETA'),('full-navigation/EVIDENCIAS-CONTEXTO-OBRA.json','CONTEXTO SINTÉTICO DE OBRA'),('ui-modules/EVIDENCIAS-UI-MODULOS.json','COMPONENTE REAL ISOLADO')]:
+for file,kind in [('full-navigation/EVIDENCIAS-NAVEGACAO.json','NAVEGAÇÃO COMPLETA'),('full-navigation/EVIDENCIAS-CONTEXTO-OBRA.json','CONTEXTO SINTÉTICO DE OBRA'),('ui-modules/EVIDENCIAS-UI-MODULOS.json','COMPONENTE REAL ISOLADO'),('financial-error-screenshots/EVIDENCIAS-MAPA-ERRO-RECUPERACAO.json','MAPA FINANCEIRO ERRO/RECUPERAÇÃO')]:
  d=json.loads((Q/file).read_text(encoding='utf-8'))
  for i,p in enumerate(d['proofs']):
-  view=p.get('view',p.get('id',''));state=p.get('stage',p.get('section',p.get('id','observado')));width=p.get('viewport',{}).get('width',p.get('measure',{}).get('viewport','NÃO REGISTADO'))
+  view=p.get('view',p.get('id','financial-map' if kind=='MAPA FINANCEIRO ERRO/RECUPERAÇÃO' else ''));state=p.get('state',p.get('stage',p.get('section',p.get('id','observado'))));width=p.get('viewport',{}).get('width',p.get('measure',{}).get('viewport','NÃO REGISTADO'))
   if kind=='NAVEGAÇÃO COMPLETA':shot='full-navigation/'+view+'-'+state+'.png'
   elif kind=='CONTEXTO SINTÉTICO DE OBRA':shot='full-navigation/'+view+'-context-'+str(width)+'.png'if 'viewport'in p else''
+  elif kind=='MAPA FINANCEIRO ERRO/RECUPERAÇÃO':shot='financial-error-screenshots/financial-'+state+'-'+str(width)+'.png'
   else:shot='ui-modules/'+view+'-'+str(width)+'.png'
   if shot and not(Q/shot).exists():shot=''
   rows.append(dict(id='UI-'+str(len(rows)+1).zfill(3),tipo=kind,interface=view,estado=state,largura=width,cobertura='OBSERVADO NO BROWSER LOCAL',resultado='Captura/DOM com API sintética; não certifica autorização ou sucesso integral',prova=file+'#proofs/'+str(i),screenshot=shot,limite='Fontes de substituição e dados sintéticos; ver LIMITE-TIPOGRAFIA.md'))

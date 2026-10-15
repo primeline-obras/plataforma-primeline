@@ -29,3 +29,9 @@ A primeira execução encontrou tabela não capturada no inventário do próprio
 ## Lotes500 até ao writer
 
 Dois cenários novos:500 Subempreitadas e500 TEEs/itens. Cada preview manteve500 linhas selecionadas; cada RPC gravou500 cabeçalhos, TEE também500 itens. Soma50.000 por família; todas as operações revertidas depois das verificações.6 contagens Node incluindo prechecks/grupo. Prova EVIDENCIAS-IMPORT-LOTE500.json e logs/IMPORT-LOTE500.txt. Duração do writer local cerca de0.3s não é benchmark de produção.
+
+## Mapa de Gestão — workbook binário sintético
+
+Cinco casos PASS em EVIDENCIAS-MAPA-GESTAO-XLSX.json: categorias materiais/estaleiro/subempreitadas/mão de obra/faturação; faturação opcional; falta de folha/cabeçalho; obra reservada com aviso; duplicado exato contado;1000linhas preservadas com ordem/documentos. SheetJS real, nenhuma planilha de pessoas reais lida. Fixture: fixtures/management-five-synthetic.xlsx.
+
+Limite: parser/prepareManagementImportRows, não writer. src/management-map.js confirma por batches500; o catch informa que lotes já gravados serão reconhecidos como duplicados. Atomicidade é por confirmar na função real e não pode ser inferida da integridade deste XLSX.

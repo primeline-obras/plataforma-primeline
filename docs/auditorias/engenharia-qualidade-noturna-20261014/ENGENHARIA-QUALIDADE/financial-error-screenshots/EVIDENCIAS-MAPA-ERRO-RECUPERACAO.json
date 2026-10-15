@@ -1,0 +1,85 @@
+{
+  "scope": "UI real; navegação via DOM; transporte sintético; fontes externas bloqueadas; sem prova de Auth/permissões",
+  "proofs": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "loading",
+      "visible": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "error",
+      "warning": true,
+      "message_preserved": true
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "state": "recovered",
+      "warning_cleared": true,
+      "tables": 2
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "loading",
+      "visible": true
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "error",
+      "warning": true,
+      "message_preserved": true
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "recovered",
+      "warning_cleared": true,
+      "tables": 2
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "loading",
+      "visible": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "error",
+      "warning": true,
+      "message_preserved": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "recovered",
+      "warning_cleared": true,
+      "tables": 2
+    }
+  ],
+  "errors": [],
+  "real_writes": 0
+}

@@ -1,0 +1,56 @@
+{
+  "synthetic_only": true,
+  "source": "src/financial-map.js + src/production-dashboard.js",
+  "instrumentation": "Só cópia em memória expõe buildRows; produto inalterado.",
+  "proofs": [
+    {
+      "case": "normal12months",
+      "result": "PASS",
+      "margin": 600,
+      "total": 600
+    },
+    {
+      "case": "extension24months",
+      "result": "PASS",
+      "year_total": 300,
+      "remaining_year": 300,
+      "limit": "Cálculo cliente; não instala cronograma nem testa writer de prazo."
+    },
+    {
+      "case": "closedZero",
+      "result": "PASS",
+      "total": 550
+    },
+    {
+      "case": "adjustmentZero",
+      "result": "PASS",
+      "calculated": 50,
+      "final": 0
+    },
+    {
+      "case": "signedApprovedTEE",
+      "result": "PASS",
+      "sale": [
+        1200,
+        1200,
+        80,
+        1280
+      ],
+      "cost": [
+        600,
+        600,
+        40,
+        640
+      ],
+      "limit": "Composição pura com filtro real; não comprova aprovação do writer."
+    },
+    {
+      "case": "contractSelectionDivergence",
+      "functional_result": "FAIL_EXISTING",
+      "related": "N-FIN-07",
+      "map_contract_value": 900,
+      "dashboard_contract_value": 1200,
+      "condition": "Múltiplas linhas recebidas para a mesma obra; sem alegar dados reais ou aceitação do writer."
+    }
+  ]
+}

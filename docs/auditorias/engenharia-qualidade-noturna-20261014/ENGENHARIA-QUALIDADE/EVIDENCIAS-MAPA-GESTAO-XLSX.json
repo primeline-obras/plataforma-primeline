@@ -1,0 +1,41 @@
+{
+  "synthetic_only": true,
+  "source": "src/management-map.js; SheetJS real",
+  "production_access": false,
+  "proofs": [
+    {
+      "case": "fiveSheetsBinary",
+      "result": "PASS",
+      "categories": 5,
+      "rows": 5,
+      "bytes": 22440,
+      "personal_data": "SYNTHETIC"
+    },
+    {
+      "case": "sheetRequirements",
+      "result": "PASS",
+      "optional_allowed": true,
+      "required_missing_reported": true
+    },
+    {
+      "case": "headerAndReservedWork",
+      "result": "PASS",
+      "errors_visible": true
+    },
+    {
+      "case": "exactDuplicateBinary",
+      "result": "PASS",
+      "input": 6,
+      "ready": 5,
+      "duplicate_count": 1,
+      "limit": "Fingerprint cliente; não prova idempotência de gravação SQL."
+    },
+    {
+      "case": "thousandBinaryRows",
+      "result": "PASS",
+      "materials": 1000,
+      "total_rows": 1004,
+      "limit": "Completude do parser binário; batches500 e writer não exercitados."
+    }
+  ]
+}

@@ -48,3 +48,9 @@ Fonte instalada na fixture: supabase/parametros_operacionais.sql, funções text
 Seis cenários PASS;10 contagens Node incluindo parent e três verificações de setup. Não somar10 aos203pares. Cron, entrega SMTP, autorização do chamador e catálogo hospedado continuam não demonstrados por estes casos. A primeira falha42P10 era índice ausente na fixture e está arquivada separadamente.
 
 Evidências: EVIDENCIAS-ALERTAS-CONTRATOS-SQL.json, logs/ALERTAS-CONTRATOS-SQL.txt. Nenhum produto alterado.
+
+## Integração Folha/Planeamento → destinatários → confirmação
+
+EVIDENCIAS-ALERTAS-CONCLUSAO-INTEGRADA.json: dois cenários adicionais no runner cumulativo das migrations reais. Preview não cria alerta; confirmar report cria destinatários atuais; replay não duplica nem muda resultado; concluir a tarefa confirma reporte e resolve alertas. Novos alertas excluem um responsável desativado e outro cuja responsabilidade foi removida. Estados anteriores dos utilizadores/responsabilidades restaurados na fixture.
+
+Resultado da suite:294 contagens Node PASS/0FAIL/0SKIP. Inclui regressões existentes; não somar294 como novos cenários nem aos203pares. Não é prova do trigger antigo de tarefa impedida, da entrega de email ou da reconciliação de alertas históricos após revogação.

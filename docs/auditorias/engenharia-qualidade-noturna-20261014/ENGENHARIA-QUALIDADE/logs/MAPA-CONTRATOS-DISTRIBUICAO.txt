@@ -1,0 +1,14 @@
+✔ orçamento e distribuição de12meses mantêm margem600 e50por mês (41.2364ms)
+✔ prorrogação24meses distribui25por mês sem reescrever fonte (0.9401ms)
+✔ mês fechado sem movimento mantém zero real (0.9455ms)
+✔ ajuste explícito zero substitui estimativa sem mudar valor calculado (0.9187ms)
+✔ TEE aprovado positivo e negativo são assinados; pendente/recusado excluídos pelo filtro aprovado (1.1608ms)
+✔ diagnóstico N-FIN-07: mesmos contratos produzem seleção divergente no mapa e dashboard (2.3987ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 151.5879

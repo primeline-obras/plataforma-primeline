@@ -1,0 +1,36 @@
+ {
+ const fsAlert=await import('node:fs'),alertProofs=[];
+ await t.test('alertas conclusão: preview sem escrita, destinatários atuais, replay e confirmação',async()=>{
+  const task=id(99400);
+  await q("INSERT INTO planeamento_itens(id,fase_id,estado) VALUES($1,$2,'em_execucao')",[task,id(500)]);
+  const expected=(await q("SELECT r.utilizador_id FROM obra_responsaveis r JOIN utilizadores u ON u.id=r.utilizador_id WHERE r.obra_id=$1 AND r.papel IN('diretor_obra','adjunto') AND u.ativo AND u.empresa_id=$2 ORDER BY r.utilizador_id",[id(100),id(1)])).rows.map(r=>r.utilizador_id);
+  assert.ok(expected.length>0,'Fixture deve ter destinatário legítimo');
+  const alerts=async()=>(await q("SELECT destinatario_utilizador_id,estado FROM alertas WHERE entidade_id=$1 AND tipo='folha_conclusao_reportada' ORDER BY destinatario_utilizador_id",[task])).rows;
+  const body={version:2,request_id:id(seq++),expected_revision:0,task_id:task,work_id:id(100)};
+  const preview=await call(a,13,'fn_folha_gestao_v2',['task_report',body,false,null]);
+  assert.equal((await alerts()).length,0);
+  const committed=await call(a,13,'fn_folha_gestao_v2',['task_report',body,true,preview.versao]);
+  const rows=await alerts();assert.deepEqual(rows.map(r=>r.destinatario_utilizador_id),expected);assert.ok(rows.every(r=>r.estado==='pendente'));
+  const replay=await call(a,13,'fn_folha_gestao_v2',['task_report',body,true,preview.versao]);assert.deepEqual(replay,committed);assert.deepEqual(await alerts(),rows);
+  await q("SELECT set_config('test.actor',$1,false)",[id(14)]);
+  try{await q("UPDATE planeamento_itens SET estado='concluido' WHERE id=$1",[task])}finally{await q("SELECT set_config('test.actor','',false)")}
+  assert.equal((await q("SELECT estado FROM folha_tarefas_reportes WHERE tarefa_id=$1",[task])).rows[0].estado,'confirmed');assert.ok((await alerts()).every(r=>r.estado==='resolvido'));
+  alertProofs.push({case:'reportReplayConfirm',result:'PASS',preview_no_alerts:true,recipient_count:expected.length,replay_same_result:true,confirmed:true,alerts_resolved:true,limit:'Auth sintética via helper da suite cumulativa; sem cron/SMTP/produção.'});
+ });
+
+ await t.test('novos alertas excluem responsável inativo e responsabilidade removida',async()=>{
+  const recipients=(await q("SELECT DISTINCT u.id,u.ativo FROM obra_responsaveis r JOIN utilizadores u ON u.id=r.utilizador_id WHERE r.obra_id=$1 AND r.papel IN('diretor_obra','adjunto') AND u.ativo AND u.empresa_id=$2 ORDER BY u.id",[id(100),id(1)])).rows;
+  assert.ok(recipients.length>=2);
+  const inactive=recipients[0],revoked=recipients[1],saved=(await q("SELECT jsonb_agg(to_jsonb(r)) v FROM obra_responsaveis r WHERE obra_id=$1 AND utilizador_id=$2",[id(100),revoked.id])).rows[0].v,task=id(99410);
+  await q('UPDATE utilizadores SET ativo=false WHERE id=$1',[inactive.id]);await q('DELETE FROM obra_responsaveis WHERE obra_id=$1 AND utilizador_id=$2',[id(100),revoked.id]);
+  try{
+   await q("INSERT INTO planeamento_itens(id,fase_id,estado) VALUES($1,$2,'em_execucao')",[task,id(500)]);
+   const body={version:2,request_id:id(seq++),expected_revision:0,task_id:task,work_id:id(100)},p=await call(a,13,'fn_folha_gestao_v2',['task_report',body,false,null]);
+   await call(a,13,'fn_folha_gestao_v2',['task_report',body,true,p.versao]);
+   const actual=(await q("SELECT destinatario_utilizador_id FROM alertas WHERE entidade_id=$1 AND tipo='folha_conclusao_reportada' ORDER BY destinatario_utilizador_id",[task])).rows.map(r=>r.destinatario_utilizador_id),expected=recipients.map(r=>r.id).filter(x=>x!==inactive.id&&x!==revoked.id);
+   assert.deepEqual(actual,expected);
+   alertProofs.push({case:'inactiveRevokedRecipients',result:'PASS',inactive_excluded:true,revoked_excluded:true,remaining_recipients:actual.length,limit:'Novos alertas; não altera nem certifica política de alertas históricos.'});
+  }finally{await q('UPDATE utilizadores SET ativo=$2 WHERE id=$1',[inactive.id,inactive.ativo]);await q('INSERT INTO obra_responsaveis SELECT * FROM jsonb_populate_recordset(NULL::obra_responsaveis,$1::jsonb)',[JSON.stringify(saved)])}
+ });
+ fsAlert.writeFileSync('docs/auditorias/engenharia-qualidade-noturna-20261014/ENGENHARIA-QUALIDADE/EVIDENCIAS-ALERTAS-CONCLUSAO-INTEGRADA.json',JSON.stringify({synthetic_only:true,production_access:false,proofs:alertProofs},null,2)+'\n');
+ }

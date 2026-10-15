@@ -8,4 +8,4 @@ Registos P1:2 nas RPCs e1 na baseline RLS documental;4P2 comprovados no cliente/
 
 PostgreSQL17.6 e PostgREST16.4 locais funcionam; PostgREST requer DLLs de QUADRO_PG_BIN no PATH do processo. Existe SheetJS em tests/runtime do checkout original; fixtures XLSX reais foram criadas/descodificadas sem instalação. Browser local: aplicação completa21vistas/80capturas, mais módulos e viewports. Não é UAT de produção.
 
-Último checkpoint71beaeec; alterações/evidências seguintes serão preservadas em novo commit local. Sem push. Consultar CONTROLO-EXECUCAO-NOTURNA.md e FILA-SUBTAREFAS.csv; continuar todas as frentes independentes permitidas.
+Último checkpoint77d3955; alterações/evidências seguintes serão preservadas em novo commit local. Sem push. Consultar CONTROLO-EXECUCAO-NOTURNA.md e FILA-SUBTAREFAS.csv; continuar todas as frentes independentes permitidas.
