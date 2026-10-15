@@ -35,3 +35,19 @@ Dois cenários novos:500 Subempreitadas e500 TEEs/itens. Cada preview manteve500
 Cinco casos PASS em EVIDENCIAS-MAPA-GESTAO-XLSX.json: categorias materiais/estaleiro/subempreitadas/mão de obra/faturação; faturação opcional; falta de folha/cabeçalho; obra reservada com aviso; duplicado exato contado;1000linhas preservadas com ordem/documentos. SheetJS real, nenhuma planilha de pessoas reais lida. Fixture: fixtures/management-five-synthetic.xlsx.
 
 Limite: parser/prepareManagementImportRows, não writer. src/management-map.js confirma por batches500; o catch informa que lotes já gravados serão reconhecidos como duplicados. Atomicidade é por confirmar na função real e não pode ser inferida da integridade deste XLSX.
+
+## Ponte XLSX → PostgreSQL MGO e P2 DEEP-IMP-03
+
+Dois controlos PASS: material com data_pagamento admite preview sem escrita, grava uma linha e replay deduplica; lote com segunda linha de fornecedor inexistente levanta P0001 e não deixa a primeira gravada.
+
+Falha de segurança funcional mantida como FAIL: o mesmo material sem data_pagamento, permitido pelo parser e writer, é gravado novamente no replay. Primeiro criado1, segundo criado1, armazenadas2linhas. A deduplicação consulta fn_mapa_gestao_obras(), cuja projeção de materiais omite data_pagamento NULL. Portanto o registo persistido não entra no universo de duplicados.
+
+Fixture PostgreSQL17.6 com funções reais capturadas/hotfix, role authenticated e autor Gestão sintético; NOTNULL id/obra_id/data/estado_aprovacao explícitos e id default real. Não reconstrói todos os triggers/constraints nem prova catálogo hospedado atual. O filtro também está em supabase/mapa_gestao_obras.sql.
+
+EVIDENCIAS-MGO-PARSER-WRITER.json:2controlos PASS/1FAIL. Runner Node:5PASS/2FAIL, contando três controlos de setup e falha do parent; não são2bugs. Primeiro log arquivado em logs/MGO-FIRST-REPLAY-EXPECTED-FAIL.txt. Sem alteração do produto.
+
+### Qualificação e concorrência — atualização obrigatória
+
+O teste adicional de duas conexões com material pago também duplicou na fixture (ambas commitadas). Totais atuais:2controlos PASS/2cenários FAIL; runner5PASS/3FAIL incluindo parent. Não interpretar como três bugs.
+
+A captura não contém inventário completo dos índices/triggers de materiais. A integridade NOTNULL foi reposta, mas isso não prova ausência de chave factual única no catálogo integral. A duplicação fora desta fixture permanece CONDICIONAL; o problema do universo de dedup é visível no corpo. Ver MGO-DUPLICACAO-LIMITES.md. Não promover a confirmação de produção nem apagar os resultados locais.

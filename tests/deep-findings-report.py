@@ -16,6 +16,7 @@ raw.append(('DEEP-OBS-04','Acessibilidade','P3','CONFIRMADO CLIENTE','Controlos 
 raw.append(('DEEP-OBS-05','Visual/contraste','P3','OBSERVAÇÃO MEDIDA','Texto pequeno com contraste legível','Rótulos secundários e eyebrow medidos cerca de3.47–3.62:1 em tema claro','full-navigation/EVIDENCIAS-CONTRASTE.json','Cores CSS computadas em fundos planos; não certificação WCAG; rótulos compostos exigem inspeção por nó','Novo: contraste tipográfico','Rever tokens de texto pequeno contra fundo real e validar tema claro/escuro sem alterar nesta auditoria'))
 raw.append(('DEEP-DOC-03','Propostas PDF/Documentos','P2','CONDICIONAL — PEDIDO DELETE COMPROVADO','Não eliminar bytes por uma resposta ambígua que pode corresponder a commit','Após2xx com corpo ilegível, confirmProposalPdf chama deleteWorkDocument; se o commit ocorreu e Storage aceitar, a referência pode ficar sem ficheiro','EVIDENCIAS-PDF-COMPENSACAO-AMBIGUA.json','Transportes/metadados/bytes sintéticos; não prova perda persistente. Policies podem recusar o DELETE.','N-DOC-01: variante de compensação, não somar como nova causa independente','Distinguir recusa de resultado ambíguo; confirmar estado/idempotência antes de compensar; preservar auditoria'))
 raw.append(('DEEP-SEC-03','Documentos/RLS','P1','CONFIRMADO NA BASELINE LOCAL; LIVE NÃO VALIDADO','Leitura de metadados fora da empresa deve devolver0 linhas','Gestão/Gerência leem metadados da empresa2 com role authenticated, RLS on e sem BYPASSRLS; RPCs atuais protegidas não alteram essa policy capturada','EVIDENCIAS-DOCUMENTOS-DML-RLS.json','RLS/grants capturados20261004 reconstruídos; fontes posteriores revistas. Não prova catálogo atual hospedado nem leitura de bytes.','N-SEC-02 relacionado: reforço concreto da baseline permissiva; não nova causa independente automática','Confirmar catálogo em escopo futuro autorizado; restringir tenant em todas as rotas preservando permissões legítimas e validar RLS real'))
+raw.append(('DEEP-IMP-03','Mapa de Gestão/importação','P2','DUPLICAÇÃO LOCAL; CATÁLOGO COMPLETO PENDENTE','Repetir o mesmo facto não cria outro lançamento','Sem pagamento duplica no replay; com pagamento duplica em2transações na fixture; dedup depende da projeção e não serializa','EVIDENCIAS-MGO-PARSER-WRITER.json;logs/MGO-PARSER-WRITER.txt','Funções reais/hotfix; NOTNULL na fixture. Ausência de inventário completo de índices/triggers de materiais impede certificar duplicação em catálogo integral. Controlo pago sequencial deduplica.','Mesma família de idempotência/completude; causa distinta de DEEP-IMP-02 no preview do Mapa Financeiro','Deduplicar pela origem persistida/chave factual sem depender do filtro de visibilidade do mapa; replay0novas linhas; preservar auditoria'))
 rows=[dict(zip(fields,r))for r in raw]
 with(Q/'NOVAS-DESCOBERTAS.csv').open('w',encoding='utf-8-sig',newline='')as f:w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(rows)
 old=list(csv.DictReader(Path('docs/auditorias/auditoria-global-noturna-20261014/CONSOLIDACAO-PARA-BACKLOG.csv').open(encoding='utf-8-sig',newline='')))
@@ -36,7 +37,7 @@ DEEP-SEC-03 reforça a classe N-SEC-02: Gestão/Gerência leem uma linha documen
 
 ## Qualidade
 
-Documentos: resposta obsoleta A em contexto B; pedido de metadados pode usar obraB com ficheiro de A. Importação: texto inválido transformado em número e gravado localmente; duplicações contraditórias sobrescrevem o ajuste sem aviso, enquanto linha desconhecida desaparece do preview. Ver NOVAS-DESCOBERTAS.csv na pasta ENGENHARIA-QUALIDADE.
+Documentos: resposta obsoleta A em contexto B; pedido de metadados pode usar obraB com ficheiro de A. Importação: texto inválido transformado em número e gravado localmente; duplicações contraditórias sobrescrevem o ajuste sem aviso, enquanto linha desconhecida desaparece do preview. Ver NOVAS-DESCOBERTAS.csv na pasta ENGENHARIA-QUALIDADE. DEEP-IMP-03: replay do mesmo material sem data de pagamento cria2linhas na baseline local; controlo com pagamento deduplica e lote inválido recusa atomicamente. Não somar este cenário aos203pares.
 
 ## Risco condicional adicional
 
@@ -67,10 +68,11 @@ dec='''# Decisões e dependências consolidadas
 - Confirmar contrato de ficheiros vazios/MIME no serviço de bytes local; nenhum acesso a Storage real.
 - RLS documental: confirmar catálogo atual em escopo futuro antes de atribuir à produção; baseline local tem2 leituras estrangeiras indevidas. Não substituir o teste de DML por uma RPC segura.
 - Compensação PDF: pedido DELETE após2xx comprovado; persistência/Storage pendentes. Preservar bytes até reconciliação da operação, sem implementar agora.
+- MGO: reconciliar índices/triggers completos numa fixture futura; duplicação demonstrada apenas na montagem parcial. Não alegar produção nem alterar schema nesta missão.
 - Pré-visualização de importação deve explicar células inválidas, linhas desconhecidas e duplicações; proposta de correção, sem implementação.
 - Fidelidade tipográfica: fontes externas bloqueadas; CDP confirmou fallback. Rever geometria com fontes oficiais num ambiente isolado; sem alterar CSS ou usar produção.
 - Depende de ambiente: GoTrue/Storage locais para24 pares. PostgREST foi desbloqueado com DLLs existentes; não corresponde a login hospedado.
 - A revisão automática rejeitou o encerramento do PID indicado; a ação não foi repetida. Retoma não deve tentar contornar essa rejeição. Limpeza desse processo requer identificação e autorização adequadas, sem bloquear outras frentes.
 '''
 (R/'DECISOES-PENDENTES.md').write_text(dec,encoding='utf-8');(Q/'DECISOES-PARA-UTILIZADORA.md').write_text(dec,encoding='utf-8')
-print('Backlog anterior',len(old),'novos registos',len(rows),'— 2P1 RPC +1P1 baseline RLS,4P2 locais,1P2 condicional;5 observações P3.')
+print('Backlog anterior',len(old),'novos registos',len(rows),'— 2P1 RPC +1P1 baseline RLS,4P2 locais,2P2 condicionais;5 observações P3.')

@@ -12,7 +12,7 @@ DEEP-SEC-03 reforça a classe N-SEC-02: Gestão/Gerência leem uma linha documen
 
 ## Qualidade
 
-Documentos: resposta obsoleta A em contexto B; pedido de metadados pode usar obraB com ficheiro de A. Importação: texto inválido transformado em número e gravado localmente; duplicações contraditórias sobrescrevem o ajuste sem aviso, enquanto linha desconhecida desaparece do preview. Ver NOVAS-DESCOBERTAS.csv na pasta ENGENHARIA-QUALIDADE.
+Documentos: resposta obsoleta A em contexto B; pedido de metadados pode usar obraB com ficheiro de A. Importação: texto inválido transformado em número e gravado localmente; duplicações contraditórias sobrescrevem o ajuste sem aviso, enquanto linha desconhecida desaparece do preview. Ver NOVAS-DESCOBERTAS.csv na pasta ENGENHARIA-QUALIDADE. DEEP-IMP-03: replay do mesmo material sem data de pagamento cria2linhas na baseline local; controlo com pagamento deduplica e lote inválido recusa atomicamente. Não somar este cenário aos203pares.
 
 ## Risco condicional adicional
 

@@ -1,0 +1,59 @@
+▶ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o
+  ✔ precheck exato contra catÃ¡logo real reconstruÃ­do (38.9319ms)
+  ✔ drift de coluna/policy/grant/definer aborta (112.9477ms)
+  ✔ migration sem backup privado recusa (40.6801ms)
+  ✔ MGO XLSX parser→writer: preview sem escrita, gravação e repetição deduplicada (24.271ms)
+  ✖ MGO sem data pagamento: replay deve deduplicar, mas baseline cria segunda linha (17.3916ms)
+  ✔ MGO linha posterior inválida recusa lote sem deixar primeira gravada (8.9941ms)
+  ✖ MGO mesmo material pago em duas conexões deve persistir uma vez (163.9876ms)
+✖ PostgreSQL local: catÃ¡logo real, RLS, RPCs, perfis e reversÃ£o (11409.2591ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 5
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11627.8336
+
+✖ failing tests:
+
+test at tests\deep-quality-management-writer.test.mjs:122:10
+✖ MGO sem data pagamento: replay deve deduplicar, mas baseline cria segunda linha (17.3916ms)
+  AssertionError [ERR_ASSERTION]: Replay deve criar0
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-management-writer.test.mjs:122:707)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-management-writer.test.mjs:122:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\deep-quality-management-writer.test.mjs:125:10
+✖ MGO mesmo material pago em duas conexões deve persistir uma vez (163.9876ms)
+  AssertionError [ERR_ASSERTION]: Mesmo facto em duas conexões deve ficar uma vez
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-management-writer.test.mjs:135:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async TestContext.<anonymous> (file:///C:/Users/conta/.codex/worktrees/validacao-profunda-203-20261014/primeline-go-urgente/tests/deep-quality-management-writer.test.mjs:125:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

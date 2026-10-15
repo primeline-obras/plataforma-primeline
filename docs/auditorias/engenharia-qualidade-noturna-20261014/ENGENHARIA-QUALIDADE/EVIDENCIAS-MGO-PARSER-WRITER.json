@@ -1,0 +1,57 @@
+{
+  "environment": "Catálogo capturado e hotfix; PostgreSQL17.6; role authenticated e helper real; defaults/triggers/constraints parciais; ID default da fixture explicitamente instalado; sem Auth/Storage/produção",
+  "proofs": [
+    {
+      "case": "paidBinaryPreviewWriteReplay",
+      "result": "PASS",
+      "preview_no_write": true,
+      "created": 1,
+      "repeated_duplicates": 1,
+      "stored_value": 10
+    },
+    {
+      "case": "unpaidReplay",
+      "functional_result": "FAIL",
+      "first_created": 1,
+      "second_created": 1,
+      "second_duplicates": 0,
+      "stored_rows": 2,
+      "preview_after_first": {
+        "criar": 1,
+        "erros": [],
+        "linhas": 1,
+        "criados": 0,
+        "duplicados": 0,
+        "subempreitadas_historicas": []
+      },
+      "required_columns_enforced": [
+        "id",
+        "obra_id",
+        "data",
+        "estado_aprovacao"
+      ],
+      "source_condition": "Sem data_pagamento; linha não entra no mapa usado como universo de deduplicação."
+    },
+    {
+      "case": "batchInvalidSecondRow",
+      "result": "PASS",
+      "error": {
+        "code": "P0001",
+        "message": "Importação cancelada: [\"Linha 3: fornecedor Fornecedor inexistente sintético não encontrado.\"]"
+      },
+      "no_partial_write": true,
+      "limit": "Um RPC/lote; não rollback global entre vários pedidos batches500."
+    },
+    {
+      "case": "concurrentPaidReplay",
+      "functional_result": "FAIL",
+      "first_created": 1,
+      "second_created": 1,
+      "stored_rows": 2,
+      "both_committed": true,
+      "connections": 2,
+      "source_condition": "Duas transações READ COMMITTED não veem inserção ainda não commitada da outra; índice factual único não foi demonstrado na captura."
+    }
+  ],
+  "assessment_scope": "Duplicação comprovada na fixture; impacto em catálogo integral condicionado por índices/triggers não inventariados."
+}

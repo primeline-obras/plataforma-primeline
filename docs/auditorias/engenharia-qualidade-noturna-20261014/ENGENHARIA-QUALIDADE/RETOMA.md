@@ -1,13 +1,40 @@
-# Retoma da engenharia de qualidade
+# Retoma atual da missão — execução parcial
 
-Branch codex/validacao-profunda-203-20261014; checkpoint local a93fd8e contém primeira bateria. Manter produção e produto intactos. Consultar CONTROLO-EXECUCAO-NOTURNA.md na pasta validacao-profunda-20261014.
+Branch: codex/validacao-profunda-203-20261014.
+Checkpoint de referência:06f228b50463c302934c1bb85bd9efd8032f0e63; consultar git log -1 para o commit local posterior que preserva esta retoma. Sem push.
 
-Próximos: ampliar estados das interfaces/importadores e invariantes restantes; segunda passagem económica em execução; consolidar achados sem duplicar N-FOR/N-FIN anteriores; validar links/contagens e congelar um novo checkpoint local.
+## Contagens e gate
 
-24 pares dependem de Auth/Storage locais e não foram certificados por mocks. PostgREST funciona com QUADRO_PG_BIN no PATH do processo. A tentativa anterior de encerrar PID foi rejeitada; não repetir essa ação. O harness corrigido encerra apenas o child que ele próprio cria. Nenhum SQL real/push/merge/deploy.
+203chaves originais:179 executadas,172PASS/6FAIL/1contrato pendente;24bloqueadas por GoTrue/Storage locais ausentes. Dois DOCUMENT têm FAIL parcial de metadados dentro dos bloqueados. Cinco pares suplementares separados. NO-GO local; não é confirmação do estado hospedado.
 
-Novas provas posteriores:73 variantes negativas dos contratos restantes;72 de inatividade Horas; integrações Subempreitadas/TEE; falhas por etapa documental; teclado/modal/contraste. Consultar COBERTURA-SEGUNDA-PASSAGEM.md e LIMITE-TIPOGRAFIA.md. A missão continua parcial, com trabalho seguro ainda na fila.
+Fila de Engenharia:234itens;12concluídos com prova,148parciais,61não iniciados,13não aplicáveis. Estes números são progressivos. Não encerrar por faltar Auth/Storage se existir trabalho seguro na fila.
 
-Checkpoint anterior bce6b3f. Novas provas: inativos179PASS; outra empresa173PASS/6FAIL; revogação38PASS,140 não aplicáveis e1 contrato pendente nas203 chaves. Alertas4 perfis afetados, RNC2; continuam2 causas P1. Ver MATRIZ-SEGUNDA-PASSAGEM-203.csv. A missão não está encerrada.
+14registos novos +39 anteriores =53registos; não53causas únicas. Há2P1 RPC,1P1 na baseline RLS documental,4P2 locais,2P2 condicionais(PDF/MGO),5observaçõesP3. P1 anteriores preservados. HR38 e decisões funcionais continuam pendentes.
 
-Progresso posterior ao checkpoint d93435c: RH nativo5 cenários/9 contagens; metadados RPC9 cenários/13 contagens; RLS direta2 controlos PASS/2 recusas FAIL na baseline, sem prova de produção; compensação PDF após2xx é P2 condicional. Matriz203:172PASS/6FAIL/1contrato/24bloqueados, com2FAIL parciais de metadados dentro dos bloqueados. Consultar RLS-DOCUMENTAL-BASELINE.md e coluna resultado_parcial. Continuar fila independente; não encerrar a missão por estes bloqueios.
+## Progresso recente
+
+- Alertas contratos:6cenários/10contagens Node PASS.
+- Alertas Folha/Planeamento:2casos novos; suite cumulativa294PASS/0FAIL/0SKIP. Destinatários, inativos/revogação, preview/replay/confirmar.
+- Mapa Financeiro:5controlos +reprodução N-FIN-07; Autos:5controlos +reprodução N-FIN-02. As assertions diagnósticas não aprovam o comportamento.
+- Mapa de Gestão XLSX:5cenários,5folhas e1000linhas binárias.
+- Ponte MGO parser→writer:2controlos PASS/2FAIL locais. Runner5PASS/3FAIL contando parent. Duplicação sem pagamento no replay e duplicação paga concorrente na fixture. Índices/triggers completos desconhecidos: P2 condicionado, ler MGO-DUPLICACAO-LIMITES.md.
+- UI:148estados observados,143PNG;9estados de carregamento/503/recuperação financeira. Fontes fallback limitam geometria; nenhum Auth real.
+- Inventário RLS59candidatas é análise de baseline, não59vulnerabilidades.
+
+## Próximos trabalhos independentes
+
+Consultar FILA-SUBTAREFAS.csv para a tarefa e evidência. Priorizar estados ainda não ligados, teardown de componentes com pedido pendente, fluxos financeiros de crédito/anulação e rastreabilidade de artigos TEE/Auto, limites de batches e ciclo administrativo RH. Não repetir suites verdes sem mudança ou preocupação nova.
+
+Não alterar produto, permissões, cálculos ou regras; não SQL real, dados pessoais reais, push, merge, deploy. Não tentar encerrar o PID antigo cuja ação foi rejeitada. Não usar produção para suprir Auth/Storage ausentes.
+
+## Ambiente
+
+PG17.6: TEMP/primeline-doc-guard-pg176/package/native/bin.
+pg: TEMP/primeline-medicina-test-deps/runtime/node_modules.
+PostgREST16.4: TEMP/primeline-authorization-postgrest/postgrest.exe, com PG DLLs no PATH do child.
+Node/Python: cache codex-primary-runtime/dependencies.
+SheetJS: tests/runtime do checkout original, resolvido por deep-runtime.mjs.
+Playwright: runtime Node, browser Edge headless, todas as rotas externas bloqueadas.
+Sem Docker/Podman/GoTrue/Storage locais demonstrados.
+
+Geradores: deep-validation-register(203), deep-second-pass-register(negativos), deep-findings-report(backlog), deep-queue-checkpoint(fila/resumos), deep-ui-state-register(estados). deep-quality-report é só inicializador e não deve sobrescrever relatórios. Gerador de fila funciona sem anexos usando CSV versionado; fallback já comparado byte a byte.

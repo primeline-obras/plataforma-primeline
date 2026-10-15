@@ -2,7 +2,7 @@
 
 Estado geral: **EM EXECUÇÃO — COM BLOQUEIOS PARCIAIS**.
 
-Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; último checkpoint local77d3955; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
+Base preservada63f98ddff6ca96e0c89dd0d4125d85a4d29f12b3; checkpoint de referência06f228b; branchcodex/validacao-profunda-203-20261014. Nenhum produto/SQL real/push/merge/deploy alterado.
 
 ## Pares
 

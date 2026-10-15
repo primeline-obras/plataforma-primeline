@@ -1,20 +1,21 @@
-✔ CSV203: exact key reconciliation and truthful 172PASS/6FAIL/1pending/24blocked (174.5714ms)
-✔ mandatory reports exist and previous evidence/product remain unchanged (54.2137ms)
-✔ scope failure is preserved, never converted to pass by diagnostic reproduction (0.7069ms)
-✔ all saved screenshots have actual PNG bytes and every binary workbook is a ZIP container (53.5645ms)
-✔ local runtime proofs and CSV findings remain readable by artifact-tool (67.1182ms)
-✔ negative-pass reconciliation keeps original203 keys and preserves tenant failures (1.7337ms)
-✔ corroborating alert fixture preserves required fields, no individual recipient, and four genuine failures (0.8397ms)
-✔ partial metadata failure keeps complete flow blocked and actual RLS context is enforced (0.7148ms)
-✔ latest RH proof requires original semantic error, not aborted-transaction masking (0.6218ms)
-✔ ambiguous PDF diagnostic remains conditional failure, never functional approval (0.6491ms)
-✔ financial diagnostic assertions remain failures of existing behavior, not approvals (0.767ms)
-✔ alert integration preserves recipient and replay evidence without claims of delivery (0.4223ms)
-ℹ tests 12
+✔ CSV203: exact key reconciliation and truthful 172PASS/6FAIL/1pending/24blocked (192.3805ms)
+✔ mandatory reports exist and previous evidence/product remain unchanged (54.4581ms)
+✔ scope failure is preserved, never converted to pass by diagnostic reproduction (1.0219ms)
+✔ all saved screenshots have actual PNG bytes and every binary workbook is a ZIP container (55.3036ms)
+✔ local runtime proofs and CSV findings remain readable by artifact-tool (113.9211ms)
+✔ negative-pass reconciliation keeps original203 keys and preserves tenant failures (1.8235ms)
+✔ corroborating alert fixture preserves required fields, no individual recipient, and four genuine failures (0.9455ms)
+✔ partial metadata failure keeps complete flow blocked and actual RLS context is enforced (0.7184ms)
+✔ latest RH proof requires original semantic error, not aborted-transaction masking (0.4918ms)
+✔ ambiguous PDF diagnostic remains conditional failure, never functional approval (0.6158ms)
+✔ financial diagnostic assertions remain failures of existing behavior, not approvals (0.7707ms)
+✔ alert integration preserves recipient and replay evidence without claims of delivery (0.4354ms)
+✔ MGO replay failure remains explicit and is not swallowed by successful controls (10.3942ms)
+ℹ tests 13
 ℹ suites 0
-ℹ pass 12
+ℹ pass 13
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1341.9058
+ℹ duration_ms 1419.8989
