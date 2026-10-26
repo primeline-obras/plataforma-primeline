@@ -1,3 +1,4 @@
+import {mountAtaEmission} from './ata-emission.js?v=20261022';
 import { platformConfirm } from "./platform-dialogs.js?v=1";
 
 const DOCUMENT_TYPES = [
@@ -53,6 +54,7 @@ export function createDocumentsModule({
   toast,
   previewBlob,
 }) {
+  let ataEmission = null;
   let selectedWorkId = "";
   let selectedSection = "articulado";
   let loading = false;
@@ -140,6 +142,7 @@ export function createDocumentsModule({
   }
 
   function render() {
+    ataEmission?.destroy();ataEmission=null;
     const works = getWorks();
     if (!selectedWorkId && works[0]) selectedWorkId = works[0].id;
     if (!works.length) {
@@ -152,6 +155,13 @@ export function createDocumentsModule({
     }
     const section = currentSection();
     root.innerHTML = `${renderHeading()}${data.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${escapeHtml(data.error)}</span></div>` : ""}<section class="documents-center-panel">${renderNavigation()}<div class="document-section-head"><div><p class="eyebrow">${escapeHtml(section.label)}</p><h2>${escapeHtml(section.description)}</h2></div></div>${renderUpload(section)}${data.indexError ? `<div class="work-warning"><strong>ÍNDICES PARCIAIS</strong><span>${escapeHtml(data.indexError)}</span></div>` : ""}${section.id === "drawings" ? `<div class="document-indexes">${drawingIndex()}</div>` : ""}${section.id === "technical" ? `<div class="document-indexes">${pdeIndex()}</div>` : ""}${renderDocumentRows(section)}</section>`;
+    if(isConfigured && !loading && !data.error && selectedWorkId && section.id==='minutes' && getProfile()?.ativo===true && getRole()!=='gerencia') {
+      const host=document.createElement('div');root.querySelector('.documents-center-panel').append(host);
+      void mountAtaEmission({root:host,supabase,work:getWorks().find(w=>w.id===selectedWorkId),documents:data.documents,
+        identity:()=>[getProfile()?.id,getProfile()?.empresa_id,getRole(),selectedWorkId],downloadWorkDocument}).then(controller=>{
+          if(!host.isConnected)controller.destroy();else ataEmission=controller;
+        });
+    }
     syncUploadFields(root.querySelector("#documents-center-upload"));
   }
 
