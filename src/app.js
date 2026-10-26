@@ -4659,30 +4659,7 @@ async function submitBilling(event) {
 }
 
 function openPaymentDialog(billingId) {
-  const billing = workDetails.billings.find(item => item.id === billingId);
-  $("#workflow-dialog-title").textContent = "REGISTAR PAGAMENTO";
-  $("#workflow-dialog-content").innerHTML = `<form id="payment-form">
-    <p class="dialog-copy">Fatura <strong>${billing.numero_fatura}</strong> · ${euro.format(Number(billing.valor))}</p>
-    <div class="form-row"><label>DATA DE RECEBIMENTO<input name="data_recebimento" type="date" required value="${new Date().toISOString().slice(0, 10)}"></label><label>VALOR RECEBIDO<input name="valor_recebido" type="number" min="0.01" step="0.01" required value="${Number(billing.valor).toFixed(2)}"></label></div>
-    <p class="form-error"></p><div class="dialog-actions"><button class="outline-action" type="button" data-close-workflow>CANCELAR</button><button class="primary-button" type="submit">CONFIRMAR PAGAMENTO <span>→</span></button></div>
-  </form>`;
-  $("#workflow-dialog").hidden = false;
-  $("#payment-form").addEventListener("submit", async event => {
-    event.preventDefault();
-    const formElement = event.currentTarget;
-    const data = Object.fromEntries(new FormData(formElement));
-    const button = formElement.querySelector('button[type="submit"]');
-    button.disabled = true;
-    try {
-      if (isSupabaseConfigured) {
-        const response = await supabase("rpc/fn_marcar_faturacao_auto_paga", { method: "POST", body: JSON.stringify({ p_faturacao_id: billingId, p_data_pagamento: data.data_recebimento, p_valor_pago: Number(data.valor_recebido) }) });
-        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível registar o pagamento.");
-      }
-      billing.data_recebimento = data.data_recebimento; billing.data_pagamento = data.data_recebimento; billing.valor_recebido = Number(data.valor_recebido); billing.estado_pagamento = "pago";
-      closeWorkflowDialog(); renderWorkDetail(works.find(item => item.id === selectedWorkId)); toast("Pagamento registado.");
-    } catch (error) { formElement.querySelector(".form-error").textContent = error.message; }
-    finally { button.disabled = false; }
-  });
+  toast("Registo de recebimentos temporariamente suspenso para atualização. Nenhum recebimento foi registado. Atualize a página após a reabertura.", "error");
 }
 
 $("#close-workflow-dialog").addEventListener("click", closeWorkflowDialog);
