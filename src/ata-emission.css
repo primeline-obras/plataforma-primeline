@@ -1,0 +1,12 @@
+/* Only the standalone Documents centre; work-detail and global styles are untouched. */
+.nomenclature-panel { min-width:0; }
+.nomenclature-panel .work-document-upload { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.nomenclature-panel .work-document-upload > p,.nomenclature-panel .work-document-upload > div,.nomenclature-panel output {grid-column:1/-1;}
+.nomenclature-panel label {display:flex;flex-direction:column;gap:6px;min-width:0;}
+.nomenclature-panel input,.nomenclature-panel select {box-sizing:border-box;min-width:0;width:100%;min-height:44px;}
+.nomenclature-panel input[type=checkbox] {width:22px;min-height:22px;}
+.nomenclature-panel .nomenclature-fields {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+.nomenclature-panel button {min-height:44px;white-space:normal;}
+.nomenclature-panel output,.nomenclature-panel article {overflow-wrap:anywhere;}
+.nomenclature-panel [hidden] {display:none!important;}
+@media(max-width:1050px){.nomenclature-panel .work-document-upload,.nomenclature-panel .nomenclature-fields {grid-template-columns:minmax(0,1fr);}}

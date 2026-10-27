@@ -1,0 +1,14 @@
+.subcontractors-kpis { grid-template-columns: repeat(3,1fr); }
+.supplier-directory-toolbar { grid-template-columns: minmax(280px,1fr) 210px 210px; }
+.supplier-directory-list.grouped { padding: 0; gap: 0; }
+.supplier-specialty-group + .supplier-specialty-group { border-top: 1px solid var(--card-border); }
+.supplier-specialty-group > header { padding: 17px 20px; display: flex; align-items: center; justify-content: space-between; gap: 18px; background: color-mix(in srgb,var(--card) 91%,var(--bg)); }
+.supplier-specialty-group > header div { display: grid; gap: 4px; }
+.supplier-specialty-group > header span { color: var(--text-muted); font: 800 8px "Manrope"; letter-spacing: .9px; }
+.supplier-specialty-group > header h3 { margin: 0; color: var(--text-primary); font-size: 16px; }
+.supplier-specialty-group > header b { min-width: 28px; padding: 6px 8px; border-radius: 7px; background: var(--sidebar-bg); color: #fff; text-align: center; font-size: 10px; }
+.supplier-specialty-group > div { padding: 10px; display: grid; gap: 8px; }
+.supplier-directory-row { grid-template-columns: minmax(300px,1.6fr) minmax(190px,.8fr) 80px 22px; }
+.supplier-directory-row:hover,.supplier-directory-row.selected { border-color: #4A5568; background: color-mix(in srgb,#4A5568 6%,var(--card)); }
+.supplier-detail-kpis { grid-template-columns: repeat(3,1fr); }
+@media (max-width:900px) { .subcontractors-kpis,.supplier-detail-kpis { grid-template-columns:1fr; }.supplier-directory-toolbar { grid-template-columns:1fr; }.supplier-directory-row { grid-template-columns:1fr auto; }.supplier-directory-row .supplier-rating,.supplier-directory-row .supplier-stat { grid-column:1; } }
