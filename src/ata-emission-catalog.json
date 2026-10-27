@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "sha256_fonte": "259adb516f6371f36db6119d394eb46482b93fceb9a04b823cd822964abb60e9",
+  "itens": [
+    {
+      "linha_excel": 13,
+      "pasta": "2. Gestão de Obra",
+      "subpasta": "2.1 Atas",
+      "documento": "Ata de Reunião de Obra",
+      "sigla": "ATA",
+      "padrao_nome": "[OBRA]_ATA_[Nº]_Reuniao_Obra_REV[XX]",
+      "exemplo": "120_ATA_003_Reuniao_Obra_REV00",
+      "observacoes": "Numeração sequencial com 3 dígitos. Sem data no nome."
+    }
+  ]
+}

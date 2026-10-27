@@ -1,0 +1,129 @@
+/* Visual identity phase 2: global data tables and semantic state pills. */
+:root[data-theme="light"] {
+  --table-head-bg: #f2f3f4;
+  --table-row-separator: rgba(32, 36, 43, .16);
+  --state-neutral-bg: #e8eaed;
+  --state-neutral-text: #4f5661;
+}
+:root[data-theme="dark"] {
+  --table-head-bg: #20242b;
+  --table-row-separator: rgba(226, 228, 232, .18);
+  --state-neutral-bg: #373d46;
+  --state-neutral-text: #c6cbd2;
+}
+
+/* Tables use one quiet hierarchy: secondary uppercase headings and clean rows. */
+:root[data-theme] table {
+  border-spacing: 0;
+  background: var(--card);
+  color: var(--text-primary);
+}
+:root[data-theme] table thead th {
+  background: var(--table-head-bg) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--table-row-separator) !important;
+  font-family: "Manrope", sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .09em !important;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+:root[data-theme] table tbody tr,
+:root[data-theme] table tbody tr:nth-child(odd),
+:root[data-theme] table tbody tr:nth-child(even) {
+  background: var(--card);
+}
+:root[data-theme] table tbody td,
+:root[data-theme] table tbody th {
+  border-bottom: .5px solid var(--table-row-separator) !important;
+}
+:root[data-theme] table tbody tr:last-child > td,
+:root[data-theme] table tbody tr:last-child > th {
+  border-bottom-color: transparent !important;
+}
+:root[data-theme] table tbody td strong,
+:root[data-theme] table tbody th,
+:root[data-theme] table tbody a {
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+}
+:root[data-theme] table tbody a {
+  text-decoration-color: color-mix(in srgb, var(--text-primary) 35%, transparent);
+  text-underline-offset: 2px;
+}
+
+/* Every state marker shares the same pill geometry. */
+:where(
+  .work-status, .approval-badge, .measurement-state, .planning-state,
+  .supplier-work-state, .index-state, .settings-status, .direct-debit-status,
+  .absence-state, .tee-status, .action-state, .chosen-candidate,
+  .invoice-guide-status, .birthday-badge
+) {
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 5px 9px;
+  border: 0 !important;
+  border-radius: 999px !important;
+  font-family: "Manrope", sans-serif;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: .08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Positive / completed. */
+:where(
+  .work-status.adjudicado, .work-status.aprovado, .work-status.concluido,
+  .work-status.concluida, .work-status.pago, .work-status.ativo,
+  .work-status.ativa, .approval-badge.aprovado, .measurement-state.aprovado,
+  .measurement-state.aprovado_cliente, .planning-state.concluido,
+  .supplier-work-state.concluido, .index-state.respondido,
+  .settings-status.active, .direct-debit-status.active,
+  .absence-state.justificada, .absence-state.confirmada,
+  .tee-status.aprovado, .chosen-candidate
+) {
+  background: var(--pos-bg) !important;
+  color: var(--pos-text) !important;
+}
+
+/* In progress / pending. */
+:where(
+  .work-status.em_comparacao, .work-status.em_curso, .work-status.em_execucao,
+  .work-status.pendente, .approval-badge.pendente, .measurement-state.pendente,
+  .measurement-state.em_curso, .planning-state.em_execucao,
+  .planning-state.por_iniciar, .supplier-work-state.em_execucao,
+  .absence-state.ausente_pendente, .tee-status.pendente, .action-state
+) {
+  background: var(--warn-bg) !important;
+  color: var(--warn-text) !important;
+}
+
+/* Waiting / analysis. */
+:where(
+  .work-status.em_analise, .work-status.aguarda_resposta,
+  .approval-badge.em_analise, .approval-badge.aguarda_resposta,
+  .measurement-state.em_analise, .measurement-state.aguarda_resposta,
+  .index-state.enviado, .settings-status.inactive, .direct-debit-status.inactive
+) {
+  background: var(--state-neutral-bg) !important;
+  color: var(--state-neutral-text) !important;
+}
+
+/* Negative / stopped. */
+:where(
+  .work-status.recusado, .work-status.recusada, .work-status.atrasado,
+  .work-status.em_atraso, .work-status.cancelado, .work-status.cancelada,
+  .work-status.suspensa, .approval-badge.recusado, .measurement-state.recusado,
+  .measurement-state.recusado_cliente, .planning-state.em_atraso,
+  .planning-state.impedido, .tee-status.recusado
+) {
+  background: var(--neg-bg) !important;
+  color: var(--neg-text) !important;
+}

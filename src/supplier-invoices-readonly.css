@@ -1,0 +1,57 @@
+.supplier-invoices-readonly{color:var(--ink);min-width:0}
+.supplier-invoices-readonly *{box-sizing:border-box}
+.supplier-invoices-readonly .sic-heading{display:flex;justify-content:space-between;gap:16px;align-items:start;margin-bottom:14px}
+.supplier-invoices-readonly h1{font-size:27px;letter-spacing:-.5px;margin:0 0 5px;font-weight:600}
+.supplier-invoices-readonly .sic-heading p,.supplier-invoices-readonly .sic-scope{font-size:13px;color:var(--muted);margin:0}
+.supplier-invoices-readonly .sic-scope{margin-bottom:16px}
+.supplier-invoices-readonly .sic-mode{display:inline-block;border:1px solid var(--line);background:var(--bg-soft);font-size:11px;padding:8px 10px;border-radius:4px;white-space:nowrap}
+.supplier-invoices-readonly .sic-filters{display:flex;flex-wrap:wrap;gap:12px;background:var(--paper);padding:14px;border:1px solid var(--line);border-radius:5px;margin-bottom:20px;align-items:end}
+.supplier-invoices-readonly label{display:grid;gap:5px;font-size:10px;flex:1 1 125px;min-width:0;margin:0;letter-spacing:.4px}
+.supplier-invoices-readonly .sic-search{flex:1.3 1 180px}
+.supplier-invoices-readonly input,.supplier-invoices-readonly select{width:100%;min-width:0;height:36px;border:1px solid var(--line);border-radius:3px;padding:6px 8px;background:var(--paper);color:var(--ink);font:inherit;font-size:12px}
+.supplier-invoices-readonly button{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 10px;font-size:11px;border-radius:3px;min-height:36px;cursor:pointer}
+.supplier-invoices-readonly :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.supplier-invoices-readonly .sic-workspace{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,1fr);gap:20px;align-items:start}
+.supplier-invoices-readonly .sic-panel{background:var(--paper);border:1px solid var(--line);border-radius:5px;min-width:0;overflow:hidden}
+.supplier-invoices-readonly .sic-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid var(--line)}
+.supplier-invoices-readonly h2{font-size:14px;font-weight:600;margin:0}
+.supplier-invoices-readonly .sic-panel-head>span{font-size:11px;color:var(--muted)}
+.supplier-invoices-readonly table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed;margin:0;font-size:12px}
+.supplier-invoices-readonly th{font-size:9px;letter-spacing:.4px;text-align:left;padding:11px 9px;background:var(--bg-soft);color:var(--muted);white-space:normal}
+.supplier-invoices-readonly th:first-child{width:32%}
+.supplier-invoices-readonly th:nth-child(2){width:22%}
+.supplier-invoices-readonly td{padding:14px 9px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere;white-space:normal}
+.supplier-invoices-readonly td button{border:0;background:none;font-weight:600;padding:0;min-height:36px;text-align:left;font-size:12px;overflow-wrap:anywhere;max-width:100%}
+.supplier-invoices-readonly td small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.supplier-invoices-readonly .sic-selected{background:var(--bg-soft)}
+.supplier-invoices-readonly .sic-status{display:inline-block;max-width:100%;padding:4px 6px;font-size:10px;background:var(--pos-bg);color:var(--pos-text);border-radius:3px;white-space:normal;overflow-wrap:anywhere}
+.supplier-invoices-readonly .sic-settlement{background:var(--warn-bg);color:var(--warn-text)}
+.supplier-invoices-readonly .sic-panel-note{padding:12px 16px;color:var(--muted);font-size:11px;line-height:1.6;margin:0}
+.supplier-invoices-readonly .sic-detail{padding:16px 18px;overflow-wrap:anywhere}
+.supplier-invoices-readonly h3{font-size:18px;margin:0 0 4px;font-weight:600}
+.supplier-invoices-readonly .sic-muted{font-size:12px;color:var(--muted);margin:0 0 10px}
+.supplier-invoices-readonly .sic-meta{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin:18px 0}
+.supplier-invoices-readonly dt{font-size:10px;letter-spacing:.3px;color:var(--muted);margin:0 0 4px}
+.supplier-invoices-readonly dd{font-size:12px;margin:0;overflow-wrap:anywhere}
+.supplier-invoices-readonly .sic-amounts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid var(--line);gap:15px 10px;padding:14px 0;margin:0}
+.supplier-invoices-readonly .sic-amounts dd{font-size:17px;font-weight:600}
+.supplier-invoices-readonly h4{font-size:10px;letter-spacing:.5px;color:var(--muted);margin:20px 0 10px}
+.supplier-invoices-readonly .sic-payments{list-style:none;padding:0;margin:0 0 8px;font-size:12px}
+.supplier-invoices-readonly .sic-payments li{display:flex;gap:12px;justify-content:space-between;margin-bottom:8px}
+.supplier-invoices-readonly .sic-payments strong{white-space:nowrap}
+.supplier-invoices-readonly .sic-timeline{list-style:none;padding:0 0 0 15px;border-left:1px solid var(--line);margin:0 0 15px 4px}
+.supplier-invoices-readonly .sic-timeline li{position:relative;font-size:12px;padding-bottom:18px;min-width:0}
+.supplier-invoices-readonly .sic-timeline li:before{content:"";position:absolute;left:-19px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.supplier-invoices-readonly .sic-timeline strong,.supplier-invoices-readonly .sic-timeline small{display:block}
+.supplier-invoices-readonly .sic-timeline small{font-size:10px;color:var(--muted);margin:4px 0}
+.supplier-invoices-readonly .sic-timeline p{margin:5px 0}
+.supplier-invoices-readonly details{padding:8px 0}
+.supplier-invoices-readonly summary{cursor:pointer;min-height:28px}
+.supplier-invoices-readonly pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;max-width:100%;margin:8px 0}
+.supplier-invoices-readonly h5{margin:10px 0 5px}
+.supplier-invoices-readonly .sic-empty{padding:34px 20px;text-align:center;font-size:13px;color:var(--muted)}
+.supplier-invoices-readonly .sic-empty p{line-height:1.6}
+.supplier-invoices-readonly .sic-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1200px){.supplier-invoices-readonly .sic-workspace{grid-template-columns:1fr}.supplier-invoices-readonly .sic-meta{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:900px){.supplier-invoices-readonly .sic-heading{display:block}.supplier-invoices-readonly .sic-mode{margin-top:12px}.supplier-invoices-readonly table,.supplier-invoices-readonly tbody,.supplier-invoices-readonly tr,.supplier-invoices-readonly td{display:block}.supplier-invoices-readonly thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.supplier-invoices-readonly tr{padding:12px 14px;border-bottom:1px solid var(--line)}.supplier-invoices-readonly td{border:0;padding:5px 0}.supplier-invoices-readonly td:before{content:attr(data-label);display:block;font-size:10px;color:var(--muted);margin-bottom:4px}}
+@media(max-width:600px){.supplier-invoices-readonly .sic-heading{display:block}.supplier-invoices-readonly h1{font-size:24px}.supplier-invoices-readonly .sic-mode{margin-top:12px;white-space:normal}.supplier-invoices-readonly .sic-filters{padding:12px}.supplier-invoices-readonly label{flex-basis:100%}.supplier-invoices-readonly .sic-search{flex-basis:100%}.supplier-invoices-readonly .sic-panel-head{padding:13px;align-items:start}.supplier-invoices-readonly .sic-detail{padding:14px}.supplier-invoices-readonly .sic-meta{grid-template-columns:1fr 1fr}.supplier-invoices-readonly .sic-amounts{grid-template-columns:1fr 1fr}.supplier-invoices-readonly .sic-amounts dd{font-size:16px}.supplier-invoices-readonly table,.supplier-invoices-readonly tbody,.supplier-invoices-readonly tr,.supplier-invoices-readonly td{display:block}.supplier-invoices-readonly thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.supplier-invoices-readonly tr{padding:12px 14px;border-bottom:1px solid var(--line)}.supplier-invoices-readonly td{border:0;padding:5px 0}.supplier-invoices-readonly td:before{content:attr(data-label);display:block;font-size:10px;color:var(--muted);margin-bottom:4px}.supplier-invoices-readonly .sic-payments li{display:block}.supplier-invoices-readonly .sic-payments strong{display:block;margin-top:5px}}

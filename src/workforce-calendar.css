@@ -1,0 +1,206 @@
+/* Calendários de RH: fins de semana, feriados e leitura rápida por função. */
+.workforce-day-labels,
+.workforce-week-cell {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.workforce-day-cell:first-child { grid-template-columns: 27px; }
+.workforce-day-cell.function-tinted { background: var(--function-row-tint); }
+.workforce-day-cell.has-absence { position: relative; }
+.workforce-day-cell.absence-vacation { box-shadow: inset 0 0 0 3px rgba(74, 85, 104, .42); }
+.workforce-day-cell.absence-justified { box-shadow: inset 0 0 0 3px rgba(107, 104, 95, .36); }
+.workforce-day-cell.absence-unjustified { box-shadow: inset 0 0 0 3px rgba(140, 74, 64, .42); }
+.workforce-absence-badge { position: absolute; top: 3px; right: 3px; z-index: 4; width: 16px; height: 16px; border: 1px solid rgba(32, 36, 43, .18); border-radius: 50%; display: grid; place-items: center; color: #20242b; font-size: 9px; font-weight: 900; line-height: 1; cursor: help; }
+.workforce-absence-badge.vacation { background: #4a5568; color: #f1efe8; }
+.workforce-absence-badge.justified { background: #6b685f; color: #fff; }
+.workforce-absence-badge.unjustified { background: #8c4a40; color: #fff; }
+.workforce-absence-badge::after { content: attr(data-tooltip); position: absolute; right: -4px; bottom: calc(100% + 8px); width: max-content; max-width: 260px; padding: 8px 10px; border-radius: 7px; background: #20242b; color: #f1efe8; box-shadow: 0 6px 18px rgba(0,0,0,.24); font-size: 10px; font-weight: 700; line-height: 1.4; text-align: left; white-space: pre-line; opacity: 0; pointer-events: none; transform: translateY(3px); transition: opacity .15s ease, transform .15s ease; }
+.workforce-absence-badge:hover::after,
+.workforce-absence-badge:focus::after,
+.workforce-absence-badge:focus-visible::after { opacity: 1; transform: translateY(0); }
+.workforce-day-cell.weekend,
+.workforce-day-labels .weekend { background: rgba(107, 104, 95, .09); }
+.workforce-day-cell.holiday,
+.workforce-day-labels .holiday { background: rgba(74, 85, 104, .17); box-shadow: inset 0 2px 0 #4a5568; color: #f1efe8; }
+
+.vacation-map .weekend { background: rgba(107, 104, 95, .09); }
+.vacation-map .holiday { background: #4a5568; box-shadow: inset 0 2px 0 #4a5568; color: #f1efe8; }
+.vacation-map-row > strong,
+.vacation-map-row > i { background: transparent; }
+.vacation-map-row > i.vacation {
+  background: #4a5568;
+  color: #f1efe8;
+  box-shadow: inset 0 0 0 1px #4a5568;
+}
+
+.vacation-map-row.function-direction { background: rgba(32, 36, 43, .18); }
+.vacation-map-row.function-adjunct { background: rgba(61, 90, 158, .18); }
+.vacation-map-row.function-foreman { background: rgba(46, 125, 91, .18); }
+.vacation-map-row.function-admin { background: rgba(166, 68, 122, .18); }
+.vacation-map-row.function-preparer { background: rgba(61, 90, 158, .18); }
+.vacation-map-row.function-estimator { background: rgba(123, 79, 160, .18); }
+.vacation-map-row.function-purchases { background: rgba(27, 143, 160, .18); }
+.vacation-map-row.function-warehouse { background: rgba(139, 94, 52, .18); }
+.vacation-map-row.function-mason { background: rgba(124, 140, 62, .18); }
+.vacation-map-row.function-cleaning { background: rgba(89, 168, 110, .18); }
+.vacation-map-row.function-helper { background: rgba(191, 54, 54, .18); }
+.vacation-map-row.function-other { background: rgba(117, 117, 117, .18); }
+.vacation-map-row > strong { color: #3b3830; border-left: 4px solid transparent; }
+.vacation-map-row.function-direction > strong { border-left-color: #20242b; }
+.vacation-map-row.function-adjunct > strong { border-left-color: #3d5a9e; }
+.vacation-map-row.function-foreman > strong { border-left-color: #2e7d5b; }
+.vacation-map-row.function-admin > strong { border-left-color: #a6447a; }
+.vacation-map-row.function-preparer > strong { border-left-color: #3d5a9e; }
+.vacation-map-row.function-estimator > strong { border-left-color: #7b4fa0; }
+.vacation-map-row.function-purchases > strong { border-left-color: #1b8fa0; }
+.vacation-map-row.function-warehouse > strong { border-left-color: #8b5e34; }
+.vacation-map-row.function-mason > strong { border-left-color: #7c8c3e; }
+.vacation-map-row.function-cleaning > strong { border-left-color: #59a86e; }
+.vacation-map-row.function-helper > strong { border-left-color: #bf3636; }
+.vacation-map-row.function-other > strong { border-left-color: #757575; }
+
+/* No Quadro, o nome é representado pelo íman de iniciais. */
+.workforce-magnet.function-direction { border-left: 4px solid #20242b; background: rgba(32, 36, 43, .18); }
+.workforce-magnet.function-adjunct { border-left: 4px solid #3d5a9e; background: rgba(61, 90, 158, .18); }
+.workforce-magnet.function-foreman { border-left: 4px solid #2e7d5b; background: rgba(46, 125, 91, .18); }
+.workforce-magnet.function-admin { border-left: 4px solid #a6447a; background: rgba(166, 68, 122, .18); }
+.workforce-magnet.function-preparer { border-left: 4px solid #3d5a9e; background: rgba(61, 90, 158, .18); }
+.workforce-magnet.function-estimator { border-left: 4px solid #7b4fa0; background: rgba(123, 79, 160, .18); }
+.workforce-magnet.function-purchases { border-left: 4px solid #1b8fa0; background: rgba(27, 143, 160, .18); }
+.workforce-magnet.function-warehouse { border-left: 4px solid #8b5e34; background: rgba(139, 94, 52, .18); }
+.workforce-magnet.function-mason { border-left: 4px solid #7c8c3e; background: rgba(124, 140, 62, .18); }
+.workforce-magnet.function-cleaning { border-left: 4px solid #59a86e; background: rgba(89, 168, 110, .18); }
+.workforce-magnet.function-helper { border-left: 4px solid #bf3636; background: rgba(191, 54, 54, .18); }
+.workforce-magnet.function-other { border-left: 4px solid #757575; background: rgba(117, 117, 117, .18); }
+:root[data-theme="dark"] .workforce-magnet.function-helper { border-left-color: #bf3636; background: rgba(191, 54, 54, .18); }
+
+.settings-holidays { margin-top: 22px; }
+.settings-holiday-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--card-border); }
+.settings-holiday-toolbar label { display: grid; gap: 6px; color: var(--text-secondary); font-size: 10px; font-weight: 800; letter-spacing: .8px; }
+.settings-holiday-toolbar select { min-width: 130px; min-height: 40px; }
+.settings-holiday-list { display: grid; }
+.settings-holiday-row { min-height: 60px; padding: 10px 20px; border-bottom: 1px solid var(--card-border); display: grid; grid-template-columns: 110px minmax(220px,1fr) 140px auto; gap: 16px; align-items: center; }
+.settings-holiday-row:last-child { border-bottom: 0; }
+.settings-holiday-row time { font-family: "IBM Plex Mono", monospace; font-weight: 700; }
+.settings-holiday-row div { display: grid; gap: 3px; }
+.settings-holiday-row div span { color: var(--text-secondary); font-size: 10px; text-transform: uppercase; }
+.settings-holiday-row label { display: flex; align-items: center; gap: 8px; color: var(--text-primary); font-size: 11px; font-weight: 800; }
+.settings-holiday-row input { width: 18px; height: 18px; accent-color: #4a5568; }
+
+@media (max-width: 900px) {
+  .settings-holiday-row { grid-template-columns: 95px 1fr auto; }
+  .settings-holiday-row > span { display: none; }
+}
+
+/* Salvaguarda global: o documento e as grelhas devem permanecer roláveis. */
+html {
+  height: auto;
+  min-height: 100%;
+  overflow-x: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+body {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+/* A área central tem scroll próprio; a barra lateral permanece fixa. */
+.app-shell {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+main {
+  height: 100vh;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+main::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+main::-webkit-scrollbar-track {
+  background: var(--bg-soft, #e7e8e5);
+}
+
+main::-webkit-scrollbar-thumb {
+  border: 3px solid var(--bg-soft, #e7e8e5);
+  border-radius: 999px;
+  background: #777f83;
+}
+
+.sidebar nav,
+.vacation-map-scroll,
+.workforce-board-scroll,
+.management-map-scroll,
+.financial-map-scroll {
+  scrollbar-width: auto;
+}
+
+.vacation-map-scroll::-webkit-scrollbar,
+.workforce-board-scroll::-webkit-scrollbar,
+.management-map-scroll::-webkit-scrollbar,
+.financial-map-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.vacation-map-scroll::-webkit-scrollbar-track,
+.workforce-board-scroll::-webkit-scrollbar-track,
+.management-map-scroll::-webkit-scrollbar-track,
+.financial-map-scroll::-webkit-scrollbar-track {
+  background: var(--bg-soft, #e7e8e5);
+}
+
+.vacation-map-scroll::-webkit-scrollbar-thumb,
+.workforce-board-scroll::-webkit-scrollbar-thumb,
+.management-map-scroll::-webkit-scrollbar-thumb,
+.financial-map-scroll::-webkit-scrollbar-thumb {
+  border: 3px solid var(--bg-soft, #e7e8e5);
+  border-radius: 999px;
+  background: #777f83;
+}
+
+/* Índices operacionais: tabelas completas e exportação PDF. */
+.document-index-card-wide { grid-column: 1 / -1; }
+.document-index-actions { display: flex; align-items: center; gap: 9px; }
+.document-index-actions > span { min-width: 28px; height: 28px; border-radius: 999px; background: var(--sidebar-bg); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
+.document-index-actions button { min-height: 34px; padding: 0 12px; border: 1px solid var(--sidebar-bg); border-radius: 7px; background: var(--sidebar-bg); color: #fff; font: 800 9px "Manrope"; letter-spacing: .6px; cursor: pointer; }
+.document-index-table-wrap { width: 100%; overflow: auto; scrollbar-gutter: stable; }
+.document-index-table-wrap table { width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; background: var(--card); }
+.document-index-table-wrap th, .document-index-table-wrap td { padding: 10px 11px; border-right: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); font-size: 11px; text-align: left; vertical-align: top; }
+.document-index-table-wrap th { position: sticky; top: 0; z-index: 2; background: var(--sidebar-bg); color: #fff; font: 800 9px "Manrope"; letter-spacing: .55px; white-space: nowrap; }
+.document-index-table-wrap td:nth-child(2), .document-index-table-wrap td:last-child { min-width: 210px; white-space: normal; line-height: 1.4; }
+.document-index-table-wrap tbody tr:hover td { background: color-mix(in srgb, var(--card) 90%, var(--info-bg)); }
+.document-index-empty { padding: 24px !important; color: var(--text-muted); font-weight: 800; text-align: center !important; }
+.index-state.nao-enviado, .index-state.em-elaboracao, .index-state.pedido-de-revisao, .index-state.pendente { color: var(--warn-text); background: var(--warn-bg); border-color: var(--warn-border); }
+.index-state.enviado-ao-do, .index-state.discutido-em-reuniao, .index-state.analisado-em-reuniao { color: var(--info-text); background: var(--info-bg); border-color: var(--info-border); }
+.index-state.respondido, .index-state.emitido, .index-state.apresentado-em-reuniao, .index-state.sim, .index-state.aprovado { color: var(--pos-text); background: var(--pos-bg); border-color: var(--pos-border); }
+.index-state.cancelado, .index-state.nao, .index-state.recusado { color: var(--neg-text); background: var(--neg-bg); border-color: var(--neg-border); }
+.work-document-description, .work-document-notes { grid-column: span 2; }
+.work-document-index-field textarea, .work-document-index-field select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--card-border); background: var(--bg); color: var(--text-primary); resize: vertical; }
+
+/* Keep seven explicit days legible; scroll the board rather than compress hit targets. */
+#team-board { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+#team-board .workforce-grid { min-width: 1600px; grid-template-columns: 240px repeat(4, minmax(340px, 1fr)); }
+#team-board .workforce-week-cell,
+#team-board .workforce-day-labels { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+#team-board .workforce-grid-head > div { padding-left: 0; padding-right: 0; }
+#team-board .workforce-grid-head > div:first-child { padding-left: 14px; padding-right: 14px; }
+#team-board .workforce-grid-head > div > strong,
+#team-board .workforce-grid-head > div > span,
+#team-board .workforce-vacation-box { margin-left: 8px; margin-right: 8px; }
+#team-board .workforce-day-labels { margin-left: 0; margin-right: 0; }
+#team-board .workforce-day-cell { min-height: 48px; overflow: hidden; }
+
+.workforce-day-cell.absence-pending, .workforce-day-cell.absence-absence { box-shadow: inset 0 0 0 3px rgba(107, 104, 95, .36); }
+.workforce-absence-badge.pending, .workforce-absence-badge.absence { background: #6b685f; color: #fff; }
