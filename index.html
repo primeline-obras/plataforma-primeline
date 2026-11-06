@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#252a2d" />
     <meta name="description" content="PRIMELINE GO — Plataforma de gestão de obras" />
     <title>PRIMELINE GO — Gestão de Obras</title>
-    <link rel="stylesheet" href="/src/styles.css?v=104" />
+    <link rel="stylesheet" href="/src/styles.css?v=subcontracts-7ebaca4a9224" />
     <link rel="stylesheet" href="/src/specialties.css?v=9" />
     <link rel="stylesheet" href="/src/visual-phase2.css?v=1" />
     <link rel="stylesheet" href="/src/visual-identity-final.css?v=13" />
@@ -14,13 +14,35 @@
     <link rel="stylesheet" href="/src/login-password.css?v=1" />
     <link rel="stylesheet" href="/src/medicine.css?v=1" />
     <link rel="stylesheet" href="/src/attendance-sheet.css?v=6" />
+    <link rel="stylesheet" href="/src/supplier-invoices-readonly.css?v=c-consulta-1" />
   </head>
   <body>
     <div id="root"></div>
     <script src="/config.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script type="module" src="/src/app.js?v=clientes-v1-pausa-20261026"></script>
+    <script type="module" src="/src/app.js?v=hours-f5dfa8948a51"></script>
     <script type="module" src="/src/visual-identity-final.js?v=2"></script>
+  
+    <!-- C1_RECEPCAO_SAME_TAB_ENTRY -->
+    <script type="module">
+      import * as auth from "/src/supabase-browser.js?v=hours-session-20261105";
+      (function installEntry({host,auth}){
+ const root=host.document.querySelector('#root');if(!root)return;
+ function sync(){
+  const nav=root.querySelector('.sidebar nav');if(!nav)return;
+  const old=nav.querySelector('[data-c1-recepcao-entry]');
+  if(!auth.getSession()?.access_token){old?.remove();return;}
+  if(old)return;
+  const button=host.document.createElement('button');button.type='button';button.dataset.c1RecepcaoEntry='';
+  button.setAttribute('aria-label','Recepção C1');button.title='Recepção C1 — abrir nesta aba';
+  button.innerHTML='▤ <span>Recepção C1</span>';
+  button.addEventListener('click',()=>host.location.assign('/c1-recepcao/'));
+  nav.append(button);
+ }
+ const observer=new host.MutationObserver(sync);observer.observe(root,{childList:true,subtree:true});sync();
+ return ()=>observer.disconnect();
+})({host:window,auth});
+    </script>
   </body>
 </html>

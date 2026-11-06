@@ -1,7 +1,8 @@
+import { lisbonDate } from "./civil-date.js?v=d2-d5dde9ad9b68";
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => lisbonDate();
 const STATES = {
   em_curso: "Em curso", enviado: "Enviado", aguarda_resposta: "Aguarda resposta",
   adjudicado: "Adjudicado", recusado: "Recusado", cancelado: "Cancelado",

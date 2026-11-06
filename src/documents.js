@@ -55,6 +55,13 @@ export function createDocumentsModule({
   previewBlob,
 }) {
   let ataEmission = null;
+  let loadGeneration = 0, uploadBusy = false, deleteBusy = false, loadedIdentity = null;
+  const identity = () => JSON.stringify([getProfile()?.id, getProfile()?.empresa_id, getRole(), getProfile()?.ativo]);
+  const captureContext = () => {
+    const generation = loadGeneration, actor = identity(), workId = selectedWorkId, authorId = getProfile()?.id;
+    const current = () => generation === loadGeneration && actor === identity() && root.isConnected !== false && workId === selectedWorkId && getWorks().some(work => work.id === workId);
+    return { workId, authorId, current, ready: () => !loading && loadedIdentity === actor && current() };
+  };
   let selectedWorkId = "";
   let selectedSection = "articulado";
   let loading = false;
@@ -166,36 +173,50 @@ export function createDocumentsModule({
   }
 
   async function load(workId = selectedWorkId) {
+    ++loadGeneration; loadedIdentity = null;
     selectedWorkId = workId || getWorks()[0]?.id || "";
-    if (!selectedWorkId) return render();
-    loading = true;
     data = emptyData();
-    render();
-    if (!isConfigured) {
-      data.canEdit = true;
-      loading = false;
-      render();
-      return;
+    if (!selectedWorkId || !getWorks().some(work => work.id === selectedWorkId)) {
+      selectedWorkId = ""; loading = false; data.error = "Obra indisponível para esta sessão."; return render();
     }
-    const encoded = encodeURIComponent(selectedWorkId);
-    const [documentsResult, permissionResult, drawingsResult, rfisResult] = await Promise.all([
-      supabase(`documentos_obra?select=*&obra_id=eq.${encoded}&order=criado_em.desc`),
-      supabase("rpc/fn_pode_editar_documentos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: selectedWorkId }) }),
-      supabase(`desenhos?select=*&obra_id=eq.${encoded}&order=numero.asc,revisao.desc`),
-      supabase(`rfis?select=*&obra_id=eq.${encoded}&order=numero.asc`),
-    ]);
-    if (documentsResult.ok) data.documents = await documentsResult.json();
-    else data.error = "Não foi possível consultar os documentos desta obra. Confirme as políticas RLS.";
-    if (permissionResult.ok) data.canEdit = Boolean(await permissionResult.json());
-    if (drawingsResult.ok) data.drawings = await drawingsResult.json(); else data.indexError = "Não foi possível consultar o índice de desenhos.";
-    if (rfisResult.ok) data.rfis = await rfisResult.json(); else data.indexError += `${data.indexError ? " " : ""}Não foi possível consultar o índice de PDEs.`;
-    const userIds = [...new Set(data.documents.map(item => item.enviado_por).filter(Boolean))];
-    if (userIds.length) {
-      const usersResult = await supabase(`utilizadores?select=id,nome&id=in.(${userIds.map(encodeURIComponent).join(",")})`);
-      if (usersResult.ok) data.users = Object.fromEntries((await usersResult.json()).map(user => [user.id, user.nome]));
+    const context = captureContext();
+    loading = true; render();
+    if (!isConfigured) { data.canEdit = true; loadedIdentity = identity(); loading = false; render(); return; }
+    try {
+      const encoded = encodeURIComponent(context.workId);
+      const [documentsResult, permissionResult, drawingsResult, rfisResult] = await Promise.all([
+        supabase(`documentos_obra?select=*&obra_id=eq.${encoded}&order=criado_em.desc`),
+        supabase("rpc/fn_pode_editar_documentos_obra", { method: "POST", body: JSON.stringify({ p_obra_id: context.workId }) }),
+        supabase(`desenhos?select=*&obra_id=eq.${encoded}&order=numero.asc,revisao.desc`),
+        supabase(`rfis?select=*&obra_id=eq.${encoded}&order=numero.asc`),
+      ]);
+      if (!context.current()) return;
+      const next = emptyData();
+      if (documentsResult.ok) next.documents = await documentsResult.json();
+      else next.error = "Não foi possível consultar os documentos desta obra. Confirme as políticas RLS.";
+      if (permissionResult.ok) {
+        const permission = await permissionResult.json();
+        if (typeof permission !== "boolean") throw new Error("Permissão documental inválida. Atualize a página.");
+        next.canEdit = permission;
+      }
+      if (drawingsResult.ok) next.drawings = await drawingsResult.json(); else next.indexError = "Não foi possível consultar o índice de desenhos.";
+      if (rfisResult.ok) next.rfis = await rfisResult.json(); else next.indexError += " Não foi possível consultar o índice de PDEs.";
+      if (!context.current()) return;
+      for (const rows of [next.documents, next.drawings, next.rfis]) {
+        if (!Array.isArray(rows) || rows.some(row => row.obra_id !== context.workId)) throw new Error("Documentação fora da obra selecionada.");
+      }
+      const userIds = [...new Set(next.documents.map(item => item.enviado_por).filter(Boolean))];
+      if (userIds.length) {
+        const usersResult = await supabase(`utilizadores?select=id,nome&id=in.(${userIds.map(encodeURIComponent).join(",")})`);
+        if (usersResult.ok) next.users = Object.fromEntries((await usersResult.json()).map(user => [user.id, user.nome]));
+      }
+      if (!context.current()) return;
+      data = next; loadedIdentity = identity(); loading = false; render();
+    } catch (error) {
+      if (!context.current()) return;
+      data = emptyData(); data.error = error.message || "Não foi possível consultar os documentos. Tente novamente.";
+      loading = false; render();
     }
-    loading = false;
-    render();
   }
 
   function syncUploadFields(form) {
@@ -209,6 +230,9 @@ export function createDocumentsModule({
   }
 
   async function submitUpload(form) {
+    if (uploadBusy || form.dataset.uploadUncertain === "true" || !data.canEdit) return;
+    const context = captureContext();
+    if (!context.ready()) return;
     const file = form.elements.arquivo.files[0];
     const type = form.elements.tipo.value;
     const documentNumber = form.elements.numero_documento.value.trim();
@@ -222,16 +246,20 @@ export function createDocumentsModule({
       error.textContent = "O número do documento é obrigatório para Desenhos e PDEs.";
       return form.elements.numero_documento.focus();
     }
+    uploadBusy = true;
     button.disabled = true;
     error.textContent = "";
+    let uploadStarted = false;
     try {
       let saved;
       if (isConfigured) {
-        const objectPath = await uploadWorkDocument(file, selectedWorkId, type);
+        uploadStarted = true;
+        const objectPath = await uploadWorkDocument(file, context.workId, type);
+        if (!context.current()) throw new Error("O contexto mudou após o envio. O ficheiro não foi associado; atualize antes de tentar novamente.");
         const response = await supabase("documentos_obra?select=*", {
           method: "POST",
           headers: { Prefer: "return=representation" },
-          body: JSON.stringify({ obra_id: selectedWorkId, tipo: type, nome_arquivo: file.name, arquivo_url: objectPath, enviado_por: getProfile()?.id, destinatarios: recipients || null, numero_documento: documentNumber || null, revisao: ["desenho", "desenhos_preparacao"].includes(type) ? revision || null : null }),
+          body: JSON.stringify({ obra_id: context.workId, tipo: type, nome_arquivo: file.name, arquivo_url: objectPath, enviado_por: context.authorId, destinatarios: recipients || null, numero_documento: documentNumber || null, revisao: ["desenho", "desenhos_preparacao"].includes(type) ? revision || null : null }),
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));
@@ -241,25 +269,35 @@ export function createDocumentsModule({
       } else {
         const objectPath = `local:${crypto.randomUUID()}`;
         localFiles.set(objectPath, file);
-        saved = { id: crypto.randomUUID(), obra_id: selectedWorkId, tipo: type, nome_arquivo: file.name, arquivo_url: objectPath, numero_documento: documentNumber || null, revisao: revision || null, enviado_por: "demo", criado_em: new Date().toISOString() };
+        saved = { id: crypto.randomUUID(), obra_id: context.workId, tipo: type, nome_arquivo: file.name, arquivo_url: objectPath, numero_documento: documentNumber || null, revisao: revision || null, enviado_por: "demo", criado_em: new Date().toISOString() };
         data.users.demo = "Utilizador de demonstração";
       }
+      if (!context.current()) return;
+      if (!saved?.id || saved.obra_id !== context.workId) throw new Error("Não foi possível confirmar a associação do documento à obra.");
       data.documents.unshift(saved);
       toast("Documento adicionado à obra.");
       if (isConfigured) await load(selectedWorkId);
       else render();
     } catch (uploadError) {
-      error.textContent = uploadError.message || "Não foi possível enviar o documento.";
-      button.disabled = false;
-    }
+      if (uploadStarted) form.dataset.uploadUncertain = "true";
+      if (!context.current()) return;
+      error.textContent = uploadStarted
+        ? `${uploadError.message || "Não foi possível confirmar o envio."} Consulte os documentos após atualizar antes de repetir; o envio pode já ter sido efetuado.`
+        : uploadError.message || "Não foi possível enviar o documento.";
+      button.disabled = uploadStarted;
+    } finally { uploadBusy = false; }
   }
 
   async function openDocument(button, preview) {
+    if (button.disabled) return;
+    const context = captureContext();
+    if (!context.ready()) return;
     const path = decodeURIComponent(button.dataset.documentPreview || button.dataset.documentDownload || "");
     const name = button.dataset.documentName || "documento";
     button.disabled = true;
     try {
       const blob = localFiles.get(path) || await downloadWorkDocument(path);
+      if (!context.current()) return;
       if (preview) previewBlob(blob, name);
       else {
         const url = URL.createObjectURL(blob);
@@ -277,27 +315,34 @@ export function createDocumentsModule({
   }
 
   async function removeDocument(button) {
+    if (deleteBusy) return;
+    const context = captureContext();
+    if (!context.ready()) return;
     const documentId = button.dataset.documentDelete;
     const path = decodeURIComponent(button.dataset.documentPath || "");
     const name = button.dataset.documentName || "documento";
     if (!data.canEdit) return toast("Não tem permissão para apagar este documento.", "error");
-    if (!await platformConfirm(`Apagar “${name}”? Esta ação fica registada na auditoria.`, { title: "Apagar documento", danger: true, confirmLabel: "APAGAR" })) return;
-    button.disabled = true;
+    deleteBusy = true;
     try {
+    if (!await platformConfirm(`Apagar “${name}”? Esta ação fica registada na auditoria.`, { title: "Apagar documento", danger: true, confirmLabel: "APAGAR" })) return;
+    if (!context.current()) return;
+    button.disabled = true;
       if (isConfigured) {
         const response = await supabase("rpc/fn_apagar_documento_obra", { method: "POST", body: JSON.stringify({ p_documento_id: documentId }) });
         if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Não foi possível apagar o registo do documento.");
+        if (!context.current()) return;
         if (path) await deleteWorkDocument(path);
       } else {
         localFiles.delete(path);
         data.documents = data.documents.filter(item => item.id !== documentId);
       }
+      if (!context.current()) return;
       toast("Documento apagado e registado na auditoria.");
       if (isConfigured) await load(selectedWorkId); else render();
     } catch (error) {
       toast(error.message || "Não foi possível apagar o documento.", "error");
       button.disabled = false;
-    }
+    } finally { deleteBusy = false; }
   }
 
   root.addEventListener("change", event => {
@@ -328,7 +373,7 @@ export function createDocumentsModule({
     show() {
       const availableWorks = getWorks();
       if (!availableWorks.some(work => work.id === selectedWorkId)) selectedWorkId = availableWorks[0]?.id || "";
-      load(selectedWorkId);
+      return load(selectedWorkId);
     },
     refresh() { return load(selectedWorkId); },
   };

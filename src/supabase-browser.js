@@ -6,16 +6,24 @@ const SESSION_KEY = "primeline_supabase_session";
 const sessionStore = window.sessionStorage;
 let refreshPromise = null;
 let sessionEpoch = 0;
-let resetHandler = null;
+const resetHandlers = new Set();
 let transitioning = false;
 let knownIdentity = readSession()?.user?.id || null;
-export function onSessionReset(handler) { resetHandler = handler; }
+export function onSessionReset(handler) {
+  if (typeof handler !== 'function') throw new TypeError('Callback de sessão inválido.');
+  resetHandlers.add(handler);
+  return () => resetHandlers.delete(handler);
+}
 export function isSessionTransitioning() { return transitioning; }
 function resetSession(reason) {
   sessionEpoch++;
   refreshPromise = null;
-  if (resetHandler) transitioning = true;
-  resetHandler?.(reason);
+  if (resetHandlers.size) transitioning = true;
+  let failure;
+  for (const handler of [...resetHandlers]) {
+    try { handler(reason); } catch (error) { failure ??= error; }
+  }
+  if (failure) throw failure;
 }
 function staleSession() { return new DOMException('A sessão mudou. Recarregue a aplicação.', 'AbortError'); }
 function checkEpoch(epoch) {

@@ -170,7 +170,7 @@ export function parseManagementWorkbook(workbook) {
 }
 
 export function createManagementMapModule({ root, supabase, isConfigured, getWorks, euro, toast }) {
-  const state = { loaded: false, loading: false, error: "", rows: [], mode: "categoria", importOpen: false, importRows: [], importReadyRows: [], importErrors: [], importProgress: "", preview: null, importing: false };
+  const state = { loaded: false, loading: false, error: "", rows: [], mode: "categoria", filters: {}, importOpen: false, importRows: [], importReadyRows: [], importErrors: [], importProgress: "", preview: null, importing: false };
   async function load(force = false) {
     if (state.loading || (state.loaded && !force)) return render(); state.loading = true; state.error = ""; render();
     try {
@@ -202,7 +202,16 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
     }
     catch (error) { state.error = error.message; } finally { state.loading = false; render(); }
   }
-  function filters() { const form = root.querySelector("[data-management-map-filters]"); return form ? Object.fromEntries(new FormData(form)) : {}; }
+  function filters() { return state.filters; }
+  function captureFilters() {
+    const form = root.querySelector("[data-management-map-filters]");
+    if (form) state.filters = Object.fromEntries(new FormData(form));
+    if (state.mode === "obra") state.filters.categoria = "";
+  }
+  function updateFilterResults() {
+    captureFilters();
+    root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults()));
+  }
   function filteredRows(category = "") { const value = filters(); return state.rows.filter(row => managementRowMatches(row, value, { mode: state.mode, category })); }
   const rowHtml = row => `<tr><td class="management-date">${esc(formatManagementDate(row.data_lancamento))}</td><td class="management-work"><strong>${esc(row.obra_numero || "—")}</strong><small>${esc(row.obra_nome || "")}</small></td><td class="management-wrap management-entity">${esc(row.entidade_nome || "—")}</td><td class="management-wrap management-description">${esc(row.descricao || "—")}</td><td>${esc(row.unidade_medida || "—")}</td><td class="management-number">${row.quantidade == null ? "—" : esc(row.quantidade)}</td><td class="management-value">${row.valor_unitario == null ? "—" : euro.format(Number(row.valor_unitario))}</td><td class="management-value">${euro.format(Number(row.valor || 0))}</td><td class="management-date">${esc(formatManagementDate(row.data_pagamento))}</td><td><span class="management-category ${esc(row.categoria)}">${esc(CATEGORY_LABELS[row.categoria] || row.categoria)}</span></td><td class="management-document">${esc(row.documento || "—")}</td></tr>`;
   const table = (rows, empty = "SEM LANÇAMENTOS NESTE FILTRO") => `<div class="management-map-scroll"><table><thead><tr><th>DATA</th><th>OBRA</th><th>FORNECEDOR / COLABORADOR</th><th>DESCRIÇÃO</th><th>UN. MEDIDA</th><th>QUANTIDADE</th><th>VALOR UNITÁRIO</th><th>VALOR TOTAL</th><th>DATA DE PAGAMENTO</th><th>CATEGORIA</th><th>DOCUMENTO</th></tr></thead><tbody>${rows.length ? rows.map(rowHtml).join("") : `<tr><td colspan="11" class="management-map-empty">${empty}</td></tr>`}</tbody></table></div>`;
@@ -219,6 +228,10 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
   function render() {
     const works = managementFilterWorks(getWorks(), state.rows);
     root.innerHTML = `<section class="panel management-map"><header><div><p class="eyebrow">CONSOLIDADO DA EMPRESA</p><h2>MAPA DE GESTÃO DE OBRAS</h2><p>Cinco categorias de custos e faturação, consultáveis por categoria ou por obra.</p></div><div class="management-head-actions"><button type="button" class="outline-action" data-open-management-import>IMPORTAR EXCEL</button><button type="button" class="outline-action" data-refresh-management-map>ATUALIZAR</button></div></header>${state.error ? `<div class="work-warning"><strong>DADOS INDISPONÍVEIS</strong><span>${esc(state.error)} Confirme se executou o SQL deste módulo.</span></div>` : ""}<div class="management-mode"><button type="button" data-management-mode="categoria" class="${state.mode === "categoria" ? "active" : ""}">POR CATEGORIA · TODAS AS OBRAS</button><button type="button" data-management-mode="obra" class="${state.mode === "obra" ? "active" : ""}">POR OBRA · TODAS AS CATEGORIAS</button></div><form class="management-map-filters" data-management-map-filters><label>OBRA<select name="obra_id"><option value="">${state.mode === "obra" ? "Escolher uma obra" : "Todas as obras"}</option>${works.map(work => `<option value="${work.id}">Obra ${esc(work.numero)} — ${esc(work.nome)}</option>`).join("")}</select></label><label class="${state.mode === "obra" ? "management-filter-disabled" : ""}">CATEGORIA<select name="categoria" ${state.mode === "obra" ? "disabled" : ""}><option value="">Todas as categorias</option>${Object.entries(CATEGORY_LABELS).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>DATA — DE<input type="date" name="data_inicio"></label><label>DATA — ATÉ<input type="date" name="data_fim"></label><label>FORNECEDOR / COLABORADOR<input name="entidade" placeholder="Pesquisar fornecedor ou colaborador"></label><label>DESCRIÇÃO<input name="descricao" placeholder="Pesquisar descrição"></label><label>DOCUMENTO<input name="documento" placeholder="Pesquisar documento"></label><label>VALOR EXATO (€)<input name="valor" type="number" min="0" step="0.01" placeholder="0,00"></label><button type="reset" class="outline-action management-clear-filters">LIMPAR FILTROS</button></form>${renderImport()}${state.loading ? '<div class="fleet-loading">A CARREGAR LANÇAMENTOS…</div>' : renderResults()}</section>`;
+    const form = root.querySelector("[data-management-map-filters]");
+    for (const [name, value] of Object.entries(state.filters)) {
+      if (form.elements.namedItem(name)) form.elements.namedItem(name).value = value;
+    }
   }
   async function runImportBatches(rows, confirmImportRows) {
     const result = { linhas: rows.length, criar: 0, criados: 0, duplicados: 0, erros: [], subempreitadas_historicas: [] };
@@ -274,10 +287,10 @@ export function createManagementMapModule({ root, supabase, isConfigured, getWor
       render();
     }
   }
-  root.addEventListener("input", event => { if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
-  root.addEventListener("change", event => { if (event.target.matches("[data-management-import-file]")) { const [file] = event.target.files; if (file) readImportFile(file); return; } if (event.target.closest("[data-management-map-filters]")) root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())); });
-  root.addEventListener("reset", () => setTimeout(() => root.querySelector(".management-map-result")?.replaceWith(fragment(renderResults())), 0));
-  root.addEventListener("click", event => { const mode = event.target.closest("[data-management-mode]"); if (mode) { state.mode = mode.dataset.managementMode; render(); return; } if (event.target.closest("[data-open-management-import]")) { state.importOpen = true; render(); return; } if (event.target.closest("[data-close-management-import]")) { state.importOpen = false; render(); return; } if (event.target.closest("[data-confirm-management-import]")) { confirmImport(); return; } if (event.target.closest("[data-refresh-management-map]")) load(true).catch(error => toast(error.message, "error")); });
+  root.addEventListener("input", event => { if (event.target.closest("[data-management-map-filters]")) updateFilterResults(); });
+  root.addEventListener("change", event => { if (event.target.matches("[data-management-import-file]")) { const [file] = event.target.files; if (file) readImportFile(file); return; } if (event.target.closest("[data-management-map-filters]")) updateFilterResults(); });
+  root.addEventListener("reset", () => setTimeout(updateFilterResults, 0));
+  root.addEventListener("click", event => { const mode = event.target.closest("[data-management-mode]"); if (mode) { captureFilters(); state.mode = mode.dataset.managementMode; if (state.mode === "obra") state.filters.categoria = ""; render(); return; } if (event.target.closest("[data-open-management-import]")) { state.importOpen = true; render(); return; } if (event.target.closest("[data-close-management-import]")) { state.importOpen = false; render(); return; } if (event.target.closest("[data-confirm-management-import]")) { confirmImport(); return; } if (event.target.closest("[data-refresh-management-map]")) load(true).catch(error => toast(error.message, "error")); });
   function fragment(html) { const template = document.createElement("template"); template.innerHTML = html.trim(); return template.content.firstElementChild; }
   return { show: () => load(), refresh: () => load(true) };
 }

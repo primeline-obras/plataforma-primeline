@@ -1,6 +1,7 @@
+import { lisbonDate } from "./civil-date.js?v=d2-d5dde9ad9b68";
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
-const isoToday = () => new Date().toISOString().slice(0, 10);
+const isoToday = () => lisbonDate();
 const displayDate = value => value ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)) : "—";
 const normalizeSpecialty = value => String(value || "").trim().toLocaleLowerCase("pt-PT")
   .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -17,6 +18,7 @@ export function createProcurementModule({
   onImportExcel,
   onAdjudicated,
   onConsultationsChanged,
+  getIdentity = () => [],
 }) {
   const state = {
     work: null,
@@ -36,6 +38,17 @@ export function createProcurementModule({
     expandedId: "",
     newFormOpen: false,
   };
+
+  let generation = 0, loadedIdentity = null, activeOperation = null;
+  const identity = () => JSON.stringify(getIdentity());
+  const ready = () => !state.loading && loadedIdentity === identity() && state.loadedWorkId === state.work?.id;
+  const context = () => {
+    const token = generation, actor = identity(), workId = state.work?.id;
+    const visible = () => actor === identity() && workId === state.work?.id;
+    return { visible, current: () => token === generation && visible() };
+  };
+  const assertCurrent = value => { if (!value.current()) throw new DOMException("O contexto de Compras mudou. Atualize antes de continuar.", "AbortError"); };
+  const notify = (...args) => { if (!activeOperation || activeOperation.visible()) toast(...args); };
 
   const root = () => host.querySelector("[data-procurement-root]");
   const phases = () => getPhases() || [];
@@ -164,19 +177,31 @@ export function createProcurementModule({
   }
 
   async function api(path, options = {}, label = "Não foi possível concluir a operação") {
+    const request = context();
+    const mutation = options.method && !["GET", "HEAD"].includes(options.method) && path !== "rpc/fn_pode_editar_obra";
+    if (mutation && activeOperation) assertCurrent(activeOperation);
+    assertCurrent(request);
     const response = await supabase(path, options);
+    assertCurrent(request);
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
+      assertCurrent(request);
       throw new Error(detail.message || detail.details || label);
     }
-    if (response.status === 204) return null;
-    return response.json();
+    const payload = response.status === 204 ? null : await response.json();
+    assertCurrent(request);
+    if (mutation && activeOperation) assertCurrent(activeOperation);
+    return payload;
   }
 
   async function load(work, force = false) {
-    state.work = work;
-    if (!force && state.loadedWorkId === work.id) return render();
-    if (state.loading) return;
+    if (!work?.id) return;
+    if (!force && ready() && state.loadedWorkId === work.id) return render();
+    const changed = state.work?.id !== work.id || loadedIdentity !== identity();
+    ++generation; state.work = work; loadedIdentity = null;
+    const request = context();
+    if (changed) { state.newFormOpen = false; state.expandedId = ""; state.prefillPlanningItemId = ""; }
+    Object.assign(state, { canEdit: false, consultations: [], budgetItems: [], consultationItems: [], candidates: [], candidateItems: [], pendingPlanning: [] });
     state.loading = true; render();
     try {
       if (!isConfigured) {
@@ -228,15 +253,19 @@ export function createProcurementModule({
           state.consultationItems = []; state.candidates = []; state.candidateItems = [];
         }
       }
-      state.loadedWorkId = work.id;
+      assertCurrent(request);
+      state.loadedWorkId = work.id; loadedIdentity = identity();
       onConsultationsChanged?.(state.consultations);
-    } catch (error) { toast(error.message, "error"); }
-    finally { state.loading = false; render(); }
+    } catch (error) { if (request.current() && error.name !== "AbortError") notify(error.message, "error"); }
+    finally { if (request.current()) { state.loading = false; render(); } }
   }
 
   async function withButton(button, callback) {
-    button.disabled = true;
-    try { await callback(); } catch (error) { toast(error.message, "error"); } finally { button.disabled = false; }
+    if (!ready() || !state.canEdit || activeOperation || button.disabled) return;
+    const operation = context(); activeOperation = operation; button.disabled = true;
+    try { assertCurrent(operation); await callback(); }
+    catch (error) { if (operation.visible() && error.name !== "AbortError") notify(error.message, "error"); }
+    finally { if (activeOperation === operation) activeOperation = null; button.disabled = false; }
   }
 
   function updateDraft() {
@@ -268,20 +297,22 @@ export function createProcurementModule({
     if (isConfigured) {
       await api("rpc/fn_guardar_precos_candidato_subempreitada", { method: "POST", body: JSON.stringify({ p_candidato_id: candidateId, p_precos: drafts }) }, "Não foi possível guardar os preços");
     }
+    if (activeOperation) assertCurrent(activeOperation);
     state.candidateItems = state.candidateItems.filter(item => item.candidato_id !== candidateId);
     rows.forEach(row => {
       state.candidateItems.push(row);
     });
     const candidate = state.candidates.find(item => item.id === candidateId);
     candidate.valor_total = rows.reduce((sum, item) => sum + item.preco_total, 0);
-    toast("Preços guardados.");
+    notify("Preços guardados.");
   }
 
   host.addEventListener("click", event => {
+    if (!ready()) return;
     if (event.target.closest("[data-import-subcontracts]")) {
       event.preventDefault();
       if (typeof onImportExcel !== "function") {
-        toast("O importador de Excel não ficou disponível. Atualize a página e tente novamente.", "error");
+        notify("O importador de Excel não ficou disponível. Atualize a página e tente novamente.", "error");
         return;
       }
       onImportExcel({ work: state.work, phases: phases(), suppliers: getSuppliers(), consultations: state.consultations, subcontracts: getSubcontracts().filter(item => item.obra_id === state.work.id), onComplete: () => load(state.work, true) });
@@ -323,6 +354,7 @@ export function createProcurementModule({
   host.addEventListener("submit", event => {
     const form = event.target;
     if (!form.closest("[data-procurement-root]")) return;
+    if (!ready() || !state.canEdit) { event.preventDefault(); return; }
     event.preventDefault();
     const button = form.querySelector("button[type=submit]");
     if (form.matches("[data-new-consultation]")) return withButton(button, async () => {
@@ -343,7 +375,7 @@ export function createProcurementModule({
         onConsultationsChanged?.(state.consultations);
         render();
       }
-      toast("Consulta criada com os itens selecionados.");
+      notify("Consulta criada com os itens selecionados.");
     });
     if (form.matches("[data-add-candidate]")) return withButton(button, async () => {
       if (!form.elements.fornecedor_id.value) throw new Error("Escolha um fornecedor existente.");
@@ -357,7 +389,7 @@ export function createProcurementModule({
         state.candidates.push(payload);
         render();
       }
-      toast("Fornecedor adicionado à consulta.");
+      notify("Fornecedor adicionado à consulta.");
     });
     if (form.matches("[data-adjudicate]")) return withButton(button, async () => {
       const candidateId = form.dataset.adjudicate;
@@ -371,7 +403,7 @@ export function createProcurementModule({
         if (candidate) candidate.escolhido = true;
         render();
       }
-      toast("Candidato adjudicado e planeamento sincronizado.");
+      notify("Candidato adjudicado e planeamento sincronizado.");
     });
   });
 

@@ -1,7 +1,8 @@
+import { lisbonDate } from "./civil-date.js?v=d2-d5dde9ad9b68";
 import { platformConfirm } from "./platform-dialogs.js?v=2";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" })[character]);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => lisbonDate();
 const monthKey = value => String(value || today()).slice(0, 7);
 const time = value => String(value || "").slice(0, 5);
 const shortName = value => { const parts=String(value||"").trim().split(/\s+/).filter(Boolean); return parts.length>1?`${parts[0]} ${parts.at(-1)}`:(parts[0]||"Utilizador"); };

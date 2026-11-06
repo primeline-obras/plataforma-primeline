@@ -233,6 +233,7 @@ export function invoiceDueDate(invoice = {}) {
 }
 
 export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = new Set(), currentUserId = "") {
+  if (role === "administrativo") return sortAlertsByPriority(alerts.filter(alert => administrativeOverviewAlert(alert, currentUserId)));
   const vehicleTypes = new Set(["seguro_viatura", "inspecao_viatura"]);
   const vehicleAlerts = alerts.filter(alert => vehicleTypes.has(alert.tipo) && (
     ["gerencia", "administrativo"].includes(role)
@@ -251,6 +252,22 @@ export function alertsForOverviewRole(alerts = [], role, responsibleWorkIds = ne
     ));
   }
   return withVehicleAlerts(alerts.filter(personalMeeting));
+}
+
+// Presentation only: retain backend authorization and the existing alert lifecycle.
+export function administrativeOverviewAlert(alert = {}, currentUserId = "") {
+  if (alert.estado && alert.estado !== "pendente") return false;
+  if (alert.destinatario_utilizador_id && alert.destinatario_utilizador_id !== currentUserId) return false;
+  if (alert.destinatario_role && alert.destinatario_role !== "administrativo") return false;
+  if (isMeetingInformation(alert)) return Boolean(currentUserId) && alert.destinatario_utilizador_id === currentUserId;
+  const administrativeTypes = new Set([
+    "fim_contrato_rh", "validade_documento", "validade_documento_empresa", "validade_epi",
+    "consulta_medicina", "primeira_consulta_medicina", "medicina_trabalho_vencimento",
+    "seguro_viatura", "inspecao_viatura"
+  ]);
+  if (administrativeTypes.has(alert.tipo)) return true;
+  // A technical invoice notice must never become administrative just because its title mentions a bill.
+  return alert.entidade_tipo === "faturas" && alert.destinatario_role === "administrativo";
 }
 
 export function consolidatedCashFlowSummary(rows = [], referenceDate = new Date()) {
@@ -511,7 +528,7 @@ export function createProductionDashboard(options) {
 
     document.querySelector("#overview-view").innerHTML = `
       <div class="page-heading">
-        <div><p class="eyebrow">PAINEL OPERACIONAL · ${escapeHtml(role.replace(/_/g, " "))}</p><h1>VISÃO GERAL</h1><p>Resumo diário de produção, aprovações e tesouraria.</p></div>
+        <div><p class="eyebrow">${role === "administrativo" ? "PRIORIDADES ADMINISTRATIVAS" : "PAINEL OPERACIONAL"} · ${escapeHtml(role.replace(/_/g, " "))}</p><h1>VISÃO GERAL</h1><p>${role === "administrativo" ? "Alertas pendentes de RH, viaturas e conferência administrativa de faturas." : "Resumo diário de produção, aprovações e tesouraria."}</p></div>
         <div class="overview-today"><span>HOJE</span><strong>${prettyDate.format(new Date())}</strong></div>
       </div>
       ${warning}

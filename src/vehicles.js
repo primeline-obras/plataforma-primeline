@@ -1,3 +1,4 @@
+import { lisbonDate } from "./civil-date.js?v=d2-d5dde9ad9b68";
 import { createVehicleAssignment } from "./vehicle-assignment.js?v=2";
 import { VALIDITY_COLUMNS, renewalExpiry, validityPayload, saveVehicleValidity } from "./vehicle-validity.js?v=1";
 import { platformConfirm, platformPrompt } from "./platform-dialogs.js?v=1";
@@ -6,7 +7,7 @@ const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 })[character]);
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => lisbonDate();
 const EVENT_LABELS = {
   seguro: "Seguro", revisao: "Revisão", inspecao: "Inspeção", pneus: "Pneus",
   bateria: "Bateria", reparacao: "Reparação", outro: "Outro",

@@ -1,8 +1,9 @@
+import { lisbonDate } from "./civil-date.js?v=d2-d5dde9ad9b68";
 import { generateRncPdf } from "./rnc-pdf.js?v=3";
 import { platformConfirm } from "./platform-dialogs.js?v=1";
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[c]);
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => lisbonDate();
 const labels = { aberto: "Aberto", em_correcao: "Em correção", verificado: "Verificado", fechado: "Fechado", cancelado: "Cancelado", critica: "Crítica", maior: "Maior", menor: "Menor", execucao_propria: "Execução própria", subempreiteiro: "Subempreiteiro", material: "Material", projeto_especificacao: "Projeto / Especificação", outro: "Outro" };
 export const rncCode = (work, numero) => `RNC-${String(work?.numero || "OBRA").trim()}-${String(numero).padStart(3, "0")}`;
 

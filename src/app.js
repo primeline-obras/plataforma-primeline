@@ -1,5 +1,7 @@
+import { createSupplierInvoicesReadonly } from "./supplier-invoices-readonly.js?v=c-consulta-1";
+import { podeConsultarFornecedores } from "./supplier-invoices-reader.js?v=c-consulta-1";
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=4";
-import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, isSessionTransitioning, onSessionReset, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=8";
+import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocument, getSession, isSupabaseConfigured, isSessionTransitioning, onSessionReset, requestPasswordReset, signIn, signOut, supabase, uploadDeliveryNote, uploadEntityDocument, uploadInvoiceAttachment, uploadInvoicePdf, uploadWorkDocument, uploadWorkflowPdf } from "./supabase-browser.js?v=hours-session-20261105";
 import { installSessionBoundary } from "./session-boundary.js?v=1";
 import { loadForemanDirectory, loadForemanAbsences, loadForemanVacationMap } from "./foreman-scope.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
@@ -9,24 +11,24 @@ import { createSubcontractorsModule } from "./subcontractors.js?v=10";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=16";
 import { DIRECT_DEBIT_CATEGORY_LABELS, DIRECT_DEBIT_RECURRENCE_LABELS, directDebitOccurrences } from "./direct-debits.js?v=2";
 import { createSettingsModule } from "./settings.js?v=6";
-import { createProcurementModule } from "./procurement.js?v=4";
+import { createProcurementModule } from "./procurement.js?v=d2-861737901b34";
 import { createComparativeMapModule } from "./comparative-map.js?v=6";
 import { createActionPlanModule } from "./action-plan.js?v=9";
-import { createDocumentsModule } from "./documents.js?v=ata-074996ecd875";
-import { createRncModule } from "./rnc.js?v=5";
+import { createDocumentsModule } from "./documents.js?v=d2-462777da9b74";
+import { createRncModule } from "./rnc.js?v=d2-a6dbabe4b060";
 import { createConsolidatedView } from "./consolidated-view.js?v=1";
-import { createVehiclesModule } from "./vehicles.js?v=4";
+import { createVehiclesModule } from "./vehicles.js?v=d2-693a2220860b";
 import { createMeetingRoomsModule } from "./meeting-rooms.js?v=5";
-import { createCalendarModule } from "./calendar.js?v=3";
+import { createCalendarModule } from "./calendar.js?v=d2-2393c485e76e";
 import { createPropertiesModule } from "./properties.js?v=3";
-import { createBudgetRequestsModule } from "./budget-requests.js?v=3";
+import { createBudgetRequestsModule } from "./budget-requests.js?v=d2-ee170f3b125b";
 import { createFinancialMapModule } from "./financial-map.js?v=1";
 import { createManagementMapModule } from "./management-map.js?v=14";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
 import { createAttendanceManagementClient } from "./attendance-client.js?v=7";
-import { createAttendanceModule } from "./attendance-sheet.js?v=11";
+import { createAttendanceModule } from "./attendance-runtime.js?v=hours-final-20261106";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -79,6 +81,7 @@ let directDebits = [], directDebitEntries = [], invoiceTrace = [];
 let invoiceTraceError = "";
 const PRIMELINE_COMPANY_ID = "73fb13c8-d29f-4192-a506-4ca243343add";
 let accessContext = { role: "", isAdmin: false, profile: null };
+let supplierIdentityPending = true;
 let foremanMedicineIds = new Set();
 let currentFilter = "all";
 let session = initialSession;
@@ -170,7 +173,7 @@ document.querySelector("#root").innerHTML = `
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
         <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">${icon("layout-dashboard")} <span>Visão geral</span></button><button data-view="rsp">${icon("users-round")} <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">${icon("layout-kanban")} <span>Projetos</span></button><button data-view="works">${icon("building")} <span>Obras</span></button>
-        <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="calendar">◷ <span>Agenda</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
+        <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="supplier-invoices" hidden aria-label="Fornecedores · Consulta" title="Fornecedores · Consulta">${icon("receipt")} <span>Fornecedores · Consulta</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="calendar">◷ <span>Agenda</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
       <div class="sidebar-user"><span id="user-initials">PL</span><div><strong id="user-name">UTILIZADOR</strong><small id="user-role">SESSÃO AUTENTICADA</small></div><button class="logout-button" id="logout" title="Terminar sessão">↗</button></div>
@@ -185,6 +188,7 @@ document.querySelector("#root").innerHTML = `
       <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
       <div class="page meeting-view" id="meeting-view" hidden></div>
+      <section class="page" id="supplier-invoices-view" hidden aria-label="Fornecedores · Consulta"></section>
       <div class="page" id="invoice-view" hidden>
         <div class="page-heading"><div><p class="eyebrow">GESTÃO FINANCEIRA</p><h1>FATURAS</h1><p>Registo e aprovação de despesas das obras.</p></div><div class="heading-stat"><span>PENDENTES</span><strong id="count">00</strong></div></div>
         <section class="invoice-grid">
@@ -728,6 +732,16 @@ const actionPlanModule = createActionPlanModule({
   toast,
   onPlanningChanged: () => planningModule.refresh(),
 });
+function supplierConsultaIdentity() {
+  const authId = getSession()?.user?.id;
+  const profile = accessContext.profile;
+  if (!isSupabaseConfigured || supplierIdentityPending || isSessionTransitioning()
+      || profile?.ativo !== true || !authId || profile.auth_user_id !== authId) return null;
+  return { authUserId: authId, userId: profile.id, companyId: profile.empresa_id, role: profile.funcao };
+}
+const supplierConsulta = createSupplierInvoicesReadonly({
+  root: $("#supplier-invoices-view"), api: supabase, getIdentity: supplierConsultaIdentity,
+});
 const documentsModule = createDocumentsModule({
   root: $("#documents-view"),
   supabase,
@@ -824,7 +838,7 @@ const subcontractorsModule = createSubcontractorsModule({
   },
 });
 const attendanceModule = createAttendanceModule({
-  root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast,
+  root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast, onSessionReset,
   navigatePlanning: workId => switchView("planning", {workId,view:"summary"}),
 });
 
@@ -949,7 +963,9 @@ function canEditWork() {
 }
 
 function allowedViews() {
-  return new Set(accessFor(accessContext).views);
+  const permitted = new Set(accessFor(accessContext).views);
+  if (podeConsultarFornecedores(supplierConsultaIdentity())) permitted.add("supplier-invoices");
+  return permitted;
 }
 
 function defaultViewForCurrentUser() {
@@ -1005,6 +1021,8 @@ function applyAccessVisibility() {
 }
 
 async function loadAccessContext() {
+  supplierIdentityPending = true;
+  supplierConsulta.reset();
   if (!isSupabaseConfigured) {
     accessContext = { role: "", isAdmin: false, profile: null };
     applyAccessVisibility();
@@ -1023,6 +1041,7 @@ async function loadAccessContext() {
     isAdmin: profile?.ativo === false ? false : profile?.funcao === "gestao_plataforma" || (adminResult.ok ? Boolean(await adminResult.json()) : profile?.funcao === "gerencia"),
     profile,
   };
+  supplierIdentityPending = false;
   applyAccessVisibility();
 }
 
@@ -1031,7 +1050,8 @@ window.addEventListener("primeline:session-expired", () => {
 });
 
 function toast(message, kind = "success") {
-  $("#toast").innerHTML = `<div class="toast ${kind}"><span>${icon(kind === "error" ? "x" : kind === "warning" ? "bell" : "check")}</span>${message}</div>`;
+  kind = ["success", "error", "warning"].includes(kind) ? kind : "success";
+  $("#toast").innerHTML = `<div class="toast ${kind}"><span>${icon(kind === "error" ? "x" : kind === "warning" ? "bell" : "check")}</span>${escapeHtml(message)}</div>`;
   setTimeout(() => { $("#toast").innerHTML = ""; }, 4200);
 }
 
@@ -1048,7 +1068,7 @@ async function friendlyApiError(response, fallback) {
 }
 
 function optionList(items, label, emptyLabel) {
-  return `<option value="">${emptyLabel}</option>${items.map((item) => `<option value="${item.id}">${label(item)}</option>`).join("")}`;
+  return `<option value="">${escapeHtml(emptyLabel)}</option>${items.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(label(item))}</option>`).join("")}`;
 }
 
 function renderSelectors() {
@@ -1145,8 +1165,8 @@ function renderInvoices() {
     const nextLabel = flowState === "recebida" ? "INICIAR VALIDAÇÃO" : flowState === "em_validacao" ? "APROVAR TECNICAMENTE" : flowState === "aprovada_tecnicamente" ? "ENVIAR AO FINANCEIRO" : "";
     return `<article class="invoice-card" data-invoice-card="${invoice.id}">
       <div class="invoice-icon">${icon("invoice")}</div><div class="invoice-main">
-        <div class="invoice-top"><div><strong>${supplier}</strong><span>${invoice.numero_doc}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
-        <div class="invoice-meta"><span>OBRA ${work?.numero || "—"}</span><span class="type-pill ${invoice.tipo_origem}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
+        <div class="invoice-top"><div><strong>${escapeHtml(supplier)}</strong><span>${escapeHtml(invoice.numero_doc)}</span></div><strong class="invoice-value">${euro.format(Number(invoice.valor))}</strong></div>
+        <div class="invoice-meta"><span>OBRA ${escapeHtml(work?.numero || "—")}</span><span class="type-pill ${escapeHtml(invoice.tipo_origem)}">${typeLabels[invoice.tipo_origem]}</span><span>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</span>${invoice.arquivo_url ? `<button class="document-link" data-pdf="${encodeURIComponent(invoice.arquivo_url)}">${icon("invoice")} VER PDF</button>` : ""}</div>
         <ol class="invoice-flow-steps ${returnedToAdministrative ? "returned" : ""}" aria-label="Fluxo da fatura">${returnedToAdministrative ? '<li class="current">Devolvida ao Administrativo</li>' : INVOICE_FLOW.map((state, index) => `<li class="${index < flowIndex ? "complete" : index === flowIndex ? "current" : ""}">${INVOICE_FLOW_LABELS[state]}</li>`).join("")}</ol>
         ${invoiceSubcontractControl(invoice)}
         <div class="invoice-primary-actions">
@@ -1240,8 +1260,8 @@ function financeCard(invoice) {
   const approverName = invoice.aprovado_por_nome || trace.aprovado_por_nome || "Utilizador não identificado";
   const approvalDate = invoice.data_aprovacao || trace.data_aprovacao;
   return `<article class="finance-card">
-    <div class="finance-card-top"><span>OBRA ${work?.numero || "—"}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
-    <h3>${supplier}</h3><p>${invoice.numero_doc}</p>
+    <div class="finance-card-top"><span>OBRA ${escapeHtml(work?.numero || "—")}</span><strong>${euro.format(Number(invoice.valor))}</strong></div>
+    <h3>${escapeHtml(supplier)}</h3><p>${escapeHtml(invoice.numero_doc)}</p>
     ${invoice.aprovada_sem_guia ? `<div class="invoice-guide-status missing">APROVADA SEM GUIA DE REMESSA</div>` : ""}
     <div class="finance-date"><span>DATA DA FATURA</span><strong>${prettyDate.format(new Date(`${invoice.data_fatura}T12:00:00`))}</strong></div>
     <div class="finance-approval"><span>APROVADA POR</span><strong>${escapeHtml(approverName)}</strong><small>${traceMoment(approvalDate)}</small></div>
@@ -1262,7 +1282,7 @@ function paidFinanceRow(invoice) {
   const work = works.find(item => item.id === invoice.obra_id);
   const attachments = invoiceAttachments.filter(item => item.fatura_id === invoice.id);
   return `<article class="paid-invoice-row">
-    <div><strong>${supplier}</strong><span>${invoice.numero_doc} · OBRA ${work?.numero || "—"}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div>
+    <div><strong>${escapeHtml(supplier)}</strong><span>${escapeHtml(invoice.numero_doc)} · OBRA ${escapeHtml(work?.numero || "—")}</span>${invoice.aprovada_sem_guia ? `<em class="invoice-guide-status missing">APROVADA SEM GUIA</em>` : ""}</div>
     <strong>${euro.format(Number(invoice.valor))}</strong>
     <time>PAGA EM ${prettyDate.format(new Date(`${String(invoice.data_pagamento).slice(0, 10)}T12:00:00`))}</time>
     <div class="paid-invoice-actions">
@@ -1566,7 +1586,7 @@ function renderWorks() {
   const situations = [...new Set(works.map(work => work.situacao).filter(Boolean))].sort();
   const statusSelect = $("#work-status-filter");
   if (statusSelect && statusSelect.options.length === 1) {
-    statusSelect.innerHTML += situations.map(item => `<option value="${item}">${workSituationLabel(item)}</option>`).join("");
+    statusSelect.innerHTML += situations.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(workSituationLabel(item))}</option>`).join("");
   }
   const filtered = works.filter(work => {
     const haystack = `${work.numero || ""} ${work.nome || ""} ${work.cliente || ""}`.toLocaleLowerCase("pt-PT");
@@ -1585,9 +1605,9 @@ function renderWorks() {
   const orderedWorks = [...filtered].sort((a, b) => String(a.numero || "").localeCompare(String(b.numero || ""), "pt-PT", { numeric: true, sensitivity: "base" }));
   $("#works-list").innerHTML = orderedWorks.length ? orderedWorks.map(work => `
     <button class="work-list-item ${work.id === selectedWorkId ? "selected" : ""}" data-work-id="${work.id}">
-      <span class="work-number">${String(work.numero || "—").padStart(3, "0")}</span>
-      <span class="work-list-copy"><strong>${work.nome || "Obra sem designação"}</strong><small>${work.cliente || "Cliente não indicado"}</small></span>
-      <span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span>
+      <span class="work-number">${escapeHtml(String(work.numero || "—").padStart(3, "0"))}</span>
+      <span class="work-list-copy"><strong>${escapeHtml(work.nome || "Obra sem designação")}</strong><small>${escapeHtml(work.cliente || "Cliente não indicado")}</small></span>
+      <span class="work-status ${escapeHtml(work.situacao || "indefinida")}">${escapeHtml(workSituationLabel(work.situacao))}</span>
       <span class="work-arrow">→</span>
     </button>`).join("") : `<div class="empty-state"><strong>SEM RESULTADOS</strong><span>Ajuste a pesquisa ou os filtros.</span></div>`;
 }
@@ -2143,7 +2163,7 @@ function renderTeam() {
   ].map(([label, value]) => `<article><span>${label}</span><strong>${String(value).padStart(2, "0")}</strong></article>`).join("");
 
   if (teamData.error) {
-    $("#team-board").innerHTML = `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${teamData.error}</span></div>`;
+    $("#team-board").innerHTML = `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${escapeHtml(teamData.error)}</span></div>`;
   } else {
     const weekLabels = ["SEMANA -1", "SEMANA ATUAL", "SEMANA +1", "SEMANA +2"];
     const weekdays = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
@@ -2773,6 +2793,7 @@ function workProgress(work) {
 }
 
 async function loadWorkDetails(workId) {
+  supplierConsulta.reset();
   selectedWorkId = workId;
   selectedWorkTab = "summary";
   workDetails = {
@@ -3031,7 +3052,7 @@ function renderWorkSummary(work) {
         <details><summary>IMPACTOS DA OBRA <b>${workDetails.impacts.length}</b></summary><div class="meeting-detail-list">${workDetails.impacts.map(row => `<div><span><strong>${safeText(row.numero)} · ${safeText(row.descricao)}</strong><small>${safeText(row.tipo_impacto || "Impacto")}</small></span><b>${euro.format(Number(row.valor_sem_iva || 0))}</b></div>`).join("") || '<div class="work-document-empty">SEM IMPACTOS REGISTADOS</div>'}</div></details>
       </section>
       <section><div class="detail-section-title"><span>FASES</span><small>${workDetails.phases.length}</small></div>
-        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.descricao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
+        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${escapeHtml(phase.codigo || phase.numero || "—")}<small>${escapeHtml(phase.descricao || "")}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
       </section>
     </div>`;
   return `
@@ -3055,7 +3076,7 @@ function renderWorkSummary(work) {
         </dl>
       </section>
       <section><div class="detail-section-title"><span>FASES</span><small>${workDetails.phases.length}</small></div>
-        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${phase.codigo || phase.numero || "—"}<small>${phase.descricao || ""}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
+        <div class="phase-tags">${workDetails.phases.length ? workDetails.phases.map(phase => `<span>${escapeHtml(phase.codigo || phase.numero || "—")}<small>${escapeHtml(phase.descricao || "")}</small></span>`).join("") : "<em>Sem fases disponíveis</em>"}</div>
       </section>
     </div>`;
 }
@@ -3200,7 +3221,7 @@ function renderMeasurementsTab(work) {
   const invoiced = workDetails.billings.filter(item => item.estado_aprovacao === "aprovado").reduce((sum, item) => sum + Number(item.valor || 0), 0);
   const received = workDetails.billings.reduce((sum, item) => sum + Number(item.valor_recebido || 0), 0);
   return `
-    ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.billingError} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
+    ${workDetails.billingError ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${escapeHtml(workDetails.billingError)} Execute a migração do fluxo de autos e faturação.</span></div>` : ""}
     <div class="measurement-toolbar">
       <div class="measurement-kpis">
         <div><span>FATURADO ACUMULADO</span><strong>${euro.format(measured)}</strong></div>
@@ -3218,8 +3239,8 @@ function renderMeasurementsTab(work) {
         const paid = billing?.estado_pagamento === "pago" || (billing && Number(billing.valor_recebido || 0) >= Number(billing.valor || 0));
         return `<article class="measurement-card">
           <div class="measurement-head">
-            <div><span>${item.tipo || "contratual"}</span><strong>Auto ${item.numero_auto || "sem número"}</strong><small>${prettyDate.format(new Date(`${item.mes_referencia}T12:00:00`))}</small></div>
-            <span class="measurement-state ${item.estado}">${measurementStatusLabel(item.estado)}</span>
+            <div><span>${escapeHtml(item.tipo || "contratual")}</span><strong>Auto ${escapeHtml(item.numero_auto || "sem número")}</strong><small>${prettyDate.format(new Date(`${item.mes_referencia}T12:00:00`))}</small></div>
+            <span class="measurement-state ${escapeHtml(item.estado)}">${escapeHtml(measurementStatusLabel(item.estado))}</span>
           </div>
           <div class="measurement-values">
             <div><span>BRUTO</span><strong>${euro.format(Number(item.valor_bruto_medido || 0))}</strong></div>
@@ -3233,7 +3254,7 @@ function renderMeasurementsTab(work) {
             <i></i><span class="${billingApproved ? "done" : ""}">${billingApproved ? "FATURA APROVADA" : billing ? "FATURA PENDENTE" : "FATURA"}</span>
             <i></i><span class="${paid ? "done" : ""}">PAGO</span>
           </div>
-          ${billing ? `<div class="billing-summary"><span>FATURA ${billing.numero_fatura}</span><div class="billing-summary-lines">${billingLines(billing.id).map(line => `<div><span>${safeText(line.referencia_auto)} · ${billingAutoTypeLabel(line.tipo_auto)}</span><strong>${euro.format(line.valor_linha)}</strong></div>`).join("")}</div><strong>${euro.format(Number(billing.valor))}</strong><small>${billing.estado_aprovacao === "pendente" ? "Pendente de aprovação do Diretor" : billing.estado_aprovacao === "recusado" ? "Recusada" : paid ? `Paga em ${formatOptionalDate(billing.data_pagamento || billing.data_recebimento)}` : "Aprovada · pagamento pendente"}</small></div>` : ""}
+          ${billing ? `<div class="billing-summary"><span>FATURA ${escapeHtml(billing.numero_fatura)}</span><div class="billing-summary-lines">${billingLines(billing.id).map(line => `<div><span>${safeText(line.referencia_auto)} · ${billingAutoTypeLabel(line.tipo_auto)}</span><strong>${euro.format(line.valor_linha)}</strong></div>`).join("")}</div><strong>${euro.format(Number(billing.valor))}</strong><small>${billing.estado_aprovacao === "pendente" ? "Pendente de aprovação do Diretor" : billing.estado_aprovacao === "recusado" ? "Recusada" : paid ? `Paga em ${formatOptionalDate(billing.data_pagamento || billing.data_recebimento)}` : "Aprovada · pagamento pendente"}</small></div>` : ""}
           <div class="measurement-actions">
             ${autoPdf ? `<button data-workflow-pdf="${encodeURIComponent(autoPdf.url_arquivo)}">VER AUTO PDF</button>` : ""}
             ${invoicePdf ? `<button data-workflow-pdf="${encodeURIComponent(invoicePdf.url_arquivo)}">VER FATURA PDF</button>` : ""}
@@ -3792,11 +3813,11 @@ function renderWorkDetail(work) {
   if (work.modalidade === "investimento_proprio" && selectedWorkTab === "tees") selectedWorkTab = "summary";
   $("#work-detail").innerHTML = `
     <div class="work-detail-head">
-      <div><p class="eyebrow">OBRA ${work.numero || "—"}</p><h2>${work.nome || "Sem designação"}</h2><span>${work.cliente || "Cliente não indicado"}</span></div>
-      <div class="work-detail-actions"><button type="button" data-open-rnc="${work.id}">RNC →</button><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${work.situacao || "indefinida"}">${workSituationLabel(work.situacao)}</span></div>
+      <div><p class="eyebrow">OBRA ${escapeHtml(work.numero || "—")}</p><h2>${escapeHtml(work.nome || "Sem designação")}</h2><span>${escapeHtml(work.cliente || "Cliente não indicado")}</span></div>
+      <div class="work-detail-actions"><button type="button" data-open-rnc="${work.id}">RNC →</button><button type="button" data-open-meeting="${work.id}">REUNIÃO SEMANAL →</button><span class="work-status ${escapeHtml(work.situacao || "indefinida")}">${escapeHtml(workSituationLabel(work.situacao))}</span></div>
     </div>
-    <div class="work-location">${work.morada || "Morada não indicada"}</div>
-    ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${workDetails.error} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
+    <div class="work-location">${escapeHtml(work.morada || "Morada não indicada")}</div>
+    ${workDetails.error ? `<div class="work-warning"><strong>DADOS PARCIAIS</strong><span>${escapeHtml(workDetails.error)} Execute as políticas RLS adicionais incluídas no projeto.</span></div>` : ""}
     <nav class="work-tabs">
       <button data-work-tab="summary" class="${selectedWorkTab === "summary" ? "active" : ""}">RESUMO</button>
       ${financialReadOnly ? "" : `<button data-work-tab="subcontracts" class="${selectedWorkTab === "subcontracts" ? "active" : ""}">SUBEMPREITADAS</button>
@@ -3855,6 +3876,7 @@ async function removeInvoiceRelatedFile(button) {
 }
 
 function switchView(view, context = {}) {
+  supplierConsulta.reset();
   if (!allowedViews().has(view)) {
     toast("Não tem permissão para aceder a esta área.", "error");
     view = defaultViewForCurrentUser();
@@ -3869,6 +3891,7 @@ function switchView(view, context = {}) {
   $("#action-plan-view").hidden = view !== "action-plan";
   $("#meeting-view").hidden = view !== "meeting";
   $("#invoice-view").hidden = view !== "invoices";
+  $("#supplier-invoices-view").hidden = view !== "supplier-invoices";
   $("#works-view").hidden = view !== "works";
   $("#projects-view").hidden = view !== "projects";
   $("#planning-view").hidden = view !== "planning";
@@ -3885,8 +3908,8 @@ function switchView(view, context = {}) {
   $("#calendar-view").hidden = view !== "calendar";
   $("#properties-view").hidden = view !== "properties";
   $("#budget-requests-view").hidden = view !== "budget-requests";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "supplier-invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "supplier-invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -3897,6 +3920,7 @@ function switchView(view, context = {}) {
   if (view === "projects") projectsModule.show();
   if (view === "planning") planningModule.show(context);
   if (view === "action-plan") actionPlanModule.show();
+  if (view === "supplier-invoices") void supplierConsulta.show({ workId: context.workId || "" });
   if (view === "documents") documentsModule.show();
   if (view === "rnc") rncModule.show(context.workId || selectedWorkId);
   if (view === "vehicles") vehiclesModule.show();
@@ -6167,6 +6191,7 @@ const companyDocumentsModule = createCompanyDocumentsModule({
   toast,
 });
 procurementModule = createProcurementModule({
+  getIdentity: () => [accessContext.profile?.id, accessContext.profile?.empresa_id, effectiveRole(), accessContext.profile?.ativo, selectedWorkId],
   host: $("#work-detail"),
   supabase,
   isConfigured: isSupabaseConfigured,

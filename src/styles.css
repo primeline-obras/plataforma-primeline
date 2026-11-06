@@ -2687,3 +2687,98 @@ button, input, select, textarea,
 .planning-work-data dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .planning-work-data dt { font-size: 12px; opacity: .75; }
 .planning-work-data dd { margin: 4px 0 0; font-weight: 600; }
+
+/* Document centre: keep metadata and touch actions inside the available width. */
+.documents-heading { flex-wrap: wrap; gap: 14px; }
+.documents-heading > div, .documents-work-picker { min-width: 0; }
+.documents-work-picker { max-width: 100%; }
+.documents-work-picker select { width: 100%; max-width: 100%; min-width: 0; }
+.documents-center-panel { box-sizing: border-box; max-width: 100%; min-width: 0; }
+.documents-center-panel .work-document-row {
+  grid-template-columns: 42px minmax(0, 1fr) minmax(90px, .45fr) minmax(90px, .45fr) minmax(84px, .3fr);
+}
+.documents-center-panel .work-document-name strong,
+.documents-center-panel .work-document-meta strong { white-space: normal; overflow-wrap: anywhere; }
+.documents-center-panel .work-document-actions { grid-column: 1 / -1; flex-wrap: wrap; }
+.documents-center-panel .work-document-actions button { min-height: 44px; min-width: 44px; }
+@media (max-width: 760px) {
+  .documents-heading { flex-direction: column; align-items: stretch; }
+  .documents-work-picker { min-width: 0; width: 100%; }
+  .documents-center-panel .work-document-row { grid-template-columns: 38px minmax(0, 1fr); }
+  .documents-center-panel .work-document-meta { grid-column: 2; }
+}
+
+/* Subcontract cards: size financial cells to available component width. */
+.subcontracts-list { min-width: 0; container-type: inline-size; }
+.procurement-summary.contractual {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
+}
+.procurement-summary.contractual > div {
+  min-width: 0;
+  border-bottom: 1px solid #e0e1de;
+}
+.procurement-summary.contractual :is(span, strong, small) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.subcontract-card.contractual {
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+.subcontract-card.contractual > * { min-width: 0; max-width: 100%; }
+.subcontract-card.contractual .subcontract-main,
+.subcontract-card.contractual .subcontract-contract-grid { grid-column: 1 / -1; }
+.subcontract-card.contractual .subcontract-main :is(strong, span, small) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.subcontract-card.contractual .subcontract-contract-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.subcontract-card.contractual .subcontract-contract-grid > div {
+  display: block;
+  border-bottom: 1px solid #e6e2d9;
+}
+.subcontract-card.contractual .subcontract-contract-grid :is(dt, dd) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.subcontract-card.contractual .subcontract-paid > div:first-child { flex-wrap: wrap; }
+.subcontract-card.contractual :is(.subcontract-paid, .subcontract-overrun, .approval-badge) {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.subcontract-card.contractual .subcontract-addenda-list > div {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  align-items: start;
+}
+.subcontract-card.contractual .subcontract-addenda-list > div > span { grid-column: 1 / -1; }
+.subcontract-card.contractual .subcontract-addenda-list > div > * {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.subcontract-card.contractual .subcontract-addenda form {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+.subcontract-card.contractual .subcontract-addenda form :is(label, input, select, button) {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@container (min-width: 70rem) {
+  .subcontract-card.contractual .subcontract-contract-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@container (max-width: 40rem) {
+  .subcontract-card.contractual .subcontract-contract-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 24rem) {
+  .subcontract-card.contractual .subcontract-contract-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@container (max-width: 32rem) {
+  .subcontract-card.contractual { grid-template-columns: minmax(0, 1fr); }
+}
