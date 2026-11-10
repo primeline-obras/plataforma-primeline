@@ -1,5 +1,5 @@
 import {createAttendanceModule as createLegacyAttendanceModule} from './attendance-sheet.js?v=hours-cutover-20261105-2';
-import {HOURS_RUNTIME_RELEASE} from './hours-runtime-config.js?v=hours-final-20261106';
+import {HOURS_RUNTIME_RELEASE} from './hours-runtime-config.js?v=hours-activated-20261106';
 export function hoursReleaseState(release){
  if(release?.version!==1||typeof release.enabled!=='boolean')return 'blocked';
  if(release.enabled===false)return 'legacy';
