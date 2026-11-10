@@ -36,6 +36,19 @@ export async function runAssistedAuthReadOnly() {
    lastRequest={phase:requestLabels[[...allowed.keys()].indexOf(key)],http_status:null};
    const response=await fetch(url,{...options,credentials:'omit',redirect:'error',cache:'no-store',signal:AbortSignal.timeout(60000)});
    lastRequest.http_status=response.status;
+   if(!response.ok){
+    const media=response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
+    lastRequest.response_type=media==='application/json'||media?.endsWith('+json')?'json':media==='text/html'?'html':media?'other':'missing';
+    lastRequest.server_error_code='unavailable';
+    const known=new Set(['bad_jwt','session_expired','session_not_found','user_banned','user_not_found','no_authorization','not_admin','insufficient_aal','unexpected_audience','unexpected_failure','validation_failed','request_timeout','over_request_rate_limit','PGRST301','PGRST302','PGRST303','42501']);
+    if(lastRequest.response_type==='json'){
+     try{
+      const body=await response.clone().json();
+      const code=typeof body?.error_code==='string'?body.error_code:typeof body?.code==='string'?body.code:null;
+      lastRequest.server_error_code=known.has(code)?code:code?'unrecognized':'unavailable';
+     }catch{lastRequest.server_error_code='unavailable';}
+    }
+   }
    return response;
   };
 // Existing browser session and public configuration only. Never log/persist secrets.
