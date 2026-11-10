@@ -35,6 +35,7 @@
 ## 4. Restrições funcionais permanentes
 
 - **RNC:** acesso histórico de Gerência à leitura transversal de RNC entre obras da mesma empresa permanece **PENDENTE**. Não modificar permissões, não aprovar implicitamente o comportamento legado. Preservar/testar/documentar o estado histórico quando relevante.
+- **FALTOU — decisão funcional confirmada em 10/11/2026 (DECIDIDO):** o Encarregado registra somente **FALTOU**, com observação opcional. Não escolhe justificada/injustificada. A classificação final cabe ao **Administrativo**, nos tipos e com os requisitos já previstos no contrato P0. Manter o contrato neutro P0; **não integrar** o legado concorrente da branch `fix/encarregado-falta-20261012` (commit `24e57b1`), nem instalar seu SQL. Aguardar homologação da UI P0 no corte operacional; esta decisão não autoriza deploy adicional.
 - **RH:** não ampliar competências ou permissões além das decisões funcionais expressamente aprovadas.
 - **Históricos e decisões administrativas:** preservar registros aprovados, pendentes, auditorias e trilhas; tokens técnicos de preservação não equivalem a aprovação administrativa.
 - **Equipamentos/logística de obra:** rodada F172–F191 expressamente fora do escopo de desenvolvimento de módulo duplicado; já existe software específico. Não extrapolar para abolir integrações ou custos previamente previstos.
