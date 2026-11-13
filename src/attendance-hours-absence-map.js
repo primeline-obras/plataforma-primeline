@@ -1,5 +1,5 @@
-import {neutralAbsenceForm,classifyMappedAbsence,isNeutralAbsence} from './attendance-hours-absence.js?v=hours-final-20261106';
-import {reviewDate,reviewTimestamp} from './attendance-hours-review.js?v=hours-final-20261106';
+import {neutralAbsenceForm,classifyMappedAbsence,isNeutralAbsence} from './attendance-hours-absence.js?v=hours-module-8bdb05fbbc24';
+import {reviewDate,reviewTimestamp} from './attendance-hours-review.js?v=hours-module-b9bb4cc7dede';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={falta_reportada_pendente:'FALTOU · aguarda classificação administrativa',falta_injustificada:'Falta injustificada',falta_justificada_com_remuneracao:'Falta justificada com remuneração',falta_justificada_sem_remuneracao:'Falta justificada sem remuneração',ferias:'Férias',baixa_doenca:'Baixa por doença',baixa_maternidade:'Baixa de maternidade',baixa_parental:'Baixa parental'};
 export function createHoursAbsenceMap({root,client,month,personId=null,onOpenMonthly=()=>{}}){

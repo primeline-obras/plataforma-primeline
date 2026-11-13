@@ -13,3 +13,7 @@
 @media(max-width:1050px),(pointer:coarse) {
  .hours-v3-review button,.hours-v3-review select,.hours-v3-review input:not([type=checkbox]) { min-height:48px; }
 }
+
+/* P0 audit: keep factual dates and header words intact; table wrapper retains horizontal scrolling. */
+.hours-v3-review .hours-v3-table th{overflow-wrap:normal;word-break:normal}
+.hours-v3-review .hours-v3-table td:first-child{white-space:nowrap;overflow-wrap:normal}

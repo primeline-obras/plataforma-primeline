@@ -8,6 +8,7 @@ export function validateRhContext(c,scope){
  if(c.daily_state==='conferred'&&c.capabilities.write_direct)throw Error('Dia conferido não permite edição direta.');
  if(!/^[0-9a-f]{64}$/.test(c.month_fingerprint||''))throw Error('Fotografia mensal não confirmada.');
  const ids=new Set();for(const r of c.requests){if(!r.id||ids.has(r.id)||!['correction','retroactive','regularization'].includes(r.type)||!['pending','approved','rejected'].includes(r.state)||!Number.isInteger(r.fact_revision)||!Array.isArray(r.sites))throw Error('Pedidos de conferência inválidos.');ids.add(r.id);}
+ if(c.exception_policy!==undefined){if(c.exception_policy!=='H_P1_EXACT_PROPOSAL_V1'||!Array.isArray(c.regularization_authorizations)||c.regularization_authorizations.some(a=>!a.id||!a.executor_id||!Number.isInteger(a.revision)||a.revision<1||a.scope!=='exact_proposal'||!Array.isArray(a.allowed_actions)||!a.allowed_actions.length||a.allowed_actions.some(x=>!['approve_request','reject_request'].includes(x))||a.month!==c.date.slice(0,7)+'-01'||!c.requests.some(r=>r.id===a.proposal_id&&r.type==='regularization'&&r.state==='pending')))throw Error('Autorizações delimitadas fora do contrato.');}
  return c;
 }
 export function rhWriteRoute(day){

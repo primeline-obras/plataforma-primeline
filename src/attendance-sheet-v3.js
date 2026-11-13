@@ -1,21 +1,22 @@
+import {createHoursAttemptJournal} from './attendance-hours-attempts.js?v=hours-module-5a03c3b2a65f';
 import {operationalCsv,downloadOperationalCsv} from './operational-export.js?v=hours-final-20261106';
-import {createHoursPreparationClient} from './attendance-hours-client.js?v=hours-final-20261106';
-import {createHoursAdminModule} from './attendance-hours-admin.js?v=hours-final-20261106';
-import {createHoursOperationalTeam} from './attendance-hours-team.js?v=hours-final-20261106';
+import {createHoursPreparationClient} from './attendance-hours-client.js?v=hours-module-7491f22f3b11';
+import {createHoursAdminModule} from './attendance-hours-admin.js?v=hours-module-e1cef36b3bfa';
+import {createHoursOperationalTeam} from './attendance-hours-team.js?v=hours-module-54cc3495baa3';
 import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary, normalDaySelection, dayStatus, workedTime, delegationLabel } from './attendance-domain.js?v=9';
-import { createSheetClient } from './attendance-client.js?v=8';
+import { createSheetClient } from './attendance-client.js?v=hours-module-1c241506a96a';
 import { platformConfirm } from './platform-dialogs.js?v=1';
-import {createAttendanceManagementModule} from './attendance-management.js?v=8';
+import {createAttendanceManagementModule} from './attendance-management.js?v=hours-module-dba793f168bb';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:message.startsWith('REGISTAR ENTRADA')?'CONFIRMAR ENTRADAS':message.startsWith('CONFIRMAR SAÍDAS')?'CONFIRMAR SAÍDAS':message.includes('deixará a equipa')?'CONFIRMAR RETIRADA':'CONFIRMAR',danger:message.includes('deixará a equipa')}),navigatePlanning,navigateWork,onContextChange=()=>{},canReadHoursAdmin=()=>true,mountOperationalContext=null,canOpenWork=()=>false,integratedHours: enableIntegratedHours=false,getIdentity=()=>null}) {
+export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:message.startsWith('REGISTAR ENTRADA')?'CONFIRMAR ENTRADAS':message.startsWith('CONFIRMAR SAÍDAS')?'CONFIRMAR SAÍDAS':message.includes('deixará a equipa')?'CONFIRMAR RETIRADA':'CONFIRMAR',danger:message.includes('deixará a equipa')}),navigatePlanning,navigateWork,onContextChange=()=>{},canReadHoursAdmin=()=>true,mountOperationalContext=null,canOpenWork=()=>false,integratedHours: enableIntegratedHours=false,getIdentity=()=>null,attemptJournal=createHoursAttemptJournal()}) {
   let integratedHours=false;
-  const client=createSheetClient({supabase,confirm});
-  const hoursClient=createHoursPreparationClient({supabase,confirm});let hoursTeam=null,hoursAdmin=null;
-  const adminHoursClient=createHoursPreparationClient({supabase,confirm});
+  const client=createSheetClient({supabase,confirm,attemptJournal});
+  const hoursClient=createHoursPreparationClient({supabase,confirm,attemptJournal});let hoursTeam=null,hoursAdmin=null;
+  const adminHoursClient=createHoursPreparationClient({supabase,confirm,attemptJournal});
   const operationalClient={...hoursClient,team:async(...args)=>{const c=await hoursClient.team(...args);return state.pilotMode==='suspenso'?{...c,people:c.people.map(p=>({...p,can_write:false,can_report_faltou:false,records:p.records.map(r=>({...r,can_annul:false}))}))}:c;}};
 
   function mountHoursAdmin(){if(!state.context||!enableIntegratedHours||state.pilotMode==='suspenso'||state.loading||!isConfigured||!canReadHoursAdmin())return;const host=root.querySelector('[data-hours-admin]');if(!host)return;hoursAdmin=createHoursAdminModule({root:host,client:adminHoursClient,optional:state.context.can_review_daily===false,date:state.date,workId:state.workId,today:localClock(now()).date,onBusy:flag=>{state.busy=flag;root.querySelectorAll('.sheet-toolbar button,.sheet-toolbar input,.sheet-toolbar select,.sheet-v2>.sheet-actions button,[data-sheet-back-work]').forEach(b=>b.disabled=flag);}});hoursAdmin.load();}
-  const management=createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning,onFactsChanged:refreshFacts});
+  const management=createAttendanceManagementModule({supabase,confirm,attemptJournal,toast,navigatePlanning,onFactsChanged:refreshFacts});
   const state={date:localClock(now()).date,workId:null,context:null,loading:false,error:'',editor:null,candidates:null,busy:false,history:null,panelToken:0,notice:null,historyRequest:0};
   let epoch=0;
   function decorateTemporaryTransfer(host,row){

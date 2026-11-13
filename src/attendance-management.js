@@ -1,4 +1,4 @@
-import {createAttendanceManagementClient} from './attendance-client.js?v=8';
+import {createAttendanceManagementClient} from './attendance-client.js?v=hours-module-1c241506a96a';
 import {vacationSelection,SHEET_STATES} from './attendance-domain.js?v=9';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={reported:'Conclusão reportada',confirmed:'Conclusão confirmada',potential:'Potencial HE',pending_validation:'Aguarda validação administrativa',validated_pending_rule:'Validada · regra financeira pendente',pending_rule:'Regra pendente',rejected:'Rejeitada',draft:'Rascunho',validated:'Validado',closed:'Fechado',ausente_pendente:'Justificação pendente',justificada:'Justificada',confirmada:'Confirmada',em_execucao:'Em execução',por_iniciar:'Por iniciar',concluido:'Concluído'};
@@ -7,8 +7,8 @@ const dateInput=(name,label,value='')=>`<label>${label}<input name="${name}" typ
 const heFields=['id','obra_id','folha_id','folha_revision','minutes','estado','revision'];
 const operationalHistory=events=>events.filter(e=>e.dominio==='tarefas'||e.dominio==='horario'||['he_approve','he_reject'].includes(e.action)).map(e=>e.dominio!=='he'?e:{...e,antes:Object.fromEntries(heFields.filter(k=>Object.hasOwn(e.antes||{},k)).map(k=>[k,e.antes[k]])),depois:Object.fromEntries(heFields.filter(k=>Object.hasOwn(e.depois||{},k)).map(k=>[k,e.depois[k]]))});
 const historyHtml=events=>events.map(e=>`<details><summary>${esc(e.at)} · ${esc(e.action)} · autor ${esc(e.ator_id)}</summary><p>${esc(e.reason)}</p><pre>Antes: ${esc(JSON.stringify(e.antes))}\nDepois: ${esc(JSON.stringify(e.depois))}</pre></details>`).join('')||'<p>Sem alterações registadas.</p>';
-export function createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning,onFactsChanged}) {
- const client=createAttendanceManagementClient({supabase,confirm});
+export function createAttendanceManagementModule({supabase,confirm,toast,navigatePlanning,onFactsChanged,attemptJournal}) {
+ const client=createAttendanceManagementClient({supabase,confirm,attemptJournal});
  let root=null,generation=0,context=null,workId=null,date=null,personId=null,month=null,schedule=null,tab='he',selected=new Set(),busy=false;
  async function load(){const token=++generation;if(!root?.isConnected)return;root.innerHTML='<p>A carregar gestão da Folha…</p>';
   try {const c=await client.context({workId,personId,month:personId?month:null});if(token!==generation||!root?.isConnected)return;context=c;if(c.schedule)schedule=c.schedule;render();}

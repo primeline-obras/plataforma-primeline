@@ -1,9 +1,9 @@
 import {warrantyContextHtml} from './warranty-context.js?v=hours-final-20261106';
 import {payrollFactualMap,payrollFactualHtml,sameFactualRevision,downloadFactualMap,preparePayrollFactualContext} from './payroll-factual-map.js?v=hours-final-20261106';
 import {mountHoursReplacement} from './attendance-hours-replacement.js?v=hours-final-20261106';
-import {mountHoursAnnulment}from './attendance-hours-annulment.js?v=hours-final-20261106';
+import {mountHoursAnnulment}from './attendance-hours-annulment.js?v=hours-module-cd8045c20f85';
 import {durationLabel} from './attendance-hours-domain.js?v=hours-final-20261106';
-import {externalExcelBytes} from './attendance-hours-excel.js?v=hours-final-20261106';
+import {externalExcelBytes} from './attendance-hours-excel.js?v=hours-module-de2e9aa5dbe6';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const hours=x=>Number.isInteger(x)&&x>=0?durationLabel(x):'Por confirmar';
 const absenceLabels={falta_injustificada:'Injustificada',falta_justificada_com_remuneracao:'Justificada com remuneração',falta_justificada_sem_remuneracao:'Justificada sem remuneração'};
@@ -18,7 +18,7 @@ const stateLabels={conferida:'Conferida',devolvida:'Em correção',validada_para
 // Approved local desktop review components; backend capabilities remain authoritative.
 function review(root,client,read,body,act){let context=null,busy=false,dead=false,generation=0;const controls=()=>root.querySelectorAll('button,input,select,textarea').forEach(b=>{if(busy){b.dataset.hoursWasDisabled=String(b.disabled);b.disabled=true;}else if(b.dataset.hoursWasDisabled!==undefined){b.disabled=b.dataset.hoursWasDisabled==='true';delete b.dataset.hoursWasDisabled;}});function error(e){
  const stale=['40001','STALE_REVISION','STALE_FACTS','STALE_SOURCE'].includes(e.code)||/STALE_REVISION|STALE_FACTS|STALE_SOURCE/.test(e.message||'');
- const uncertain=e.code==='REFERENCE_RESULT_UNCERTAIN';const forbidden=['42501','401','403'].includes(e.code),missing=['404','PGRST202','42883'].includes(e.code);
+ const uncertain=['HOURS_RESULT_UNCERTAIN','REFERENCE_RESULT_UNCERTAIN'].includes(e.code);const forbidden=['42501','401','403'].includes(e.code),missing=['404','PGRST202','42883'].includes(e.code);
  // Backend refusal invalidates the old actionable context. Only a fresh read can restore it.
  if(stale||forbidden||missing||uncertain){context=null;root.innerHTML='<section class="hours-v3-review"><p role="alert" data-review-error></p><button type="button" data-review-reload>RECARREGAR DADOS</button></section>';}
  const out=root.querySelector('[data-review-error]');if(out)out.textContent=uncertain?'O resultado da operação é incerto. Recarregue os dados e consulte o histórico antes de qualquer nova tentativa.':forbidden?'Sem autorização para esta operação no contexto atual. Recarregue os dados antes de continuar.':missing?'O contrato de Gestão de Horas necessário ainda não está disponível. Recarregue após a instalação autorizada.':stale?'Os registos foram alterados. Recarregue os dados antes de repetir.':e.message||'Operação recusada.';

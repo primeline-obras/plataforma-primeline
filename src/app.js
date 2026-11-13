@@ -27,8 +27,8 @@ import { createManagementMapModule } from "./management-map.js?v=14";
 import { createCompanyDocumentsModule } from "./company-documents.js?v=2";
 import { createOperationalXlsxImport } from "./xlsx-operational-import.js?v=3";
 import { createProjectsModule } from "./projects.js?v=1";
-import { createAttendanceManagementClient } from "./attendance-client.js?v=7";
-import { createAttendanceModule } from "./attendance-runtime.js?v=hours-activated-20261106";
+import { createAttendanceManagementClient } from "./attendance-client.js?v=hours-module-1c241506a96a";
+import { createAttendanceModule } from "./attendance-runtime.js?v=hours-module-47d174f9e0ee";
 import { createRhCadastro } from "./rh-cadastro.js?v=3";
 import { createMedicineClient, mountMedicine, medicineStatus, medicineToday } from "./medicine.js?v=1";
 import { generateDocumentIndexPdf } from "./document-index-pdf.js?v=5";
@@ -838,6 +838,7 @@ const subcontractorsModule = createSubcontractorsModule({
   },
 });
 const attendanceModule = createAttendanceModule({
+  getIdentity:()=>[accessContext.profile?.id,accessContext.profile?.empresa_id],
   root: $("#team-attendance"), supabase, isConfigured: isSupabaseConfigured, toast, onSessionReset,
   navigatePlanning: workId => switchView("planning", {workId,view:"summary"}),
 });

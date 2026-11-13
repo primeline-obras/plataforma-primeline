@@ -1,7 +1,7 @@
 import { analyseSheet, SHEET_STATES, localClock, intervalFacts, normalIntervals, daySummary, normalDaySelection, dayStatus, workedTime, delegationLabel } from './attendance-domain.js?v=9';
-import { createSheetClient } from './attendance-client.js?v=8';
+import { createSheetClient } from './attendance-client.js?v=hours-module-1c241506a96a';
 import { platformConfirm } from './platform-dialogs.js?v=1';
-import {createAttendanceManagementModule} from './attendance-management.js?v=8';
+import {createAttendanceManagementModule} from './attendance-management.js?v=hours-module-dba793f168bb';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createAttendanceModule({root,supabase,isConfigured,toast,now=()=>new Date(),confirm=message=>platformConfirm(message,{title:'Folha de Ponto',confirmLabel:message.startsWith('REGISTAR ENTRADA')?'CONFIRMAR ENTRADAS':message.startsWith('CONFIRMAR SAÍDAS')?'CONFIRMAR SAÍDAS':message.includes('deixará a equipa')?'CONFIRMAR RETIRADA':'CONFIRMAR',danger:message.includes('deixará a equipa')}),navigatePlanning}) {
   const client=createSheetClient({supabase,confirm});
