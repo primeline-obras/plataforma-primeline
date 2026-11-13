@@ -22,9 +22,9 @@ export function createAttendanceModule(options){
    if(mode==='blocked'){blocked();return null;}
    let factory=createLegacyAttendanceModule;
    if(mode==='v3'){
-    const module=await import('./attendance-sheet-v3.js?v=hours-module-b38552af2c51');if(dead||token!==generation)return null;factory=module.createAttendanceModule;
+    const module=await import('./attendance-sheet-v3.js?v=hours-twofix-a42a920f7172');if(dead||token!==generation)return null;factory=module.createAttendanceModule;
     for(const file of ['attendance-hours-editor.css','attendance-hours-review.css']){
-     const href=new URL('./'+file+'?v='+(file==='attendance-hours-review.css'?'hours-module-6b8ac73313d6':'hv3d-6'),import.meta.url).href;
+     const href=new URL('./'+file+'?v='+(file==='attendance-hours-editor.css'?'hours-twofix-d56fee8e41eb':file==='attendance-hours-review.css'?'hours-module-6b8ac73313d6':'hv3d-6'),import.meta.url).href;
      if(![...document.querySelectorAll('link[data-hours-runtime-style]')].some(l=>l.href===href)){const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.dataset.hoursRuntimeStyle='';document.head.append(link);}
     }
    }

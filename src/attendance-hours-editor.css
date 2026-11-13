@@ -16,3 +16,6 @@
 .sheet-v2 .hours-v3-replacement fieldset{min-width:0;border:0;padding:0;margin:0}.sheet-v2 .hours-v3-replacement-interval{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.sheet-v2 .hours-v3-replacement-interval label{flex:1 1 180px}.sheet-v2 .hours-v3-replacement button,.sheet-v2 [data-review-action="replace"]{min-height:48px;min-width:48px}.sheet-v2 .hours-v3-replacement p{overflow-wrap:anywhere}
 
 .hours-v3-normal-review ul[aria-label="Pessoas incluídas"]{max-height:min(60vh,600px);padding:0 8px}.hours-v3-normal-review [data-normal-person]{list-style:none;padding:12px;border:1px solid var(--card-border,#DDD8CC);border-radius:6px;margin:8px 0}.hours-v3-normal-review [data-normal-person]>strong{display:block;font-size:16px;margin-bottom:8px}
+
+/* Readability in the available card width, including tablet with persistent sidebar. */
+.hours-v3-card>header{flex-wrap:wrap;align-items:flex-start}.hours-v3-card>header>div:first-child{flex:1 1 16rem;min-width:0;overflow-wrap:break-word}.hours-v3-card-actions{flex:0 1 auto;max-width:100%;justify-content:flex-start}.hours-v3-card-actions button{max-width:100%;white-space:normal}.hours-v3-card time{white-space:nowrap}

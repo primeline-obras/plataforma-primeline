@@ -1,5 +1,5 @@
 import {workedTime,intervalFacts} from './attendance-domain.js?v=9';
-import {createHoursWorkerCard} from './attendance-hours-editor.js?v=hours-module-f2d7b911878d';
+import {createHoursWorkerCard} from './attendance-hours-editor.js?v=hours-twofix-a58d790bffe3';
 import {normalTeamPreview,quickEntryIntervals,quickEntryModel} from './attendance-hours-domain.js?v=hours-final-20261106';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Operational view approved and mounted locally in the integrated Folha.
