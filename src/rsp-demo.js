@@ -1,8 +1,11 @@
 // Standalone manual meeting data. No API, RPC, fetch, or official module writes.
-export const DEMO_USER_ID = '74a5dd16-daea-4084-a6b7-4613de02b574';
+export const DEMO_USER_ID = '0bc80854-3c75-4fc9-92c4-6a81201a261f';
+export const DEMO_AUTH_USER_ID = 'b80cc786-1d10-47dd-bbf1-03dd2a7a6012';
 export const DEMO_COMPANY_ID = '73fb13c8-d29f-4192-a506-4ca243343add';
 export function canUseRspDemo(identity) {
-  return Boolean(identity?.authUserId && identity?.userId === DEMO_USER_ID && identity?.companyId === DEMO_COMPANY_ID);
+  return Boolean(identity?.authUserId === DEMO_AUTH_USER_ID
+    && identity.userId === DEMO_USER_ID && identity.companyId === DEMO_COMPANY_ID
+    && identity.profileActive === true && identity.profileAuthUserId === identity.authUserId);
 }
 const moneyFields = {initialSale:'Venda contratual inicial',approvedTees:'Valor dos TEEs aprovados',advance:'Adiantamento',cost:'Custo Direto Total',estimatedRealCost:'Estimativa de Custo Real',billed:'Valor Recebido'};
 // sale is retained verbatim for V3/V4 traceability; never treated as contractual sale or approved TEEs.
