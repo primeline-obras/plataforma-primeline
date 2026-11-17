@@ -932,7 +932,7 @@ export function createProductionDashboard(options) {
             <div><dt>Estimativa final</dt><dd data-estimated-final>${euro.format(model.estimatedFinalCost)}</dd></div>
             <div class="forecast-deviation"><dt>Desvio ao orçamento</dt><dd data-budget-deviation class="${initialDeviation > 0 ? "negative" : "positive"}">${euro.format(initialDeviation)}</dd></div>
           </dl>
-          ${model.costSummary ? renderCostTrace(model, true) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
+          ${meetingReturnView === "rsp" ? "" : model.costSummary ? renderCostTrace(model, true) : `<div class="financial-number-control"><span>PESSOAL + VIATURA</span><small>Resumo automático indisponível até executar a migração de custos.</small></div>`}
         </article>
         <article class="panel financial-forecast-card">
           <header><span>CENÁRIOS DE PRAZO</span><strong>${Math.round(model.progress)}% EXECUTADO</strong></header>
@@ -1346,7 +1346,7 @@ export function createProductionDashboard(options) {
           <div><span>SUBEMPREITADAS</span><strong>${data.subcontracts.length}</strong><small>pago ${euro.format(paidTotal)}</small></div>
           <div><span>EM CONSULTA / NÃO CONSULTADAS</span><strong>${openConsultations} / ${notConsulted.length}</strong><small>situação atual</small></div>
         </div>
-        ${projection.costSummary ? renderCostTrace(projection, false) : ""}
+
         <details class="rsp-detail"><summary>CASH FLOW MENSAL</summary>${renderCashFlow(work, data)}</details>
         <details class="rsp-detail"><summary>PLANEAMENTO DE FASES</summary>${renderPhaseTimeline(work, data)}</details>
       </article>`;

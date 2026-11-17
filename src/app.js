@@ -1,3 +1,4 @@
+import {createRspDemo,canUseRspDemo} from "./rsp-demo.js?v=e7fcd3b84594";
 import { createSupplierInvoicesReadonly } from "./supplier-invoices-readonly.js?v=c-consulta-1";
 import { podeConsultarFornecedores } from "./supplier-invoices-reader.js?v=c-consulta-1";
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=4";
@@ -5,7 +6,7 @@ import { clearSession, deleteWorkDocument, downloadInvoicePdf, downloadWorkDocum
 import { installSessionBoundary } from "./session-boundary.js?v=1";
 import { loadForemanDirectory, loadForemanAbsences, loadForemanVacationMap } from "./foreman-scope.js?v=3";
 import { demoInvoices, demoSubcontracts, demoSuppliers, demoWorks } from "./demoData-browser.js?v=2";
-import { createProductionDashboard } from "./production-dashboard.js?v=26";
+import { createProductionDashboard } from "./production-dashboard.js?v=rspdemo-2e0ae800e787";
 import { createPlanningModule } from "./planning.js?v=18";
 import { createSubcontractorsModule } from "./subcontractors.js?v=10";
 import { accessFor, effectiveAccessRole } from "./access-control.js?v=16";
@@ -172,7 +173,7 @@ document.querySelector("#root").innerHTML = `
     <aside class="sidebar">${brand()}
       <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-pressed="false" title="Recolher menu"><span>⟵</span><b>RECOLHER</b></button>
       <nav><p>GESTÃO</p>
-        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">${icon("layout-dashboard")} <span>Visão geral</span></button><button data-view="rsp">${icon("users-round")} <span>RSP</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">${icon("layout-kanban")} <span>Projetos</span></button><button data-view="works">${icon("building")} <span>Obras</span></button>
+        <button data-view="action-plan">✓ <span>Plano de Ação</span></button><button data-view="consolidated">◆ <span>Visão consolidada</span></button><button class="active" data-view="overview">${icon("layout-dashboard")} <span>Visão geral</span></button><button data-view="rsp">${icon("users-round")} <span>RSP</span></button><button data-view="rsp-demo" hidden>${icon("users-round")} <span>RSP Demo</span></button><button data-view="management-map">€ <span>Mapa de Gestão de Obras</span></button><button data-view="projects">${icon("layout-kanban")} <span>Projetos</span></button><button data-view="works">${icon("building")} <span>Obras</span></button>
         <button data-view="invoices">${icon("receipt")} <span>Faturas</span></button><button data-view="supplier-invoices" hidden aria-label="Fornecedores · Consulta" title="Fornecedores · Consulta">${icon("receipt")} <span>Fornecedores · Consulta</span></button><button data-view="finance">€ <span>Financeiro</span></button><button data-view="subcontractors">${icon("hardhat")} <span>Subempreiteiros</span></button><button data-view="planning">${icon("gantt")} <span>Planeamento</span></button><button data-view="calendar">◷ <span>Agenda</span></button><button data-view="documents">${icon("file-text")} <span>Documentos</span></button><button data-view="rnc">${icon("alert-triangle")} <span>RNC</span></button><button data-view="vehicles">◉ <span>Viaturas</span></button><button data-view="rooms">${icon("presentation")} <span>Salas de Reunião</span></button><button data-view="properties">⌂ <span>Imóveis</span></button><button data-view="budget-requests">≡ <span>Pedidos de Orçamento</span></button><button data-view="workforce">▦ <span>Quadro de pessoal</span></button><button data-view="team">${icon("users")} <span>Equipa</span></button>
         <p>CONFIGURAÇÃO</p><button data-view="company-documents">▤ <span>Documentos da empresa</span></button><button data-view="settings">⚙ <span>Definições</span></button>
       </nav>
@@ -183,7 +184,7 @@ document.querySelector("#root").innerHTML = `
         <div class="top-actions">${!isSupabaseConfigured ? '<span class="demo-badge">MODO DEMONSTRAÇÃO</span>' : ""}<button class="display-toggle" id="tv-toggle" type="button" aria-pressed="false">MODO TV</button><button class="display-toggle" id="theme-toggle" type="button" aria-pressed="false">TEMA</button><button class="icon-button" id="notification-button" type="button" aria-label="Ver alertas pendentes">${icon("bell")}<i>0</i></button></div>
       </header>
       <div class="page overview-view" id="overview-view"></div>
-      <div class="page rsp-view" id="rsp-view" hidden></div>
+      <div class="page rsp-view" id="rsp-view" hidden></div><div class="page rsp-view rsp-demo-view" id="rsp-demo-view" hidden></div>
       <div class="page management-map-view" id="management-map-view" hidden><div id="management-map-content"></div></div>
       <div class="page consolidated-view" id="consolidated-view" hidden></div>
       <div class="page action-plan-view" id="action-plan-view" hidden></div>
@@ -739,6 +740,8 @@ function supplierConsultaIdentity() {
       || profile?.ativo !== true || !authId || profile.auth_user_id !== authId) return null;
   return { authUserId: authId, userId: profile.id, companyId: profile.empresa_id, role: profile.funcao };
 }
+const rspDemo = createRspDemo({root: $("#rsp-demo-view"), getIdentity: supplierConsultaIdentity, confirm: message => platformConfirm(message)});
+onSessionReset(() => rspDemo.reset());
 const supplierConsulta = createSupplierInvoicesReadonly({
   root: $("#supplier-invoices-view"), api: supabase, getIdentity: supplierConsultaIdentity,
 });
@@ -965,6 +968,7 @@ function canEditWork() {
 
 function allowedViews() {
   const permitted = new Set(accessFor(accessContext).views);
+  if (canUseRspDemo(supplierConsultaIdentity())) permitted.add("rsp-demo");
   if (podeConsultarFornecedores(supplierConsultaIdentity())) permitted.add("supplier-invoices");
   return permitted;
 }
@@ -3887,6 +3891,7 @@ function switchView(view, context = {}) {
   document.querySelectorAll(".sidebar nav [data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
   $("#overview-view").hidden = view !== "overview";
   $("#rsp-view").hidden = view !== "rsp";
+  $("#rsp-demo-view").hidden = view !== "rsp-demo";
   $("#management-map-view").hidden = view !== "management-map";
   $("#consolidated-view").hidden = view !== "consolidated";
   $("#action-plan-view").hidden = view !== "action-plan";
@@ -3909,8 +3914,8 @@ function switchView(view, context = {}) {
   $("#calendar-view").hidden = view !== "calendar";
   $("#properties-view").hidden = view !== "properties";
   $("#budget-requests-view").hidden = view !== "budget-requests";
-  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "supplier-invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
-  if (!["action-plan", "consolidated", "overview", "rsp", "management-map", "meeting", "invoices", "supplier-invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
+  $("#placeholder-view").hidden = ["action-plan", "consolidated", "overview", "rsp", "rsp-demo", "management-map", "meeting", "invoices", "supplier-invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view);
+  if (!["action-plan", "consolidated", "overview", "rsp", "rsp-demo", "management-map", "meeting", "invoices", "supplier-invoices", "works", "projects", "planning", "subcontractors", "finance", "documents", "rnc", "vehicles", "rooms", "calendar", "properties", "budget-requests", "team", "workforce", "company-documents", "settings"].includes(view)) {
     $("#placeholder-title").textContent = "MÓDULO EM PREPARAÇÃO";
   }
   if (view === "works") {
@@ -3937,6 +3942,7 @@ function switchView(view, context = {}) {
   if (view === "company-documents") companyDocumentsModule.show();
   if (view === "overview") productionDashboard.refreshOverview();
   if (view === "rsp") productionDashboard.showRsp();
+  if (view === "rsp-demo") rspDemo.show();
   if (view === "management-map") managementMapModule.show();
   if (view === "consolidated") consolidatedView.show();
   closeSidebar();

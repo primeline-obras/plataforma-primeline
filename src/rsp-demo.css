@@ -1,0 +1,31 @@
+/* Published RSP classes supply the list, cards and detail layout. Editor only. */
+.rsp-demo-view .rsp-demo-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; }
+.rsp-demo-view .rsp-demo-heading-end { display:flex; flex-direction:column; align-items:flex-end; gap:12px; }
+.rsp-demo-view .rsp-demo-status { margin:0; color:var(--text-secondary); font-size:12px; }
+.rsp-demo-view .rsp-demo-inline-field { display:flex; flex-direction:column; gap:7px; font-size:11px; min-width:0; }
+.rsp-demo-view input,.rsp-demo-view textarea { width:100%; box-sizing:border-box; font:inherit; color:var(--text-primary); background:var(--bg-soft); border:1px solid var(--card-border); border-radius:4px; padding:10px; }
+.rsp-demo-view textarea { resize:vertical; }
+.rsp-demo-view .rsp-demo-notes { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.65; }
+.rsp-demo-view .rsp-detail > .rsp-demo-notes { padding:18px; }
+.rsp-demo-view .rsp-demo-date-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }
+.rsp-demo-view .rsp-demo-metadata-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:12px 0 18px; }
+.rsp-demo-view .rsp-demo-create-section { padding:16px 0; }
+.rsp-demo-view .rsp-demo-create-section + .rsp-demo-create-section { border-top:1px solid var(--card-border); }
+.rsp-demo-view .rsp-demo-contract-fields,.rsp-demo-view .rsp-demo-note-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.rsp-demo-view .rsp-demo-director { display:block; color:var(--text-secondary); margin-top:6px; }
+.rsp-demo-view .rsp-demo-hidden-list { display:grid; gap:12px; padding:18px; }
+.rsp-demo-view .rsp-demo-hidden-list > div { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.rsp-demo-view .meeting-dl dd { min-width:0; }
+.rsp-demo-view .meeting-kpis strong { font-size:clamp(16px,2vw,24px); white-space:nowrap; }
+@media(max-width:1000px) { .rsp-demo-view .rsp-demo-date-fields { grid-template-columns:1fr; } }
+@media(max-width:700px) { .rsp-demo-view .rsp-demo-metadata-fields { grid-template-columns:1fr; } }
+@media(max-width:700px) { .rsp-demo-view .rsp-demo-contract-fields,.rsp-demo-view .rsp-demo-note-fields { grid-template-columns:1fr; } }
+@media print { .rsp-demo-view .rsp-demo-actions,.rsp-demo-view [data-demo-back] { display:none; } }
+
+.rsp-demo-view .rsp-demo-estimates { margin:16px 0; }
+.rsp-demo-view .rsp-demo-legacy-note { font-size:12px; line-height:1.6; padding:12px; background:var(--bg-soft); border-left:3px solid var(--card-border); }
+
+/* Date fields retain native controls and fit the available editor width. */
+.rsp-demo-view .rsp-demo-date-fields input[type="date"] { min-width:0; max-width:100%; min-height:42px; }
+.rsp-demo-view .rsp-demo-date-fields input[type="date"]::-webkit-calendar-picker-indicator { flex:0 0 auto; margin-left:4px; }
+@media(max-width:1100px) { .rsp-demo-view .rsp-demo-date-fields { grid-template-columns:1fr; } .rsp-demo-view .rsp-demo-date-fields input[type="date"] { font-size:14px; } .rsp-demo-view .meeting-dl > div { flex-wrap:wrap; gap:8px; } .rsp-demo-view .meeting-dl dd { flex:1 1 180px; } }
