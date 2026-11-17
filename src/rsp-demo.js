@@ -1,4 +1,4 @@
-// Standalone manual meeting data. No API, RPC, fetch, or official module writes.
+// Manual meeting payload V5. Dedicated server repository; no writes to official business modules.
 export const DEMO_USER_ID = '0bc80854-3c75-4fc9-92c4-6a81201a261f';
 export const DEMO_AUTH_USER_ID = 'b80cc786-1d10-47dd-bbf1-03dd2a7a6012';
 export const DEMO_COMPANY_ID = '73fb13c8-d29f-4192-a506-4ca243343add';
@@ -53,37 +53,98 @@ function cleanRecord(row){
   if(!row||typeof row!=='object'||!/^demo-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(row.id)||typeof row.hidden!=='boolean')throw Error('DEMO_MANUAL_RECORD_FORMAT');
   return{id:row.id,...cleanMetadata(row),hidden:row.hidden,data:sanitize(row.data)};
 }
-export function createRspDemo({root,getIdentity,storage,host=globalThis,createId=()=>globalThis.crypto.randomUUID(),confirm=async message=>host.confirm?.(message)??false}) {
-  let records=[],current='',draft=empty(),metaDraft=emptyMetadata(),present=true,dirty=false,creating=false,storageError='',loadedFor='',baselineRaw=null;
+export function createRspDemo({root,getIdentity,repository,storage,host=globalThis,createId=()=>globalThis.crypto.randomUUID(),confirm=async message=>host.confirm?.(message)??false}) {
+  let records=[],current='',draft=empty(),metaDraft=emptyMetadata(),present=true,dirty=false,creating=false,storageError='',loadedFor='',baselineRaw=null,revision=0,busy=false,syncMessage="",generation=0,pendingCreateId="";
   const authorized=()=>canUseRspDemo(getIdentity());
   const key=()=>`primeline:rsp-demo:v3:${getIdentity().companyId}:${getIdentity().userId}`;
   const getStorage=()=>storage??host.localStorage;
   const works=()=>records.filter(w=>!w.hidden);
-  function load(){
-    if(loadedFor===key())return;loadedFor=key();records=[];storageError='';
-    try{const raw=getStorage().getItem(key());baselineRaw=raw;if(raw!==null){const parsed=JSON.parse(raw);if(parsed?.version!==3||!Array.isArray(parsed.works))throw Error('FORMAT');const next=parsed.works.map(cleanRecord);if(new Set(next.map(w=>w.id)).size!==next.length)throw Error('DUPLICATE_ID');records=next;}}
-    catch{storageError='Não foi possível ler os dados locais V3. O conteúdo existente não será substituído; conserve este navegador e recupere uma cópia antes de continuar.';}
+  async function load(){
+    if(busy||dirty)return;
+    const scope=key(),epoch=generation;busy=true;syncMessage='A carregar do servidor…';render();
+    try{const result=await repository.load();if(epoch!==generation||!authorized()||key()!==scope)return;
+      const checked=result.document.works.map(cleanRecord);if(new Set(checked.map(w=>w.id)).size!==checked.length)throw Error('FORMAT');
+      records=checked;revision=result.revision;loadedFor=scope;probeBackup();storageError='';syncMessage='Dados carregados do servidor · revisão '+revision;
+    }catch{if(epoch===generation){syncMessage='Leitura não confirmada';storageError='Não foi possível carregar do servidor. Nenhum dado local ou central foi substituído. Recarregue para consultar; não grave enquanto este erro persistir.';}}
+    finally{if(epoch===generation){busy=false;render();}}
   }
-  function commitRecords(next){
-    if(!authorized()||storageError)return false;
-    try{
-      if(getStorage().getItem(key())!==baselineRaw){storageError='Os dados mudaram noutra aba. Esta versão não será sobrescrita; preserve o texto em edição e recarregue.';return false;}
-      const checked=next.map(cleanRecord);if(new Set(checked.map(w=>w.id)).size!==checked.length)throw Error('DUPLICATE_ID');
-      const raw=JSON.stringify({version:3,works:checked});getStorage().setItem(key(),raw);baselineRaw=raw;records=checked;return true;
-    }catch{storageError='Não foi possível guardar no navegador. Os dados em edição foram preservados neste ecrã; não feche a página.';return false;}
+  async function commitRecords(next,kind=current||creating?'form':'document'){
+    if(!authorized()||storageError||backupError||busy||loadedFor!==key())return false;
+    const checked=next.map(cleanRecord);if(new Set(checked.map(w=>w.id)).size!==checked.length)throw Error('DUPLICATE_ID');
+    const document={version:3,works:checked},epoch=generation,scope=key();busy=true;
+    if(!protectDraft(document,kind)){busy=false;render();return false;}
+    syncMessage='A guardar no servidor…';message(syncMessage);
+    for(const el of root.querySelectorAll('button,input,textarea'))el.disabled=true;
+    try{const result=await repository.save(document,revision);if(epoch!==generation||!authorized()||key()!==scope)return false;
+      records=checked;revision=result.revision;const saved=memoryDrafts.get(draftSlot);if(saved){saved.status='confirmed';try{getStorage().setItem(draftSlot,JSON.stringify({format:'RSP_DEMO_DRAFT_V2',scope,status:'confirmed'}));}catch{backupError='O servidor confirmou a gravação, mas a atualização da cópia local falhou.';}}draftSlot='';syncMessage='Guardado no servidor · revisão '+revision;return true;
+    }catch(error){if(epoch===generation){syncMessage='Não sincronizado';storageError=error.code==='RSP_REVISION_CONFLICT'?'Outra sessão alterou os dados. O rascunho foi preservado; exporte-o antes de recarregar e reconciliar. Nada foi sobrescrito.':'Gravação não confirmada. O rascunho foi preservado; não repita a gravação. Exporte-o e consulte o servidor antes de reconciliar.';}return false;}
+    finally{if(epoch===generation){busy=false;for(const el of root.querySelectorAll('button,input,textarea'))el.disabled=false;}}
+  }
+  function exportDraft(){
+    const document=recoveryDocument??proposedDocument();
+    const blob=new host.Blob([JSON.stringify(document,null,2)],{type:'application/json'}),url=host.URL.createObjectURL(blob),a=host.document.createElement('a');a.href=url;a.download='rsp-demo-rascunho.json';a.click();host.URL.revokeObjectURL(url);
+  }
+  async function importDocument(document){
+    if(storageError||busy||dirty)return message('Guarde ou exporte o rascunho antes de importar.');
+    try{if(document?.version!==3||!Array.isArray(document.works))throw Error('FORMAT');
+      const incoming=document.works.map(cleanRecord),ids=new Set();for(const w of incoming){if(ids.has(w.id))throw Error('DUPLICATE_ID');ids.add(w.id);const existing=records.find(r=>r.id===w.id);if(existing&&JSON.stringify(existing)!==JSON.stringify(w))throw Error('CONFLICT');}
+      const additions=incoming.filter(w=>!records.some(r=>r.id===w.id));if(!additions.length)return message('Não existem obras novas para transferir.');
+      const scope=key(),epoch=generation;
+      if(!await confirm('Transferir '+additions.length+' obras para o servidor?\n'+additions.map(w=>(w.reference?w.reference+' · ':'')+w.name+(w.hidden?' [retirada]':'')).join('\n')+'\nOs dados locais serão preservados.'))return;
+      if(epoch!==generation||!authorized()||key()!==scope)return;
+      await commitRecords([...records,...additions],'document');render();
+    }catch{message('Transferência bloqueada: formato inválido ou identificadores com dados divergentes. Nenhuma obra foi substituída.');}
+  }
+  const memoryDrafts=new Map();let draftSlot='',backupError='',recoveryDocument=null;
+  const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+  function proposedDocument(){
+    if(creating&&!pendingCreateId)pendingCreateId='demo-'+createId();
+    return creating?{version:3,works:[...records,{id:pendingCreateId,...metaDraft,hidden:false,data:{...draft}}]}:{version:3,works:records.map(w=>w.id===current?{...w,...metaDraft,data:{...draft}}:w)};
+  }
+  function protectDraft(document=proposedDocument(),kind='form'){
+    if(!authorized())return false;
+    if(!draftSlot)draftSlot=key()+':draft:v2:'+createId();
+    const envelope={format:'RSP_DEMO_DRAFT_V2',scope:key(),status:'pending',kind,revision,document,context:{current,creating,pendingCreateId,present,draft:{...draft},metaDraft:{...metaDraft}}};
+    memoryDrafts.set(draftSlot,envelope);
+    try{const raw=JSON.stringify(envelope);getStorage().setItem(draftSlot,raw);if(getStorage().getItem(draftSlot)!==raw)throw Error('WRITE_NOT_VERIFIED');backupError='';return true;}
+    catch{backupError='SALVAGUARDA LOCAL INDISPONÍVEL. Gravação e edição bloqueadas. Exporte o rascunho agora. A cópia em memória só pode ser recuperada nesta página após login da mesma conta; fechar/recarregar pode perdê-la.';return false;}
+  }
+  function probeBackup(){
+    if(!authorized())return;const probe=key()+':probe:'+createId();
+    try{getStorage().setItem(probe,'1');if(getStorage().getItem(probe)!=='1')throw Error('READ_BACK');getStorage().removeItem(probe);backupError='';}
+    catch{backupError='SALVAGUARDA LOCAL INDISPONÍVEL. Edição e gravação bloqueadas; dados do servidor continuam disponíveis. Não feche esta página com rascunhos por exportar.';}
+  }
+  function pendingDrafts(){
+    if(!authorized())return [];const prefix=key(),found=new Map();
+    try{const store=getStorage();for(let i=0;i<store.length;i++){const k=store.key(i);if(!k||!(k.startsWith(prefix+':draft:v2:')||k.startsWith(prefix+':pending:')))continue;try{const value=JSON.parse(store.getItem(k));if(value?.format==='RSP_DEMO_DRAFT_V2'&&value.scope===prefix&&value.status==='pending')found.set(k,value);else if(value?.version===3&&Array.isArray(value.works))found.set(k,{format:'LEGACY',scope:prefix,document:value});}catch{}}}catch{}
+    for(const [k,v] of memoryDrafts)if(v.scope===prefix&&v.status==='pending')found.set(k,v);
+    return [...found.entries()];
+  }
+  function recoveryControls(){const entries=pendingDrafts();return `<div role="alert">${escape(backupError)}</div>${entries.length?`<details><summary>RASCUNHOS PENDENTES (${entries.length}) — RECUPERAÇÃO EXPLÍCITA</summary>${entries.map(([k,v],i)=>`<button type="button" class="secondary-button" data-demo-recover="${escape(k)}">REVER RASCUNHO ${i+1}${v.format==='LEGACY'?' · versão anterior':''}</button>`).join('')}</details>`:''}`;}
+  async function recoverDraft(slot){
+    if(!authorized()||busy||dirty)return message('Exporte ou conclua o rascunho atual antes de recuperar outro.');
+    const entry=pendingDrafts().find(([k])=>k===slot)?.[1];if(!entry)return;
+    const scope=key(),epoch=generation;if(!await confirm('Recuperar este rascunho? Nada será gravado automaticamente no servidor.'))return;
+    if(epoch!==generation||!authorized()||key()!==scope)return;
+    if(canonical(entry.document)===canonical({version:3,works:records})){syncMessage='Este documento já corresponde ao servidor; nenhuma gravação foi repetida.';render();return;}
+    if(entry.format!=='RSP_DEMO_DRAFT_V2'||entry.revision!==revision||entry.kind!=='form'){
+      recoveryDocument=entry.document;storageError='Rascunho disponível para exportação. A revisão ou o tipo exige reconciliação manual; o servidor não será substituído.';render();return;
+    }
+    const c=entry.context;if(!c||typeof c.draft!=='object'||typeof c.metaDraft!=='object'||(!c.creating&&!records.some(w=>w.id===c.current))){storageError='Rascunho incompatível; conserve a cópia local.';render();return;}
+    draftSlot=slot;current=c.current;creating=c.creating===true;pendingCreateId=c.pendingCreateId||'';present=false;draft={...c.draft};metaDraft={...c.metaDraft};dirty=true;recoveryDocument=null;syncMessage='Rascunho recuperado; ainda não guardado no servidor.';render();
   }
   const validDraft=()=>Object.keys(moneyFields).every(k=>draft[k]===''||amount(draft[k])!==null)&&Object.keys(dateFields).every(k=>draft[k]===''||dateValue(draft[k])!==null)&&(!(draft.start&&draft.end)||dateValue(draft.end)>dateValue(draft.start));
   function validMetadata(){try{cleanMetadata(metaDraft);return true;}catch{return false;}}
-  function save(){
+  async function save(){
     if(!authorized()||!current||!validDraft()||!validMetadata())return false;
     const next=records.map(w=>w.id===current?{...w,...cleanMetadata(metaDraft),data:sanitize(draft)}:w);
-    if(commitRecords(next)){dirty=false;return true;}return false;
+    if(await commitRecords(next)){dirty=false;return true;}return false;
   }
   function message(text){const el=root.querySelector('[data-demo-create-validation]')??root.querySelector('[data-demo-validation]');if(el)el.textContent=text;}
-  function validateAndSave(){
+  async function validateAndSave(){
     if(!validMetadata()){message('O nome utilizado na reunião é obrigatório. Verifique a identificação da obra.');return false;}
     if(!validDraft()){message('Verifique valores monetários, datas e conclusão posterior ao início.');return false;}
-    if(dirty&&!save()){render();return false;}return true;
+    if(dirty&&!await save()){render();return false;}return true;
   }
   function progress(label,percent,detail='',deadline=false){return `<div data-demo-progress="${deadline?'deadline':'billing'}" class="meeting-progress${deadline?' deadline':''}"><span>${label} <b>${percent===null?'—':percent.toFixed(1)+'%'}</b></span>${percent===null?'':`<div><i style="width:${Math.max(0,Math.min(100,percent))}%"></i></div>`}${detail?`<small>${escape(detail)}</small>`:''}</div>`;}
   const financialLabels=[['VENDA TOTAL ATUALIZADA','sale'],['CUSTO DIRETO TOTAL','cost'],['MARGEM PREVISTA','margin'],['POR FATURAR','remaining']];
@@ -97,7 +158,7 @@ export function createRspDemo({root,getIdentity,storage,host=globalThis,createId
   function noteEditor(k,label,data,caption='Notas manuais'){return `<label class="rsp-demo-inline-field">${escape(caption)}<textarea data-field="${k}" name="${k}" maxlength="15000" rows="6" aria-label="${label}">${escape(data[k])}</textarea></label>`;}
   function notes(data,editing=false){return [['planning','PLANEAMENTO'],['tees','TEEs']].map(([k,label])=>`<article class="panel meeting-card"><div class="meeting-title"><span>${label}</span></div>${editing?noteEditor(k,label,data):`<div data-demo-note="${k}" class="rsp-demo-notes">${escape(data[k]||'—')}</div>`}</article>`).join('');}
   function actions(){return `<div class="rsp-demo-actions">${!current&&!creating&&(!present||works().length===0)?`<button type="button" class="secondary-button" data-demo-new${storageError?' disabled':''}>+ NOVA OBRA</button>`:''}<button type="button" class="secondary-button" data-demo-mode>${present?'EDITAR':'APRESENTAR'}</button>${current&&!present?`<button type="button" class="secondary-button" data-demo-save${storageError?' disabled':''}>GUARDAR</button>`:''}</div>`;}
-  function status(){return `${current?legacyNotice(draft):''}${storageError?`<div role="alert" class="overview-warning">${escape(storageError)}</div>`:''}${!present?`<p class="rsp-demo-status" role="status" data-demo-status>${escape(dirty?'Alterações por guardar':'Cadastro e valores exclusivos deste navegador')}</p><p data-demo-validation role="alert"></p>`:''}`;}
+  function status(){return `${recoveryControls()}${current?legacyNotice(draft):''}${storageError?`<div role="alert" class="overview-warning">${escape(storageError)}</div>`:''}<p role="status">${escape(syncMessage)}</p><div class="rsp-demo-actions"><button type="button" class="secondary-button" data-demo-export>EXPORTAR RASCUNHO</button>${!present?`<button type="button" class="secondary-button" data-demo-import-local>TRANSFERIR DADOS DESTE NAVEGADOR</button><button type="button" class="secondary-button" data-demo-import-file>IMPORTAR CÓPIA LOCAL</button><input type="file" hidden data-demo-file accept="application/json,.json">`:``}</div>${!present?`<p class="rsp-demo-status" role="status" data-demo-status>${escape(dirty?'Alterações por guardar':syncMessage||'Dados centralizados')}</p><p data-demo-validation role="alert"></p>`:''}`;}
   function newForm(){return creating?`<form class="panel meeting-card" data-demo-create-form><div class="meeting-title"><span>NOVA OBRA DA RSP DEMO</span></div>
     <section class="rsp-demo-create-section" aria-label="Identificação"><div class="meeting-title"><span>IDENTIFICAÇÃO</span></div>${metadataEditor()}</section>
     <section class="rsp-demo-create-section" aria-label="Contrato"><div class="meeting-title"><span>CONTRATO</span></div><div class="rsp-demo-contract-fields">${Object.entries(moneyFields).filter(([k])=>k!=='billed').map(([k,label])=>field(k,label)).join('')}</div></section>
@@ -112,7 +173,7 @@ export function createRspDemo({root,getIdentity,storage,host=globalThis,createId
       <div class="rsp-kpis">${financialLabels.map(([label,k])=>`<div><span>${label}</span><strong>${format(v[k])}</strong></div>`).join('')}</div>
       ${legacyNotice(work.data)}${estimates(work.data)}<div class="rsp-progress-grid">${progress('RECEBIDO',v.billingPercent)}${progress('PRAZO CONSUMIDO',v.deadlinePercent,'',true)}</div>
       ${[['planning','PLANEAMENTO'],['tees','TEEs']].map(([k,label])=>`<details class="rsp-detail"><summary>${label}</summary><div class="rsp-demo-notes">${escape(work.data[k]||'—')}</div></details>`).join('')}
-    </article>`;}).join('')||`<div class="overview-empty panel">${records.length?'NÃO HÁ OBRAS NA APRESENTAÇÃO. USE EDITAR PARA REATIVAR AS OBRAS RETIRADAS.':'A RSP DEMO ESTÁ VAZIA. CADASTRE A PRIMEIRA OBRA EM + NOVA OBRA.'}</div>`}</section>${hiddenManager()}`;}
+    </article>`;}).join('')||`<div class="overview-empty panel">${storageError?'DADOS DO SERVIDOR INDISPONÍVEIS — NENHUM ESTADO VAZIO FOI GRAVADO':busy?'A CARREGAR DADOS DO SERVIDOR…':records.length?'NÃO HÁ OBRAS NA APRESENTAÇÃO. USE EDITAR PARA REATIVAR AS OBRAS RETIRADAS.':'A RSP DEMO ESTÁ VAZIA. CADASTRE A PRIMEIRA OBRA EM + NOVA OBRA.'}</div>`}</section>${hiddenManager()}`;}
   function renderDetail(work){const v=demoValues(draft);return `
     <div class="meeting-heading"><button type="button" data-demo-back>← RSP DEMO</button><div><p class="eyebrow">REUNIÃO SEMANAL DE PRODUÇÃO · ${escape(workLabel(work))} · DEMO</p><h1>${escape(work.name)}</h1>${work.client?`<span>${escape(work.client)}</span>`:''}${work.director?`<small class="rsp-demo-director">Diretor de Obra: ${escape(work.director)}</small>`:''}</div><div class="rsp-demo-heading-end">${actions()}</div></div>
     ${status()}${!present?`<section class="panel meeting-card"><div class="meeting-title"><span>IDENTIFICAÇÃO DA OBRA</span></div>${metadataEditor()}</section>`:''}
@@ -121,30 +182,34 @@ export function createRspDemo({root,getIdentity,storage,host=globalThis,createId
     <article class="panel meeting-card"><div class="meeting-title"><span>FATURAÇÃO E PRAZO</span></div>${present?'':field('billed',moneyFields.billed)}${progress('RECEBIDO',v.billingPercent,`${format(v.billed)} recebidos · venda ${format(v.sale)}`)}${progress('PRAZO CONSUMIDO',v.deadlinePercent,dateDetail(),true)}${present?'':`<div class="rsp-demo-date-fields">${Object.entries(dateFields).map(([k,label])=>field(k,label)).join('')}</div>`}</article></section>
     <section class="meeting-two">${notes(draft,!present)}</section>`;}
   function refreshValues(){const v=demoValues(draft);for(const k of ['sale','cost','margin','remaining']){const el=root.querySelector(`[data-demo-kpi="${k}"]`);if(el)el.textContent=format(v[k]);}for(const el of root.querySelectorAll('[data-demo-estimate]'))el.textContent=format(v[el.dataset.demoEstimate]);const oldNotice=root.querySelector('.rsp-demo-legacy-note');if(oldNotice)oldNotice.outerHTML=legacyNotice(draft);const billing=root.querySelector('[data-demo-progress=billing]'),deadline=root.querySelector('[data-demo-progress=deadline]');if(billing)billing.outerHTML=progress('RECEBIDO',v.billingPercent,`${format(v.billed)} recebidos · venda ${format(v.sale)}`);if(deadline)deadline.outerHTML=progress('PRAZO CONSUMIDO',v.deadlinePercent,dateDetail(),true);}
-  function render(){if(!authorized()){root.replaceChildren();return;}const work=records.find(x=>x.id===current);root.classList.toggle('rsp-view',!work);root.classList.toggle('meeting-view',Boolean(work));root.dataset.demoScreen=work?'detail':'list';root.innerHTML=work?renderDetail(work):renderList();}
-  function createWork(){
+  function render(){if(!authorized()){root.replaceChildren();return;}const work=records.find(x=>x.id===current);root.classList.toggle('rsp-view',!work);root.classList.toggle('meeting-view',Boolean(work));root.dataset.demoScreen=work?'detail':'list';root.innerHTML=work?renderDetail(work):renderList();if(busy||!loadedFor||backupError){for(const el of root.querySelectorAll('button,input,textarea'))if(!el.matches('[data-demo-export],[data-demo-recover]'))el.disabled=true;}}
+  async function createWork(){
     if(!authorized()||!creating||storageError)return;if(!validMetadata()){message('O nome utilizado na reunião é obrigatório.');return;}
     if(!validDraft()){message('Verifique valores monetários, datas e conclusão posterior ao início.');return;}
-    let id;try{id='demo-'+createId();if(!/^demo-[a-f0-9-]{36}$/i.test(id)||records.some(w=>w.id===id))throw Error('ID');}catch{message('Não foi possível criar um identificador local único. Nenhum dado foi alterado.');return;}
-    if(commitRecords([...records,{id,...cleanMetadata(metaDraft),hidden:false,data:sanitize(draft)}])){creating=false;dirty=false;metaDraft=emptyMetadata();draft=empty();render();}else render();
+    let id;try{id=pendingCreateId||'demo-'+createId();pendingCreateId=id;if(!/^demo-[a-f0-9-]{36}$/i.test(id)||records.some(w=>w.id===id))throw Error('ID');}catch{message('Não foi possível criar um identificador local único. Nenhum dado foi alterado.');return;}
+    if(await commitRecords([...records,{id,...cleanMetadata(metaDraft),hidden:false,data:sanitize(draft)}])){creating=false;pendingCreateId='';dirty=false;metaDraft=emptyMetadata();draft=empty();render();}else render();
   }
-  function reorder(id,direction){const active=works(),from=active.findIndex(w=>w.id===id),to=from+direction;if(from<0||to<0||to>=active.length)return;const next=[...records],a=next.findIndex(w=>w.id===id),b=next.findIndex(w=>w.id===active[to].id);[next[a],next[b]]=[next[b],next[a]];commitRecords(next);render();}
-  root.addEventListener('input',event=>{if(!authorized())return;const k=event.target.dataset.field,m=event.target.dataset.meta;if(Object.hasOwn(fields,k??'')){draft[k]=event.target.value;refreshValues();}else if(Object.hasOwn(metadataFields,m??'')){metaDraft[m]=event.target.value;}else return;dirty=true;const status=root.querySelector('[data-demo-status]');if(status)status.textContent='Alterações por guardar';});
-  root.addEventListener('submit',event=>{event.preventDefault();if(event.target.matches('[data-demo-create-form]'))createWork();});
+  async function reorder(id,direction){const active=works(),from=active.findIndex(w=>w.id===id),to=from+direction;if(from<0||to<0||to>=active.length)return;const next=[...records],a=next.findIndex(w=>w.id===id),b=next.findIndex(w=>w.id===active[to].id);[next[a],next[b]]=[next[b],next[a]];await commitRecords(next);render();}
+  root.addEventListener('input',event=>{if(!authorized())return;const k=event.target.dataset.field,m=event.target.dataset.meta;if(Object.hasOwn(fields,k??'')){draft[k]=event.target.value;refreshValues();}else if(Object.hasOwn(metadataFields,m??'')){metaDraft[m]=event.target.value;}else return;dirty=true;protectDraft();if(backupError){render();return;}const status=root.querySelector('[data-demo-status]');if(status)status.textContent='Alterações por guardar';});
+  root.addEventListener('submit',async event=>{event.preventDefault();if(event.target.matches('[data-demo-create-form]'))await createWork();});
   root.addEventListener('click',async event=>{
-    if(!authorized())return;const button=event.target.closest('button');if(!button||button.disabled)return;
-    if(button.matches('[data-demo-new]')){creating=true;present=false;dirty=false;metaDraft=emptyMetadata();draft=empty();render();return;}
-    if(button.matches('[data-demo-cancel]')){const same=key();if(dirty&&!await confirm('Descartar apenas os dados da nova obra ainda não guardada?'))return;if(!authorized()||key()!==same)return;creating=false;dirty=false;metaDraft=emptyMetadata();draft=empty();render();return;}
+    if(!authorized()||busy)return;const button=event.target.closest('button');if(!button||button.disabled)return;
+    if(button.matches('[data-demo-recover]')){await recoverDraft(button.dataset.demoRecover);return;}
+    if(button.matches('[data-demo-export]')){exportDraft();return;}
+    if(button.matches('[data-demo-import-local]')){try{await importDocument(JSON.parse(getStorage().getItem(key())));}catch{message('Não há documento local válido nesta conta e origem.');}return;}
+    if(button.matches('[data-demo-import-file]')){root.querySelector('[data-demo-file]').click();return;}
+    if(button.matches('[data-demo-new]')){creating=true;pendingCreateId='';present=false;dirty=false;metaDraft=emptyMetadata();draft=empty();render();return;}
+    if(button.matches('[data-demo-cancel]')){const same=key();if(dirty&&!await confirm('Descartar apenas os dados da nova obra ainda não guardada?'))return;if(!authorized()||key()!==same)return;creating=false;pendingCreateId='';dirty=false;metaDraft=emptyMetadata();draft=empty();render();return;}
     if(button.matches('[data-demo-open],[data-demo-edit]')){const edit=button.matches('[data-demo-edit]');const work=records.find(w=>w.id===(edit?button.dataset.demoEdit:button.dataset.demoOpen)&&!w.hidden);if(!work)return;if(creating&&dirty){message('Guarde ou cancele o cadastro antes de abrir outra obra.');return;}creating=false;if(edit)present=false;current=work.id;draft={...work.data};metaDraft=cleanMetadata(work);dirty=false;render();host.scrollTo?.(0,0);return;}
-    if(button.matches('[data-demo-back]')){if(dirty&&!validateAndSave())return;current='';draft=empty();metaDraft=emptyMetadata();render();host.scrollTo?.(0,0);return;}
-    if(button.matches('[data-demo-save]')){if(!validMetadata()||!validDraft()){validateAndSave();return;}save();render();return;}
-    if(button.matches('[data-demo-up]')){reorder(button.dataset.demoUp,-1);return;}
-    if(button.matches('[data-demo-down]')){reorder(button.dataset.demoDown,1);return;}
-    if(button.matches('[data-demo-hide]')){commitRecords(records.map(w=>w.id===button.dataset.demoHide?{...w,hidden:true}:w));render();return;}
-    if(button.matches('[data-demo-restore]')){commitRecords(records.map(w=>w.id===button.dataset.demoRestore?{...w,hidden:false}:w));render();return;}
-    if(button.matches('[data-demo-mode]')){if(creating){message('Guarde ou cancele o cadastro antes de apresentar.');return;}if(!present&&current&&!validateAndSave())return;present=!present;render();}
+    if(button.matches('[data-demo-back]')){if(dirty&&!await validateAndSave())return;current='';draft=empty();metaDraft=emptyMetadata();render();host.scrollTo?.(0,0);return;}
+    if(button.matches('[data-demo-save]')){if(!validMetadata()||!validDraft()){await validateAndSave();return;}await save();render();return;}
+    if(button.matches('[data-demo-up]')){await reorder(button.dataset.demoUp,-1);return;}
+    if(button.matches('[data-demo-down]')){await reorder(button.dataset.demoDown,1);return;}
+    if(button.matches('[data-demo-hide]')){await commitRecords(records.map(w=>w.id===button.dataset.demoHide?{...w,hidden:true}:w));render();return;}
+    if(button.matches('[data-demo-restore]')){await commitRecords(records.map(w=>w.id===button.dataset.demoRestore?{...w,hidden:false}:w));render();return;}
+    if(button.matches('[data-demo-mode]')){if(creating){message('Guarde ou cancele o cadastro antes de apresentar.');return;}if(!present&&current&&!await validateAndSave())return;present=!present;render();}
   });
-  host.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
-  host.addEventListener('storage',event=>{if(authorized()&&event.key===key()){storageError='Os dados foram alterados noutra aba. Preserve o rascunho e recarregue antes de continuar; nada será sobrescrito.';render();}});
-  return {show(){if(!authorized()){root.replaceChildren();return;}load();if(current&&!records.some(w=>w.id===current)){current='';draft=empty();metaDraft=emptyMetadata();dirty=false;}render();},reset(){records=[];current='';draft=empty();metaDraft=emptyMetadata();present=true;dirty=false;creating=false;loadedFor='';baselineRaw=null;storageError='';root.replaceChildren();}};
+  host.addEventListener('beforeunload',event=>{if(dirty||busy){event.preventDefault();event.returnValue='';}});
+  root.addEventListener('change',async event=>{if(!event.target.matches('[data-demo-file]')||!authorized())return;const file=event.target.files?.[0];if(!file)return;if(file.size>2000000){message('O ficheiro excede 2 MB.');return;}try{await importDocument(JSON.parse(await file.text()));}catch{message('Ficheiro inválido; nada foi alterado.');}});
+  return {async show(){if(!authorized()){root.replaceChildren();return;}await load();if(current&&!records.some(w=>w.id===current)){current='';draft=empty();metaDraft=emptyMetadata();dirty=false;}const fresh=records.find(w=>w.id===current);if(fresh&&!dirty){draft={...fresh.data};metaDraft=cleanMetadata(fresh);}render();},reset(){draftSlot='';backupError='';recoveryDocument=null;generation++;pendingCreateId="";records=[];current='';draft=empty();metaDraft=emptyMetadata();present=true;dirty=false;creating=false;loadedFor='';baselineRaw=null;revision=0;busy=false;syncMessage='';storageError='';root.replaceChildren();}};
 }

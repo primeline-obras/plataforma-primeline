@@ -1,4 +1,5 @@
-import {createRspDemo,canUseRspDemo} from "./rsp-demo.js?v=823c4ef2c1e1";
+import {createRspDemoRepository} from "./rsp-demo-repository.js?v=64ba0edbe209";
+import {createRspDemo,canUseRspDemo} from "./rsp-demo.js?v=b46105965f37";
 import { createSupplierInvoicesReadonly } from "./supplier-invoices-readonly.js?v=c-consulta-1";
 import { podeConsultarFornecedores } from "./supplier-invoices-reader.js?v=c-consulta-1";
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=4";
@@ -745,7 +746,7 @@ function rspDemoIdentity() {
   if (!identity) return null;
   return { ...identity, profileAuthUserId: accessContext.profile.auth_user_id, profileActive: accessContext.profile.ativo };
 }
-const rspDemo = createRspDemo({root: $("#rsp-demo-view"), getIdentity: rspDemoIdentity, confirm: message => platformConfirm(message)});
+const rspDemo = createRspDemo({root: $("#rsp-demo-view"), getIdentity: rspDemoIdentity, repository: createRspDemoRepository({supabase,getIdentity:rspDemoIdentity}), confirm: message => platformConfirm(message)});
 onSessionReset(() => rspDemo.reset());
 const supplierConsulta = createSupplierInvoicesReadonly({
   root: $("#supplier-invoices-view"), api: supabase, getIdentity: supplierConsultaIdentity,
