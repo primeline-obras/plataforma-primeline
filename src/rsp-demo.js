@@ -1,4 +1,4 @@
-import {INVESTMENT_MODEL,CONTRACT_MODEL,modelOf,blankInvestment,cleanInvestment,investmentForm,investmentCard,investmentDetail} from './rsp-demo-investment.js?v=423f2784d4f2';
+import {INVESTMENT_MODEL,CONTRACT_MODEL,modelOf,blankInvestment,cleanInvestment,investmentForm,investmentCard,investmentDetail} from './rsp-demo-investment.js?v=4579ec54db47';
 // Manual meeting payload V5. Dedicated server repository; no writes to official business modules.
 export const DEMO_USER_ID = '0bc80854-3c75-4fc9-92c4-6a81201a261f';
 export const DEMO_AUTH_USER_ID = 'b80cc786-1d10-47dd-bbf1-03dd2a7a6012';
