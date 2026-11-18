@@ -1,5 +1,5 @@
-import {createRspDemoRepository} from "./rsp-demo-repository.js?v=64ba0edbe209";
-import {createRspDemo,canUseRspDemo} from "./rsp-demo.js?v=b46105965f37";
+import {createRspDemoRepository} from "./rsp-demo-repository.js?v=a0213e9929a9";
+import {createRspDemo,canUseRspDemo} from "./rsp-demo.js?v=3be439150156";
 import { createSupplierInvoicesReadonly } from "./supplier-invoices-readonly.js?v=c-consulta-1";
 import { podeConsultarFornecedores } from "./supplier-invoices-reader.js?v=c-consulta-1";
 import { allocationsForDate, createWorkforceAllocationClient } from "./workforce-allocation.js?v=4";

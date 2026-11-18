@@ -1,4 +1,4 @@
-import {canUseRspDemo} from './rsp-demo.js?v=b46105965f37';
+import {canUseRspDemo} from './rsp-demo.js?v=3be439150156';
 const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
 
 // Shared application transport: no new client, session, key or credential store.
