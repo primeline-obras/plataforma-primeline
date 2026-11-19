@@ -40,3 +40,9 @@
 .rsp-demo-view .rsp-demo-investment .meeting-dl dd{white-space:normal;overflow-wrap:anywhere}
 .rsp-demo-view .rsp-demo-investment .rsp-kpis span{line-height:1.5}
 .rsp-demo-view .rsp-demo-investment .rsp-demo-status{line-height:1.7;margin-top:14px}
+
+/* Investment-only three principal indicators. Contract layout unchanged. */
+.rsp-demo-view .rsp-demo-investment [data-investment-kpis]{grid-template-columns:repeat(3,minmax(0,1fr));}
+.rsp-demo-view .rsp-demo-investment [data-investment-kpis] article{min-width:0;}
+.rsp-demo-view .rsp-demo-investment [data-investment-kpis] label{display:block;white-space:normal;}
+@media(max-width:900px){.rsp-demo-view .rsp-demo-investment [data-investment-kpis]{grid-template-columns:1fr;}}
