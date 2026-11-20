@@ -16,10 +16,12 @@ const optionalMoneyFields={expensesYtd:'Total Despesas YTD · sem IVA'};
 const fields = {...moneyFields,...optionalMoneyFields,...fieldsLegacy,...dateFields,planning:'Planeamento',tees:'TEEs'};
 const escape = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const euro = new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'});
-export function amount(value) {
+export function amount(value,field='') {
   if (value === '' || value == null) return null;
-  if (!/^\d+(?:\.\d{1,2})?$/.test(String(value))) return null;
-  const n=Number(value);return Number.isFinite(n) && n<=1e12 ? n : null;
+  if (field==='approvedTees' && String(value).length>40) return null;
+  const pattern=field==='approvedTees'?/^-?\d+(?:\.\d{1,2})?$/:/^\d+(?:\.\d{1,2})?$/;
+  if (!pattern.test(String(value))) return null;
+  const n=Number(value);return Number.isFinite(n) && Math.abs(n)<=1e12 ? n : null;
 }
 export function dateValue(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value??'')) return null;
@@ -27,7 +29,7 @@ export function dateValue(value) {
   return Number.isFinite(n) && new Date(n).toISOString().slice(0,10)===value ? n : null;
 }
 export function demoValues(data={}) {
-  const initialSale=amount(data.initialSale),approvedTees=amount(data.approvedTees),cost=amount(data.cost),billed=amount(data.billed),estimatedRealCost=amount(data.estimatedRealCost);
+  const initialSale=amount(data.initialSale),approvedTees=amount(data.approvedTees,'approvedTees'),cost=amount(data.cost),billed=amount(data.billed),estimatedRealCost=amount(data.estimatedRealCost);
   const sale=initialSale!==null&&approvedTees!==null?Math.round((initialSale+approvedTees)*100)/100:null;
   const difference=(a,b)=>a!==null&&b!==null?Math.round((a-b)*100)/100:null;
   const start=dateValue(data.start),end=dateValue(data.end),meeting=dateValue(data.meeting);
@@ -41,7 +43,7 @@ function sanitize(row,model=CONTRACT_MODEL) {
   if(!row || typeof row!=='object' || Array.isArray(row))throw Error('DEMO_STORAGE_FORMAT');
   const out=empty();for(const k of Object.keys(fields)){
     const v=row[k]??'';if(typeof v!=='string'||v.length>(['planning','tees'].includes(k)?15000:40))throw Error('DEMO_STORAGE_FORMAT');
-    if((k in moneyFields || k in optionalMoneyFields || k in fieldsLegacy) && v!=='' && amount(v)===null)throw Error('DEMO_STORAGE_VALUES');
+    if((k in moneyFields || k in optionalMoneyFields || k in fieldsLegacy) && v!=='' && amount(v,k)===null)throw Error('DEMO_STORAGE_VALUES');
     if(k in dateFields && v!=='' && dateValue(v)===null)throw Error('DEMO_STORAGE_VALUES');out[k]=v;
   }if(!Object.hasOwn(row,'expensesYtd')||model===INVESTMENT_MODEL)delete out.expensesYtd;if(model===INVESTMENT_MODEL){if(row.expensesYtd!=null&&row.expensesYtd!=='')throw Error('DEMO_DUPLICATE_YTD');out.investment=cleanInvestment(row.investment);}return out;
 }
@@ -139,7 +141,7 @@ export function createRspDemo({root,getIdentity,repository,storage,host=globalTh
     draftSlot=slot;current=c.current;creating=c.creating===true;pendingCreateId=c.pendingCreateId||'';present=false;modelDraft=c.modelDraft??modelOf(records.find(w=>w.id===c.current));draft={...c.draft};metaDraft={...c.metaDraft};dirty=true;recoveryDocument=null;syncMessage='Rascunho recuperado; ainda não guardado no servidor.';render();
   }
   const investmentValid=()=>{if(modelDraft!==INVESTMENT_MODEL)return true;try{cleanInvestment(draft.investment);return true;}catch{return false;}};
-  const validDraft=()=>investmentValid()&&[...Object.keys(moneyFields),...Object.keys(optionalMoneyFields)].every(k=>draft[k]==null||draft[k]===''||amount(draft[k])!==null)&&Object.keys(dateFields).every(k=>draft[k]===''||dateValue(draft[k])!==null)&&(!(draft.start&&draft.end)||dateValue(draft.end)>dateValue(draft.start));
+  const validDraft=()=>investmentValid()&&[...Object.keys(moneyFields),...Object.keys(optionalMoneyFields)].every(k=>draft[k]==null||draft[k]===''||amount(draft[k],k)!==null)&&Object.keys(dateFields).every(k=>draft[k]===''||dateValue(draft[k])!==null)&&(!(draft.start&&draft.end)||dateValue(draft.end)>dateValue(draft.start));
   function validMetadata(){try{cleanMetadata(metaDraft);return true;}catch{return false;}}
   async function save(){
     if(!authorized()||!current||!validDraft()||!validMetadata())return false;
@@ -159,7 +161,7 @@ export function createRspDemo({root,getIdentity,repository,storage,host=globalTh
   function estimates(data,includeCost=true){const v=demoValues(data);return `<dl class="meeting-dl rsp-demo-estimates">${estimateLabels.filter(([,k])=>includeCost||k!=='estimatedRealCost').map(([label,k])=>`<div><dt>${label}</dt><dd data-demo-estimate="${k}">${format(v[k])}</dd></div>`).join('')}<div data-demo-ytd-row><dt>Total Despesas YTD · sem IVA<small class="rsp-demo-director">Todos os custos acumulados desde o início da obra; não apenas o ano corrente.</small></dt><dd>${!present&&current?field('expensesYtd',optionalMoneyFields.expensesYtd,false):`<span data-demo-ytd>${format(amount(data.expensesYtd))}</span>`}</dd></div></dl>`;}
   const workLabel=w=>w.reference?`OBRA ${w.reference}`:'OBRA';
   const dateDetail=()=>`${draft.start||'—'} → ${draft.end||'—'} · reunião ${draft.meeting||'—'}`;
-  function field(k,label,showLabel=true){return `<label class="rsp-demo-inline-field">${showLabel?escape(label):''}<input aria-label="${escape(label)}" data-field="${k}" name="${k}" type="${k in dateFields?'date':'number'}"${k in dateFields?'':' min="0" max="1000000000000" step="0.01"'} value="${escape(draft[k])}"></label>`;}
+  function field(k,label,showLabel=true){return `<label class="rsp-demo-inline-field">${showLabel?escape(label):''}<input aria-label="${escape(label)}" data-field="${k}" name="${k}" type="${k in dateFields?'date':'number'}"${k in dateFields?'':` min="${k==='approvedTees'?'-1000000000000':'0'}" max="1000000000000" step="0.01"`} value="${escape(draft[k])}"></label>`;}
   function metadataEditor(){return `<div class="rsp-demo-metadata-fields">${Object.entries(metadataFields).map(([k,label])=>`<label class="rsp-demo-inline-field">${label}${k==='name'?' *':''}<input type="text" data-meta="${k}" name="work_${k}" value="${escape(metaDraft[k])}" maxlength="${k==='reference'?80:250}"${k==='name'?' required':''}></label>`).join('')}</div>`;}
   function noteEditor(k,label,data,caption='Notas manuais'){return `<label class="rsp-demo-inline-field">${escape(caption)}<textarea data-field="${k}" name="${k}" maxlength="15000" rows="6" aria-label="${label}">${escape(data[k])}</textarea></label>`;}
   function notes(data,editing=false){return [['planning','PLANEAMENTO'],['tees','TEEs']].map(([k,label])=>`<article class="panel meeting-card"><div class="meeting-title"><span>${label}</span></div>${editing?noteEditor(k,label,data):`<div data-demo-note="${k}" class="rsp-demo-notes">${escape(data[k]||'—')}</div>`}</article>`).join('');}
